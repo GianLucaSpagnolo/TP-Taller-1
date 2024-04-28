@@ -1,18 +1,27 @@
-use std::io::Write;
-use std::io::{BufRead, BufReader, Read};
 use std::net::TcpStream;
 
 use crate::control_packets::mqtt_connect::connect::*;
 
-pub fn client_run(address: &str, stream: &mut dyn Read) -> std::io::Result<()> {
-    let reader = BufReader::new(stream);
+fn id_generator() -> String {
+    //To Do
+    "abc123".to_string()
+}
+
+pub fn client_connect(address: &str) -> std::io::Result<()> {
+    let id = id_generator();
     let mut socket = TcpStream::connect(address)?;
-    for line in reader.lines() {
-        if let Ok(line) = line {
-            println!("Enviando: {:?}", line);
-            socket.write(line.as_bytes())?;
-            socket.write("\n".as_bytes())?;
-        }
+
+    let connect_packet = Connect::new(id);
+
+    match connect_packet.write_to(&mut socket){
+        Ok(_) => Ok(()),
+        Err(e) => return Err(e),
     }
-    Ok(())
+
+    /* let connack_packet_as_bytes;
+
+    match socket.read(connack_packet_as_bytes) {
+        Ok(_) => Ok(println!("Connect complete")),
+        Err(e) => Err(e),
+    } */
 }

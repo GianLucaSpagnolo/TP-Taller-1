@@ -33,3 +33,14 @@ pub struct ConnectVariableHeader {
     keep_alive: VariableHeaderKeepAlive,
     properties: VariableHeaderProperties,
 }
+
+impl ConnectVariableHeader{
+
+    pub fn lenght(&self) -> usize {
+        todo!()
+    }
+
+    pub fn new() -> Self{
+        todo!()
+    }
+}

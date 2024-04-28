@@ -1,14 +1,18 @@
+use std::io::Error;
+use std::io::Read;
+use std::io::Write;
+
 use crate::control_packets::mqtt_connect::connect_payload::*;
 use crate::control_packets::mqtt_connect::fixed_header::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
 
 pub struct Connect {
     pub fixed_header: ConnectFixedHeader,
-    pub variable_header: ConnectVariableHeader,
-    pub payload: ConnectPayload,
+    //pub variable_header: ConnectVariableHeader,
+    //pub payload: ConnectPayload,
 }
 
-/// FIXED HEADER: 2 BYTES
+/// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
 /// 4 bits mas significativos: MQTT Control Packet type
 /// 0001: CONNECT
@@ -16,11 +20,14 @@ pub struct Connect {
 /// 4 bits menos significativos: Flags
 /// 0000: Reserved
 ///
+/// 00010000 CONNECT 16
+/// 
 /// SEGUNDO BYTE
 /// Remaining Length
 /// This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 ///
-/// VARIABLE HEADER: Packet Identifier de 2 BYTES
+/// # VARIABLE HEADER: Packet Identifier de 2 BYTES
+/// 
 /// CONNECT no necesita el Package Identifier
 ///
 ///
@@ -91,7 +98,36 @@ pub struct Connect {
 /// Password
 ///
 impl Connect {
-    pub fn new() {
-        todo!()
+    
+    
+    pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error>{
+        let fixed_header = self.fixed_header.packet_type_and_flags.to_be_bytes();
+        stream.write(&fixed_header)?;
+        Ok(())
+    }
+
+    pub fn read_from(stream: &mut dyn Read) -> Result<Connect, Error>{
+        let mut byte_buf = [0u8; 1];
+        stream.read_exact(&mut byte_buf)?;
+        let fixed_type_be = u8::from_be_bytes(byte_buf);
+        let connect = Connect {
+            fixed_header: ConnectFixedHeader::new(fixed_type_be, 0),
+            //variable_header: ConnectVariableHeader::new(),
+            //payload: ConnectPayload::new("123abc".to_string()),
+        };
+        Ok(connect)
+    }
+    
+    pub fn new(_client_id: String)-> Self{
+        //let variable_header = ConnectVariableHeader::new();
+        //let payload = ConnectPayload::new(client_id);
+        //let remaining_length = variable_header.lenght() + payload.lenght(); 
+        let fixed_header = ConnectFixedHeader::new(16, 0);
+
+        Connect {
+            fixed_header,
+            //variable_header,
+            //payload
+        }
     }
 }
