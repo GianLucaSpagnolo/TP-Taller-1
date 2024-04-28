@@ -2,9 +2,9 @@ use std::io::Error;
 use std::io::Read;
 use std::io::Write;
 
-use crate::control_packets::mqtt_connect::connect_payload::*;
 use crate::control_packets::mqtt_connect::fixed_header::*;
-use crate::control_packets::mqtt_connect::variable_header::*;
+//use crate::control_packets::mqtt_connect::variable_header::*;
+//use crate::control_packets::mqtt_connect::connect_payload::*;
 
 pub struct Connect {
     pub fixed_header: ConnectFixedHeader,
@@ -102,7 +102,7 @@ impl Connect {
     
     pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error>{
         let fixed_header = self.fixed_header.packet_type_and_flags.to_be_bytes();
-        stream.write(&fixed_header)?;
+        stream.write_all(&fixed_header)?;
         Ok(())
     }
 

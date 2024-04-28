@@ -15,7 +15,7 @@ pub fn client_connect(address: &str) -> std::io::Result<()> {
 
     match connect_packet.write_to(&mut socket){
         Ok(_) => Ok(()),
-        Err(e) => return Err(e),
+        Err(e) => Err(e),
     }
 
     /* let connack_packet_as_bytes;
