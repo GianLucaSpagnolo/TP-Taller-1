@@ -3,12 +3,12 @@ use std::io::Read;
 use std::io::Write;
 
 use crate::control_packets::mqtt_connect::fixed_header::*;
-//use crate::control_packets::mqtt_connect::variable_header::*;
+use crate::control_packets::mqtt_connect::variable_header::*;
 //use crate::control_packets::mqtt_connect::connect_payload::*;
 
 pub struct Connect {
     pub fixed_header: ConnectFixedHeader,
-    //pub variable_header: ConnectVariableHeader,
+    pub variable_header: ConnectVariableHeader,
     //pub payload: ConnectPayload,
 }
 
@@ -103,35 +103,63 @@ impl Connect {
         let fixed_header_length = self.fixed_header.remaining_length.to_be_bytes();
         stream.write_all(&fixed_header_type_and_flags)?;
         stream.write_all(&fixed_header_length)?;
+
+        let variable_header_protocol_name_length =
+            self.variable_header.protocol_name.length.to_be_bytes();
+        let variable_header_protocol_name = self.variable_header.protocol_name.name.as_bytes();
+        let variable_header_protocol_version = self.variable_header.protocol_version.to_be_bytes();
+        stream.write_all(&variable_header_protocol_name_length)?;
+        stream.write_all(variable_header_protocol_name)?;
+        stream.write_all(&variable_header_protocol_version)?;
         Ok(())
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Connect, Error> {
-        let mut byte_buf1 = [0u8; 1];
-        stream.read_exact(&mut byte_buf1)?;
-        let fixed_header_type = u8::from_be_bytes(byte_buf1);
+        let mut read_fixed_header_type = [0u8; 1];
+        stream.read_exact(&mut read_fixed_header_type)?;
+        let fixed_header_type = u8::from_be_bytes(read_fixed_header_type);
 
-        let mut byte_buf2 = [0u8; 8];
-        stream.read_exact(&mut byte_buf2)?;
-        let fixed_header_len = usize::from_be_bytes(byte_buf2);
+        let mut read_fixed_header_len = [0u8; 8];
+        stream.read_exact(&mut read_fixed_header_len)?;
+        let fixed_header_len = usize::from_be_bytes(read_fixed_header_len);
+
+        let mut read_variable_header_protocol_name_length = [0u8; 2];
+        stream.read_exact(&mut read_variable_header_protocol_name_length)?;
+        let protocol_name_length = u16::from_be_bytes(read_variable_header_protocol_name_length);
+
+        let mut read_variable_header_protocol_name = vec![0u8; protocol_name_length as usize];
+        stream.read_exact(&mut read_variable_header_protocol_name)?;
+        let protocol_name = String::from_utf8(read_variable_header_protocol_name).unwrap();
+
+        let mut read_variable_header_protocol_version = [0u8; 1];
+        stream.read_exact(&mut read_variable_header_protocol_version)?;
+        let protocol_version = u8::from_be_bytes(read_variable_header_protocol_version);
 
         let connect = Connect {
             fixed_header: ConnectFixedHeader::new(fixed_header_type, fixed_header_len),
-            //variable_header: ConnectVariableHeader::new(),
+            variable_header: ConnectVariableHeader::new(
+                protocol_name_length,
+                protocol_name,
+                protocol_version,
+            ),
             //payload: ConnectPayload::new("123abc".to_string()),
         };
         Ok(connect)
     }
 
     pub fn new(_client_id: String) -> Self {
-        //let variable_header = ConnectVariableHeader::new();
+        let protocol_name = "MQTT".to_string();
+        let protocol_version = 5;
+        let variable_header =
+            ConnectVariableHeader::new(protocol_name.len() as u16, protocol_name, protocol_version);
         //let payload = ConnectPayload::new(client_id);
         //let remaining_length = variable_header.lenght() + payload.lenght();
-        let fixed_header = ConnectFixedHeader::new(16, 2);
+        let remaining_length = 2;
+        let fixed_header = ConnectFixedHeader::new(16, remaining_length);
 
         Connect {
             fixed_header,
-            //variable_header,
+            variable_header,
             //payload
         }
     }

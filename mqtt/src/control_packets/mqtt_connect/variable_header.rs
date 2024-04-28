@@ -1,15 +1,14 @@
-pub struct _VariableHeaderProtocolName {
-    length_msb: u8,
-    length_lsb: u8,
-    name: u32,
+pub struct VariableHeaderProtocolName {
+    pub length: u16,
+    pub name: String,
 }
 
-pub struct _VariableHeaderKeepAlive {
+pub struct VariableHeaderKeepAlive {
     msb: u8,
     lsb: u8,
 }
 
-pub enum _VariableHeaderProperty {
+pub enum VariableHeaderProperty {
     SessionExpiryInterval { id: u8, property: u32 }, // Four Byte Integer
     AuthenticationMethod { id: u8, property: String }, // UTF-8 Encoded String
     AuthenticationData { id: u8, property: u16 },    // Binary Data
@@ -21,25 +20,37 @@ pub enum _VariableHeaderProperty {
     MaximumPacketSize { id: u8, property: u32 },     // Four Byte Integer
 }
 
-pub struct _VariableHeaderProperties {
+pub struct VariableHeaderProperties {
     length: usize,
-    properties: Vec<_VariableHeaderProperty>,
+    properties: Vec<VariableHeaderProperty>,
 }
 
-pub struct _ConnectVariableHeader {
-    protocol_name: _VariableHeaderProtocolName,
-    protocol_version: u8,
+pub struct ConnectVariableHeader {
+    pub protocol_name: VariableHeaderProtocolName,
+    pub protocol_version: u8,
     connect_flags: u8, // Nombre de los bits: User Name Flag, Password Flag, Will Retain, Will QoS (2 bytes), Will Flag, Clean Start, Reserved
-    keep_alive: _VariableHeaderKeepAlive,
-    properties: _VariableHeaderProperties,
+    keep_alive: VariableHeaderKeepAlive,
+    properties: VariableHeaderProperties,
 }
 
-impl _ConnectVariableHeader {
-    pub fn _lenght(&self) -> usize {
+impl ConnectVariableHeader {
+    pub fn lenght(&self) -> usize {
         todo!()
     }
 
-    pub fn _new() -> Self {
-        todo!()
+    pub fn new(protocol_name_length: u16, protocol_name: String, protocol_version: u8) -> Self {
+        ConnectVariableHeader {
+            protocol_name: VariableHeaderProtocolName {
+                length: protocol_name_length,
+                name: protocol_name,
+            },
+            protocol_version,
+            connect_flags: 0,
+            keep_alive: VariableHeaderKeepAlive { msb: 0, lsb: 60 },
+            properties: VariableHeaderProperties {
+                length: 0,
+                properties: Vec::new(),
+            },
+        }
     }
 }
