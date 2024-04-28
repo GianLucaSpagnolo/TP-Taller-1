@@ -23,8 +23,8 @@ pub fn server_run(address: &str) -> Result<(), Error> {
 fn handle_connection(stream: &mut dyn Read) -> Result<(), Error> {
     match Connect::read_from(stream) {
         Ok(p) => println!(
-            "Recibio correctamente el {}",
-            p.fixed_header.packet_type_and_flags
+            "Recibio correctamente el {} de tamaño {}",
+            p.fixed_header.packet_type_and_flags, p.fixed_header.remaining_length
         ),
         Err(e) => return Err(e),
     };

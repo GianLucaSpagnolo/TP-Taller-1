@@ -99,17 +99,24 @@ pub struct Connect {
 ///
 impl Connect {
     pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header = self.fixed_header.packet_type_and_flags.to_be_bytes();
-        stream.write_all(&fixed_header)?;
+        let fixed_header_type_and_flags = self.fixed_header.packet_type_and_flags.to_be_bytes();
+        let fixed_header_length = self.fixed_header.remaining_length.to_be_bytes();
+        stream.write_all(&fixed_header_type_and_flags)?;
+        stream.write_all(&fixed_header_length)?;
         Ok(())
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Connect, Error> {
-        let mut byte_buf = [0u8; 1];
-        stream.read_exact(&mut byte_buf)?;
-        let fixed_type_be = u8::from_be_bytes(byte_buf);
+        let mut byte_buf1 = [0u8; 1];
+        stream.read_exact(&mut byte_buf1)?;
+        let fixed_header_type = u8::from_be_bytes(byte_buf1);
+
+        let mut byte_buf2 = [0u8; 8];
+        stream.read_exact(&mut byte_buf2)?;
+        let fixed_header_len = usize::from_be_bytes(byte_buf2);
+
         let connect = Connect {
-            fixed_header: ConnectFixedHeader::new(fixed_type_be, 0),
+            fixed_header: ConnectFixedHeader::new(fixed_header_type, fixed_header_len),
             //variable_header: ConnectVariableHeader::new(),
             //payload: ConnectPayload::new("123abc".to_string()),
         };
@@ -120,7 +127,7 @@ impl Connect {
         //let variable_header = ConnectVariableHeader::new();
         //let payload = ConnectPayload::new(client_id);
         //let remaining_length = variable_header.lenght() + payload.lenght();
-        let fixed_header = ConnectFixedHeader::new(16, 0);
+        let fixed_header = ConnectFixedHeader::new(16, 2);
 
         Connect {
             fixed_header,
