@@ -1,12 +1,17 @@
 [package]
-name = "mqtt"
+name = "app"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[lib]
-name = "mqtt"
-path = "src/lib.rs"
-
 [dependencies]
+mqtt = { path = "../mqtt" }
+
+[[bin]]
+name = "client"
+path = "src/client_example.rs"
+
+[[bin]]
+name = "server"
+path = "src/server_example.rs"

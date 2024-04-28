@@ -1,3 +1,3 @@
-struct ConnectPayload {
+pub struct ConnectPayload {
     client_identifier: String,
 }
