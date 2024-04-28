@@ -150,10 +150,12 @@ impl Connect {
         let variable_header_protocol_name = self.variable_header.protocol_name.name.as_bytes();
         let variable_header_protocol_version = self.variable_header.protocol_version.to_be_bytes();
         let variable_header_connect_flags = self.variable_header.connect_flags.to_be_bytes();
+        let variable_header_keep_alive = self.variable_header.keep_alive.to_be_bytes();
         stream.write_all(&variable_header_protocol_name_length)?;
         stream.write_all(variable_header_protocol_name)?;
         stream.write_all(&variable_header_protocol_version)?;
         stream.write_all(&variable_header_connect_flags)?;
+        stream.write_all(&variable_header_keep_alive)?;
         Ok(())
     }
 
@@ -182,6 +184,10 @@ impl Connect {
         stream.read_exact(&mut read_variable_header_connect_flags)?;
         let connect_flags = u8::from_be_bytes(read_variable_header_connect_flags);
 
+        let mut read_variable_header_keep_alive = [0u8; 2];
+        stream.read_exact(&mut read_variable_header_keep_alive)?;
+        let keep_alive = u16::from_be_bytes(read_variable_header_keep_alive);
+
         let connect = Connect {
             fixed_header: ConnectFixedHeader::new(fixed_header_type, fixed_header_len),
             variable_header: ConnectVariableHeader::new(
@@ -189,16 +195,22 @@ impl Connect {
                 protocol_name,
                 protocol_version,
                 connect_flags,
+                keep_alive,
             ),
             //payload: ConnectPayload::new("123abc".to_string()),
         };
         Ok(connect)
     }
 
-    pub fn new(_client_id: String, connect_flags: u8) -> Self {
+    pub fn new(_client_id: String, connect_flags: u8, keep_alive: u16) -> Self {
         let name = PROTOCOL_NAME.to_string();
-        let variable_header =
-            ConnectVariableHeader::new(name.len() as u16, name, PROTOCOL_VERSION, connect_flags);
+        let variable_header = ConnectVariableHeader::new(
+            name.len() as u16,
+            name,
+            PROTOCOL_VERSION,
+            connect_flags,
+            keep_alive,
+        );
         //let payload = ConnectPayload::new(client_id);
         //let remaining_length = variable_header.lenght() + payload.lenght();
         let remaining_length = 2;

@@ -12,7 +12,8 @@ pub fn client_connect(address: &str) -> std::io::Result<()> {
     let mut socket = TcpStream::connect(address)?;
 
     let connect_flags = create_connect_flags(0, 0, 1, 1, 1, 0, 0);
-    let connect_packet = Connect::new(id, connect_flags);
+    let keep_alive: u16 = 0;
+    let connect_packet = Connect::new(id, connect_flags, keep_alive);
 
     match connect_packet.write_to(&mut socket) {
         Ok(_) => Ok(()),
