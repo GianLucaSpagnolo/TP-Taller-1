@@ -29,13 +29,17 @@ fn handle_connection(stream: &mut dyn Read) -> Result<(), Error> {
             Fixed header remaining length: {}\n
             Variable header protocol name length: {}\n
             Variable header protocol name: {}\n
-            Variable header protocol version: {}\n",
+            Variable header protocol version: {}\n
+            Variable header flags: {:08b}\n",
                 p.fixed_header.packet_type_and_flags,
                 p.fixed_header.remaining_length,
                 p.variable_header.protocol_name.length,
                 p.variable_header.protocol_name.name,
-                p.variable_header.protocol_version
+                p.variable_header.protocol_version,
+                p.variable_header.connect_flags
             );
+
+            let _status = read_connect_flags(p.variable_header.connect_flags);
         }
         Err(e) => return Err(e),
     };

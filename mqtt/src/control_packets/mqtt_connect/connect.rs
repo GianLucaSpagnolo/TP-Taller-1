@@ -6,10 +6,50 @@ use crate::control_packets::mqtt_connect::fixed_header::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
 //use crate::control_packets::mqtt_connect::connect_payload::*;
 
+static PROTOCOL_NAME: &str = "MQTT";
+static PROTOCOL_VERSION: u8 = 5;
+
 pub struct Connect {
     pub fixed_header: ConnectFixedHeader,
     pub variable_header: ConnectVariableHeader,
     //pub payload: ConnectPayload,
+}
+
+pub fn create_connect_flags(
+    reserver: u8,
+    clean_start: u8,
+    will_flag: u8,
+    will_qos: u8,
+    will_retain: u8,
+    password: u8,
+    username: u8,
+) -> u8 {
+    let mut connect_flags: u8 = 0;
+    connect_flags |= reserver;
+    connect_flags |= clean_start << 1;
+    connect_flags |= will_flag << 2;
+    connect_flags |= will_qos << 3;
+    connect_flags |= will_retain << 5;
+    connect_flags |= password << 6;
+    connect_flags |= username << 7;
+    connect_flags
+}
+
+fn apply_mask_to_n_bits(flags: u8, shifts: u8, len: u8) -> u8 {
+    let mask = (1 << len) - 1;
+    (flags >> shifts) & mask
+}
+
+// Deberiamos separar esta funcion para determinar el estado de cada bit, en conveniencia del server y del uso que les de
+pub fn read_connect_flags(flags: u8) -> u8 {
+    let _reserved = apply_mask_to_n_bits(flags, 0, 1);
+    let _clean_start = apply_mask_to_n_bits(flags, 1, 1);
+    let _will_flag = apply_mask_to_n_bits(flags, 2, 1);
+    let _will_qos = apply_mask_to_n_bits(flags, 3, 2);
+    let _will_retain = apply_mask_to_n_bits(flags, 5, 1);
+    let _password = apply_mask_to_n_bits(flags, 6, 1);
+    let _username = apply_mask_to_n_bits(flags, 7, 1);
+    0
 }
 
 /// # FIXED HEADER: 2 BYTES
@@ -79,7 +119,8 @@ pub struct Connect {
 ///
 /// PAYLOAD
 /// The Payload of the CONNECT packet contains one or more length-prefixed fields, whose presence is determined by the flags in the Variable Header.
-/// The Payload contains one or more encoded fields. They specify a unique Client identifier for the Client, a Will Topic, Will Payload, User Name and Password. All but the Client identifier can be omitted and their presence is determined based on flags in the Variable Header.
+/// The Payload contains one or more encoded fields. They specify a unique Client identifier for the Client, a Will Topic, Will Payload, User Name and
+/// Password. All but the Client identifier can be omitted and their presence is determined based on flags in the Variable Header.
 ///
 /// These fields, if present, MUST appear in the order:
 /// Client Identifier: UTF-8 Encoded String
@@ -94,7 +135,7 @@ pub struct Connect {
 ///  - User Property
 /// Will Topic
 /// Will Payload
-/// User Name
+/// Username
 /// Password
 ///
 impl Connect {
@@ -108,9 +149,11 @@ impl Connect {
             self.variable_header.protocol_name.length.to_be_bytes();
         let variable_header_protocol_name = self.variable_header.protocol_name.name.as_bytes();
         let variable_header_protocol_version = self.variable_header.protocol_version.to_be_bytes();
+        let variable_header_connect_flags = self.variable_header.connect_flags.to_be_bytes();
         stream.write_all(&variable_header_protocol_name_length)?;
         stream.write_all(variable_header_protocol_name)?;
         stream.write_all(&variable_header_protocol_version)?;
+        stream.write_all(&variable_header_connect_flags)?;
         Ok(())
     }
 
@@ -135,23 +178,27 @@ impl Connect {
         stream.read_exact(&mut read_variable_header_protocol_version)?;
         let protocol_version = u8::from_be_bytes(read_variable_header_protocol_version);
 
+        let mut read_variable_header_connect_flags = [0u8; 1];
+        stream.read_exact(&mut read_variable_header_connect_flags)?;
+        let connect_flags = u8::from_be_bytes(read_variable_header_connect_flags);
+
         let connect = Connect {
             fixed_header: ConnectFixedHeader::new(fixed_header_type, fixed_header_len),
             variable_header: ConnectVariableHeader::new(
                 protocol_name_length,
                 protocol_name,
                 protocol_version,
+                connect_flags,
             ),
             //payload: ConnectPayload::new("123abc".to_string()),
         };
         Ok(connect)
     }
 
-    pub fn new(_client_id: String) -> Self {
-        let protocol_name = "MQTT".to_string();
-        let protocol_version = 5;
+    pub fn new(_client_id: String, connect_flags: u8) -> Self {
+        let name = PROTOCOL_NAME.to_string();
         let variable_header =
-            ConnectVariableHeader::new(protocol_name.len() as u16, protocol_name, protocol_version);
+            ConnectVariableHeader::new(name.len() as u16, name, PROTOCOL_VERSION, connect_flags);
         //let payload = ConnectPayload::new(client_id);
         //let remaining_length = variable_header.lenght() + payload.lenght();
         let remaining_length = 2;

@@ -28,7 +28,7 @@ pub struct VariableHeaderProperties {
 pub struct ConnectVariableHeader {
     pub protocol_name: VariableHeaderProtocolName,
     pub protocol_version: u8,
-    connect_flags: u8, // Nombre de los bits: User Name Flag, Password Flag, Will Retain, Will QoS (2 bytes), Will Flag, Clean Start, Reserved
+    pub connect_flags: u8, // Nombre de los bits: User Name Flag, Password Flag, Will Retain, Will QoS (2 bytes), Will Flag, Clean Start, Reserved
     keep_alive: VariableHeaderKeepAlive,
     properties: VariableHeaderProperties,
 }
@@ -38,14 +38,19 @@ impl ConnectVariableHeader {
         todo!()
     }
 
-    pub fn new(protocol_name_length: u16, protocol_name: String, protocol_version: u8) -> Self {
+    pub fn new(
+        protocol_name_length: u16,
+        protocol_name: String,
+        protocol_version: u8,
+        connect_flags: u8,
+    ) -> Self {
         ConnectVariableHeader {
             protocol_name: VariableHeaderProtocolName {
                 length: protocol_name_length,
                 name: protocol_name,
             },
             protocol_version,
-            connect_flags: 0,
+            connect_flags,
             keep_alive: VariableHeaderKeepAlive { msb: 0, lsb: 60 },
             properties: VariableHeaderProperties {
                 length: 0,
