@@ -1,16 +1,13 @@
-pub struct ConnectPayload {
+pub struct _ConnectPayload {
     client_id: String,
 }
 
-impl ConnectPayload {
-    
-    pub fn lenght(&self) -> usize {
+impl _ConnectPayload {
+    pub fn _lenght(&self) -> usize {
         todo!()
     }
 
-    pub fn new(client_id: String) -> Self {
-        ConnectPayload {
-            client_id
-        }
+    pub fn _new(client_id: String) -> Self {
+        _ConnectPayload { client_id }
     }
 }

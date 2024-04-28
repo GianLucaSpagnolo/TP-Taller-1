@@ -21,13 +21,13 @@ pub struct Connect {
 /// 0000: Reserved
 ///
 /// 00010000 CONNECT 16
-/// 
+///
 /// SEGUNDO BYTE
 /// Remaining Length
 /// This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 ///
 /// # VARIABLE HEADER: Packet Identifier de 2 BYTES
-/// 
+///
 /// CONNECT no necesita el Package Identifier
 ///
 ///
@@ -98,15 +98,13 @@ pub struct Connect {
 /// Password
 ///
 impl Connect {
-    
-    
-    pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error>{
+    pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let fixed_header = self.fixed_header.packet_type_and_flags.to_be_bytes();
         stream.write_all(&fixed_header)?;
         Ok(())
     }
 
-    pub fn read_from(stream: &mut dyn Read) -> Result<Connect, Error>{
+    pub fn read_from(stream: &mut dyn Read) -> Result<Connect, Error> {
         let mut byte_buf = [0u8; 1];
         stream.read_exact(&mut byte_buf)?;
         let fixed_type_be = u8::from_be_bytes(byte_buf);
@@ -117,11 +115,11 @@ impl Connect {
         };
         Ok(connect)
     }
-    
-    pub fn new(_client_id: String)-> Self{
+
+    pub fn new(_client_id: String) -> Self {
         //let variable_header = ConnectVariableHeader::new();
         //let payload = ConnectPayload::new(client_id);
-        //let remaining_length = variable_header.lenght() + payload.lenght(); 
+        //let remaining_length = variable_header.lenght() + payload.lenght();
         let fixed_header = ConnectFixedHeader::new(16, 0);
 
         Connect {

@@ -13,7 +13,7 @@ pub fn client_connect(address: &str) -> std::io::Result<()> {
 
     let connect_packet = Connect::new(id);
 
-    match connect_packet.write_to(&mut socket){
+    match connect_packet.write_to(&mut socket) {
         Ok(_) => Ok(()),
         Err(e) => Err(e),
     }

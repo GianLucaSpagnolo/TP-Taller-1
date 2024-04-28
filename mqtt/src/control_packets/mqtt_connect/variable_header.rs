@@ -1,15 +1,15 @@
-pub struct VariableHeaderProtocolName {
+pub struct _VariableHeaderProtocolName {
     length_msb: u8,
     length_lsb: u8,
     name: u32,
 }
 
-pub struct VariableHeaderKeepAlive {
+pub struct _VariableHeaderKeepAlive {
     msb: u8,
     lsb: u8,
 }
 
-pub enum VariableHeaderProperty {
+pub enum _VariableHeaderProperty {
     SessionExpiryInterval { id: u8, property: u32 }, // Four Byte Integer
     AuthenticationMethod { id: u8, property: String }, // UTF-8 Encoded String
     AuthenticationData { id: u8, property: u16 },    // Binary Data
@@ -21,26 +21,25 @@ pub enum VariableHeaderProperty {
     MaximumPacketSize { id: u8, property: u32 },     // Four Byte Integer
 }
 
-pub struct VariableHeaderProperties {
+pub struct _VariableHeaderProperties {
     length: usize,
-    properties: Vec<VariableHeaderProperty>,
+    properties: Vec<_VariableHeaderProperty>,
 }
 
-pub struct ConnectVariableHeader {
-    protocol_name: VariableHeaderProtocolName,
+pub struct _ConnectVariableHeader {
+    protocol_name: _VariableHeaderProtocolName,
     protocol_version: u8,
     connect_flags: u8, // Nombre de los bits: User Name Flag, Password Flag, Will Retain, Will QoS (2 bytes), Will Flag, Clean Start, Reserved
-    keep_alive: VariableHeaderKeepAlive,
-    properties: VariableHeaderProperties,
+    keep_alive: _VariableHeaderKeepAlive,
+    properties: _VariableHeaderProperties,
 }
 
-impl ConnectVariableHeader{
-
-    pub fn lenght(&self) -> usize {
+impl _ConnectVariableHeader {
+    pub fn _lenght(&self) -> usize {
         todo!()
     }
 
-    pub fn new() -> Self{
+    pub fn _new() -> Self {
         todo!()
     }
 }

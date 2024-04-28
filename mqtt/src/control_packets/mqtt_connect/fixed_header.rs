@@ -4,10 +4,10 @@ pub struct ConnectFixedHeader {
 }
 
 impl ConnectFixedHeader {
-    pub fn new(type_and_flags: u8, remaining_len: usize) -> Self{
+    pub fn new(type_and_flags: u8, remaining_len: usize) -> Self {
         ConnectFixedHeader {
             packet_type_and_flags: type_and_flags,
-            remaining_length: remaining_len
+            remaining_length: remaining_len,
         }
     }
 }
