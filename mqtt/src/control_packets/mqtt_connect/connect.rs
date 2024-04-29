@@ -90,7 +90,6 @@ pub fn get_flag_username(flags: u8) -> u8 {
     apply_mask_to_n_bits(flags, 7, 1)
 }
 
-
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
 /// 4 bits mas significativos: MQTT Control Packet type
