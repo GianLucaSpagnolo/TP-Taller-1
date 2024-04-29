@@ -4,6 +4,8 @@ use std::io::Write;
 
 use crate::control_packets::mqtt_connect::fixed_header::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
+
+use super::variable_header_properties::VariableHeaderProperties;
 //use crate::control_packets::mqtt_connect::connect_payload::*;
 
 static PROTOCOL_NAME: &str = "MQTT";

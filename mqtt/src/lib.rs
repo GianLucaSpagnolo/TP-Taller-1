@@ -6,5 +6,6 @@ mod control_packets {
         pub mod connect_payload;
         pub mod fixed_header;
         pub mod variable_header;
+        pub mod variable_header_properties;
     }
 }
