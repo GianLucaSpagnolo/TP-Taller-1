@@ -122,8 +122,8 @@ pub fn get_flag_username(flags: u8) -> u8 {
 /// Protocol Version
 /// Description
 /// byte 7 - Version (5)
-///
-/// Connect Flags
+/// 
+/// ## CONNECT FLAGS
 /// byte 8
 /// User Name Flag (1)
 /// Password Flag (1)
@@ -138,9 +138,9 @@ pub fn get_flag_username(flags: u8) -> u8 {
 /// Keep Alive MSB (0)
 /// byte 10
 /// Keep Alive LSB (10)
-///
-/// Properties
-/// byte 11
+/// 
+/// ## Properties
+/// byte 11 
 /// Length (suma de todas las properties)
 /// byte 12 en adelante:
 /// PROPERTIES: Connect
@@ -154,27 +154,26 @@ pub fn get_flag_username(flags: u8) -> u8 {
 /// 38 - 0x26 - User Property - UTF-8 String Pair
 /// 39 - 0x27 - Maximum Packet Size - Four Byte Integer
 ///
-///
-/// PAYLOAD
+/// # PAYLOAD
 /// The Payload of the CONNECT packet contains one or more length-prefixed fields, whose presence is determined by the flags in the Variable Header.
 /// The Payload contains one or more encoded fields. They specify a unique Client identifier for the Client, a Will Topic, Will Payload, User Name and
 /// Password. All but the Client identifier can be omitted and their presence is determined based on flags in the Variable Header.
 ///
 /// These fields, if present, MUST appear in the order:
-/// Client Identifier: UTF-8 Encoded String
+/// Client Identifier: UTF-8 Encoded String (Obligatorio)
 /// Will Properties:
 ///  - Property Length
-///  - Will Delay Interval
-///  - Payload Format Indicator
-///  - Message Expiry Interval
-///  - Content Type
-///  - Response Topic
-///  - Correlation Data
-///  - User Property
-/// Will Topic
-/// Will Payload
-/// Username
-/// Password
+///  - 24(0x18) - Will Delay Interval
+///  - 1(0x01) - Payload Format Indicator
+///  - 2(0x02) - Message Expiry Interval
+///  - 3(0x03) - Content Type
+///  - 8(0x08) - Response Topic
+///  - 9(0x09) - Correlation Data
+///  - 38(0x26) - User Property
+/// Will Topic (Connect Flag - Will Flag = 1)
+/// Will Payload (Connect Flag - Will Flag = 1)
+/// Username (Connect Flag - Username = 1)
+/// Password (Connect Flag - Password = 1)
 ///
 impl Connect {
     pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {

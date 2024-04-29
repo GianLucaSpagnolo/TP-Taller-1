@@ -1,5 +1,4 @@
-//pub enum ConnectPayloadField {
-//    ClientId{id: String}, // UTF-8 Encoded String
+//pub enum ConnectPayloadFields {
 /*
 WillProperties {
     property_length: u32,
@@ -11,10 +10,10 @@ WillProperties {
     correlation_data: String,
     user_property: String,
 },
-WillTopic(bool),
-WillPayload(bool),
-UserName(String),
-Password(String)
+will_topic: String,
+will_payload: u16, // Binary Data
+username: String,
+password: String
 */
 //}
 
