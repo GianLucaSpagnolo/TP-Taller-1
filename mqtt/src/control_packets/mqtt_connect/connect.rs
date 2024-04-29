@@ -6,7 +6,7 @@ use crate::control_packets::mqtt_connect::fixed_header::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
 
 use super::variable_header_properties::VariableHeaderProperties;
-//use crate::control_packets::mqtt_connect::connect_payload::*;
+use crate::control_packets::mqtt_connect::connect_payload::*;
 
 static PROTOCOL_NAME: &str = "MQTT";
 static PROTOCOL_VERSION: u8 = 5;
@@ -14,7 +14,7 @@ static PROTOCOL_VERSION: u8 = 5;
 pub struct Connect {
     pub fixed_header: ConnectFixedHeader,
     pub variable_header: ConnectVariableHeader,
-    //pub payload: ConnectPayload,
+    pub payload: ConnectPayload,
 }
 
 pub struct ConnectProperties {
@@ -196,6 +196,10 @@ impl Connect {
         stream.write_all(&variable_header_connect_flags)?;
         stream.write_all(&variable_header_keep_alive)?;
         stream.write_all(&variable_header_properties)?;
+
+        let payload_fields = self.payload.as_bytes();
+        stream.write_all(&payload_fields)?;
+
         Ok(())
     }
 
@@ -236,6 +240,18 @@ impl Connect {
         stream.read_exact(&mut read_variable_header_properties)?;
         let properties = VariableHeaderProperties::from_be_bytes(&read_variable_header_properties);
 
+        let mut read_payload_lenght_bytes = [0u8; 8];
+        stream.read_exact(&mut read_payload_lenght_bytes)?;
+        let _payload_length = usize::from_be_bytes(read_payload_lenght_bytes);
+
+        let mut read_payload_client_id_len = [0u8; 2];
+        stream.read_exact(&mut read_payload_client_id_len)?;
+        let payload_client_id_len = u16::from_be_bytes(read_payload_client_id_len);
+
+        let mut read_payload_client_id = vec![0u8; payload_client_id_len as usize];
+        stream.read_exact(&mut read_payload_client_id)?;
+        let payload_client_id = String::from_utf8(read_payload_client_id).unwrap();
+
         let connect = Connect {
             fixed_header: ConnectFixedHeader::new(fixed_header_type, fixed_header_len),
             variable_header: ConnectVariableHeader::new(
@@ -246,13 +262,13 @@ impl Connect {
                 keep_alive,
                 properties,
             ),
-            //payload: ConnectPayload::new("123abc".to_string()),
+            payload: ConnectPayload::new(payload_client_id),
         };
         Ok(connect)
     }
 
     pub fn new(
-        _client_id: String,
+        client_id: String,
         connect_flags: u8,
         keep_alive: u16,
         properties: ConnectProperties,
@@ -284,15 +300,14 @@ impl Connect {
             keep_alive,
             prop,
         );
-        //let payload = ConnectPayload::new(_client_id);
-        //let remaining_length = variable_header.lenght() + payload.lenght();
-        let remaining_length = variable_header.length();
+        let payload = ConnectPayload::new(client_id);
+        let remaining_length = variable_header.length() + payload.length();
         let fixed_header = ConnectFixedHeader::new(16, remaining_length);
 
         Connect {
             fixed_header,
             variable_header,
-            //payload
+            payload,
         }
     }
 }
