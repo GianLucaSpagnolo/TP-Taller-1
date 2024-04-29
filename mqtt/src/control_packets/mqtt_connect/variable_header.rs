@@ -125,7 +125,7 @@ impl VariableHeaderProperties {
                 }
                 VariableHeaderProperty::AuthenticationMethod { id, property } => {
                     bytes.push(*id);
-                    let prop_len =  property.len() as u16;
+                    let prop_len = property.len() as u16;
                     prop_len.to_be_bytes().map(|b| bytes.push(b));
                     bytes.extend_from_slice(property.as_bytes());
                 }
@@ -151,10 +151,10 @@ impl VariableHeaderProperties {
                 }
                 VariableHeaderProperty::UserProperty { id, property } => {
                     bytes.push(*id);
-                    let key_len =  property.0.len() as u16;
+                    let key_len = property.0.len() as u16;
                     key_len.to_be_bytes().map(|b| bytes.push(b));
                     bytes.extend_from_slice(property.0.as_bytes());
-                    let value_len =  property.1.len() as u16;
+                    let value_len = property.1.len() as u16;
                     value_len.to_be_bytes().map(|b| bytes.push(b));
                     bytes.extend_from_slice(property.1.as_bytes());
                 }
@@ -196,7 +196,8 @@ impl VariableHeaderProperties {
                         i += 1;
                     }
                     let property = String::from_utf8(property_bytes).unwrap();
-                    properties_vec.push(VariableHeaderProperty::AuthenticationMethod { id, property });
+                    properties_vec
+                        .push(VariableHeaderProperty::AuthenticationMethod { id, property });
                 }
                 22 => {
                     let mut property_bytes: [u8; 2] = [0; 2];
@@ -287,7 +288,6 @@ impl VariableHeaderProperties {
             properties: properties_vec,
         }
     }
-
 }
 
 pub struct VariableHeaderProperties {
