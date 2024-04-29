@@ -145,8 +145,7 @@ impl Connect {
         stream.write_all(&fixed_header_type_and_flags)?;
         stream.write_all(&fixed_header_length)?;
 
-        let variable_header_protocol_name_length =
-            self.variable_header.protocol_name.length.to_be_bytes();
+        let variable_header_protocol_name_length = self.variable_header.protocol_name.length.to_be_bytes();
         let variable_header_protocol_name = self.variable_header.protocol_name.name.as_bytes();
         let variable_header_protocol_version = self.variable_header.protocol_version.to_be_bytes();
         let variable_header_connect_flags = self.variable_header.connect_flags.to_be_bytes();
@@ -217,9 +216,33 @@ impl Connect {
         _client_id: String,
         connect_flags: u8,
         keep_alive: u16,
-        properties: VariableHeaderProperties,
+        session_expiry_interval: u32,
+        authentication_method: String,
+        authentication_data: u16,
+        request_problem_information: u8,
+        request_response_information: u8,
+        receive_maximum: u16,
+        topic_alias_maximum: u16,
+        user_property_key: String,
+        user_property_value: String,
+        maximum_packet_size: u32,
     ) -> Self {
         let name = PROTOCOL_NAME.to_string();
+
+        // La inicializacion de las propiedades deben estar en connect.rs (add_variable_header_properties)
+        // Faltan inicializar variables de la instancia del cliente (ejemplo: autentificacion, etc.)
+        let mut properties = VariableHeaderProperties::new();
+
+        properties.add_property_session_expiry_interval(session_expiry_interval);
+        properties.add_property_authentication_method(authentication_method);
+        properties.add_property_authentication_data(authentication_data);
+        properties.add_property_request_problem_information(request_problem_information);
+        properties.add_property_request_response_information(request_response_information);
+        properties.add_property_receive_maximum(receive_maximum);
+        properties.add_property_topic_alias_maximum(topic_alias_maximum);
+        properties.add_property_user_property(user_property_key, user_property_value);
+        properties.add_property_maximum_packet_size(maximum_packet_size);
+
         let variable_header = ConnectVariableHeader::new(
             name.len() as u16,
             name,
@@ -228,7 +251,7 @@ impl Connect {
             keep_alive,
             properties,
         );
-        //let payload = ConnectPayload::new(client_id);
+        //let payload = ConnectPayload::new(_client_id);
         //let remaining_length = variable_header.lenght() + payload.lenght();
         let remaining_length = variable_header.length();
         let fixed_header = ConnectFixedHeader::new(16, remaining_length);
