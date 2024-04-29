@@ -24,7 +24,7 @@ pub fn client_connect(address: &str) -> std::io::Result<()> {
     properties.add_property_request_response_information(1);
     properties.add_property_receive_maximum(10);
     properties.add_property_topic_alias_maximum(0);
-    //properties.add_property_user_property("user".to_string(), "property".to_string());
+    properties.add_property_user_property("user".to_string(), "property".to_string());
     properties.add_property_maximum_packet_size(100);
 
     let connect_packet = Connect::new(id, connect_flags, keep_alive, properties);

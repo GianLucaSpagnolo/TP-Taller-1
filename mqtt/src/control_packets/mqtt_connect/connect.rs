@@ -71,10 +71,10 @@ pub fn create_properties_from_bytes(properties: &[u8]) -> VariableHeaderProperti
             21 => {
                 let mut property_bytes: Vec<u8> = Vec::new();
 
-                let mut property_bytes_len: [u8; 8] = [0; 8];
-                property_bytes_len.copy_from_slice(&properties[i..i + 8]);
-                let property_len = usize::from_be_bytes(property_bytes_len);
-                i += 8;
+                let mut property_bytes_len: [u8; 2] = [0; 2];
+                property_bytes_len.copy_from_slice(&properties[i..i + 2]);
+                let property_len = u16::from_be_bytes(property_bytes_len);
+                i += 2;
 
                 for _ in 0..property_len {
                     property_bytes.push(properties[i]);
@@ -125,24 +125,24 @@ pub fn create_properties_from_bytes(properties: &[u8]) -> VariableHeaderProperti
             38 => {
                 let mut property_bytes_key: Vec<u8> = Vec::new();
 
-                let mut property_bytes_key_len: [u8; 8] = [0; 8];
-                property_bytes_key_len.copy_from_slice(&properties[i..i + 8]);
-                let property_len = usize::from_be_bytes(property_bytes_key_len);
-                i += 8;
+                let mut property_bytes_key_len: [u8; 2] = [0; 2];
+                property_bytes_key_len.copy_from_slice(&properties[i..i + 2]);
+                let property_key_len = u16::from_be_bytes(property_bytes_key_len);
+                i += 2;
 
-                for _ in 0..property_len {
+                for _ in 0..property_key_len {
                     property_bytes_key.push(properties[i]);
                     i += 1;
                 }
 
                 let mut property_bytes_value: Vec<u8> = Vec::new();
 
-                let mut property_bytes_value_len: [u8; 8] = [0; 8];
-                property_bytes_value_len.copy_from_slice(&properties[i..i + 8]);
-                let property_len = usize::from_be_bytes(property_bytes_value_len);
-                i += 8;
+                let mut property_bytes_value_len: [u8; 2] = [0; 2];
+                property_bytes_value_len.copy_from_slice(&properties[i..i + 2]);
+                let property_value_len = u16::from_be_bytes(property_bytes_value_len);
+                i += 2;
 
-                for _ in 0..property_len {
+                for _ in 0..property_value_len {
                     property_bytes_value.push(properties[i]);
                     i += 1;
                 }

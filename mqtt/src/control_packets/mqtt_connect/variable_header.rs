@@ -29,7 +29,7 @@ impl VariableHeaderProperties {
 
     /// PROPERTY: AUTHENTICATION METHOD
     pub fn add_property_authentication_method(&mut self, method: String) {
-        self.bytes_length += 9 + method.len();
+        self.bytes_length += 3 + method.len();
 
         self.properties
             .push(VariableHeaderProperty::AuthenticationMethod {
@@ -90,7 +90,7 @@ impl VariableHeaderProperties {
 
     /// PROPERTY: USER PROPERTY
     pub fn add_property_user_property(&mut self, key: String, value: String) {
-        self.bytes_length += 17 + key.len() + value.len(); // OJO
+        self.bytes_length += 5 + key.len() + value.len(); // OJO
         self.properties.push(VariableHeaderProperty::UserProperty {
             id: 38,
             property: (key, value),
@@ -125,7 +125,8 @@ impl VariableHeaderProperties {
                 }
                 VariableHeaderProperty::AuthenticationMethod { id, property } => {
                     bytes.push(*id);
-                    property.len().to_be_bytes().map(|b| bytes.push(b));
+                    let prop_len =  property.len() as u16;
+                    prop_len.to_be_bytes().map(|b| bytes.push(b));
                     bytes.extend_from_slice(property.as_bytes());
                 }
                 VariableHeaderProperty::AuthenticationData { id, property } => {
@@ -150,9 +151,11 @@ impl VariableHeaderProperties {
                 }
                 VariableHeaderProperty::UserProperty { id, property } => {
                     bytes.push(*id);
-                    property.0.len().to_be_bytes().map(|b| bytes.push(b));
+                    let key_len =  property.0.len() as u16;
+                    key_len.to_be_bytes().map(|b| bytes.push(b));
                     bytes.extend_from_slice(property.0.as_bytes());
-                    property.1.len().to_be_bytes().map(|b| bytes.push(b));
+                    let value_len =  property.1.len() as u16;
+                    value_len.to_be_bytes().map(|b| bytes.push(b));
                     bytes.extend_from_slice(property.1.as_bytes());
                 }
                 VariableHeaderProperty::MaximumPacketSize { id, property } => {
