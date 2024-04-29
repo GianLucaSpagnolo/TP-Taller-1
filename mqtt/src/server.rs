@@ -31,14 +31,18 @@ fn handle_connection(stream: &mut dyn Read) -> Result<(), Error> {
             Variable header protocol name: {}\n
             Variable header protocol version: {}\n
             Variable header flags: {:08b}\n
-            Variable header keep alive: {}\n",
+            Variable header keep alive: {}\n
+            Variable header property length: {}\n
+            Variable header properties: {:?}",
                 p.fixed_header.packet_type_and_flags,
                 p.fixed_header.remaining_length,
                 p.variable_header.protocol_name.length,
                 p.variable_header.protocol_name.name,
                 p.variable_header.protocol_version,
                 p.variable_header.connect_flags,
-                p.variable_header.keep_alive
+                p.variable_header.keep_alive,
+                p.variable_header.properties.properties.len(),
+                p.variable_header.properties.properties
             );
 
             let _status = read_connect_flags(p.variable_header.connect_flags);

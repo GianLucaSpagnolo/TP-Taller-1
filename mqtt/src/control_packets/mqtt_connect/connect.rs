@@ -52,6 +52,127 @@ pub fn read_connect_flags(flags: u8) -> u8 {
     0
 }
 
+pub fn create_properties_from_bytes(properties: &[u8]) -> VariableHeaderProperties {
+    let mut properties_vec: Vec<VariableHeaderProperty> = Vec::new();
+    let mut i = 0;
+    while i < properties.len() - 1 {
+        let id = properties[i];
+        i += 1;
+        match id {
+            17 => {
+                let mut property_bytes: [u8; 4] = [0; 4];
+                property_bytes.copy_from_slice(&properties[i..i + 4]);
+                i += 4;
+                properties_vec.push(VariableHeaderProperty::SessionExpiryInterval {
+                    id,
+                    property: u32::from_be_bytes(property_bytes),
+                });
+            }
+            21 => {
+                let mut property_bytes: Vec<u8> = Vec::new();
+
+                let mut property_bytes_len: [u8; 8] = [0; 8];
+                property_bytes_len.copy_from_slice(&properties[i..i + 8]);
+                let property_len = usize::from_be_bytes(property_bytes_len);
+                i += 8;
+
+                for _ in 0..property_len {
+                    property_bytes.push(properties[i]);
+                    i += 1;
+                }
+                let property = String::from_utf8(property_bytes).unwrap();
+                properties_vec.push(VariableHeaderProperty::AuthenticationMethod { id, property });
+            }
+            22 => {
+                let mut property_bytes: [u8; 2] = [0; 2];
+                property_bytes.copy_from_slice(&properties[i..i + 2]);
+                i += 2;
+                properties_vec.push(VariableHeaderProperty::AuthenticationData {
+                    id,
+                    property: u16::from_be_bytes(property_bytes),
+                });
+            }
+            23 => {
+                let property = properties[i];
+                i += 1;
+                properties_vec
+                    .push(VariableHeaderProperty::RequestProblemInformation { id, property });
+            }
+            25 => {
+                let property = properties[i];
+                i += 1;
+                properties_vec
+                    .push(VariableHeaderProperty::RequestResponseInformation { id, property });
+            }
+            33 => {
+                let mut property_bytes: [u8; 2] = [0; 2];
+                property_bytes.copy_from_slice(&properties[i..i + 2]);
+                i += 2;
+                properties_vec.push(VariableHeaderProperty::ReceiveMaximum {
+                    id,
+                    property: u16::from_be_bytes(property_bytes),
+                });
+            }
+            34 => {
+                let mut property_bytes: [u8; 2] = [0; 2];
+                property_bytes.copy_from_slice(&properties[i..i + 2]);
+                i += 2;
+                properties_vec.push(VariableHeaderProperty::TopicAliasMaximum {
+                    id,
+                    property: u16::from_be_bytes(property_bytes),
+                });
+            }
+            38 => {
+                let mut property_bytes_key: Vec<u8> = Vec::new();
+
+                let mut property_bytes_key_len: [u8; 8] = [0; 8];
+                property_bytes_key_len.copy_from_slice(&properties[i..i + 8]);
+                let property_len = usize::from_be_bytes(property_bytes_key_len);
+                i += 8;
+
+                for _ in 0..property_len {
+                    property_bytes_key.push(properties[i]);
+                    i += 1;
+                }
+
+                let mut property_bytes_value: Vec<u8> = Vec::new();
+
+                let mut property_bytes_value_len: [u8; 8] = [0; 8];
+                property_bytes_value_len.copy_from_slice(&properties[i..i + 8]);
+                let property_len = usize::from_be_bytes(property_bytes_value_len);
+                i += 8;
+
+                for _ in 0..property_len {
+                    property_bytes_value.push(properties[i]);
+                    i += 1;
+                }
+
+                let key = String::from_utf8(property_bytes_key).unwrap();
+                let value = String::from_utf8(property_bytes_value).unwrap();
+                properties_vec.push(VariableHeaderProperty::UserProperty {
+                    id,
+                    property: (key, value),
+                });
+            }
+            39 => {
+                let mut property_bytes: [u8; 4] = [0; 4];
+                property_bytes.copy_from_slice(&properties[i..i + 4]);
+                i += 4;
+                properties_vec.push(VariableHeaderProperty::MaximumPacketSize {
+                    id,
+                    property: u32::from_be_bytes(property_bytes),
+                });
+            }
+            _ => (),
+        }
+    }
+
+    VariableHeaderProperties {
+        bytes_length: properties.len(),
+        properties: properties_vec,
+    }
+}
+
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
 /// 4 bits mas significativos: MQTT Control Packet type
@@ -151,11 +272,13 @@ impl Connect {
         let variable_header_protocol_version = self.variable_header.protocol_version.to_be_bytes();
         let variable_header_connect_flags = self.variable_header.connect_flags.to_be_bytes();
         let variable_header_keep_alive = self.variable_header.keep_alive.to_be_bytes();
+        let variable_header_properties = self.variable_header.properties.as_bytes();
         stream.write_all(&variable_header_protocol_name_length)?;
         stream.write_all(variable_header_protocol_name)?;
         stream.write_all(&variable_header_protocol_version)?;
         stream.write_all(&variable_header_connect_flags)?;
         stream.write_all(&variable_header_keep_alive)?;
+        stream.write_all(&variable_header_properties)?;
         Ok(())
     }
 
@@ -188,6 +311,14 @@ impl Connect {
         stream.read_exact(&mut read_variable_header_keep_alive)?;
         let keep_alive = u16::from_be_bytes(read_variable_header_keep_alive);
 
+        let mut read_variable_header_properties_length = [0u8; 8];
+        stream.read_exact(&mut read_variable_header_properties_length)?;
+        let properties_length = usize::from_be_bytes(read_variable_header_properties_length);
+
+        let mut read_variable_header_properties = vec![0u8; properties_length];
+        stream.read_exact(&mut read_variable_header_properties)?;
+        let properties = create_properties_from_bytes(&read_variable_header_properties);
+
         let connect = Connect {
             fixed_header: ConnectFixedHeader::new(fixed_header_type, fixed_header_len),
             variable_header: ConnectVariableHeader::new(
@@ -196,13 +327,19 @@ impl Connect {
                 protocol_version,
                 connect_flags,
                 keep_alive,
+                properties,
             ),
             //payload: ConnectPayload::new("123abc".to_string()),
         };
         Ok(connect)
     }
 
-    pub fn new(_client_id: String, connect_flags: u8, keep_alive: u16) -> Self {
+    pub fn new(
+        _client_id: String,
+        connect_flags: u8,
+        keep_alive: u16,
+        properties: VariableHeaderProperties,
+    ) -> Self {
         let name = PROTOCOL_NAME.to_string();
         let variable_header = ConnectVariableHeader::new(
             name.len() as u16,
@@ -210,10 +347,11 @@ impl Connect {
             PROTOCOL_VERSION,
             connect_flags,
             keep_alive,
+            properties,
         );
         //let payload = ConnectPayload::new(client_id);
         //let remaining_length = variable_header.lenght() + payload.lenght();
-        let remaining_length = 2;
+        let remaining_length = variable_header.length();
         let fixed_header = ConnectFixedHeader::new(16, remaining_length);
 
         Connect {
