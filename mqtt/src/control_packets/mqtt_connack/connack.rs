@@ -113,8 +113,11 @@ impl Connack {
 
         let mut read_variable_header_properties = vec![0u8; properties_length];
         stream.read_exact(&mut read_variable_header_properties)?;
-        let properties = VariableHeaderProperties::from_be_bytes(&read_variable_header_properties);
-
+        let properties =
+            match VariableHeaderProperties::from_be_bytes(&read_variable_header_properties) {
+                Ok(properties) => properties,
+                Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e)),
+            };
         let connack = Connack {
             fixed_header: ConnackFixedHeader::new(fixed_header_type, fixed_header_len),
             variable_header: ConnackVariableHeader::new(
