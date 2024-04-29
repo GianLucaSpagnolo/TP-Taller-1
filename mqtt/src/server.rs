@@ -1,7 +1,8 @@
 use std::io::Error;
-use std::io::Read;
 use std::net::TcpListener;
+use std::net::TcpStream;
 
+use crate::control_packets::mqtt_connack::connack::Connack;
 use crate::control_packets::mqtt_connect::connect::*;
 
 pub fn server_run(address: &str) -> Result<(), Error> {
@@ -20,8 +21,8 @@ pub fn server_run(address: &str) -> Result<(), Error> {
     Ok(())
 }
 
-fn handle_connection(stream: &mut dyn Read) -> Result<(), Error> {
-    match Connect::read_from(stream) {
+fn handle_connection(stream: &mut TcpStream) -> Result<(), Error> {
+    let connect = match Connect::read_from(stream) {
         Ok(p) => {
             println!(
                 "Connect packet received\n
@@ -56,10 +57,17 @@ fn handle_connection(stream: &mut dyn Read) -> Result<(), Error> {
                 p.variable_header.properties.properties.len(),
                 p.variable_header.properties.properties
             );
+            p
         }
         Err(e) => return Err(e),
     };
-    // Devuelve connack
+
+    let connack_packet = Connack::new(connect);
+
+    match connack_packet.write_to(stream) {
+        Ok(_) => {}
+        Err(e) => return Err(e),
+    };
 
     Ok(())
 }

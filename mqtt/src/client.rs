@@ -1,6 +1,6 @@
 use std::net::TcpStream;
 
-use crate::control_packets::mqtt_connect::connect::*;
+use crate::control_packets::{mqtt_connack::connack::*, mqtt_connect::connect::*};
 
 fn id_generator() -> String {
     //To Do
@@ -31,14 +31,27 @@ pub fn client_connect(address: &str) -> std::io::Result<()> {
     let connect_packet = Connect::new(id, connect_flags, keep_alive, connect_properties);
 
     match connect_packet.write_to(&mut socket) {
-        Ok(_) => Ok(()),
-        Err(e) => Err(e),
-    }
+        Ok(_) => {}
+        Err(e) => return Err(e),
+    };
 
-    /* let connack_packet_as_bytes;
-
-    match socket.read(connack_packet_as_bytes) {
-        Ok(_) => Ok(println!("Connect complete")),
-        Err(e) => Err(e),
-    } */
+    match Connack::read_from(&mut socket) {
+        Ok(p) => {
+            println!(
+                "Connack packet received\n
+                Fixed header packet type: {:02b}\n
+                Fixed header remaining length: {}\n
+                Variable header connect acknowledge flags: {:02b}\n
+                Variable header connect reason code: {:02b}\n
+                Variable header properties: {:?}",
+                p.fixed_header.packet_type_and_flags,
+                p.fixed_header.remaining_length,
+                p.variable_header.connect_acknowledge_flags,
+                p.variable_header.connect_reason_code,
+                p.variable_header.properties.properties
+            );
+        }
+        Err(e) => return Err(e),
+    };
+    Ok(())
 }
