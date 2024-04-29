@@ -122,7 +122,7 @@ pub fn get_flag_username(flags: u8) -> u8 {
 /// Protocol Version
 /// Description
 /// byte 7 - Version (5)
-/// 
+///
 /// ## CONNECT FLAGS
 /// byte 8
 /// User Name Flag (1)
@@ -138,9 +138,9 @@ pub fn get_flag_username(flags: u8) -> u8 {
 /// Keep Alive MSB (0)
 /// byte 10
 /// Keep Alive LSB (10)
-/// 
+///
 /// ## Properties
-/// byte 11 
+/// byte 11
 /// Length (suma de todas las properties)
 /// byte 12 en adelante:
 /// PROPERTIES: Connect
