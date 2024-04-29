@@ -1,7 +1,7 @@
 use crate::control_packets::mqtt_connect::variable_header_properties::VariableHeaderProperties;
 
 pub struct ConnackVariableHeader {
-    pub connect_acknowledge_flags: u8, 
+    pub connect_acknowledge_flags: u8,
     pub connect_reason_code: u8,
     pub properties: VariableHeaderProperties,
 }

@@ -27,7 +27,6 @@ pub struct VariableHeaderProperties {
 }
 
 impl VariableHeaderProperties {
-
     /// PROPERTY: ASIGNED CLIENT IDENTIFIER
     pub fn add_property_assigned_client_identifier(&mut self, identifier: String) {
         self.bytes_length += 3 + identifier.len();
@@ -48,7 +47,7 @@ impl VariableHeaderProperties {
         self.bytes_length += 3;
     }
 
-    /// PROPERTY: RESPONSE INFORMATION 
+    /// PROPERTY: RESPONSE INFORMATION
     pub fn add_property_response_information(&mut self, information: String) {
         self.bytes_length += 3 + information.len();
         self.properties
@@ -71,20 +70,18 @@ impl VariableHeaderProperties {
     /// PROPERTY: REASON STRING
     pub fn add_property_reason_string(&mut self, reason: String) {
         self.bytes_length += 3 + reason.len();
-        self.properties
-            .push(VariableHeaderProperty::ReasonString {
-                id: 31,
-                property: reason,
-            });
+        self.properties.push(VariableHeaderProperty::ReasonString {
+            id: 31,
+            property: reason,
+        });
     }
 
     /// PROPERTY: MAXIMUM QoS
     pub fn add_property_maximum_qos(&mut self, qos: u8) {
-        self.properties
-            .push(VariableHeaderProperty::MaximumQoS {
-                id: 36,
-                property: qos,
-            });
+        self.properties.push(VariableHeaderProperty::MaximumQoS {
+            id: 36,
+            property: qos,
+        });
         self.bytes_length += 2;
     }
 
@@ -443,8 +440,7 @@ impl VariableHeaderProperties {
                         i += 1;
                     }
                     let property = String::from_utf8(property_bytes).unwrap();
-                    properties_vec
-                        .push(VariableHeaderProperty::ServerReference { id, property });
+                    properties_vec.push(VariableHeaderProperty::ServerReference { id, property });
                 }
                 31 => {
                     let mut property_bytes: Vec<u8> = Vec::new();
@@ -533,14 +529,18 @@ impl VariableHeaderProperties {
                 40 => {
                     let property = properties[i];
                     i += 1;
-                    properties_vec
-                        .push(VariableHeaderProperty::WildcardSubscriptionAvailable { id, property });
+                    properties_vec.push(VariableHeaderProperty::WildcardSubscriptionAvailable {
+                        id,
+                        property,
+                    });
                 }
                 41 => {
                     let property = properties[i];
                     i += 1;
-                    properties_vec
-                        .push(VariableHeaderProperty::SubscriptionIdentifiersAvailable { id, property });
+                    properties_vec.push(VariableHeaderProperty::SubscriptionIdentifiersAvailable {
+                        id,
+                        property,
+                    });
                 }
                 42 => {
                     let property = properties[i];
