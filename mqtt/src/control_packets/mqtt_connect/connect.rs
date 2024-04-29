@@ -90,7 +90,6 @@ pub fn get_flag_username(flags: u8) -> u8 {
     apply_mask_to_n_bits(flags, 7, 1)
 }
 
-
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
 /// 4 bits mas significativos: MQTT Control Packet type
@@ -200,7 +199,7 @@ impl Connect {
         Ok(())
     }
 
-    pub fn read_from(stream: &mut dyn Read) -> Result<Connect, Error> {
+    pub fn read_from(stream: &mut dyn Read) -> Result<Connect, std::io::Error> {
         let mut read_fixed_header_type = [0u8; 1];
         stream.read_exact(&mut read_fixed_header_type)?;
         let fixed_header_type = u8::from_be_bytes(read_fixed_header_type);
@@ -215,7 +214,11 @@ impl Connect {
 
         let mut read_variable_header_protocol_name = vec![0u8; protocol_name_length as usize];
         stream.read_exact(&mut read_variable_header_protocol_name)?;
-        let protocol_name = String::from_utf8(read_variable_header_protocol_name).unwrap();
+
+        let protocol_name = match String::from_utf8(read_variable_header_protocol_name) {
+            Ok(protocol_name) => protocol_name,
+            Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e)),
+        };
 
         let mut read_variable_header_protocol_version = [0u8; 1];
         stream.read_exact(&mut read_variable_header_protocol_version)?;
@@ -235,7 +238,11 @@ impl Connect {
 
         let mut read_variable_header_properties = vec![0u8; properties_length];
         stream.read_exact(&mut read_variable_header_properties)?;
-        let properties = VariableHeaderProperties::from_be_bytes(&read_variable_header_properties);
+        let properties =
+            match VariableHeaderProperties::from_be_bytes(&read_variable_header_properties) {
+                Ok(properties) => properties,
+                Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e)),
+            };
 
         let connect = Connect {
             fixed_header: ConnectFixedHeader::new(fixed_header_type, fixed_header_len),
