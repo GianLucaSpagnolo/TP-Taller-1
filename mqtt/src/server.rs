@@ -22,7 +22,7 @@ pub fn server_run(address: &str) -> Result<(), Error> {
 }
 
 fn handle_connection(stream: &mut TcpStream) -> Result<(), Error> {
-    match Connect::read_from(stream) {
+    let connect = match Connect::read_from(stream) {
         Ok(p) => {
             println!(
                 "Connect packet received\n
@@ -57,11 +57,12 @@ fn handle_connection(stream: &mut TcpStream) -> Result<(), Error> {
                 p.variable_header.properties.properties.len(),
                 p.variable_header.properties.properties
             );
+            p
         }
         Err(e) => return Err(e),
     };
 
-    let connack_packet = Connack::new();
+    let connack_packet = Connack::new(connect);
 
     match connack_packet.write_to(stream) {
         Ok(_) => {}

@@ -40,8 +40,15 @@ pub fn client_connect(address: &str) -> std::io::Result<()> {
             println!(
                 "Connack packet received\n
                 Fixed header packet type: {:02b}\n
-                Fixed header remaining length: {}\n",
-                p.fixed_header.packet_type_and_flags, p.fixed_header.remaining_length,
+                Fixed header remaining length: {}\n
+                Variable header connect acknowledge flags: {:02b}\n
+                Variable header connect reason code: {:02b}\n
+                Variable header properties: {:?}",
+                p.fixed_header.packet_type_and_flags, 
+                p.fixed_header.remaining_length,
+                p.variable_header.connect_acknowledge_flags,
+                p.variable_header.connect_reason_code,
+                p.variable_header.properties.properties
             );
         }
         Err(e) => return Err(e),
