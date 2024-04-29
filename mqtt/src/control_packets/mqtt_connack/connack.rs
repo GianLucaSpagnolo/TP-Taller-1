@@ -1,12 +1,9 @@
 use std::io::{Error, Read, Write};
 
-use crate::control_packets::mqtt_connect::{
-    connect::Connect, variable_header_properties::VariableHeaderProperties,
-};
+use crate::control_packets::{mqtt_connect::{connect::Connect, connect_payload::ConnectPayloadFields}, mqtt_packet::{fixed_header::PacketFixedHeader, variable_header_properties::VariableHeaderProperties}};
 
 use super::{
-    connect_reason_code::ConnectReasonMode, fixed_header::ConnackFixedHeader,
-    variable_header::ConnackVariableHeader,
+    connect_reason_code::ConnectReasonMode, fixed_header::ConnackFixedHeader, variable_header::ConnackVariableHeader
 };
 
 /// # FIXED HEADER: 2 BYTES

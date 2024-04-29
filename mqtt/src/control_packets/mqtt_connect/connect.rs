@@ -2,17 +2,17 @@ use std::io::Error;
 use std::io::Read;
 use std::io::Write;
 
-use crate::control_packets::mqtt_connect::fixed_header::*;
-use crate::control_packets::mqtt_connect::variable_header::*;
 
-use super::variable_header_properties::VariableHeaderProperties;
+use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_connect::connect_payload::*;
+use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
+use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
 static PROTOCOL_NAME: &str = "MQTT";
 static PROTOCOL_VERSION: u8 = 5;
 
 pub struct Connect {
-    pub fixed_header: ConnectFixedHeader,
+    pub fixed_header: PacketFixedHeader,
     pub variable_header: ConnectVariableHeader,
     pub payload: ConnectPayload,
 }
@@ -177,7 +177,7 @@ pub fn get_flag_username(flags: u8) -> u8 {
 ///
 impl Connect {
     pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header_type_and_flags = self.fixed_header.packet_type_and_flags.to_be_bytes();
+        let fixed_header_type_and_flags = self.fixed_header.packet_type.to_be_bytes();
         let fixed_header_length = self.fixed_header.remaining_length.to_be_bytes();
         stream.write_all(&fixed_header_type_and_flags)?;
         stream.write_all(&fixed_header_length)?;
@@ -260,7 +260,7 @@ impl Connect {
         let payload_client_id = String::from_utf8(read_payload_client_id).unwrap();
 
         let connect = Connect {
-            fixed_header: ConnectFixedHeader::new(fixed_header_type, fixed_header_len),
+            fixed_header: PacketFixedHeader::new(fixed_header_type, fixed_header_len),
             variable_header: ConnectVariableHeader::new(
                 protocol_name_length,
                 protocol_name,
@@ -309,7 +309,7 @@ impl Connect {
         );
         let payload = ConnectPayload::new(client_id);
         let remaining_length = variable_header.length() + payload.length();
-        let fixed_header = ConnectFixedHeader::new(16, remaining_length);
+        let fixed_header = PacketFixedHeader::new(16, remaining_length);
 
         Connect {
             fixed_header,

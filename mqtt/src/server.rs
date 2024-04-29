@@ -42,7 +42,7 @@ fn handle_connection(stream: &mut TcpStream) -> Result<(), Error> {
             Variable header property length: {}\n
             Variable header properties: {:?}\n
             Payload client id: {}",
-                p.fixed_header.packet_type_and_flags,
+                p.fixed_header.packet_type,
                 p.fixed_header.remaining_length,
                 p.variable_header.protocol_name.length,
                 p.variable_header.protocol_name.name,

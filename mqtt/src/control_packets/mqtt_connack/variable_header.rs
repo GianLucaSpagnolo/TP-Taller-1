@@ -1,4 +1,4 @@
-use crate::control_packets::mqtt_connect::variable_header_properties::VariableHeaderProperties;
+use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
 pub struct ConnackVariableHeader {
     pub connect_acknowledge_flags: u8,
