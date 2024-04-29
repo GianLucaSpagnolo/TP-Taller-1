@@ -55,17 +55,41 @@ fn apply_mask_to_n_bits(flags: u8, shifts: u8, len: u8) -> u8 {
     (flags >> shifts) & mask
 }
 
-// Deberiamos separar esta funcion para determinar el estado de cada bit, en conveniencia del server y del uso que les de
-pub fn read_connect_flags(flags: u8) -> u8 {
-    let _reserved = apply_mask_to_n_bits(flags, 0, 1);
-    let _clean_start = apply_mask_to_n_bits(flags, 1, 1);
-    let _will_flag = apply_mask_to_n_bits(flags, 2, 1);
-    let _will_qos = apply_mask_to_n_bits(flags, 3, 2);
-    let _will_retain = apply_mask_to_n_bits(flags, 5, 1);
-    let _password = apply_mask_to_n_bits(flags, 6, 1);
-    let _username = apply_mask_to_n_bits(flags, 7, 1);
-    0
+/// FLAG: RESERVED
+pub fn get_flag_reserved(flags: u8) -> u8 {
+    apply_mask_to_n_bits(flags, 0, 1)
 }
+
+/// FLAG: CLEAN START
+pub fn get_flag_clean_start(flags: u8) -> u8 {
+    apply_mask_to_n_bits(flags, 1, 1)
+}
+
+/// FLAG: WILL FLAG
+pub fn get_flag_will_flag(flags: u8) -> u8 {
+    apply_mask_to_n_bits(flags, 2, 1)
+}
+
+/// FLAG: WILL QoS
+pub fn get_flag_will_qos(flags: u8) -> u8 {
+    apply_mask_to_n_bits(flags, 3, 2)
+}
+
+/// FLAG: WILL RETAIN
+pub fn get_flag_will_retain(flags: u8) -> u8 {
+    apply_mask_to_n_bits(flags, 5, 1)
+}
+
+/// FLAG: PASSWORD
+pub fn get_flag_password(flags: u8) -> u8 {
+    apply_mask_to_n_bits(flags, 6, 1)
+}
+
+/// FLAG: USERNAME
+pub fn get_flag_username(flags: u8) -> u8 {
+    apply_mask_to_n_bits(flags, 7, 1)
+}
+
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
