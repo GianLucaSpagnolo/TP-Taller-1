@@ -564,7 +564,7 @@ impl VariableHeaderProperties {
             }
         }
 
-      Ok(VariableHeaderProperties {
+        Ok(VariableHeaderProperties {
             bytes_length: properties.len(),
             properties: properties_vec,
         })
