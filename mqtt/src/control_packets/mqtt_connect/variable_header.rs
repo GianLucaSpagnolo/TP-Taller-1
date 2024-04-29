@@ -166,6 +166,128 @@ impl VariableHeaderProperties {
         }
         bytes
     }
+
+    pub fn from_be_bytes(properties: &[u8]) -> Self {
+        let mut properties_vec: Vec<VariableHeaderProperty> = Vec::new();
+        let mut i = 0;
+        while i < properties.len() - 1 {
+            let id = properties[i];
+            i += 1;
+            match id {
+                17 => {
+                    let mut property_bytes: [u8; 4] = [0; 4];
+                    property_bytes.copy_from_slice(&properties[i..i + 4]);
+                    i += 4;
+                    properties_vec.push(VariableHeaderProperty::SessionExpiryInterval {
+                        id,
+                        property: u32::from_be_bytes(property_bytes),
+                    });
+                }
+                21 => {
+                    let mut property_bytes: Vec<u8> = Vec::new();
+
+                    let mut property_bytes_len: [u8; 2] = [0; 2];
+                    property_bytes_len.copy_from_slice(&properties[i..i + 2]);
+                    let property_len = u16::from_be_bytes(property_bytes_len);
+                    i += 2;
+
+                    for _ in 0..property_len {
+                        property_bytes.push(properties[i]);
+                        i += 1;
+                    }
+                    let property = String::from_utf8(property_bytes).unwrap();
+                    properties_vec.push(VariableHeaderProperty::AuthenticationMethod { id, property });
+                }
+                22 => {
+                    let mut property_bytes: [u8; 2] = [0; 2];
+                    property_bytes.copy_from_slice(&properties[i..i + 2]);
+                    i += 2;
+                    properties_vec.push(VariableHeaderProperty::AuthenticationData {
+                        id,
+                        property: u16::from_be_bytes(property_bytes),
+                    });
+                }
+                23 => {
+                    let property = properties[i];
+                    i += 1;
+                    properties_vec
+                        .push(VariableHeaderProperty::RequestProblemInformation { id, property });
+                }
+                25 => {
+                    let property = properties[i];
+                    i += 1;
+                    properties_vec
+                        .push(VariableHeaderProperty::RequestResponseInformation { id, property });
+                }
+                33 => {
+                    let mut property_bytes: [u8; 2] = [0; 2];
+                    property_bytes.copy_from_slice(&properties[i..i + 2]);
+                    i += 2;
+                    properties_vec.push(VariableHeaderProperty::ReceiveMaximum {
+                        id,
+                        property: u16::from_be_bytes(property_bytes),
+                    });
+                }
+                34 => {
+                    let mut property_bytes: [u8; 2] = [0; 2];
+                    property_bytes.copy_from_slice(&properties[i..i + 2]);
+                    i += 2;
+                    properties_vec.push(VariableHeaderProperty::TopicAliasMaximum {
+                        id,
+                        property: u16::from_be_bytes(property_bytes),
+                    });
+                }
+                38 => {
+                    let mut property_bytes_key: Vec<u8> = Vec::new();
+
+                    let mut property_bytes_key_len: [u8; 2] = [0; 2];
+                    property_bytes_key_len.copy_from_slice(&properties[i..i + 2]);
+                    let property_key_len = u16::from_be_bytes(property_bytes_key_len);
+                    i += 2;
+
+                    for _ in 0..property_key_len {
+                        property_bytes_key.push(properties[i]);
+                        i += 1;
+                    }
+
+                    let mut property_bytes_value: Vec<u8> = Vec::new();
+
+                    let mut property_bytes_value_len: [u8; 2] = [0; 2];
+                    property_bytes_value_len.copy_from_slice(&properties[i..i + 2]);
+                    let property_value_len = u16::from_be_bytes(property_bytes_value_len);
+                    i += 2;
+
+                    for _ in 0..property_value_len {
+                        property_bytes_value.push(properties[i]);
+                        i += 1;
+                    }
+
+                    let key = String::from_utf8(property_bytes_key).unwrap();
+                    let value = String::from_utf8(property_bytes_value).unwrap();
+                    properties_vec.push(VariableHeaderProperty::UserProperty {
+                        id,
+                        property: (key, value),
+                    });
+                }
+                39 => {
+                    let mut property_bytes: [u8; 4] = [0; 4];
+                    property_bytes.copy_from_slice(&properties[i..i + 4]);
+                    i += 4;
+                    properties_vec.push(VariableHeaderProperty::MaximumPacketSize {
+                        id,
+                        property: u32::from_be_bytes(property_bytes),
+                    });
+                }
+                _ => (),
+            }
+        }
+
+        VariableHeaderProperties {
+            bytes_length: properties.len(),
+            properties: properties_vec,
+        }
+    }
+
 }
 
 pub struct VariableHeaderProperties {
