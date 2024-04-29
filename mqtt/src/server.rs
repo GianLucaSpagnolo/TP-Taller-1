@@ -30,13 +30,13 @@ fn handle_connection(stream: &mut dyn Read) -> Result<(), Error> {
             Variable header protocol name length: {}\n
             Variable header protocol name: {}\n
             Variable header protocol version: {}\n
-            Variable header flags reserver: {:01b}\n
-            Variable header flags clean_start: {:01b}\n
-            Variable header flags will_flag: {:01b}\n
-            Variable header flags will_qos: {:02b}\n
-            Variable header flags will_retain: {:01b}\n
-            Variable header flags password: {:01b}\n
-            Variable header flags username: {:01b}\n
+            Variable header flags reserver: {:01b}
+            Variable header flags clean_start: {:01b}
+            Variable header flags will_flag: {:01b}
+            Variable header flags will_qos: {:02b}
+            Variable header flags will_retain: {:01b}
+            Variable header flags password: {:01b}
+            Variable header flags username: {:01b}
             Variable header keep alive: {}\n
             Variable header property length: {}\n
             Variable header properties: {:?}",
