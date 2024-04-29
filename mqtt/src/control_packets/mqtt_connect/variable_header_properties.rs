@@ -1,3 +1,5 @@
+use std::string::FromUtf8Error;
+
 #[derive(Debug)]
 pub enum VariableHeaderProperty {
     SessionExpiryInterval { id: u8, property: u32 }, // Four Byte Integer
@@ -333,7 +335,7 @@ impl VariableHeaderProperties {
         bytes
     }
 
-    pub fn from_be_bytes(properties: &[u8]) -> Self {
+    pub fn from_be_bytes(properties: &[u8]) -> Result<Self, FromUtf8Error> {
         let mut properties_vec: Vec<VariableHeaderProperty> = Vec::new();
         let mut i = 0;
         while i < properties.len() - 1 {
@@ -386,7 +388,10 @@ impl VariableHeaderProperties {
                         property_bytes.push(properties[i]);
                         i += 1;
                     }
-                    let property = String::from_utf8(property_bytes).unwrap();
+                    let property = match String::from_utf8(property_bytes) {
+                        Ok(property) => property,
+                        Err(e) => return Err(e),
+                    };
                     properties_vec
                         .push(VariableHeaderProperty::AuthenticationMethod { id, property });
                 }
@@ -510,8 +515,15 @@ impl VariableHeaderProperties {
                         i += 1;
                     }
 
-                    let key = String::from_utf8(property_bytes_key).unwrap();
-                    let value = String::from_utf8(property_bytes_value).unwrap();
+                    let key = match String::from_utf8(property_bytes_key) {
+                        Ok(key) => key,
+                        Err(e) => return Err(e),
+                    };
+
+                    let value = match String::from_utf8(property_bytes_value) {
+                        Ok(value) => value,
+                        Err(e) => return Err(e),
+                    };
                     properties_vec.push(VariableHeaderProperty::UserProperty {
                         id,
                         property: (key, value),
@@ -552,9 +564,9 @@ impl VariableHeaderProperties {
             }
         }
 
-        VariableHeaderProperties {
+      Ok(VariableHeaderProperties {
             bytes_length: properties.len(),
             properties: properties_vec,
-        }
+        })
     }
 }
