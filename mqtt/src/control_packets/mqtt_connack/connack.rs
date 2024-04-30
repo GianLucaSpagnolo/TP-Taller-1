@@ -1,11 +1,9 @@
 use std::io::{Error, Read, Write};
 
-use crate::control_packets::mqtt_connect::{connect::*, variable_header_properties::*};
-
-use super::{
-    connect_reason_code::ConnectReasonMode, fixed_header::ConnackFixedHeader,
-    variable_header::ConnackVariableHeader,
-};
+use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
+use crate::control_packets::mqtt_connect::connect::Connect;
+use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, CONNACK_PACKET};
+use crate::control_packets::mqtt_packet::flags::flags_handler::create_connect_acknowledge_flags;
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
@@ -64,111 +62,92 @@ use super::{
 ///
 
 pub struct Connack {
-    pub fixed_header: ConnackFixedHeader,
+    pub fixed_header: PacketFixedHeader,
     pub variable_header: ConnackVariableHeader,
+}
+
+pub struct ConnackProperties {
+    pub session_expiry_interval: u32,
+    pub assigned_client_identifier: String,
+    pub server_keep_alive: u16,
+    pub authentication_method: String,
+    pub authentication_data: u16,
+    pub response_information: String,
+    pub server_reference: String,
+    pub reason_string: String,
+    pub receive_maximum: u16,
+    pub topic_alias_maximum: u16,
+    pub maximum_qos: u8,
+    pub retain_available: u8,
+    pub wildcard_subscription_available: u8,
+    pub subscription_identifiers_available: u8,
+    pub shared_subscription_available: u8,
+    pub user_property: (String, String),
+    pub maximum_packet_size: u32,
 }
 
 impl Connack {
     pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header_type_and_flags = self.fixed_header.packet_type_and_flags.to_be_bytes();
-        let fixed_header_length = self.fixed_header.remaining_length.to_be_bytes();
-        let variable_header_connect_acknowledge_flags_length =
-            self.variable_header.connect_acknowledge_flags.to_be_bytes();
-        let variable_header_connect_reason_code_length =
-            self.variable_header.connect_reason_code.to_be_bytes();
-        let variable_header_properties: Vec<u8> = self.variable_header.properties.as_bytes();
+        let fixed_header = self.fixed_header.as_bytes();
+        stream.write_all(&fixed_header)?;
 
-        stream.write_all(&fixed_header_type_and_flags)?;
-        stream.write_all(&fixed_header_length)?;
-        stream.write_all(&variable_header_connect_acknowledge_flags_length)?;
-        stream.write_all(&variable_header_connect_reason_code_length)?;
-        stream.write_all(&variable_header_properties)?;
+        let variable_header = self.variable_header.as_bytes();
+        stream.write_all(&variable_header)?;
 
         Ok(())
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let mut read_fixed_header_type = [0u8; 1];
-        stream.read_exact(&mut read_fixed_header_type)?;
-        let fixed_header_type = u8::from_be_bytes(read_fixed_header_type);
+        let fixed_header = PacketFixedHeader::read_from(stream)?;
 
-        let mut read_fixed_header_len = [0u8; 1];
-        stream.read_exact(&mut read_fixed_header_len)?;
-        let fixed_header_len = u8::from_be_bytes(read_fixed_header_len);
+        let variable_header = ConnackVariableHeader::read_from(stream)?;
 
-        let mut read_variable_header_acknowledge_flags = [0u8; 1];
-        stream.read_exact(&mut read_variable_header_acknowledge_flags)?;
-        let variable_header_acknowledge_flags =
-            u8::from_be_bytes(read_variable_header_acknowledge_flags);
-
-        let mut read_variable_header_reason_code = [0u8; 1];
-        stream.read_exact(&mut read_variable_header_reason_code)?;
-        let variable_header_reason_code = u8::from_be_bytes(read_variable_header_reason_code);
-
-        let mut read_variable_header_properties_length = [0u8; 8];
-        stream.read_exact(&mut read_variable_header_properties_length)?;
-        let properties_length = usize::from_be_bytes(read_variable_header_properties_length);
-
-        let mut read_variable_header_properties = vec![0u8; properties_length];
-        stream.read_exact(&mut read_variable_header_properties)?;
-        let properties =
-            match VariableHeaderProperties::from_be_bytes(&read_variable_header_properties) {
-                Ok(properties) => properties,
-                Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e)),
-            };
         let connack = Connack {
-            fixed_header: ConnackFixedHeader::new(fixed_header_type, fixed_header_len),
-            variable_header: ConnackVariableHeader::new(
-                variable_header_acknowledge_flags,
-                variable_header_reason_code,
-                properties,
-            ),
+            fixed_header,
+            variable_header,
         };
         Ok(connack)
     }
 
-    pub fn new(connect_packet: Connect) -> Self {
-        let remaining_length = 0;
-        let fixed_header = ConnackFixedHeader::new(32, remaining_length);
+    pub fn new(connect_packet: Connect) -> Result<Self, Error> {
+        //add properties
 
-        let mut prop = VariableHeaderProperties::new();
+        let connack_properties = ConnackProperties {
+            session_expiry_interval: 500,
+            assigned_client_identifier: "client".to_string(),
+            server_keep_alive: 10,
+            authentication_method: "password".to_string(),
+            authentication_data: 1,
+            response_information: "response".to_string(),
+            server_reference: "reference".to_string(),
+            reason_string: "reason".to_string(),
+            receive_maximum: 10,
+            topic_alias_maximum: 0,
+            maximum_qos: 2,
+            retain_available: 1,
+            wildcard_subscription_available: 1,
+            subscription_identifiers_available: 1,
+            shared_subscription_available: 1,
+            user_property: ("key".to_string(), "value".to_string()),
+            maximum_packet_size: 100,
+        };
 
-        prop.add_property_session_expiry_interval(500);
-        let client_id = connect_packet.payload.fields.client_id.clone();
-        prop.add_property_assigned_client_identifier(client_id);
-        prop.add_property_server_keep_alive(10);
-        prop.add_property_authentication_method("password".to_string());
-        prop.add_property_authentication_data(1);
-        prop.add_property_response_information("response".to_string());
-        prop.add_property_server_reference("reference".to_string());
-        prop.add_property_reason_string("reason".to_string());
-        prop.add_property_receive_maximum(10);
-        prop.add_property_topic_alias_maximum(0);
-        prop.add_property_maximum_qos(1);
-        prop.add_property_retain_available(1);
-        prop.add_property_user_property("key".to_string(), "value".to_string()); //7
-        prop.add_property_maximum_packet_size(100);
-        prop.add_property_wildcard_subscription_available(1);
-        prop.add_property_subscription_identifiers_available(1);
-        prop.add_property_shared_subscription_available(1);
         let connect_reason_code = determinate_reason_code(&connect_packet);
+        let connect_acknowledge_flags = create_connect_acknowledge_flags(1);
 
-        let mut connect_acknowledge_flags = 1;
-        if get_flag_clean_start(connect_packet.variable_header.connect_flags) == 1 {
-            connect_acknowledge_flags = 0;
-        }
+        let variable_header = ConnackVariableHeader::new(
+            connect_reason_code,
+            connect_acknowledge_flags,
+            connack_properties,
+        )?;
 
-        if connect_reason_code != ConnectReasonMode::Success.get_id() {
-            connect_acknowledge_flags = 0;
-        }
+        let remaining_length = variable_header.length();
+        let fixed_header = PacketFixedHeader::new(CONNACK_PACKET, remaining_length);
 
-        let variable_header =
-            ConnackVariableHeader::new(connect_reason_code, connect_acknowledge_flags, prop);
-
-        Connack {
+        Ok(Connack {
             fixed_header,
             variable_header,
-        }
+        })
     }
 }
 

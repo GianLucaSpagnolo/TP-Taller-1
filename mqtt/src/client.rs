@@ -1,6 +1,8 @@
 use std::net::TcpStream;
 
-use crate::control_packets::{mqtt_connack::connack::*, mqtt_connect::connect::*};
+use crate::control_packets::{
+    mqtt_connack::connack::*, mqtt_connect::connect::*, mqtt_packet::flags::flags_handler,
+};
 
 fn id_generator() -> String {
     //To Do
@@ -11,7 +13,7 @@ pub fn client_connect(address: &str) -> std::io::Result<()> {
     let id = id_generator();
     let mut socket = TcpStream::connect(address)?;
 
-    let connect_flags = create_connect_flags(0, 0, 1, 1, 1, 0, 0);
+    let connect_flags = flags_handler::create_connect_flags(0, 0, 1, 1, 1, 0, 0);
     let keep_alive: u16 = 0;
 
     // Deberia leerse de un archivo de configuracion
@@ -27,7 +29,7 @@ pub fn client_connect(address: &str) -> std::io::Result<()> {
         user_property_value: "property".to_string(),
         maximum_packet_size: 100,
     };
-    let connect_packet = Connect::new(id, connect_flags, keep_alive, connect_properties);
+    let connect_packet = Connect::new(id, connect_flags, keep_alive, connect_properties)?;
 
     match connect_packet.write_to(&mut socket) {
         Ok(_) => {}
@@ -43,7 +45,7 @@ pub fn client_connect(address: &str) -> std::io::Result<()> {
                 Variable header connect acknowledge flags: {:02b}\n
                 Variable header connect reason code: {:02b}\n
                 Variable header properties: {:?}",
-                p.fixed_header.packet_type_and_flags,
+                p.fixed_header.packet_type,
                 p.fixed_header.remaining_length,
                 p.variable_header.connect_acknowledge_flags,
                 p.variable_header.connect_reason_code,
