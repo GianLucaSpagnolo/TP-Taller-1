@@ -16,38 +16,6 @@ pub struct VariableHeaderProtocolName {
     pub name: String,
 }
 
-pub fn new_connect_properties(
-    connect_props: ConnectProperties,
-) -> Result<VariableHeaderProperties, Error> {
-    let mut variable_props = VariableHeaderProperties::new();
-
-    variable_props.add_u32_property(
-        SESSION_EXPIRY_INTERVAL,
-        connect_props.session_expiry_interval,
-    )?;
-    variable_props
-        .add_utf8_string_property(AUTHENTICATION_METHOD, connect_props.authentication_method)?;
-    variable_props.add_u16_property(AUTHENTICATION_DATA, connect_props.authentication_data)?;
-    variable_props.add_u8_property(
-        REQUEST_PROBLEM_INFORMATION,
-        connect_props.request_problem_information,
-    )?;
-    variable_props.add_u8_property(
-        REQUEST_RESPONSE_INFORMATION,
-        connect_props.request_response_information,
-    )?;
-    variable_props.add_u16_property(RECEIVE_MAXIMUM, connect_props.receive_maximum)?;
-    variable_props.add_u16_property(TOPIC_ALIAS_MAXIMUM, connect_props.topic_alias_maximum)?;
-    variable_props.add_utf8_pair_string_property(
-        USER_PROPERTY,
-        connect_props.user_property_key,
-        connect_props.user_property_value,
-    )?;
-    variable_props.add_u32_property(MAXIMUM_PACKET_SIZE, connect_props.maximum_packet_size)?;
-
-    Ok(variable_props)
-}
-
 pub struct ConnectVariableHeader {
     pub protocol_name: VariableHeaderProtocolName,
     pub protocol_version: u8,
@@ -118,4 +86,36 @@ impl ConnectVariableHeader {
 
         Ok(variable_header)
     }
+}
+
+pub fn new_connect_properties(
+    connect_props: ConnectProperties,
+) -> Result<VariableHeaderProperties, Error> {
+    let mut variable_props = VariableHeaderProperties::new();
+
+    variable_props.add_u32_property(
+        SESSION_EXPIRY_INTERVAL,
+        connect_props.session_expiry_interval,
+    )?;
+    variable_props
+        .add_utf8_string_property(AUTHENTICATION_METHOD, connect_props.authentication_method)?;
+    variable_props.add_u16_property(AUTHENTICATION_DATA, connect_props.authentication_data)?;
+    variable_props.add_u8_property(
+        REQUEST_PROBLEM_INFORMATION,
+        connect_props.request_problem_information,
+    )?;
+    variable_props.add_u8_property(
+        REQUEST_RESPONSE_INFORMATION,
+        connect_props.request_response_information,
+    )?;
+    variable_props.add_u16_property(RECEIVE_MAXIMUM, connect_props.receive_maximum)?;
+    variable_props.add_u16_property(TOPIC_ALIAS_MAXIMUM, connect_props.topic_alias_maximum)?;
+    variable_props.add_utf8_pair_string_property(
+        USER_PROPERTY,
+        connect_props.user_property_key,
+        connect_props.user_property_value,
+    )?;
+    variable_props.add_u32_property(MAXIMUM_PACKET_SIZE, connect_props.maximum_packet_size)?;
+
+    Ok(variable_props)
 }
