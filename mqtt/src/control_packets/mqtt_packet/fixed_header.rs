@@ -4,6 +4,7 @@ use crate::data_structures::data_types::data_representation::read_byte;
 
 pub static CONNECT_PACKET: u8 = 0x10;
 pub static CONNACK_PACKET: u8 = 0x20;
+pub static _PUBACK_PACKET: u8 = 0x40;
 
 pub struct PacketFixedHeader {
     pub packet_type: u8,
