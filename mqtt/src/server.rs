@@ -3,7 +3,9 @@ use std::net::TcpListener;
 use std::net::TcpStream;
 
 use crate::control_packets::mqtt_connack::connack::Connack;
+use crate::control_packets::mqtt_connack::connack::ConnackProperties;
 use crate::control_packets::mqtt_connect::connect::*;
+use crate::control_packets::mqtt_packet::connect_reason_code::ConnectReasonMode;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 
 pub fn server_run(address: &str) -> Result<(), Error> {
@@ -20,6 +22,33 @@ pub fn server_run(address: &str) -> Result<(), Error> {
         }
     }
     Ok(())
+}
+
+fn determinate_reason_code(connect_packet: &Connect) -> u8 {
+    if connect_packet.variable_header.protocol_name.name != *"MQTT"
+        || connect_packet.variable_header.protocol_version != 5
+    {
+        return ConnectReasonMode::UnsupportedProtocolVersion.get_id();
+    }
+
+    if flags_handler::get_connect_flag_reserved(connect_packet.variable_header.connect_flags) != 0 {
+        return ConnectReasonMode::MalformedPacket.get_id();
+    }
+
+    if flags_handler::get_connect_flag_will_qos(connect_packet.variable_header.connect_flags) != 1 {
+        return ConnectReasonMode::QoSNotSupported.get_id();
+    }
+
+    if !connect_packet
+        .payload
+        .fields
+        .client_id
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric())
+    {
+        return ConnectReasonMode::ClientIdentifierNotValid.get_id();
+    }
+    ConnectReasonMode::Success.get_id()
 }
 
 fn handle_connection(stream: &mut TcpStream) -> Result<(), Error> {
@@ -65,7 +94,35 @@ fn handle_connection(stream: &mut TcpStream) -> Result<(), Error> {
         Err(e) => return Err(e),
     };
 
-    let connack_packet = Connack::new(connect)?;
+    let connack_properties = ConnackProperties {
+        session_expiry_interval: 500,
+        assigned_client_identifier: "client".to_string(),
+        server_keep_alive: 10,
+        authentication_method: "password".to_string(),
+        authentication_data: 1,
+        response_information: "response".to_string(),
+        server_reference: "reference".to_string(),
+        reason_string: "reason".to_string(),
+        receive_maximum: 10,
+        topic_alias_maximum: 0,
+        maximum_qos: 2,
+        retain_available: 1,
+        wildcard_subscription_available: 1,
+        subscription_identifiers_available: 1,
+        shared_subscription_available: 1,
+        user_property: ("key".to_string(), "value".to_string()),
+        maximum_packet_size: 100,
+    };
+
+    let connect_acknowledge_flags = flags_handler::create_connect_acknowledge_flags(1);
+
+    let connack_reason_code = determinate_reason_code(&connect);
+
+    let connack_packet = Connack::new(
+        connack_reason_code,
+        connect_acknowledge_flags,
+        connack_properties,
+    )?;
 
     match connack_packet.write_to(stream) {
         Ok(_) => {}

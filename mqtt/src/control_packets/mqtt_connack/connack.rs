@@ -1,9 +1,7 @@
 use std::io::{Error, Read, Write};
 
-use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
-use crate::control_packets::mqtt_connect::connect::Connect;
+use super::variable_header::ConnackVariableHeader;
 use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, CONNACK_PACKET};
-use crate::control_packets::mqtt_packet::flags::flags_handler::create_connect_acknowledge_flags;
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
@@ -109,32 +107,11 @@ impl Connack {
         Ok(connack)
     }
 
-    pub fn new(connect_packet: Connect) -> Result<Self, Error> {
-        //add properties
-
-        let connack_properties = ConnackProperties {
-            session_expiry_interval: 500,
-            assigned_client_identifier: "client".to_string(),
-            server_keep_alive: 10,
-            authentication_method: "password".to_string(),
-            authentication_data: 1,
-            response_information: "response".to_string(),
-            server_reference: "reference".to_string(),
-            reason_string: "reason".to_string(),
-            receive_maximum: 10,
-            topic_alias_maximum: 0,
-            maximum_qos: 2,
-            retain_available: 1,
-            wildcard_subscription_available: 1,
-            subscription_identifiers_available: 1,
-            shared_subscription_available: 1,
-            user_property: ("key".to_string(), "value".to_string()),
-            maximum_packet_size: 100,
-        };
-
-        let connect_reason_code = determinate_reason_code(connect_packet);
-        let connect_acknowledge_flags = create_connect_acknowledge_flags(1);
-
+    pub fn new(
+        connect_reason_code: u8,
+        connect_acknowledge_flags: u8,
+        connack_properties: ConnackProperties,
+    ) -> Result<Self, Error> {
         let variable_header = ConnackVariableHeader::new(
             connect_reason_code,
             connect_acknowledge_flags,
@@ -149,9 +126,4 @@ impl Connack {
             variable_header,
         })
     }
-}
-
-fn determinate_reason_code(_connect_packet: Connect) -> u8 {
-    //Logica de validacion (FALTA)
-    ConnectReasonMode::Success.get_id()
 }
