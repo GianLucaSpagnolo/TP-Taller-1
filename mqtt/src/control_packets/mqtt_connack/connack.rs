@@ -2,11 +2,8 @@ use std::io::{Error, Read, Write};
 
 use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
 use crate::control_packets::mqtt_connect::connect::Connect;
-use crate::control_packets::mqtt_packet::fixed_header::CONNACK_PACKET;
+use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, CONNACK_PACKET};
 use crate::control_packets::mqtt_packet::flags::flags_handler::create_connect_acknowledge_flags;
-use crate::control_packets::mqtt_packet::{
-    fixed_header::PacketFixedHeader, variable_header_properties::VariableHeaderProperties,
-};
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
@@ -137,10 +134,12 @@ impl Connack {
 
         let connect_reason_code = determinate_reason_code(connect_packet);
         let connect_acknowledge_flags = create_connect_acknowledge_flags(1);
-        let prop = VariableHeaderProperties::new_connack(connack_properties)?;
 
-        let variable_header =
-            ConnackVariableHeader::new(connect_reason_code, connect_acknowledge_flags, prop);
+        let variable_header = ConnackVariableHeader::new(
+            connect_reason_code,
+            connect_acknowledge_flags,
+            connack_properties,
+        )?;
 
         let remaining_length = variable_header.length();
         let fixed_header = PacketFixedHeader::new(CONNACK_PACKET, remaining_length);

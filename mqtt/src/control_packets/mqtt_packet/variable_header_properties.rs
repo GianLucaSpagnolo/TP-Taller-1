@@ -3,12 +3,7 @@ use std::{
     string::FromUtf8Error,
 };
 
-use crate::{
-    control_packets::{
-        mqtt_connack::connack::ConnackProperties, mqtt_connect::connect::ConnectProperties,
-    },
-    data_structures::data_types::data_representation::read_byte,
-};
+use crate::data_structures::data_types::data_representation::read_byte;
 
 use super::variable_header_property::*;
 pub struct VariableHeaderProperties {
@@ -68,70 +63,6 @@ impl VariableHeaderProperties {
 
         self.properties.push(prop_result);
         Ok(())
-    }
-
-    pub fn new_connect(connect_props: ConnectProperties) -> Result<Self, Error> {
-        let mut variable_props = VariableHeaderProperties::new();
-
-        variable_props.add_u32_property(
-            SESSION_EXPIRY_INTERVAL,
-            connect_props.session_expiry_interval,
-        )?;
-        variable_props
-            .add_utf8_string_property(AUTHENTICATION_METHOD, connect_props.authentication_method)?;
-        variable_props.add_u16_property(AUTHENTICATION_DATA, connect_props.authentication_data)?;
-        variable_props.add_u8_property(
-            REQUEST_PROBLEM_INFORMATION,
-            connect_props.request_problem_information,
-        )?;
-        variable_props.add_u8_property(
-            REQUEST_RESPONSE_INFORMATION,
-            connect_props.request_response_information,
-        )?;
-        variable_props.add_u16_property(RECEIVE_MAXIMUM, connect_props.receive_maximum)?;
-        variable_props.add_u16_property(TOPIC_ALIAS_MAXIMUM, connect_props.topic_alias_maximum)?;
-        variable_props.add_utf8_pair_string_property(
-            USER_PROPERTY,
-            connect_props.user_property_key,
-            connect_props.user_property_value,
-        )?;
-        variable_props.add_u32_property(MAXIMUM_PACKET_SIZE, connect_props.maximum_packet_size)?;
-
-        Ok(variable_props)
-    }
-
-    pub fn new_connack(connack_props: ConnackProperties) -> Result<Self, Error> {
-        let mut variable_props = VariableHeaderProperties::new();
-
-        variable_props.add_u32_property(
-            SESSION_EXPIRY_INTERVAL,
-            connack_props.session_expiry_interval,
-        )?;
-        variable_props.add_utf8_string_property(
-            ASIGNED_CLIENT_IDENTIFIER,
-            connack_props.assigned_client_identifier,
-        )?;
-        variable_props.add_u16_property(SERVER_KEEP_ALIVE, connack_props.server_keep_alive)?;
-        variable_props
-            .add_utf8_string_property(AUTHENTICATION_METHOD, connack_props.authentication_method)?;
-        variable_props.add_u16_property(AUTHENTICATION_DATA, connack_props.authentication_data)?;
-        variable_props
-            .add_utf8_string_property(RESPONSE_INFORMATION, connack_props.response_information)?;
-        variable_props
-            .add_utf8_string_property(SERVER_REFERENCE, connack_props.server_reference)?;
-        variable_props.add_utf8_string_property(REASON_STRING, connack_props.reason_string)?;
-        variable_props.add_u16_property(RECEIVE_MAXIMUM, connack_props.receive_maximum)?;
-        variable_props.add_u16_property(TOPIC_ALIAS_MAXIMUM, connack_props.topic_alias_maximum)?;
-        variable_props.add_u8_property(MAXIMUM_QOS, connack_props.maximum_qos)?;
-        variable_props.add_u8_property(RETAIN_AVAILABLE, connack_props.retain_available)?;
-        variable_props.add_utf8_pair_string_property(
-            USER_PROPERTY,
-            connack_props.user_property.0,
-            connack_props.user_property.1,
-        )?;
-        variable_props.add_u32_property(MAXIMUM_PACKET_SIZE, connack_props.maximum_packet_size)?;
-
-        Ok(variable_props)
     }
 
     pub fn new() -> Self {

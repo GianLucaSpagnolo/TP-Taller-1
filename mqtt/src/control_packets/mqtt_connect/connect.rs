@@ -5,7 +5,6 @@ use std::io::Write;
 use crate::control_packets::mqtt_connect::payload::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
-use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
@@ -156,7 +155,6 @@ impl Connect {
 
         // La inicializacion de las propiedades deben estar en connect.rs (add_variable_header_properties)
         // Faltan inicializar variables de la instancia del cliente (ejemplo: autentificacion, etc.)
-        let prop = VariableHeaderProperties::new_connect(properties)?;
 
         let variable_header = ConnectVariableHeader::new(
             name.len() as u16,
@@ -164,8 +162,9 @@ impl Connect {
             PROTOCOL_VERSION,
             connect_flags,
             keep_alive,
-            prop,
-        );
+            properties,
+        )?;
+
         let payload = ConnectPayload::new(client_id);
         let remaining_length = variable_header.length() + payload.length();
         let fixed_header = PacketFixedHeader::new(CONNECT_PACKET, remaining_length);
