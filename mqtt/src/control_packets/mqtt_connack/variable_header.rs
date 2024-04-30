@@ -19,6 +19,16 @@ impl ConnackVariableHeader {
         1 + 1 + self.properties.bytes_length
     }
 
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut bytes: Vec<u8> = Vec::new();
+
+        bytes.push(self.connect_acknowledge_flags);
+        bytes.push(self.connect_reason_code);
+        bytes.extend_from_slice(&self.properties.as_bytes());
+
+        bytes
+    }
+
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let connect_acknowledge_flags = read_u8(stream)?;
         let connect_reason_code = read_u8(stream)?;

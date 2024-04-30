@@ -4,7 +4,6 @@ use crate::control_packets::mqtt_connect::connect::Connect;
 use crate::control_packets::mqtt_packet::{
     fixed_header::PacketFixedHeader, variable_header_properties::VariableHeaderProperties,
 };
-
 use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
 
 /// # FIXED HEADER: 2 BYTES
@@ -70,19 +69,11 @@ pub struct Connack {
 
 impl Connack {
     pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header_type_and_flags = self.fixed_header.packet_type.to_be_bytes();
-        let fixed_header_length = self.fixed_header.remaining_length.to_be_bytes();
-        let variable_header_connect_acknowledge_flags_length =
-            self.variable_header.connect_acknowledge_flags.to_be_bytes();
-        let variable_header_connect_reason_code_length =
-            self.variable_header.connect_reason_code.to_be_bytes();
-        let variable_header_properties: Vec<u8> = self.variable_header.properties.as_bytes();
+        let fixed_header = self.fixed_header.as_bytes();
+        stream.write_all(&fixed_header)?;
 
-        stream.write_all(&fixed_header_type_and_flags)?;
-        stream.write_all(&fixed_header_length)?;
-        stream.write_all(&variable_header_connect_acknowledge_flags_length)?;
-        stream.write_all(&variable_header_connect_reason_code_length)?;
-        stream.write_all(&variable_header_properties)?;
+        let variable_header = self.variable_header.as_bytes();
+        stream.write_all(&variable_header)?;
 
         Ok(())
     }

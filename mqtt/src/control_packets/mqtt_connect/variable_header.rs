@@ -40,6 +40,18 @@ impl ConnectVariableHeader {
         }
     }
 
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut bytes: Vec<u8> = Vec::new();
+
+        bytes.extend_from_slice(&self.protocol_name.length.to_be_bytes());
+        bytes.extend_from_slice(self.protocol_name.name.as_bytes());
+        bytes.push(self.protocol_version);
+        bytes.push(self.connect_flags);
+        bytes.extend_from_slice(&self.keep_alive.to_be_bytes());
+        bytes.extend_from_slice(&self.properties.as_bytes());
+
+        bytes
+    }
     pub fn read_from(stream: &mut dyn std::io::Read) -> Result<Self, Error> {
         let protocol_name_length = read_16(stream)?;
         let protocol_name = read_utf8(stream, protocol_name_length)?;

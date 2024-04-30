@@ -176,24 +176,11 @@ pub fn get_flag_username(flags: u8) -> u8 {
 ///
 impl Connect {
     pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header_type_and_flags = self.fixed_header.packet_type.to_be_bytes();
-        let fixed_header_length = self.fixed_header.remaining_length.to_be_bytes();
-        stream.write_all(&fixed_header_type_and_flags)?;
-        stream.write_all(&fixed_header_length)?;
+        let fixed_header = self.fixed_header.as_bytes();
+        stream.write_all(&fixed_header)?;
 
-        let variable_header_protocol_name_length =
-            self.variable_header.protocol_name.length.to_be_bytes();
-        let variable_header_protocol_name = self.variable_header.protocol_name.name.as_bytes();
-        let variable_header_protocol_version = self.variable_header.protocol_version.to_be_bytes();
-        let variable_header_connect_flags = self.variable_header.connect_flags.to_be_bytes();
-        let variable_header_keep_alive = self.variable_header.keep_alive.to_be_bytes();
-        let variable_header_properties = self.variable_header.properties.as_bytes();
-        stream.write_all(&variable_header_protocol_name_length)?;
-        stream.write_all(variable_header_protocol_name)?;
-        stream.write_all(&variable_header_protocol_version)?;
-        stream.write_all(&variable_header_connect_flags)?;
-        stream.write_all(&variable_header_keep_alive)?;
-        stream.write_all(&variable_header_properties)?;
+        let variable_header = self.variable_header.as_bytes();
+        stream.write_all(&variable_header)?;
 
         let payload_fields = self.payload.as_bytes();
         stream.write_all(&payload_fields)?;

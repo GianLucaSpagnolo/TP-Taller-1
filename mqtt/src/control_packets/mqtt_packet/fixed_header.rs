@@ -13,6 +13,15 @@ impl PacketFixedHeader {
         }
     }
 
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut bytes: Vec<u8> = Vec::new();
+
+        bytes.push(self.packet_type);
+        bytes.push(self.remaining_length);
+
+        bytes
+    }
+
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let packet_type = read_u8(stream)?;
         let remaining_length = read_u8(stream)?;
