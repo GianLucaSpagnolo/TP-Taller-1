@@ -2,6 +2,13 @@ use std::io::{Error, Read, Write};
 
 use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
 use crate::control_packets::mqtt_connect::connect::Connect;
+use crate::control_packets::mqtt_packet::variable_header_property::{
+    ASIGNED_CLIENT_IDENTIFIER, AUTHENTICATION_DATA, AUTHENTICATION_METHOD, MAXIMUM_PACKET_SIZE,
+    MAXIMUM_QOS, REASON_STRING, RECEIVE_MAXIMUM, RESPONSE_INFORMATION, RETAIN_AVAILABLE,
+    SERVER_KEEP_ALIVE, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL, SHARED_SUBSCRIPTION_AVAILABLE,
+    SUBSCRIPTION_IDENTIFIERS_AVAILABLE, TOPIC_ALIAS_MAXIMUM, USER_PROPERTY,
+    WILDCARD_SUBSCRIPTION_AVAILABLE,
+};
 use crate::control_packets::mqtt_packet::{
     fixed_header::PacketFixedHeader, variable_header_properties::VariableHeaderProperties,
 };
@@ -90,28 +97,28 @@ impl Connack {
         Ok(connack)
     }
 
-    pub fn new(connect_packet: Connect) -> Self {
+    pub fn new(connect_packet: Connect) -> Result<Self, Error> {
         //add properties
 
         let mut prop = VariableHeaderProperties::new();
 
-        prop.add_property_session_expiry_interval(500);
-        prop.add_property_assigned_client_identifier("client".to_string());
-        prop.add_property_server_keep_alive(10);
-        prop.add_property_authentication_method("password".to_string());
-        prop.add_property_authentication_data(1);
-        prop.add_property_response_information("response".to_string());
-        prop.add_property_server_reference("reference".to_string());
-        prop.add_property_reason_string("reason".to_string());
-        prop.add_property_receive_maximum(10);
-        prop.add_property_topic_alias_maximum(0);
-        prop.add_property_maximum_qos(2);
-        prop.add_property_retain_available(1);
-        prop.add_property_user_property("key".to_string(), "value".to_string()); //7
-        prop.add_property_maximum_packet_size(100);
-        prop.add_property_wildcard_subscription_available(1);
-        prop.add_property_subscription_identifiers_available(1);
-        prop.add_property_shared_subscription_available(1);
+        prop.add_u32_property(SESSION_EXPIRY_INTERVAL, 500)?;
+        prop.add_utf8_string_property(ASIGNED_CLIENT_IDENTIFIER, "client".to_string())?;
+        prop.add_u16_property(SERVER_KEEP_ALIVE, 10)?;
+        prop.add_utf8_string_property(AUTHENTICATION_METHOD, "password".to_string())?;
+        prop.add_u16_property(AUTHENTICATION_DATA, 1)?;
+        prop.add_utf8_string_property(RESPONSE_INFORMATION, "response".to_string())?;
+        prop.add_utf8_string_property(SERVER_REFERENCE, "reference".to_string())?;
+        prop.add_utf8_string_property(REASON_STRING, "reason".to_string())?;
+        prop.add_u16_property(RECEIVE_MAXIMUM, 10)?;
+        prop.add_u16_property(TOPIC_ALIAS_MAXIMUM, 0)?;
+        prop.add_u8_property(MAXIMUM_QOS, 2)?;
+        prop.add_u8_property(RETAIN_AVAILABLE, 1)?;
+        prop.add_utf8_pair_string_property(USER_PROPERTY, "key".to_string(), "value".to_string())?;
+        prop.add_u32_property(MAXIMUM_PACKET_SIZE, 100)?;
+        prop.add_u8_property(WILDCARD_SUBSCRIPTION_AVAILABLE, 1)?;
+        prop.add_u8_property(SUBSCRIPTION_IDENTIFIERS_AVAILABLE, 1)?;
+        prop.add_u8_property(SHARED_SUBSCRIPTION_AVAILABLE, 1)?;
 
         let connect_reason_code = determinate_reason_code(connect_packet);
         let connect_acknowledge_flags = create_connect_acknowledge_flags(1);
@@ -122,10 +129,10 @@ impl Connack {
         let remaining_length = variable_header.length();
         let fixed_header = PacketFixedHeader::new(32, remaining_length);
 
-        Connack {
+        Ok(Connack {
             fixed_header,
             variable_header,
-        }
+        })
     }
 }
 

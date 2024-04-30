@@ -1,6 +1,6 @@
 use std::io::{Error, Read};
 
-use crate::data_structures::data_types::data_types::read_byte;
+use crate::data_structures::data_types::data_representation::read_byte;
 
 pub struct PacketFixedHeader {
     pub packet_type: u8,
@@ -16,12 +16,7 @@ impl PacketFixedHeader {
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
-        let mut bytes: Vec<u8> = Vec::new();
-
-        bytes.push(self.packet_type);
-        bytes.push(self.remaining_length);
-
-        bytes
+        vec![self.packet_type, self.remaining_length]
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {

@@ -210,25 +210,12 @@ impl Connect {
         connect_flags: u8,
         keep_alive: u16,
         properties: ConnectProperties,
-    ) -> Self {
+    ) -> Result<Self, Error> {
         let name = PROTOCOL_NAME.to_string();
 
         // La inicializacion de las propiedades deben estar en connect.rs (add_variable_header_properties)
         // Faltan inicializar variables de la instancia del cliente (ejemplo: autentificacion, etc.)
-        let mut prop = VariableHeaderProperties::new();
-
-        prop.add_property_session_expiry_interval(properties.session_expiry_interval);
-        prop.add_property_authentication_method(properties.authentication_method);
-        prop.add_property_authentication_data(properties.authentication_data);
-        prop.add_property_request_problem_information(properties.request_problem_information);
-        prop.add_property_request_response_information(properties.request_response_information);
-        prop.add_property_receive_maximum(properties.receive_maximum);
-        prop.add_property_topic_alias_maximum(properties.topic_alias_maximum);
-        prop.add_property_user_property(
-            properties.user_property_key,
-            properties.user_property_value,
-        );
-        prop.add_property_maximum_packet_size(properties.maximum_packet_size);
+        let prop = VariableHeaderProperties::new_connect(properties)?;
 
         let variable_header = ConnectVariableHeader::new(
             name.len() as u16,
@@ -242,10 +229,10 @@ impl Connect {
         let remaining_length = variable_header.length() + payload.length();
         let fixed_header = PacketFixedHeader::new(16, remaining_length);
 
-        Connect {
+        Ok(Connect {
             fixed_header,
             variable_header,
             payload,
-        }
+        })
     }
 }

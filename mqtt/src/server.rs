@@ -64,7 +64,7 @@ fn handle_connection(stream: &mut TcpStream) -> Result<(), Error> {
         Err(e) => return Err(e),
     };
 
-    let connack_packet = Connack::new(connect);
+    let connack_packet = Connack::new(connect)?;
 
     match connack_packet.write_to(stream) {
         Ok(_) => {}

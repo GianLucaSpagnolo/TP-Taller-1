@@ -2,7 +2,7 @@ use std::io::Error;
 
 use crate::{
     control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties,
-    data_structures::data_types::data_types::{
+    data_structures::data_types::data_representation::{
         read_byte, read_two_byte_integer, read_utf8_encoded_string,
     },
 };

@@ -15,6 +15,7 @@ mod control_packets {
     pub mod mqtt_packet {
         pub mod fixed_header;
         pub mod variable_header_properties;
+        pub mod variable_header_property;
     }
 }
 

@@ -27,7 +27,7 @@ pub fn client_connect(address: &str) -> std::io::Result<()> {
         user_property_value: "property".to_string(),
         maximum_packet_size: 100,
     };
-    let connect_packet = Connect::new(id, connect_flags, keep_alive, connect_properties);
+    let connect_packet = Connect::new(id, connect_flags, keep_alive, connect_properties)?;
 
     match connect_packet.write_to(&mut socket) {
         Ok(_) => {}

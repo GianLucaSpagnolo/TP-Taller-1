@@ -2,7 +2,7 @@ use std::io::{Error, Read};
 
 use crate::{
     control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties,
-    data_structures::data_types::data_types::read_byte,
+    data_structures::data_types::data_representation::read_byte,
 };
 
 pub struct ConnackVariableHeader {
