@@ -115,3 +115,53 @@ impl _Puback {
         })
     }
 }
+
+
+#[cfg(test)]
+mod test {
+    use crate::control_packets::mqtt_packet::variable_header_property::{VariableHeaderProperty, REASON_STRING, USER_PROPERTY};
+
+    use super::*;
+
+    #[test]
+    fn test_puback() {
+        let puback = _Puback::_new(
+            1,
+            0,
+            _PubackProperties {
+                reason_string: "reason".to_string(),
+                user_property: ("name".to_string(), "value".to_string()),
+            },
+        )
+        .unwrap();
+
+        let mut buf = Vec::new();
+        puback._write_to(&mut buf).unwrap();
+
+        let mut buf = std::io::Cursor::new(buf);
+        let puback = _Puback::_read_from(&mut buf).unwrap();
+
+        assert_eq!(puback.fixed_header.packet_type, _PUBACK_PACKET);
+        assert_eq!(puback.variable_header.packet_id, 1);
+        assert_eq!(puback.variable_header.puback_reason_code, 0);
+
+        let props = &puback.variable_header.properties.properties;
+
+        for i in 0..props.len() {
+            match &props[i as usize] {
+                VariableHeaderProperty::ReasonString(str) => {
+                    if props[i as usize].id() == REASON_STRING {
+                        assert_eq!(str, "reason");
+                    }
+                }
+                VariableHeaderProperty::UserProperty( value) => {
+                    if props[i as usize].id() == USER_PROPERTY {
+                        assert_eq!(value.0, "name");
+                        assert_eq!(value.1, "value");
+                    }
+                }
+                _ => panic!("Invalid property"),
+            }
+        }
+    }
+}
