@@ -1,8 +1,6 @@
 use std::io::{Error, Read, Write};
 
-use crate::control_packets::mqtt_connect::{
-    connect::Connect, variable_header_properties::VariableHeaderProperties,
-};
+use crate::control_packets::mqtt_connect::{connect::*, variable_header_properties::*};
 
 use super::{
     connect_reason_code::ConnectReasonMode, fixed_header::ConnackFixedHeader,
@@ -130,14 +128,14 @@ impl Connack {
     }
 
     pub fn new(connect_packet: Connect) -> Self {
-        //add properties
         let remaining_length = 0;
         let fixed_header = ConnackFixedHeader::new(32, remaining_length);
 
         let mut prop = VariableHeaderProperties::new();
 
         prop.add_property_session_expiry_interval(500);
-        prop.add_property_assigned_client_identifier("client".to_string());
+        let client_id = connect_packet.payload.fields.client_id.clone();
+        prop.add_property_assigned_client_identifier(client_id);
         prop.add_property_server_keep_alive(10);
         prop.add_property_authentication_method("password".to_string());
         prop.add_property_authentication_data(1);
@@ -146,16 +144,23 @@ impl Connack {
         prop.add_property_reason_string("reason".to_string());
         prop.add_property_receive_maximum(10);
         prop.add_property_topic_alias_maximum(0);
-        prop.add_property_maximum_qos(2);
+        prop.add_property_maximum_qos(1);
         prop.add_property_retain_available(1);
         prop.add_property_user_property("key".to_string(), "value".to_string()); //7
         prop.add_property_maximum_packet_size(100);
         prop.add_property_wildcard_subscription_available(1);
         prop.add_property_subscription_identifiers_available(1);
         prop.add_property_shared_subscription_available(1);
+        let connect_reason_code = determinate_reason_code(&connect_packet);
 
-        let connect_reason_code = determinate_reason_code(connect_packet);
-        let connect_acknowledge_flags = create_connect_acknowledge_flags(1);
+        let mut connect_acknowledge_flags = 1;
+        if get_flag_clean_start(connect_packet.variable_header.connect_flags) == 1 {
+            connect_acknowledge_flags = 0;
+        }
+
+        if connect_reason_code != ConnectReasonMode::Success.get_id() {
+            connect_acknowledge_flags = 0;
+        }
 
         let variable_header =
             ConnackVariableHeader::new(connect_reason_code, connect_acknowledge_flags, prop);
@@ -167,13 +172,29 @@ impl Connack {
     }
 }
 
-fn determinate_reason_code(_connect_packet: Connect) -> u8 {
-    //Logica de validacion (FALTA)
-    ConnectReasonMode::Success.get_id()
-}
+fn determinate_reason_code(connect_packet: &Connect) -> u8 {
+    if connect_packet.variable_header.protocol_name.name != *"MQTT"
+        || connect_packet.variable_header.protocol_version != 5
+    {
+        return ConnectReasonMode::UnsupportedProtocolVersion.get_id();
+    }
 
-fn create_connect_acknowledge_flags(session_present_flag: u8) -> u8 {
-    let mut connect_acknowledge_flags: u8 = 0;
-    connect_acknowledge_flags |= session_present_flag;
-    connect_acknowledge_flags
+    if get_flag_reserved(connect_packet.variable_header.connect_flags) != 0 {
+        return ConnectReasonMode::MalformedPacket.get_id();
+    }
+
+    if get_flag_will_qos(connect_packet.variable_header.connect_flags) != 1 {
+        return ConnectReasonMode::QoSNotSupported.get_id();
+    }
+
+    if !connect_packet
+        .payload
+        .fields
+        .client_id
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric())
+    {
+        return ConnectReasonMode::ClientIdentifierNotValid.get_id();
+    }
+    ConnectReasonMode::Success.get_id()
 }
