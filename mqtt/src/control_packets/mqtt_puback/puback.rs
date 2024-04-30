@@ -149,7 +149,7 @@ mod test {
         let props = &puback.variable_header.properties.properties;
 
         for i in 0..props.len() {
-            match &props[i as usize] {
+            match &props[i] {
                 VariableHeaderProperty::ReasonString(str) => {
                     if props[i as usize].id() == REASON_STRING {
                         assert_eq!(str, "reason");
