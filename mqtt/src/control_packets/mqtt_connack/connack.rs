@@ -3,13 +3,6 @@ use std::io::{Error, Read, Write};
 use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
 use crate::control_packets::mqtt_connect::connect::Connect;
 use crate::control_packets::mqtt_packet::flags::flags_handler::create_connect_acknowledge_flags;
-use crate::control_packets::mqtt_packet::variable_header_property::{
-    ASIGNED_CLIENT_IDENTIFIER, AUTHENTICATION_DATA, AUTHENTICATION_METHOD, MAXIMUM_PACKET_SIZE,
-    MAXIMUM_QOS, REASON_STRING, RECEIVE_MAXIMUM, RESPONSE_INFORMATION, RETAIN_AVAILABLE,
-    SERVER_KEEP_ALIVE, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL, SHARED_SUBSCRIPTION_AVAILABLE,
-    SUBSCRIPTION_IDENTIFIERS_AVAILABLE, TOPIC_ALIAS_MAXIMUM, USER_PROPERTY,
-    WILDCARD_SUBSCRIPTION_AVAILABLE,
-};
 use crate::control_packets::mqtt_packet::{
     fixed_header::PacketFixedHeader, variable_header_properties::VariableHeaderProperties,
 };
@@ -70,6 +63,26 @@ use crate::control_packets::mqtt_packet::{
 /// 39 - 0x27 - Maximum Packet Size - Four Byte Integer (u32)
 ///
 
+pub struct ConnackProperties {
+    pub session_expiry_interval: u32,
+    pub assigned_client_identifier: String,
+    pub server_keep_alive: u16,
+    pub authentication_method: String,
+    pub authentication_data: u16,
+    pub response_information: String,
+    pub server_reference: String,
+    pub reason_string: String,
+    pub receive_maximum: u16,
+    pub topic_alias_maximum: u16,
+    pub maximum_qos: u8,
+    pub retain_available: u8,
+    pub wildcard_subscription_available: u8,
+    pub subscription_identifiers_available: u8,
+    pub shared_subscription_available: u8,
+    pub user_property: (String, String),
+    pub maximum_packet_size: u32,
+}
+
 pub struct Connack {
     pub fixed_header: PacketFixedHeader,
     pub variable_header: ConnackVariableHeader,
@@ -101,28 +114,29 @@ impl Connack {
     pub fn new(connect_packet: Connect) -> Result<Self, Error> {
         //add properties
 
-        let mut prop = VariableHeaderProperties::new();
-
-        prop.add_u32_property(SESSION_EXPIRY_INTERVAL, 500)?;
-        prop.add_utf8_string_property(ASIGNED_CLIENT_IDENTIFIER, "client".to_string())?;
-        prop.add_u16_property(SERVER_KEEP_ALIVE, 10)?;
-        prop.add_utf8_string_property(AUTHENTICATION_METHOD, "password".to_string())?;
-        prop.add_u16_property(AUTHENTICATION_DATA, 1)?;
-        prop.add_utf8_string_property(RESPONSE_INFORMATION, "response".to_string())?;
-        prop.add_utf8_string_property(SERVER_REFERENCE, "reference".to_string())?;
-        prop.add_utf8_string_property(REASON_STRING, "reason".to_string())?;
-        prop.add_u16_property(RECEIVE_MAXIMUM, 10)?;
-        prop.add_u16_property(TOPIC_ALIAS_MAXIMUM, 0)?;
-        prop.add_u8_property(MAXIMUM_QOS, 2)?;
-        prop.add_u8_property(RETAIN_AVAILABLE, 1)?;
-        prop.add_utf8_pair_string_property(USER_PROPERTY, "key".to_string(), "value".to_string())?;
-        prop.add_u32_property(MAXIMUM_PACKET_SIZE, 100)?;
-        prop.add_u8_property(WILDCARD_SUBSCRIPTION_AVAILABLE, 1)?;
-        prop.add_u8_property(SUBSCRIPTION_IDENTIFIERS_AVAILABLE, 1)?;
-        prop.add_u8_property(SHARED_SUBSCRIPTION_AVAILABLE, 1)?;
+        let connack_properties = ConnackProperties {
+            session_expiry_interval: 500,
+            assigned_client_identifier: "client".to_string(),
+            server_keep_alive: 10,
+            authentication_method: "password".to_string(),
+            authentication_data: 1,
+            response_information: "response".to_string(),
+            server_reference: "reference".to_string(),
+            reason_string: "reason".to_string(),
+            receive_maximum: 10,
+            topic_alias_maximum: 0,
+            maximum_qos: 2,
+            retain_available: 1,
+            wildcard_subscription_available: 1,
+            subscription_identifiers_available: 1,
+            shared_subscription_available: 1,
+            user_property: ("key".to_string(), "value".to_string()),
+            maximum_packet_size: 100,
+        };
 
         let connect_reason_code = determinate_reason_code(connect_packet);
         let connect_acknowledge_flags = create_connect_acknowledge_flags(1);
+        let prop = VariableHeaderProperties::new_connack(connack_properties)?;
 
         let variable_header =
             ConnackVariableHeader::new(connect_reason_code, connect_acknowledge_flags, prop);

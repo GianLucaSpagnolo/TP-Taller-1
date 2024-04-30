@@ -7,28 +7,6 @@ use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
-static PROTOCOL_NAME: &str = "MQTT";
-static PROTOCOL_VERSION: u8 = 5;
-
-pub struct Connect {
-    pub fixed_header: PacketFixedHeader,
-    pub variable_header: ConnectVariableHeader,
-    pub payload: ConnectPayload,
-}
-
-pub struct ConnectProperties {
-    pub session_expiry_interval: u32,
-    pub authentication_method: String,
-    pub authentication_data: u16,
-    pub request_problem_information: u8,
-    pub request_response_information: u8,
-    pub receive_maximum: u16,
-    pub topic_alias_maximum: u16,
-    pub user_property_key: String,
-    pub user_property_value: String,
-    pub maximum_packet_size: u32,
-}
-
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
 /// 4 bits mas significativos: MQTT Control Packet type
@@ -114,6 +92,29 @@ pub struct ConnectProperties {
 /// Username (Connect Flag - Username = 1)
 /// Password (Connect Flag - Password = 1)
 ///
+
+static PROTOCOL_NAME: &str = "MQTT";
+static PROTOCOL_VERSION: u8 = 5;
+
+pub struct Connect {
+    pub fixed_header: PacketFixedHeader,
+    pub variable_header: ConnectVariableHeader,
+    pub payload: ConnectPayload,
+}
+
+pub struct ConnectProperties {
+    pub session_expiry_interval: u32,
+    pub authentication_method: String,
+    pub authentication_data: u16,
+    pub request_problem_information: u8,
+    pub request_response_information: u8,
+    pub receive_maximum: u16,
+    pub topic_alias_maximum: u16,
+    pub user_property_key: String,
+    pub user_property_value: String,
+    pub maximum_packet_size: u32,
+}
+
 impl Connect {
     pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let fixed_header = self.fixed_header.as_bytes();

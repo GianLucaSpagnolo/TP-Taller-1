@@ -1,6 +1,8 @@
 use std::net::TcpStream;
 
-use crate::control_packets::{mqtt_connack::connack::*, mqtt_connect::connect::*, mqtt_packet::flags::flags_handler};
+use crate::control_packets::{
+    mqtt_connack::connack::*, mqtt_connect::connect::*, mqtt_packet::flags::flags_handler,
+};
 
 fn id_generator() -> String {
     //To Do

@@ -1,4 +1,4 @@
-pub mod flags_handler{
+pub mod flags_handler {
 
     fn apply_mask_to_n_bits(flags: u8, shifts: u8, len: u8) -> u8 {
         let mask = (1 << len) - 1;
@@ -71,5 +71,4 @@ pub mod flags_handler{
         connect_flags |= username << 7;
         connect_flags
     }
-
 }
