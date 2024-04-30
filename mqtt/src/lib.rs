@@ -18,6 +18,11 @@ mod control_packets {
         pub mod variable_header_properties;
         pub mod variable_header_property;
     }
+
+    pub mod mqtt_puback {
+        pub mod puback;
+        pub mod variable_header;
+    }
 }
 
 mod data_structures {
