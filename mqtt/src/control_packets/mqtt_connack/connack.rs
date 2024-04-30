@@ -3,7 +3,7 @@ use std::io::{Error, Read, Write};
 use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
 use crate::control_packets::mqtt_connect::connect::Connect;
 use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, CONNACK_PACKET};
-use crate::control_packets::mqtt_packet::flags::flags_handler::create_connect_acknowledge_flags;
+use crate::control_packets::mqtt_packet::flags::flags_handler;
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
@@ -133,7 +133,7 @@ impl Connack {
         };
 
         let connect_reason_code = determinate_reason_code(&connect_packet);
-        let connect_acknowledge_flags = create_connect_acknowledge_flags(1);
+        let connect_acknowledge_flags = flags_handler::create_connect_acknowledge_flags(1);
 
         let variable_header = ConnackVariableHeader::new(
             connect_reason_code,
@@ -158,11 +158,11 @@ fn determinate_reason_code(connect_packet: &Connect) -> u8 {
         return ConnectReasonMode::UnsupportedProtocolVersion.get_id();
     }
 
-    if get_flag_reserved(connect_packet.variable_header.connect_flags) != 0 {
+    if flags_handler::get_connect_flag_reserved(connect_packet.variable_header.connect_flags) != 0 {
         return ConnectReasonMode::MalformedPacket.get_id();
     }
 
-    if get_flag_will_qos(connect_packet.variable_header.connect_flags) != 1 {
+    if flags_handler::get_connect_flag_will_qos(connect_packet.variable_header.connect_flags) != 1 {
         return ConnectReasonMode::QoSNotSupported.get_id();
     }
 
