@@ -2,6 +2,7 @@ use std::io::{Error, Read, Write};
 
 use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
 use crate::control_packets::mqtt_connect::connect::Connect;
+use crate::control_packets::mqtt_packet::flags::flags_handler::create_connect_acknowledge_flags;
 use crate::control_packets::mqtt_packet::variable_header_property::{
     ASIGNED_CLIENT_IDENTIFIER, AUTHENTICATION_DATA, AUTHENTICATION_METHOD, MAXIMUM_PACKET_SIZE,
     MAXIMUM_QOS, REASON_STRING, RECEIVE_MAXIMUM, RESPONSE_INFORMATION, RETAIN_AVAILABLE,
@@ -139,10 +140,4 @@ impl Connack {
 fn determinate_reason_code(_connect_packet: Connect) -> u8 {
     //Logica de validacion (FALTA)
     ConnectReasonMode::Success.get_id()
-}
-
-fn create_connect_acknowledge_flags(session_present_flag: u8) -> u8 {
-    let mut connect_acknowledge_flags: u8 = 0;
-    connect_acknowledge_flags |= session_present_flag;
-    connect_acknowledge_flags
 }

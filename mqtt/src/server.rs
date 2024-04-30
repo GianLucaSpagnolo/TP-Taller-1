@@ -4,6 +4,7 @@ use std::net::TcpStream;
 
 use crate::control_packets::mqtt_connack::connack::Connack;
 use crate::control_packets::mqtt_connect::connect::*;
+use crate::control_packets::mqtt_packet::flags::flags_handler;
 
 pub fn server_run(address: &str) -> Result<(), Error> {
     let listener = match TcpListener::bind(address) {
@@ -47,13 +48,13 @@ fn handle_connection(stream: &mut TcpStream) -> Result<(), Error> {
                 p.variable_header.protocol_name.length,
                 p.variable_header.protocol_name.name,
                 p.variable_header.protocol_version,
-                get_flag_reserved(p.variable_header.connect_flags),
-                get_flag_clean_start(p.variable_header.connect_flags),
-                get_flag_will_flag(p.variable_header.connect_flags),
-                get_flag_will_qos(p.variable_header.connect_flags),
-                get_flag_will_retain(p.variable_header.connect_flags),
-                get_flag_password(p.variable_header.connect_flags),
-                get_flag_username(p.variable_header.connect_flags),
+                flags_handler::get_connect_flag_reserved(p.variable_header.connect_flags),
+                flags_handler::get_connect_flag_clean_start(p.variable_header.connect_flags),
+                flags_handler::get_connect_flag_will_flag(p.variable_header.connect_flags),
+                flags_handler::get_connect_flag_will_qos(p.variable_header.connect_flags),
+                flags_handler::get_connect_flag_will_retain(p.variable_header.connect_flags),
+                flags_handler::get_connect_flag_password(p.variable_header.connect_flags),
+                flags_handler::get_connect_flag_username(p.variable_header.connect_flags),
                 p.variable_header.keep_alive,
                 p.variable_header.properties.properties.len(),
                 p.variable_header.properties.properties,

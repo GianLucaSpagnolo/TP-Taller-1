@@ -1,6 +1,6 @@
 use std::net::TcpStream;
 
-use crate::control_packets::{mqtt_connack::connack::*, mqtt_connect::connect::*};
+use crate::control_packets::{mqtt_connack::connack::*, mqtt_connect::connect::*, mqtt_packet::flags::flags_handler};
 
 fn id_generator() -> String {
     //To Do
@@ -11,7 +11,7 @@ pub fn client_connect(address: &str) -> std::io::Result<()> {
     let id = id_generator();
     let mut socket = TcpStream::connect(address)?;
 
-    let connect_flags = create_connect_flags(0, 0, 1, 1, 1, 0, 0);
+    let connect_flags = flags_handler::create_connect_flags(0, 0, 1, 1, 1, 0, 0);
     let keep_alive: u16 = 0;
 
     // Deberia leerse de un archivo de configuracion
