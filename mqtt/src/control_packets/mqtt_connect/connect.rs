@@ -168,7 +168,7 @@ impl Connect {
         );
         let payload = ConnectPayload::new(client_id);
         let remaining_length = variable_header.length() + payload.length();
-        let fixed_header = PacketFixedHeader::new(16, remaining_length);
+        let fixed_header = PacketFixedHeader::new(CONNECT_PACKET, remaining_length);
 
         Ok(Connect {
             fixed_header,

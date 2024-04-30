@@ -2,6 +2,7 @@ use std::io::{Error, Read, Write};
 
 use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
 use crate::control_packets::mqtt_connect::connect::Connect;
+use crate::control_packets::mqtt_packet::fixed_header::CONNACK_PACKET;
 use crate::control_packets::mqtt_packet::flags::flags_handler::create_connect_acknowledge_flags;
 use crate::control_packets::mqtt_packet::{
     fixed_header::PacketFixedHeader, variable_header_properties::VariableHeaderProperties,
@@ -63,6 +64,11 @@ use crate::control_packets::mqtt_packet::{
 /// 39 - 0x27 - Maximum Packet Size - Four Byte Integer (u32)
 ///
 
+pub struct Connack {
+    pub fixed_header: PacketFixedHeader,
+    pub variable_header: ConnackVariableHeader,
+}
+
 pub struct ConnackProperties {
     pub session_expiry_interval: u32,
     pub assigned_client_identifier: String,
@@ -81,11 +87,6 @@ pub struct ConnackProperties {
     pub shared_subscription_available: u8,
     pub user_property: (String, String),
     pub maximum_packet_size: u32,
-}
-
-pub struct Connack {
-    pub fixed_header: PacketFixedHeader,
-    pub variable_header: ConnackVariableHeader,
 }
 
 impl Connack {
@@ -142,7 +143,7 @@ impl Connack {
             ConnackVariableHeader::new(connect_reason_code, connect_acknowledge_flags, prop);
 
         let remaining_length = variable_header.length();
-        let fixed_header = PacketFixedHeader::new(32, remaining_length);
+        let fixed_header = PacketFixedHeader::new(CONNACK_PACKET, remaining_length);
 
         Ok(Connack {
             fixed_header,
