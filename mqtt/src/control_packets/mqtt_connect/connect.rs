@@ -2,11 +2,9 @@ use std::io::Error;
 use std::io::Read;
 use std::io::Write;
 
-
-use crate::control_packets::mqtt_connack::variable_header;
-use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_connect::connect_payload::*;
-use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
+use crate::control_packets::mqtt_connect::variable_header::*;
+use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
 static PROTOCOL_NAME: &str = "MQTT";
@@ -204,71 +202,18 @@ impl Connect {
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Connect, std::io::Error> {
-        let mut read_fixed_header_type = [0u8; 1];
-        stream.read_exact(&mut read_fixed_header_type)?;
-        let fixed_header_type = u8::from_be_bytes(read_fixed_header_type);
+        let fixed_header = PacketFixedHeader::read_from(stream)?;
 
-        let mut read_fixed_header_len = [0u8; 1];
-        stream.read_exact(&mut read_fixed_header_len)?;
-        let fixed_header_len = u8::from_be_bytes(read_fixed_header_len);
+        let variable_header = ConnectVariableHeader::read_from(stream)?;
 
-        let mut read_variable_header_protocol_name_length = [0u8; 2];
-        stream.read_exact(&mut read_variable_header_protocol_name_length)?;
-        let protocol_name_length = u16::from_be_bytes(read_variable_header_protocol_name_length);
+        let payload_length = fixed_header.remaining_length - variable_header.length();
 
-        let mut read_variable_header_protocol_name = vec![0u8; protocol_name_length as usize];
-        stream.read_exact(&mut read_variable_header_protocol_name)?;
+        let payload = ConnectPayload::read_from(stream, payload_length)?;
 
-        let protocol_name = match String::from_utf8(read_variable_header_protocol_name) {
-            Ok(protocol_name) => protocol_name,
-            Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e)),
-        };
-
-        let mut read_variable_header_protocol_version = [0u8; 1];
-        stream.read_exact(&mut read_variable_header_protocol_version)?;
-        let protocol_version = u8::from_be_bytes(read_variable_header_protocol_version);
-
-        let mut read_variable_header_connect_flags = [0u8; 1];
-        stream.read_exact(&mut read_variable_header_connect_flags)?;
-        let connect_flags = u8::from_be_bytes(read_variable_header_connect_flags);
-
-        let mut read_variable_header_keep_alive = [0u8; 2];
-        stream.read_exact(&mut read_variable_header_keep_alive)?;
-        let keep_alive = u16::from_be_bytes(read_variable_header_keep_alive);
-
-        let mut read_variable_header_properties_length = [0u8; 1];
-        stream.read_exact(&mut read_variable_header_properties_length)?;
-        let properties_length = u8::from_be_bytes(read_variable_header_properties_length);
-        
-        let mut read_variable_header_properties = vec![0u8; properties_length as usize];
-        stream.read_exact(&mut read_variable_header_properties)?;
-        let properties =
-        match VariableHeaderProperties::from_be_bytes(&read_variable_header_properties) {
-            Ok(properties) => properties,
-            Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e)),
-        };
-
-        let variable_header = ConnectVariableHeader::new(
-            protocol_name_length,
-            protocol_name,
-            protocol_version,
-            connect_flags,
-            keep_alive,
-            properties,
-        );
-
-        let payload_length = fixed_header_len - variable_header.length();  
-        
-        let mut read_payload_client_id = vec![0u8; payload_length as usize];
-        stream.read_exact(&mut read_payload_client_id)?;
-        let payload_client_id = String::from_utf8(read_payload_client_id).unwrap();
-        
-        println!("Payload length: {}", payload_length);
-        
         let connect = Connect {
-            fixed_header: PacketFixedHeader::new(fixed_header_type, fixed_header_len),
+            fixed_header,
             variable_header,
-            payload: ConnectPayload::new(payload_client_id),
+            payload,
         };
         Ok(connect)
     }

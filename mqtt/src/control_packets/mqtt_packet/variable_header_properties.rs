@@ -1,4 +1,7 @@
-use std::string::FromUtf8Error;
+use std::{
+    io::{Error, Read},
+    string::FromUtf8Error,
+};
 
 #[derive(Debug)]
 pub enum VariableHeaderProperty {
@@ -200,7 +203,7 @@ impl VariableHeaderProperties {
 
     /// PROPERTY: USER PROPERTY
     pub fn add_property_user_property(&mut self, key: String, value: String) {
-        self.bytes_length += 5 + key.len() as u8 + value.len()  as u8; // OJO
+        self.bytes_length += 5 + key.len() as u8 + value.len() as u8; // OJO
         self.properties.push(VariableHeaderProperty::UserProperty {
             id: 38,
             property: (key, value),
@@ -571,5 +574,19 @@ impl VariableHeaderProperties {
             bytes_length: properties.len() as u8,
             properties: properties_vec,
         })
+    }
+
+    pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+        let mut properties_len_buff = [0u8; 1];
+        stream.read_exact(&mut properties_len_buff)?;
+        let properties_length = u8::from_be_bytes(properties_len_buff);
+
+        let mut properties_buff = vec![0u8; properties_length as usize];
+        stream.read_exact(&mut properties_buff)?;
+
+        match VariableHeaderProperties::from_be_bytes(&properties_buff) {
+            Ok(properties) => Ok(properties),
+            Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e)),
+        }
     }
 }

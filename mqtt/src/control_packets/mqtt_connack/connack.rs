@@ -1,10 +1,11 @@
 use std::io::{Error, Read, Write};
 
-use crate::control_packets::{mqtt_connect::{connect::Connect, connect_payload::ConnectPayloadFields}, mqtt_packet::{fixed_header::PacketFixedHeader, variable_header_properties::VariableHeaderProperties}};
-
-use super::{
-    connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader
+use crate::control_packets::mqtt_connect::connect::Connect;
+use crate::control_packets::mqtt_packet::{
+    fixed_header::PacketFixedHeader, variable_header_properties::VariableHeaderProperties,
 };
+
+use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
@@ -87,50 +88,22 @@ impl Connack {
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let mut read_fixed_header_type = [0u8; 1];
-        stream.read_exact(&mut read_fixed_header_type)?;
-        let fixed_header_type = u8::from_be_bytes(read_fixed_header_type);
+        let fixed_header = PacketFixedHeader::read_from(stream)?;
 
-        let mut read_fixed_header_len = [0u8; 1];
-        stream.read_exact(&mut read_fixed_header_len)?;
-        let fixed_header_len = u8::from_be_bytes(read_fixed_header_len);
+        let variable_header = ConnackVariableHeader::read_from(stream)?;
 
-        let mut read_variable_header_acknowledge_flags = [0u8; 1];
-        stream.read_exact(&mut read_variable_header_acknowledge_flags)?;
-        let variable_header_acknowledge_flags =
-            u8::from_be_bytes(read_variable_header_acknowledge_flags);
-
-        let mut read_variable_header_reason_code = [0u8; 1];
-        stream.read_exact(&mut read_variable_header_reason_code)?;
-        let variable_header_reason_code = u8::from_be_bytes(read_variable_header_reason_code);
-
-        let mut read_variable_header_properties_length = [0u8; 1];
-        stream.read_exact(&mut read_variable_header_properties_length)?;
-        let properties_length = u8::from_be_bytes(read_variable_header_properties_length);
-
-        let mut read_variable_header_properties = vec![0u8; properties_length as usize];
-        stream.read_exact(&mut read_variable_header_properties)?;
-        let properties =
-            match VariableHeaderProperties::from_be_bytes(&read_variable_header_properties) {
-                Ok(properties) => properties,
-                Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e)),
-            };
         let connack = Connack {
-            fixed_header: PacketFixedHeader::new(fixed_header_type, fixed_header_len),
-            variable_header: ConnackVariableHeader::new(
-                variable_header_acknowledge_flags,
-                variable_header_reason_code,
-                properties,
-            ),
+            fixed_header,
+            variable_header,
         };
         Ok(connack)
     }
 
     pub fn new(connect_packet: Connect) -> Self {
         //add properties
-        
+
         let mut prop = VariableHeaderProperties::new();
-        
+
         prop.add_property_session_expiry_interval(500);
         prop.add_property_assigned_client_identifier("client".to_string());
         prop.add_property_server_keep_alive(10);
@@ -148,16 +121,16 @@ impl Connack {
         prop.add_property_wildcard_subscription_available(1);
         prop.add_property_subscription_identifiers_available(1);
         prop.add_property_shared_subscription_available(1);
-        
+
         let connect_reason_code = determinate_reason_code(connect_packet);
         let connect_acknowledge_flags = create_connect_acknowledge_flags(1);
 
-        
-        let variable_header = ConnackVariableHeader::new(connect_reason_code, connect_acknowledge_flags, prop);
-        
+        let variable_header =
+            ConnackVariableHeader::new(connect_reason_code, connect_acknowledge_flags, prop);
+
         let remaining_length = variable_header.length();
         let fixed_header = PacketFixedHeader::new(32, remaining_length);
-        
+
         Connack {
             fixed_header,
             variable_header,
