@@ -1,7 +1,8 @@
 use std::io::{Error, Read, Write};
 
-use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
+use super::variable_header::ConnackVariableHeader;
 use crate::control_packets::mqtt_connect::connect::Connect;
+use crate::control_packets::mqtt_packet::connect_reason_code::ConnectReasonMode;
 use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, CONNACK_PACKET};
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 
