@@ -3,7 +3,7 @@ use std::io::{Error, Read, Write};
 use crate::control_packets::{mqtt_connect::{connect::Connect, connect_payload::ConnectPayloadFields}, mqtt_packet::{fixed_header::PacketFixedHeader, variable_header_properties::VariableHeaderProperties}};
 
 use super::{
-    connect_reason_code::ConnectReasonMode, fixed_header::ConnackFixedHeader, variable_header::ConnackVariableHeader
+    connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader
 };
 
 /// # FIXED HEADER: 2 BYTES
@@ -63,13 +63,13 @@ use super::{
 ///
 
 pub struct Connack {
-    pub fixed_header: ConnackFixedHeader,
+    pub fixed_header: PacketFixedHeader,
     pub variable_header: ConnackVariableHeader,
 }
 
 impl Connack {
     pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header_type_and_flags = self.fixed_header.packet_type_and_flags.to_be_bytes();
+        let fixed_header_type_and_flags = self.fixed_header.packet_type.to_be_bytes();
         let fixed_header_length = self.fixed_header.remaining_length.to_be_bytes();
         let variable_header_connect_acknowledge_flags_length =
             self.variable_header.connect_acknowledge_flags.to_be_bytes();
@@ -104,11 +104,11 @@ impl Connack {
         stream.read_exact(&mut read_variable_header_reason_code)?;
         let variable_header_reason_code = u8::from_be_bytes(read_variable_header_reason_code);
 
-        let mut read_variable_header_properties_length = [0u8; 8];
+        let mut read_variable_header_properties_length = [0u8; 1];
         stream.read_exact(&mut read_variable_header_properties_length)?;
-        let properties_length = usize::from_be_bytes(read_variable_header_properties_length);
+        let properties_length = u8::from_be_bytes(read_variable_header_properties_length);
 
-        let mut read_variable_header_properties = vec![0u8; properties_length];
+        let mut read_variable_header_properties = vec![0u8; properties_length as usize];
         stream.read_exact(&mut read_variable_header_properties)?;
         let properties =
             match VariableHeaderProperties::from_be_bytes(&read_variable_header_properties) {
@@ -116,7 +116,7 @@ impl Connack {
                 Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e)),
             };
         let connack = Connack {
-            fixed_header: ConnackFixedHeader::new(fixed_header_type, fixed_header_len),
+            fixed_header: PacketFixedHeader::new(fixed_header_type, fixed_header_len),
             variable_header: ConnackVariableHeader::new(
                 variable_header_acknowledge_flags,
                 variable_header_reason_code,
@@ -128,11 +128,9 @@ impl Connack {
 
     pub fn new(connect_packet: Connect) -> Self {
         //add properties
-        let remaining_length = 0;
-        let fixed_header = ConnackFixedHeader::new(32, remaining_length);
-
+        
         let mut prop = VariableHeaderProperties::new();
-
+        
         prop.add_property_session_expiry_interval(500);
         prop.add_property_assigned_client_identifier("client".to_string());
         prop.add_property_server_keep_alive(10);
@@ -150,13 +148,16 @@ impl Connack {
         prop.add_property_wildcard_subscription_available(1);
         prop.add_property_subscription_identifiers_available(1);
         prop.add_property_shared_subscription_available(1);
-
+        
         let connect_reason_code = determinate_reason_code(connect_packet);
         let connect_acknowledge_flags = create_connect_acknowledge_flags(1);
 
-        let variable_header =
-            ConnackVariableHeader::new(connect_reason_code, connect_acknowledge_flags, prop);
-
+        
+        let variable_header = ConnackVariableHeader::new(connect_reason_code, connect_acknowledge_flags, prop);
+        
+        let remaining_length = variable_header.length();
+        let fixed_header = PacketFixedHeader::new(32, remaining_length);
+        
         Connack {
             fixed_header,
             variable_header,

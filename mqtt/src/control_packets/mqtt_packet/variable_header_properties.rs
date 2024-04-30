@@ -24,14 +24,14 @@ pub enum VariableHeaderProperty {
 }
 
 pub struct VariableHeaderProperties {
-    pub bytes_length: usize,
+    pub bytes_length: u8,
     pub properties: Vec<VariableHeaderProperty>,
 }
 
 impl VariableHeaderProperties {
     /// PROPERTY: ASIGNED CLIENT IDENTIFIER
     pub fn add_property_assigned_client_identifier(&mut self, identifier: String) {
-        self.bytes_length += 3 + identifier.len();
+        self.bytes_length += 3 + identifier.len() as u8;
         self.properties
             .push(VariableHeaderProperty::AsignedClientIdentifier {
                 id: 18,
@@ -51,7 +51,7 @@ impl VariableHeaderProperties {
 
     /// PROPERTY: RESPONSE INFORMATION
     pub fn add_property_response_information(&mut self, information: String) {
-        self.bytes_length += 3 + information.len();
+        self.bytes_length += 3 + information.len() as u8;
         self.properties
             .push(VariableHeaderProperty::ResponseInformation {
                 id: 26,
@@ -61,7 +61,7 @@ impl VariableHeaderProperties {
 
     /// PROPERTY: SERVER REFERENCE
     pub fn add_property_server_reference(&mut self, reference: String) {
-        self.bytes_length += 3 + reference.len();
+        self.bytes_length += 3 + reference.len() as u8;
         self.properties
             .push(VariableHeaderProperty::ServerReference {
                 id: 28,
@@ -71,7 +71,7 @@ impl VariableHeaderProperties {
 
     /// PROPERTY: REASON STRING
     pub fn add_property_reason_string(&mut self, reason: String) {
-        self.bytes_length += 3 + reason.len();
+        self.bytes_length += 3 + reason.len() as u8;
         self.properties.push(VariableHeaderProperty::ReasonString {
             id: 31,
             property: reason,
@@ -139,7 +139,7 @@ impl VariableHeaderProperties {
 
     /// PROPERTY: AUTHENTICATION METHOD
     pub fn add_property_authentication_method(&mut self, method: String) {
-        self.bytes_length += 3 + method.len();
+        self.bytes_length += 3 + method.len() as u8;
 
         self.properties
             .push(VariableHeaderProperty::AuthenticationMethod {
@@ -200,7 +200,7 @@ impl VariableHeaderProperties {
 
     /// PROPERTY: USER PROPERTY
     pub fn add_property_user_property(&mut self, key: String, value: String) {
-        self.bytes_length += 5 + key.len() + value.len(); // OJO
+        self.bytes_length += 5 + key.len() as u8 + value.len()  as u8; // OJO
         self.properties.push(VariableHeaderProperty::UserProperty {
             id: 38,
             property: (key, value),
@@ -568,7 +568,7 @@ impl VariableHeaderProperties {
         }
 
         Ok(VariableHeaderProperties {
-            bytes_length: properties.len(),
+            bytes_length: properties.len() as u8,
             properties: properties_vec,
         })
     }

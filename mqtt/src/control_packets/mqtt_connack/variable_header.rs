@@ -7,8 +7,8 @@ pub struct ConnackVariableHeader {
 }
 
 impl ConnackVariableHeader {
-    pub fn _length(&self) -> usize {
-        todo!()
+    pub fn length(&self) -> u8 {
+        1 + 1 + self.properties.bytes_length
     }
 
     pub fn new(

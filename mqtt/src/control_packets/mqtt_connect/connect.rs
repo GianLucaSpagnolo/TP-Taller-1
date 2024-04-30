@@ -3,6 +3,7 @@ use std::io::Read;
 use std::io::Write;
 
 
+use crate::control_packets::mqtt_connack::variable_header;
 use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_connect::connect_payload::*;
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
@@ -207,9 +208,9 @@ impl Connect {
         stream.read_exact(&mut read_fixed_header_type)?;
         let fixed_header_type = u8::from_be_bytes(read_fixed_header_type);
 
-        let mut read_fixed_header_len = [0u8; 8];
+        let mut read_fixed_header_len = [0u8; 1];
         stream.read_exact(&mut read_fixed_header_len)?;
-        let fixed_header_len = usize::from_be_bytes(read_fixed_header_len);
+        let fixed_header_len = u8::from_be_bytes(read_fixed_header_len);
 
         let mut read_variable_header_protocol_name_length = [0u8; 2];
         stream.read_exact(&mut read_variable_header_protocol_name_length)?;
@@ -235,40 +236,38 @@ impl Connect {
         stream.read_exact(&mut read_variable_header_keep_alive)?;
         let keep_alive = u16::from_be_bytes(read_variable_header_keep_alive);
 
-        let mut read_variable_header_properties_length = [0u8; 8];
+        let mut read_variable_header_properties_length = [0u8; 1];
         stream.read_exact(&mut read_variable_header_properties_length)?;
-        let properties_length = usize::from_be_bytes(read_variable_header_properties_length);
-
-        let mut read_variable_header_properties = vec![0u8; properties_length];
+        let properties_length = u8::from_be_bytes(read_variable_header_properties_length);
+        
+        let mut read_variable_header_properties = vec![0u8; properties_length as usize];
         stream.read_exact(&mut read_variable_header_properties)?;
         let properties =
-            match VariableHeaderProperties::from_be_bytes(&read_variable_header_properties) {
-                Ok(properties) => properties,
-                Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e)),
-            };
+        match VariableHeaderProperties::from_be_bytes(&read_variable_header_properties) {
+            Ok(properties) => properties,
+            Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e)),
+        };
 
-        let mut read_payload_lenght_bytes = [0u8; 8];
-        stream.read_exact(&mut read_payload_lenght_bytes)?;
-        let _payload_length = usize::from_be_bytes(read_payload_lenght_bytes);
+        let variable_header = ConnectVariableHeader::new(
+            protocol_name_length,
+            protocol_name,
+            protocol_version,
+            connect_flags,
+            keep_alive,
+            properties,
+        );
 
-        let mut read_payload_client_id_len = [0u8; 2];
-        stream.read_exact(&mut read_payload_client_id_len)?;
-        let payload_client_id_len = u16::from_be_bytes(read_payload_client_id_len);
-
-        let mut read_payload_client_id = vec![0u8; payload_client_id_len as usize];
+        let payload_length = fixed_header_len - variable_header.length();  
+        
+        let mut read_payload_client_id = vec![0u8; payload_length as usize];
         stream.read_exact(&mut read_payload_client_id)?;
         let payload_client_id = String::from_utf8(read_payload_client_id).unwrap();
-
+        
+        println!("Payload length: {}", payload_length);
+        
         let connect = Connect {
             fixed_header: PacketFixedHeader::new(fixed_header_type, fixed_header_len),
-            variable_header: ConnectVariableHeader::new(
-                protocol_name_length,
-                protocol_name,
-                protocol_version,
-                connect_flags,
-                keep_alive,
-                properties,
-            ),
+            variable_header,
             payload: ConnectPayload::new(payload_client_id),
         };
         Ok(connect)
