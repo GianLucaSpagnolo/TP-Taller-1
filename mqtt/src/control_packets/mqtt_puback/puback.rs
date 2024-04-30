@@ -116,10 +116,11 @@ impl _Puback {
     }
 }
 
-
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::variable_header_property::{VariableHeaderProperty, REASON_STRING, USER_PROPERTY};
+    use crate::control_packets::mqtt_packet::variable_header_property::{
+        VariableHeaderProperty, REASON_STRING, USER_PROPERTY,
+    };
 
     use super::*;
 
@@ -154,7 +155,7 @@ mod test {
                         assert_eq!(str, "reason");
                     }
                 }
-                VariableHeaderProperty::UserProperty( value) => {
+                VariableHeaderProperty::UserProperty(value) => {
                     if props[i as usize].id() == USER_PROPERTY {
                         assert_eq!(value.0, "name");
                         assert_eq!(value.1, "value");
