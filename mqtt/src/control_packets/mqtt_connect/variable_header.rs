@@ -1,6 +1,11 @@
-use std::io::{Error, Read};
+use std::io::Error;
 
-use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
+use crate::{
+    control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties,
+    data_structures::data_types::data_types::{
+        read_byte, read_two_byte_integer, read_utf8_encoded_string,
+    },
+};
 
 pub struct VariableHeaderProtocolName {
     pub length: u16,
@@ -53,11 +58,11 @@ impl ConnectVariableHeader {
         bytes
     }
     pub fn read_from(stream: &mut dyn std::io::Read) -> Result<Self, Error> {
-        let protocol_name_length = read_16(stream)?;
-        let protocol_name = read_utf8(stream, protocol_name_length)?;
-        let protocol_version = read_u8(stream)?;
-        let connect_flags = read_u8(stream)?;
-        let keep_alive = read_16(stream)?;
+        let protocol_name_length = read_two_byte_integer(stream)?;
+        let protocol_name = read_utf8_encoded_string(stream, protocol_name_length)?;
+        let protocol_version = read_byte(stream)?;
+        let connect_flags = read_byte(stream)?;
+        let keep_alive = read_two_byte_integer(stream)?;
         let properties = VariableHeaderProperties::read_from(stream)?;
 
         let variable_header = ConnectVariableHeader::new(
@@ -71,26 +76,4 @@ impl ConnectVariableHeader {
 
         Ok(variable_header)
     }
-}
-
-fn read_16(stream: &mut dyn Read) -> Result<u16, Error> {
-    let mut read_buff = [0u8; 2];
-    stream.read_exact(&mut read_buff)?;
-    Ok(u16::from_be_bytes(read_buff))
-}
-
-fn read_utf8(stream: &mut dyn Read, length: u16) -> Result<String, Error> {
-    let mut read_buff = vec![0u8; length as usize];
-    stream.read_exact(&mut read_buff)?;
-
-    match String::from_utf8(read_buff) {
-        Ok(utf8_string) => Ok(utf8_string),
-        Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e)),
-    }
-}
-
-fn read_u8(stream: &mut dyn Read) -> Result<u8, Error> {
-    let mut read_buff = [0u8; 1];
-    stream.read_exact(&mut read_buff)?;
-    Ok(u8::from_be_bytes(read_buff))
 }

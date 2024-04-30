@@ -1,5 +1,7 @@
 use std::io::{Error, Read};
 
+use crate::data_structures::data_types::data_types::read_byte;
+
 pub struct PacketFixedHeader {
     pub packet_type: u8,
     pub remaining_length: u8, // This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
@@ -23,15 +25,9 @@ impl PacketFixedHeader {
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let packet_type = read_u8(stream)?;
-        let remaining_length = read_u8(stream)?;
+        let packet_type = read_byte(stream)?;
+        let remaining_length = read_byte(stream)?;
 
         Ok(PacketFixedHeader::new(packet_type, remaining_length))
     }
-}
-
-fn read_u8(stream: &mut dyn Read) -> Result<u8, Error> {
-    let mut read_buff = [0u8; 1];
-    stream.read_exact(&mut read_buff)?;
-    Ok(u8::from_be_bytes(read_buff))
 }

@@ -1,17 +1,14 @@
 use std::io::{Error, Read};
 
-use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
+use crate::{
+    control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties,
+    data_structures::data_types::data_types::read_byte,
+};
 
 pub struct ConnackVariableHeader {
     pub connect_acknowledge_flags: u8,
     pub connect_reason_code: u8,
     pub properties: VariableHeaderProperties,
-}
-
-fn read_u8(stream: &mut dyn Read) -> Result<u8, Error> {
-    let mut read_buff = [0u8; 1];
-    stream.read_exact(&mut read_buff)?;
-    Ok(u8::from_be_bytes(read_buff))
 }
 
 impl ConnackVariableHeader {
@@ -30,8 +27,8 @@ impl ConnackVariableHeader {
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let connect_acknowledge_flags = read_u8(stream)?;
-        let connect_reason_code = read_u8(stream)?;
+        let connect_acknowledge_flags = read_byte(stream)?;
+        let connect_reason_code = read_byte(stream)?;
         let properties = VariableHeaderProperties::read_from(stream)?;
 
         Ok(ConnackVariableHeader {

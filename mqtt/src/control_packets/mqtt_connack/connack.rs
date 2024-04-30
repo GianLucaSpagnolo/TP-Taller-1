@@ -1,10 +1,10 @@
 use std::io::{Error, Read, Write};
 
+use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
 use crate::control_packets::mqtt_connect::connect::Connect;
 use crate::control_packets::mqtt_packet::{
     fixed_header::PacketFixedHeader, variable_header_properties::VariableHeaderProperties,
 };
-use super::{connect_reason_code::ConnectReasonMode, variable_header::ConnackVariableHeader};
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE

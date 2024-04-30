@@ -19,6 +19,10 @@ password: String
 
 use std::io::{Error, Read};
 
+use crate::data_structures::data_types::data_types::{
+    read_two_byte_integer, read_utf8_encoded_string,
+};
+
 pub struct ConnectPayloadFields {
     pub client_id: String,
 }
@@ -62,27 +66,11 @@ impl ConnectPayload {
     }
 
     pub fn read_from(stream: &mut dyn Read, _length: u8) -> Result<Self, Error> {
-        let client_id_len = read_16(stream)?;
-        let client_id = read_utf8(stream, client_id_len)?; // 2 bytes for length
+        let client_id_len = read_two_byte_integer(stream)?;
+        let client_id = read_utf8_encoded_string(stream, client_id_len)?; // 2 bytes for length
 
         // falta utilizar length para seguir leyendo en caso de necesitarlo
 
         Ok(ConnectPayload::new(client_id))
-    }
-}
-
-fn read_16(stream: &mut dyn Read) -> Result<u16, Error> {
-    let mut read_buff = [0u8; 2];
-    stream.read_exact(&mut read_buff)?;
-    Ok(u16::from_be_bytes(read_buff))
-}
-
-fn read_utf8(stream: &mut dyn Read, length: u16) -> Result<String, Error> {
-    let mut read_buff = vec![0u8; length as usize];
-    stream.read_exact(&mut read_buff)?;
-
-    match String::from_utf8(read_buff) {
-        Ok(utf8_string) => Ok(utf8_string),
-        Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e)),
     }
 }

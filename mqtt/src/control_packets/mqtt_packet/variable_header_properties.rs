@@ -3,6 +3,8 @@ use std::{
     string::FromUtf8Error,
 };
 
+use crate::data_structures::data_types::data_types::read_byte;
+
 #[derive(Debug)]
 pub enum VariableHeaderProperty {
     SessionExpiryInterval { id: u8, property: u32 }, // Four Byte Integer
@@ -577,11 +579,9 @@ impl VariableHeaderProperties {
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let mut properties_len_buff = [0u8; 1];
-        stream.read_exact(&mut properties_len_buff)?;
-        let properties_length = u8::from_be_bytes(properties_len_buff);
+        let properties_len = read_byte(stream)?;
 
-        let mut properties_buff = vec![0u8; properties_length as usize];
+        let mut properties_buff = vec![0u8; properties_len as usize];
         stream.read_exact(&mut properties_buff)?;
 
         match VariableHeaderProperties::from_be_bytes(&properties_buff) {

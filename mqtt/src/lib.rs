@@ -17,3 +17,7 @@ mod control_packets {
         pub mod variable_header_properties;
     }
 }
+
+mod data_structures {
+    pub mod data_types;
+}
