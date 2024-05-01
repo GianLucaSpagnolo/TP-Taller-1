@@ -49,7 +49,7 @@
 /// 159 - 0x9F - Connection rate exceeded
 /// The connection rate limit has been exceeded.
 
-pub enum ConnectReasonMode {
+pub enum ReasonMode {
     Success,
     _NoMatchingSubscribers,
     _UnspecifiedError,
@@ -76,33 +76,33 @@ pub enum ConnectReasonMode {
     _ConnectionRateExceeded,
 }
 
-impl ConnectReasonMode {
+impl ReasonMode {
     pub fn get_id(&self) -> u8 {
         match *self {
-            ConnectReasonMode::Success => 0,
-            ConnectReasonMode::_NoMatchingSubscribers => 16, // PUBACK
-            ConnectReasonMode::_UnspecifiedError => 128,     // CONNACK - PUBACK
-            ConnectReasonMode::MalformedPacket => 129,
-            ConnectReasonMode::_ProtocolError => 130,
-            ConnectReasonMode::_ImplementationSpecificError => 131, // CONNACK - PUBACK
-            ConnectReasonMode::UnsupportedProtocolVersion => 132,
-            ConnectReasonMode::ClientIdentifierNotValid => 133,
-            ConnectReasonMode::_BadUserNameOrPassword => 134,
-            ConnectReasonMode::_NotAuthorized => 135, // CONNACK - PUBACK
-            ConnectReasonMode::_ServerUnavailable => 136,
-            ConnectReasonMode::_ServerBusy => 137,
-            ConnectReasonMode::_Banned => 138,
-            ConnectReasonMode::_BadAuthenticationMethod => 140,
-            ConnectReasonMode::_TopicNameInvalid => 144, // CONNACK - PUBACK
-            ConnectReasonMode::_PacketIdentifierInUse => 145, // PUBACK
-            ConnectReasonMode::_PacketTooLarge => 149,
-            ConnectReasonMode::_QuotaExceeded => 151, // CONNACK - PUBACK
-            ConnectReasonMode::_PayloadFormatInvalid => 153, // CONNACK - PUBACK
-            ConnectReasonMode::_RetainNotSupported => 154,
-            ConnectReasonMode::QoSNotSupported => 155,
-            ConnectReasonMode::_UseAnotherServer => 156,
-            ConnectReasonMode::_ServerMoved => 157,
-            ConnectReasonMode::_ConnectionRateExceeded => 159,
+            ReasonMode::Success => 0,
+            ReasonMode::_NoMatchingSubscribers => 16, // PUBACK
+            ReasonMode::_UnspecifiedError => 128,     // CONNACK - PUBACK
+            ReasonMode::MalformedPacket => 129,
+            ReasonMode::_ProtocolError => 130,
+            ReasonMode::_ImplementationSpecificError => 131, // CONNACK - PUBACK
+            ReasonMode::UnsupportedProtocolVersion => 132,
+            ReasonMode::ClientIdentifierNotValid => 133,
+            ReasonMode::_BadUserNameOrPassword => 134,
+            ReasonMode::_NotAuthorized => 135, // CONNACK - PUBACK
+            ReasonMode::_ServerUnavailable => 136,
+            ReasonMode::_ServerBusy => 137,
+            ReasonMode::_Banned => 138,
+            ReasonMode::_BadAuthenticationMethod => 140,
+            ReasonMode::_TopicNameInvalid => 144, // CONNACK - PUBACK
+            ReasonMode::_PacketIdentifierInUse => 145, // PUBACK
+            ReasonMode::_PacketTooLarge => 149,
+            ReasonMode::_QuotaExceeded => 151, // CONNACK - PUBACK
+            ReasonMode::_PayloadFormatInvalid => 153, // CONNACK - PUBACK
+            ReasonMode::_RetainNotSupported => 154,
+            ReasonMode::QoSNotSupported => 155,
+            ReasonMode::_UseAnotherServer => 156,
+            ReasonMode::_ServerMoved => 157,
+            ReasonMode::_ConnectionRateExceeded => 159,
         }
     }
 }

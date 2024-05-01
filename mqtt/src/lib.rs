@@ -12,9 +12,9 @@ mod control_packets {
     }
 
     pub mod mqtt_packet {
-        pub mod connect_reason_code;
         pub mod fixed_header;
         pub mod flags;
+        pub mod reason_codes;
         pub mod variable_header_properties;
         pub mod variable_header_property;
     }
