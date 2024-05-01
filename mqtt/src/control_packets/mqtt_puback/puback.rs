@@ -151,12 +151,12 @@ mod test {
         for i in 0..props.len() {
             match &props[i] {
                 VariableHeaderProperty::ReasonString(str) => {
-                    if props[i as usize].id() == REASON_STRING {
+                    if props[i].id() == REASON_STRING {
                         assert_eq!(str, "reason");
                     }
                 }
                 VariableHeaderProperty::UserProperty(value) => {
-                    if props[i as usize].id() == USER_PROPERTY {
+                    if props[i].id() == USER_PROPERTY {
                         assert_eq!(value.0, "name");
                         assert_eq!(value.1, "value");
                     }
