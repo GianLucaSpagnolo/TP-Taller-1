@@ -69,7 +69,7 @@ pub fn new_connack_properties(
         connack_props.session_expiry_interval,
     )?;
     variable_props.add_utf8_string_property(
-        ASIGNED_CLIENT_IDENTIFIER,
+        ASSIGNED_CLIENT_IDENTIFIER,
         connack_props.assigned_client_identifier,
     )?;
     variable_props.add_u16_property(SERVER_KEEP_ALIVE, connack_props.server_keep_alive)?;
@@ -90,6 +90,18 @@ pub fn new_connack_properties(
         connack_props.user_property.1,
     )?;
     variable_props.add_u32_property(MAXIMUM_PACKET_SIZE, connack_props.maximum_packet_size)?;
+    variable_props.add_u8_property(
+        WILDCARD_SUBSCRIPTION_AVAILABLE,
+        connack_props.wildcard_subscription_available,
+    )?;
+    variable_props.add_u8_property(
+        SUBSCRIPTION_IDENTIFIERS_AVAILABLE,
+        connack_props.subscription_identifiers_available,
+    )?;
+    variable_props.add_u8_property(
+        SHARED_SUBSCRIPTION_AVAILABLE,
+        connack_props.shared_subscription_available,
+    )?;
 
     Ok(variable_props)
 }

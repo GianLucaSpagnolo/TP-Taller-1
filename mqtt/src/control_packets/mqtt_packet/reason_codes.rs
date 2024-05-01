@@ -2,6 +2,8 @@
 /// Byte 2 in the Variable Header is the Connect Reason Code.
 /// 0 - 0x00 - Success
 /// The Connection is accepted.
+/// 16 - 0x10 - No matching subscribers
+/// No matching subscribers. The Client or Server will not forward the PUBLISH packet.
 /// 128 - 0x80 - Unspecified error
 /// The Server does not wish to reveal the reason for the failure, or none of the other Reason Codes apply.
 /// 129 - 0x81 - Malformed Packet
@@ -28,6 +30,8 @@
 /// The authentication method is not supported or does not match the authentication method currently in use.
 /// 144 - 0x90 - Topic Name invalid
 /// The Will Topic Name is not malformed, but is not accepted by this Server.
+/// 145 - 0x91 - Packet Identifier in use
+/// The Packet Identifier is already in use. This will only ever be returned for a CONNACK or PUBACK packet.
 /// 149 - 0x95 - Packet too large
 /// The CONNECT packet exceeded the maximum permissible size.
 /// 151 - 0x97 - Quota exceeded
@@ -45,8 +49,9 @@
 /// 159 - 0x9F - Connection rate exceeded
 /// The connection rate limit has been exceeded.
 
-pub enum ConnectReasonMode {
+pub enum ReasonMode {
     Success,
+    _NoMatchingSubscribers,
     _UnspecifiedError,
     MalformedPacket,
     _ProtocolError,
@@ -60,6 +65,7 @@ pub enum ConnectReasonMode {
     _Banned,
     _BadAuthenticationMethod,
     _TopicNameInvalid,
+    _PacketIdentifierInUse,
     _PacketTooLarge,
     _QuotaExceeded,
     _PayloadFormatInvalid,
@@ -70,31 +76,33 @@ pub enum ConnectReasonMode {
     _ConnectionRateExceeded,
 }
 
-impl ConnectReasonMode {
+impl ReasonMode {
     pub fn get_id(&self) -> u8 {
         match *self {
-            ConnectReasonMode::Success => 0,
-            ConnectReasonMode::_UnspecifiedError => 128,
-            ConnectReasonMode::MalformedPacket => 129,
-            ConnectReasonMode::_ProtocolError => 130,
-            ConnectReasonMode::_ImplementationSpecificError => 131,
-            ConnectReasonMode::UnsupportedProtocolVersion => 132,
-            ConnectReasonMode::ClientIdentifierNotValid => 133,
-            ConnectReasonMode::_BadUserNameOrPassword => 134,
-            ConnectReasonMode::_NotAuthorized => 135,
-            ConnectReasonMode::_ServerUnavailable => 136,
-            ConnectReasonMode::_ServerBusy => 137,
-            ConnectReasonMode::_Banned => 138,
-            ConnectReasonMode::_BadAuthenticationMethod => 140,
-            ConnectReasonMode::_TopicNameInvalid => 144,
-            ConnectReasonMode::_PacketTooLarge => 149,
-            ConnectReasonMode::_QuotaExceeded => 151,
-            ConnectReasonMode::_PayloadFormatInvalid => 153,
-            ConnectReasonMode::_RetainNotSupported => 154,
-            ConnectReasonMode::QoSNotSupported => 155,
-            ConnectReasonMode::_UseAnotherServer => 156,
-            ConnectReasonMode::_ServerMoved => 157,
-            ConnectReasonMode::_ConnectionRateExceeded => 159,
+            ReasonMode::Success => 0,
+            ReasonMode::_NoMatchingSubscribers => 16, // PUBACK
+            ReasonMode::_UnspecifiedError => 128,     // CONNACK - PUBACK
+            ReasonMode::MalformedPacket => 129,
+            ReasonMode::_ProtocolError => 130,
+            ReasonMode::_ImplementationSpecificError => 131, // CONNACK - PUBACK
+            ReasonMode::UnsupportedProtocolVersion => 132,
+            ReasonMode::ClientIdentifierNotValid => 133,
+            ReasonMode::_BadUserNameOrPassword => 134,
+            ReasonMode::_NotAuthorized => 135, // CONNACK - PUBACK
+            ReasonMode::_ServerUnavailable => 136,
+            ReasonMode::_ServerBusy => 137,
+            ReasonMode::_Banned => 138,
+            ReasonMode::_BadAuthenticationMethod => 140,
+            ReasonMode::_TopicNameInvalid => 144, // CONNACK - PUBACK
+            ReasonMode::_PacketIdentifierInUse => 145, // PUBACK
+            ReasonMode::_PacketTooLarge => 149,
+            ReasonMode::_QuotaExceeded => 151, // CONNACK - PUBACK
+            ReasonMode::_PayloadFormatInvalid => 153, // CONNACK - PUBACK
+            ReasonMode::_RetainNotSupported => 154,
+            ReasonMode::QoSNotSupported => 155,
+            ReasonMode::_UseAnotherServer => 156,
+            ReasonMode::_ServerMoved => 157,
+            ReasonMode::_ConnectionRateExceeded => 159,
         }
     }
 }

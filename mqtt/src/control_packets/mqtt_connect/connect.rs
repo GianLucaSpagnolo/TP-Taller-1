@@ -175,3 +175,85 @@ impl Connect {
         })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::control_packets::mqtt_packet::variable_header_property::VariableHeaderProperty;
+
+    use super::*;
+
+    #[test]
+    fn test_connect() {
+        let client_id = "test".to_string();
+        let connect_flags = 0b11000000;
+        let keep_alive = 10;
+        let properties = ConnectProperties {
+            session_expiry_interval: 0,
+            authentication_method: "test".to_string(),
+            authentication_data: 0,
+            request_problem_information: 0,
+            request_response_information: 0,
+            receive_maximum: 0,
+            topic_alias_maximum: 0,
+            user_property_key: "test".to_string(),
+            user_property_value: "test".to_string(),
+            maximum_packet_size: 0,
+        };
+
+        let connect =
+            Connect::new(client_id.clone(), connect_flags, keep_alive, properties).unwrap();
+
+        let mut buffer: Vec<u8> = Vec::new();
+        connect.write_to(&mut buffer).unwrap();
+
+        let mut buffer = buffer.as_slice();
+        let connect = Connect::read_from(&mut buffer).unwrap();
+
+        assert_eq!(connect.fixed_header.packet_type, CONNECT_PACKET);
+        assert_eq!(
+            connect.variable_header.protocol_name.name,
+            PROTOCOL_NAME.to_string()
+        );
+        assert_eq!(connect.variable_header.protocol_version, PROTOCOL_VERSION);
+        assert_eq!(connect.variable_header.connect_flags, connect_flags);
+        assert_eq!(connect.variable_header.keep_alive, keep_alive);
+        assert_eq!(connect.payload.fields.client_id, client_id);
+        assert_eq!(connect.variable_header.properties.properties.len(), 9);
+
+        let props = connect.variable_header.properties.properties;
+
+        for p in props {
+            match p {
+                VariableHeaderProperty::SessionExpiryInterval(value) => {
+                    assert_eq!(value, 0);
+                }
+                VariableHeaderProperty::AuthenticationMethod(value) => {
+                    assert_eq!(value, "test".to_string());
+                }
+                VariableHeaderProperty::AuthenticationData(value) => {
+                    assert_eq!(value, 0);
+                }
+                VariableHeaderProperty::RequestProblemInformation(value) => {
+                    assert_eq!(value, 0);
+                }
+                VariableHeaderProperty::RequestResponseInformation(value) => {
+                    assert_eq!(value, 0);
+                }
+                VariableHeaderProperty::ReceiveMaximum(value) => {
+                    assert_eq!(value, 0);
+                }
+                VariableHeaderProperty::TopicAliasMaximum(value) => {
+                    assert_eq!(value, 0);
+                }
+                VariableHeaderProperty::UserProperty(value) => {
+                    assert_eq!(value.0, "test".to_string());
+                    assert_eq!(value.1, "test".to_string());
+                }
+                VariableHeaderProperty::MaximumPacketSize(value) => {
+                    assert_eq!(value, 0);
+                }
+                _ => panic!("Invalid property"),
+            }
+        }
+    }
+}
