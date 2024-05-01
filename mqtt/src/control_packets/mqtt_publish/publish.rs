@@ -194,7 +194,7 @@ mod test {
         let mut cursor = std::io::Cursor::new(bytes);
         let publish_read = _Publish::_read_from(&mut cursor).unwrap();
 
-        let fixed_header = _PUBLISH_PACKET | (0 << 3) | (1 << 1) | 0;
+        let fixed_header = _PUBLISH_PACKET | (1 << 1);
         assert_eq!(publish.fixed_header.packet_type, fixed_header);
 
         assert_eq!(
