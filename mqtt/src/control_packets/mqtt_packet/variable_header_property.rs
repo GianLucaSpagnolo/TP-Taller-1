@@ -29,7 +29,7 @@ pub static SHARED_SUBSCRIPTION_AVAILABLE: u8 = 42;
 #[derive(Debug)]
 pub enum VariableHeaderProperty {
     SessionExpiryInterval(u32),           // Four Byte Integer
-    AsignedClientIdentifier(String),      // UTF-8 string
+    AssignedClientIdentifier(String),      // UTF-8 string
     ServerKeepAlive(u16),                 // Two Byte Integer
     AuthenticationMethod(String),         // UTF-8 Encoded String
     AuthenticationData(u16),              // Binary Data
@@ -90,7 +90,7 @@ impl VariableHeaderProperty {
     pub fn id(&self) -> u8 {
         match self {
             VariableHeaderProperty::SessionExpiryInterval(_) => SESSION_EXPIRY_INTERVAL,
-            VariableHeaderProperty::AsignedClientIdentifier(_) => ASIGNED_CLIENT_IDENTIFIER,
+            VariableHeaderProperty::AssignedClientIdentifier(_) => ASIGNED_CLIENT_IDENTIFIER,
             VariableHeaderProperty::ServerKeepAlive(_) => SERVER_KEEP_ALIVE,
             VariableHeaderProperty::AuthenticationMethod(_) => AUTHENTICATION_METHOD,
             VariableHeaderProperty::AuthenticationData(_) => AUTHENTICATION_DATA,
@@ -131,7 +131,7 @@ impl VariableHeaderProperty {
 
     pub fn new_property_utf8_string(id: u8, str: String) -> Result<Self, Error> {
         match id {
-            18 => Ok(VariableHeaderProperty::AsignedClientIdentifier(str)),
+            18 => Ok(VariableHeaderProperty::AssignedClientIdentifier(str)),
             21 => Ok(VariableHeaderProperty::AuthenticationMethod(str)),
             26 => Ok(VariableHeaderProperty::ResponseInformation(str)),
             28 => Ok(VariableHeaderProperty::ServerReference(str)),
@@ -198,7 +198,7 @@ impl VariableHeaderProperty {
             18 => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
-                Some(VariableHeaderProperty::AsignedClientIdentifier(value))
+                Some(VariableHeaderProperty::AssignedClientIdentifier(value))
             }
             19 => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
@@ -314,7 +314,7 @@ impl VariableHeaderProperty {
             VariableHeaderProperty::MaximumPacketSize(value) => {
                 write_u32_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::AsignedClientIdentifier(value) => {
+            VariableHeaderProperty::AssignedClientIdentifier(value) => {
                 write_utf8_string_property_as_bytes(bytes, self.id(), value)
             }
             VariableHeaderProperty::ServerKeepAlive(value) => {
