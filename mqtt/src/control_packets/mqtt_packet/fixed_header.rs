@@ -4,7 +4,7 @@ use crate::data_structures::data_types::data_representation::read_byte;
 
 pub static CONNECT_PACKET: u8 = 0x10;
 pub static CONNACK_PACKET: u8 = 0x20;
-pub static PUBLISH_PACKET: u8 = 0x30;
+pub static _PUBLISH_PACKET: u8 = 0x30;
 pub static _PUBACK_PACKET: u8 = 0x40;
 pub static DISCONNECT_PACKET: u8 = 0xE0;
 
@@ -13,8 +13,8 @@ pub struct PacketFixedHeader {
     pub remaining_length: u8, // This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 }
 
-pub fn create_publish_header_flags(dup_flag: u8, qos_level: u8, retain: u8) -> u8 {
-    let mut type_and_flags = PUBLISH_PACKET;
+pub fn _create_publish_header_flags(dup_flag: u8, qos_level: u8, retain: u8) -> u8 {
+    let mut type_and_flags = _PUBLISH_PACKET;
     type_and_flags |= dup_flag << 3;
     type_and_flags |= qos_level << 1;
     type_and_flags |= retain;

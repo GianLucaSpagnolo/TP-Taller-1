@@ -10,34 +10,34 @@ use crate::{
     },
 };
 
-use super::publish::PublishProperties;
+use super::publish::_PublishProperties;
 
-pub struct VariableHeaderTopicName {
+pub struct _VariableHeaderTopicName {
     pub length: u16,
     pub name: String,
 }
 
-pub struct PublishVariableHeader {
-    pub topic_name: VariableHeaderTopicName,
+pub struct _PublishVariableHeader {
+    pub topic_name: _VariableHeaderTopicName,
     pub packet_identifier: u16,
     pub properties: VariableHeaderProperties,
 }
 
-impl PublishVariableHeader {
-    pub fn length(&self) -> u8 {
+impl _PublishVariableHeader {
+    pub fn _length(&self) -> u8 {
         2 + self.topic_name.length as u8 + 2 + self.properties.bytes_length
     }
 
-    pub fn new(
+    pub fn _new(
         topic_name_length: u16,
         topic_name: String,
         packet_identifier: u16,
-        props: PublishProperties,
+        props: _PublishProperties,
     ) -> Result<Self, Error> {
-        let properties = new_publish_properties(props)?;
+        let properties = _new_publish_properties(props)?;
 
-        let variable_header = PublishVariableHeader {
-            topic_name: VariableHeaderTopicName {
+        let variable_header = _PublishVariableHeader {
+            topic_name: _VariableHeaderTopicName {
                 length: topic_name_length,
                 name: topic_name,
             },
@@ -48,7 +48,7 @@ impl PublishVariableHeader {
         Ok(variable_header)
     }
 
-    pub fn as_bytes(&self) -> Vec<u8> {
+    pub fn _as_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = Vec::new();
 
         bytes.extend_from_slice(&self.topic_name.length.to_be_bytes());
@@ -59,14 +59,14 @@ impl PublishVariableHeader {
         bytes
     }
 
-    pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+    pub fn _read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let topic_name_length = read_two_byte_integer(stream)?;
         let topic_name = read_utf8_encoded_string(stream, topic_name_length)?;
         let packet_identifier = read_two_byte_integer(stream)?;
         let properties = VariableHeaderProperties::read_from(stream)?;
 
-        Ok(PublishVariableHeader {
-            topic_name: VariableHeaderTopicName {
+        Ok(_PublishVariableHeader {
+            topic_name: _VariableHeaderTopicName {
                 length: topic_name_length,
                 name: topic_name,
             },
@@ -76,8 +76,8 @@ impl PublishVariableHeader {
     }
 }
 
-pub fn new_publish_properties(
-    publish_props: PublishProperties,
+pub fn _new_publish_properties(
+    publish_props: _PublishProperties,
 ) -> Result<VariableHeaderProperties, Error> {
     let mut variable_props = VariableHeaderProperties::new();
 

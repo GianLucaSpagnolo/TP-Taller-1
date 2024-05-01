@@ -69,13 +69,13 @@ use crate::control_packets::mqtt_publish::variable_header::*;
 /// El PUBLISH PACKET contiene el Subscription Identifier llevado por el SUBSCRIBE PACKET
 /// Pero un PUBLISH PACKET enviado desde un cliente a un servidor no debe contener ese Subscription Identifier
 ///
-pub struct Publish {
+pub struct _Publish {
     pub fixed_header: PacketFixedHeader,
-    pub variable_header: PublishVariableHeader,
-    pub payload: PublishPayload,
+    pub variable_header: _PublishVariableHeader,
+    pub payload: _PublishPayload,
 }
 
-pub struct PublishProperties {
+pub struct _PublishProperties {
     pub payload_format_indicator: u8,
     pub message_expiry_interval: u32,
     pub topic_alias: u16,
@@ -87,30 +87,30 @@ pub struct PublishProperties {
     pub content_type: String,
 }
 
-impl Publish {
-    pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
+impl _Publish {
+    pub fn _write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let fixed_header = self.fixed_header.as_bytes();
         stream.write_all(&fixed_header)?;
 
-        let variable_header = self.variable_header.as_bytes();
+        let variable_header = self.variable_header._as_bytes();
         stream.write_all(&variable_header)?;
 
-        let payload_fields = self.payload.as_bytes();
+        let payload_fields = self.payload._as_bytes();
         stream.write_all(&payload_fields)?;
 
         Ok(())
     }
 
-    pub fn read_from(stream: &mut dyn Read) -> Result<Publish, Error> {
+    pub fn _read_from(stream: &mut dyn Read) -> Result<_Publish, Error> {
         let fixed_header = PacketFixedHeader::read_from(stream)?;
 
-        let variable_header = PublishVariableHeader::read_from(stream)?;
+        let variable_header = _PublishVariableHeader::_read_from(stream)?;
 
-        let payload_length = fixed_header.remaining_length - variable_header.length();
+        let payload_length = fixed_header.remaining_length - variable_header._length();
 
-        let payload = PublishPayload::read_from(stream, payload_length)?;
+        let payload = _PublishPayload::_read_from(stream, payload_length)?;
 
-        let publish = Publish {
+        let publish = _Publish {
             fixed_header,
             variable_header,
             payload,
@@ -118,33 +118,33 @@ impl Publish {
         Ok(publish)
     }
 
-    pub fn new(
+    pub fn _new(
         fixed_header_dup_flag: u8,
         fixed_header_qos_level: u8,
         fixed_header_retain: u8,
         topic_name: String,
         packet_identifier: u16,
-        properties: PublishProperties,
+        properties: _PublishProperties,
         message: String,
     ) -> Result<Self, Error> {
         let remaining_length = 0;
-        let fixed_header_flags = fixed_header::create_publish_header_flags(
+        let fixed_header_flags = fixed_header::_create_publish_header_flags(
             fixed_header_dup_flag,
             fixed_header_qos_level,
             fixed_header_retain,
         );
         let fixed_header = PacketFixedHeader::new(fixed_header_flags, remaining_length);
 
-        let variable_header = PublishVariableHeader::new(
+        let variable_header = _PublishVariableHeader::_new(
             topic_name.len() as u16,
             topic_name,
             packet_identifier,
             properties,
         )?;
 
-        let payload = PublishPayload::new(message);
+        let payload = _PublishPayload::_new(message);
 
-        Ok(Publish {
+        Ok(_Publish {
             fixed_header,
             variable_header,
             payload,
