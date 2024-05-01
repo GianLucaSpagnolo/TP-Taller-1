@@ -7,6 +7,8 @@ use crate::control_packets::mqtt_connack::connack::ConnackProperties;
 use crate::control_packets::mqtt_connect::connect::*;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
+// agregado para protocolo
+use crate::control_packets::mqtt_packet::fixed_header::*;
 
 pub fn server_run(address: &str) -> Result<(), Error> {
     let listener = match TcpListener::bind(address) {
@@ -49,6 +51,33 @@ fn determinate_reason_code(connect_packet: &Connect) -> u8 {
         return ReasonMode::ClientIdentifierNotValid.get_id();
     }
     ReasonMode::Success.get_id()
+}
+
+// refactorizacion para el protocolo
+// captura los bytes de la red, lee el tipo
+pub fn pack_header_bytes(stream: &mut TcpStream) -> Option<PacketFixedHeader> {
+    match PacketFixedHeader::read_from(stream) {
+        Ok(header) => Some(header),
+        Err(..) => None,
+    }
+}
+
+// Devuelve los bytes empaquetados en la estructura
+// correspondiente.
+pub fn pack_connect_bytes(
+    stream: &mut TcpStream,
+    fixed_header: PacketFixedHeader,
+) -> Option<Connect> {
+    match fixed_header.get_package_type() {
+        PackageType::Connect => {
+            // empaqueta el connect
+            match Connect::read_from_header(stream, fixed_header) {
+                Ok(connect_packcage) => Some(connect_packcage),
+                Err(..) => None,
+            }
+        }
+        PackageType::Unknow => None,
+    }
 }
 
 fn handle_connection(stream: &mut TcpStream) -> Result<(), Error> {

@@ -11,6 +11,12 @@ pub struct PacketFixedHeader {
     pub remaining_length: u8, // This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 }
 
+// agregado para protocolo
+pub enum PackageType {
+    Connect,
+    Unknow, // errores o paquetes no implementados
+}
+
 impl PacketFixedHeader {
     pub fn new(packet_type: u8, remaining_length: u8) -> Self {
         PacketFixedHeader {
@@ -28,5 +34,15 @@ impl PacketFixedHeader {
         let remaining_length = read_byte(stream)?;
 
         Ok(PacketFixedHeader::new(packet_type, remaining_length))
+    }
+
+    // agregado para protocolo
+    pub fn get_package_type(&self) -> PackageType {
+        let _connect = CONNECT_PACKET;
+
+        match self.packet_type {
+            _connect => PackageType::Connect,
+            _ => PackageType::Unknow,
+        }
     }
 }

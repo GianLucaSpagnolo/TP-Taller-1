@@ -145,6 +145,28 @@ impl Connect {
         Ok(connect)
     }
 
+    // agergado para el protocolo, refactorizacion de MQTT para empaquetar
+    // varios tipos
+    pub fn read_from_header(
+        stream: &mut dyn Read,
+        fixed_header: PacketFixedHeader,
+    ) -> Result<Connect, std::io::Error> {
+        //let fixed_header = PacketFixedHeader::read_from(stream)?;
+
+        let variable_header = ConnectVariableHeader::read_from(stream)?;
+
+        let payload_length = fixed_header.remaining_length - variable_header.length();
+
+        let payload = ConnectPayload::read_from(stream, payload_length)?;
+
+        let connect = Connect {
+            fixed_header,
+            variable_header,
+            payload,
+        };
+        Ok(connect)
+    }
+
     pub fn new(
         client_id: String,
         connect_flags: u8,
