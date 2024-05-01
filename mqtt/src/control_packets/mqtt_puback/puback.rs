@@ -146,23 +146,18 @@ mod test {
         assert_eq!(puback.variable_header.packet_id, 1);
         assert_eq!(puback.variable_header.puback_reason_code, 0);
 
-        let props = &puback.variable_header.properties.properties;
+        let props = &puback.variable_header.properties;
 
-        for p in props {
-            match p {
-                VariableHeaderProperty::ReasonString(str) => {
-                    if p.id() == REASON_STRING {
-                        assert_eq!(str, "reason");
-                    }
-                }
-                VariableHeaderProperty::UserProperty(value) => {
-                    if p.id() == USER_PROPERTY {
-                        assert_eq!(value.0, "name");
-                        assert_eq!(value.1, "value");
-                    }
-                }
-                _ => panic!("Invalid property"),
-            }
+        if let VariableHeaderProperty::UserProperty(value) =
+            props._get_property(USER_PROPERTY).unwrap()
+        {
+            assert_eq!(value.0, "name");
+            assert_eq!(value.1, "value");
+        }
+        if let VariableHeaderProperty::ReasonString(value) =
+            props._get_property(REASON_STRING).unwrap()
+        {
+            assert_eq!(value, "reason");
         }
     }
 }

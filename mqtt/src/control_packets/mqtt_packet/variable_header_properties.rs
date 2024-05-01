@@ -12,6 +12,10 @@ pub struct VariableHeaderProperties {
 }
 
 impl VariableHeaderProperties {
+    pub fn _get_property(&self, id: u8) -> Option<&VariableHeaderProperty> {
+        self.properties.iter().find(|&property| property.id() == id)
+    }
+
     pub fn add_utf8_pair_string_property(
         &mut self,
         id: u8,
