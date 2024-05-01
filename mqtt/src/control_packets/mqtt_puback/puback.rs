@@ -153,11 +153,16 @@ mod test {
         {
             assert_eq!(value.0, "name");
             assert_eq!(value.1, "value");
+        } else {
+            panic!("Error");
         }
+
         if let VariableHeaderProperty::ReasonString(value) =
             props._get_property(REASON_STRING).unwrap()
         {
             assert_eq!(value, "reason");
+        } else {
+            panic!("Error");
         }
     }
 }
