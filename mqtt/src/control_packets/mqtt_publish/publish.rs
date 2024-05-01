@@ -135,7 +135,12 @@ impl Publish {
         );
         let fixed_header = PacketFixedHeader::new(fixed_header_flags, remaining_length);
 
-        let variable_header = PublishVariableHeader::new(topic_name.len() as u16, topic_name, packet_identifier, properties)?;
+        let variable_header = PublishVariableHeader::new(
+            topic_name.len() as u16,
+            topic_name,
+            packet_identifier,
+            properties,
+        )?;
 
         let payload = PublishPayload::new(message);
 

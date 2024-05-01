@@ -81,12 +81,21 @@ pub fn new_publish_properties(
 ) -> Result<VariableHeaderProperties, Error> {
     let mut variable_props = VariableHeaderProperties::new();
 
-    variable_props.add_u8_property(PAYLOAD_FORMAT_INDICATOR, publish_props.payload_format_indicator)?;
-    variable_props.add_u32_property(MESSAGE_EXPIRY_INTERVAL, publish_props.message_expiry_interval)?;
+    variable_props.add_u8_property(
+        PAYLOAD_FORMAT_INDICATOR,
+        publish_props.payload_format_indicator,
+    )?;
+    variable_props.add_u32_property(
+        MESSAGE_EXPIRY_INTERVAL,
+        publish_props.message_expiry_interval,
+    )?;
     variable_props.add_utf8_string_property(CONTENT_TYPE, publish_props.content_type)?;
     variable_props.add_utf8_string_property(RESPONSE_TOPIC, publish_props.response_topic)?;
     variable_props.add_u16_property(CORRELATION_DATA, publish_props.correlation_data)?;
-    variable_props.add_u32_property(SUBSCRIPTION_IDENTIFIER, publish_props.subscription_identifier)?;
+    variable_props.add_u32_property(
+        SUBSCRIPTION_IDENTIFIER,
+        publish_props.subscription_identifier,
+    )?;
     variable_props.add_u16_property(TOPIC_ALIAS, publish_props.topic_alias)?;
     variable_props.add_utf8_pair_string_property(
         USER_PROPERTY,
