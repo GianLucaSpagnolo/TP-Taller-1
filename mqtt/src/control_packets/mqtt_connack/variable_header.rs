@@ -69,7 +69,7 @@ pub fn new_connack_properties(
         connack_props.session_expiry_interval,
     )?;
     variable_props.add_utf8_string_property(
-        ASIGNED_CLIENT_IDENTIFIER,
+        ASSIGNED_CLIENT_IDENTIFIER,
         connack_props.assigned_client_identifier,
     )?;
     variable_props.add_u16_property(SERVER_KEEP_ALIVE, connack_props.server_keep_alive)?;

@@ -6,25 +6,25 @@ use crate::data_structures::data_types::data_representation::{
 };
 
 /// PROPERTIES IDS
-pub static SESSION_EXPIRY_INTERVAL: u8 = 17;
-pub static ASIGNED_CLIENT_IDENTIFIER: u8 = 18;
-pub static SERVER_KEEP_ALIVE: u8 = 19;
-pub static AUTHENTICATION_METHOD: u8 = 21;
-pub static AUTHENTICATION_DATA: u8 = 22;
-pub static REQUEST_PROBLEM_INFORMATION: u8 = 23;
-pub static REQUEST_RESPONSE_INFORMATION: u8 = 25;
-pub static RESPONSE_INFORMATION: u8 = 26;
-pub static SERVER_REFERENCE: u8 = 28;
-pub static REASON_STRING: u8 = 31;
-pub static RECEIVE_MAXIMUM: u8 = 33;
-pub static TOPIC_ALIAS_MAXIMUM: u8 = 34;
-pub static MAXIMUM_QOS: u8 = 36;
-pub static RETAIN_AVAILABLE: u8 = 37;
-pub static USER_PROPERTY: u8 = 38;
-pub static MAXIMUM_PACKET_SIZE: u8 = 39;
-pub static WILDCARD_SUBSCRIPTION_AVAILABLE: u8 = 40;
-pub static SUBSCRIPTION_IDENTIFIERS_AVAILABLE: u8 = 41;
-pub static SHARED_SUBSCRIPTION_AVAILABLE: u8 = 42;
+pub const SESSION_EXPIRY_INTERVAL: u8 = 17;
+pub const ASSIGNED_CLIENT_IDENTIFIER: u8 = 18;
+pub const SERVER_KEEP_ALIVE: u8 = 19;
+pub const AUTHENTICATION_METHOD: u8 = 21;
+pub const AUTHENTICATION_DATA: u8 = 22;
+pub const REQUEST_PROBLEM_INFORMATION: u8 = 23;
+pub const REQUEST_RESPONSE_INFORMATION: u8 = 25;
+pub const RESPONSE_INFORMATION: u8 = 26;
+pub const SERVER_REFERENCE: u8 = 28;
+pub const REASON_STRING: u8 = 31;
+pub const RECEIVE_MAXIMUM: u8 = 33;
+pub const TOPIC_ALIAS_MAXIMUM: u8 = 34;
+pub const MAXIMUM_QOS: u8 = 36;
+pub const RETAIN_AVAILABLE: u8 = 37;
+pub const USER_PROPERTY: u8 = 38;
+pub const MAXIMUM_PACKET_SIZE: u8 = 39;
+pub const WILDCARD_SUBSCRIPTION_AVAILABLE: u8 = 40;
+pub const SUBSCRIPTION_IDENTIFIERS_AVAILABLE: u8 = 41;
+pub const SHARED_SUBSCRIPTION_AVAILABLE: u8 = 42;
 
 #[derive(Debug)]
 pub enum VariableHeaderProperty {
@@ -90,7 +90,7 @@ impl VariableHeaderProperty {
     pub fn id(&self) -> u8 {
         match self {
             VariableHeaderProperty::SessionExpiryInterval(_) => SESSION_EXPIRY_INTERVAL,
-            VariableHeaderProperty::AssignedClientIdentifier(_) => ASIGNED_CLIENT_IDENTIFIER,
+            VariableHeaderProperty::AssignedClientIdentifier(_) => ASSIGNED_CLIENT_IDENTIFIER,
             VariableHeaderProperty::ServerKeepAlive(_) => SERVER_KEEP_ALIVE,
             VariableHeaderProperty::AuthenticationMethod(_) => AUTHENTICATION_METHOD,
             VariableHeaderProperty::AuthenticationData(_) => AUTHENTICATION_DATA,
@@ -121,7 +121,7 @@ impl VariableHeaderProperty {
         second: String,
     ) -> Result<Self, Error> {
         match id {
-            38 => Ok(VariableHeaderProperty::UserProperty((first, second))),
+            USER_PROPERTY => Ok(VariableHeaderProperty::UserProperty((first, second))),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -131,11 +131,11 @@ impl VariableHeaderProperty {
 
     pub fn new_property_utf8_string(id: u8, str: String) -> Result<Self, Error> {
         match id {
-            18 => Ok(VariableHeaderProperty::AssignedClientIdentifier(str)),
-            21 => Ok(VariableHeaderProperty::AuthenticationMethod(str)),
-            26 => Ok(VariableHeaderProperty::ResponseInformation(str)),
-            28 => Ok(VariableHeaderProperty::ServerReference(str)),
-            31 => Ok(VariableHeaderProperty::ReasonString(str)),
+            ASSIGNED_CLIENT_IDENTIFIER => Ok(VariableHeaderProperty::AssignedClientIdentifier(str)),
+            AUTHENTICATION_METHOD => Ok(VariableHeaderProperty::AuthenticationMethod(str)),
+            RESPONSE_INFORMATION => Ok(VariableHeaderProperty::ResponseInformation(str)),
+            SERVER_REFERENCE => Ok(VariableHeaderProperty::ServerReference(str)),
+            REASON_STRING => Ok(VariableHeaderProperty::ReasonString(str)),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -145,8 +145,8 @@ impl VariableHeaderProperty {
 
     pub fn new_property_u32(id: u8, value: u32) -> Result<Self, Error> {
         match id {
-            17 => Ok(VariableHeaderProperty::SessionExpiryInterval(value)),
-            39 => Ok(VariableHeaderProperty::MaximumPacketSize(value)),
+            SESSION_EXPIRY_INTERVAL => Ok(VariableHeaderProperty::SessionExpiryInterval(value)),
+            MAXIMUM_PACKET_SIZE => Ok(VariableHeaderProperty::MaximumPacketSize(value)),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -156,10 +156,10 @@ impl VariableHeaderProperty {
 
     pub fn new_property_u16(id: u8, value: u16) -> Result<Self, Error> {
         match id {
-            19 => Ok(VariableHeaderProperty::ServerKeepAlive(value)),
-            22 => Ok(VariableHeaderProperty::AuthenticationData(value)),
-            33 => Ok(VariableHeaderProperty::ReceiveMaximum(value)),
-            34 => Ok(VariableHeaderProperty::TopicAliasMaximum(value)),
+            SERVER_KEEP_ALIVE => Ok(VariableHeaderProperty::ServerKeepAlive(value)),
+            AUTHENTICATION_DATA => Ok(VariableHeaderProperty::AuthenticationData(value)),
+            RECEIVE_MAXIMUM => Ok(VariableHeaderProperty::ReceiveMaximum(value)),
+            TOPIC_ALIAS_MAXIMUM => Ok(VariableHeaderProperty::TopicAliasMaximum(value)),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -169,15 +169,15 @@ impl VariableHeaderProperty {
 
     pub fn new_property_u8(id: u8, value: u8) -> Result<Self, Error> {
         match id {
-            23 => Ok(VariableHeaderProperty::RequestProblemInformation(value)),
-            25 => Ok(VariableHeaderProperty::RequestResponseInformation(value)),
-            36 => Ok(VariableHeaderProperty::MaximumQoS(value)),
-            37 => Ok(VariableHeaderProperty::RetainAvailable(value)),
-            40 => Ok(VariableHeaderProperty::WildcardSubscriptionAvailable(value)),
-            41 => Ok(VariableHeaderProperty::SubscriptionIdentifiersAvailable(
+            REQUEST_PROBLEM_INFORMATION => Ok(VariableHeaderProperty::RequestProblemInformation(value)),
+            REQUEST_RESPONSE_INFORMATION => Ok(VariableHeaderProperty::RequestResponseInformation(value)),
+            MAXIMUM_QOS => Ok(VariableHeaderProperty::MaximumQoS(value)),
+            RETAIN_AVAILABLE => Ok(VariableHeaderProperty::RetainAvailable(value)),
+            WILDCARD_SUBSCRIPTION_AVAILABLE => Ok(VariableHeaderProperty::WildcardSubscriptionAvailable(value)),
+            SUBSCRIPTION_IDENTIFIERS_AVAILABLE => Ok(VariableHeaderProperty::SubscriptionIdentifiersAvailable(
                 value,
             )),
-            42 => Ok(VariableHeaderProperty::SharedSubscriptionAvailable(value)),
+            SHARED_SUBSCRIPTION_AVAILABLE => Ok(VariableHeaderProperty::SharedSubscriptionAvailable(value)),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -191,68 +191,68 @@ impl VariableHeaderProperty {
         id: u8,
     ) -> Result<Option<Self>, FromUtf8Error> {
         let property = match id {
-            17 => {
+            SESSION_EXPIRY_INTERVAL => {
                 let value = four_byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::SessionExpiryInterval(value))
             }
-            18 => {
+            ASSIGNED_CLIENT_IDENTIFIER => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
                 Some(VariableHeaderProperty::AssignedClientIdentifier(value))
             }
-            19 => {
+            SERVER_KEEP_ALIVE => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::ServerKeepAlive(value))
             }
-            21 => {
+            AUTHENTICATION_METHOD => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
                 Some(VariableHeaderProperty::AuthenticationMethod(value))
             }
-            22 => {
+            AUTHENTICATION_DATA => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::AuthenticationData(value))
             }
-            23 => {
+            REQUEST_PROBLEM_INFORMATION => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::RequestProblemInformation(value))
             }
-            25 => {
+            REQUEST_RESPONSE_INFORMATION => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::RequestResponseInformation(value))
             }
-            26 => {
+            RESPONSE_INFORMATION => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
                 Some(VariableHeaderProperty::ResponseInformation(value))
             }
-            28 => {
+            SERVER_REFERENCE => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
                 Some(VariableHeaderProperty::ServerReference(value))
             }
-            31 => {
+            REASON_STRING => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
                 Some(VariableHeaderProperty::ReasonString(value))
             }
-            33 => {
+            RECEIVE_MAXIMUM => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::ReceiveMaximum(value))
             }
-            34 => {
+            TOPIC_ALIAS_MAXIMUM => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::TopicAliasMaximum(value))
             }
-            36 => {
+            MAXIMUM_QOS => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::MaximumQoS(value))
             }
-            37 => {
+            RETAIN_AVAILABLE => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::RetainAvailable(value))
             }
-            38 => {
+            USER_PROPERTY => {
                 let key_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let key = utf8_string_from_be_bytes(buff, key_len, buff_size)?;
 
@@ -261,21 +261,21 @@ impl VariableHeaderProperty {
 
                 Some(VariableHeaderProperty::UserProperty((key, value)))
             }
-            39 => {
+            MAXIMUM_PACKET_SIZE => {
                 let value = four_byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::MaximumPacketSize(value))
             }
-            40 => {
+            WILDCARD_SUBSCRIPTION_AVAILABLE => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::WildcardSubscriptionAvailable(value))
             }
-            41 => {
+            SUBSCRIPTION_IDENTIFIERS_AVAILABLE => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::SubscriptionIdentifiersAvailable(
                     value,
                 ))
             }
-            42 => {
+            SHARED_SUBSCRIPTION_AVAILABLE => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::SharedSubscriptionAvailable(value))
             }
