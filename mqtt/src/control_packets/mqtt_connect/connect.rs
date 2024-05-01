@@ -6,6 +6,9 @@ use crate::control_packets::mqtt_connect::payload::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
 
+static PROTOCOL_NAME: &str = "MQTT";
+static PROTOCOL_VERSION: u8 = 5;
+
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
 /// 4 bits mas significativos: MQTT Control Packet type
@@ -91,10 +94,6 @@ use crate::control_packets::mqtt_packet::fixed_header::*;
 /// Username (Connect Flag - Username = 1)
 /// Password (Connect Flag - Password = 1)
 ///
-
-static PROTOCOL_NAME: &str = "MQTT";
-static PROTOCOL_VERSION: u8 = 5;
-
 pub struct Connect {
     pub fixed_header: PacketFixedHeader,
     pub variable_header: ConnectVariableHeader,
@@ -128,7 +127,7 @@ impl Connect {
         Ok(())
     }
 
-    pub fn read_from(stream: &mut dyn Read) -> Result<Connect, std::io::Error> {
+    pub fn read_from(stream: &mut dyn Read) -> Result<Connect, Error> {
         let fixed_header = PacketFixedHeader::read_from(stream)?;
 
         let variable_header = ConnectVariableHeader::read_from(stream)?;
