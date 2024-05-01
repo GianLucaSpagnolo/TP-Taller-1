@@ -4,6 +4,7 @@ use crate::data_structures::data_types::data_representation::read_byte;
 
 pub static CONNECT_PACKET: u8 = 0x10;
 pub static CONNACK_PACKET: u8 = 0x20;
+pub static PUBLISH_PACKET: u8 = 0x30;
 pub static _PUBACK_PACKET: u8 = 0x40;
 pub static DISCONNECT_PACKET: u8 = 0xE0;
 
