@@ -127,3 +127,78 @@ impl Connack {
         })
     }
 }
+
+#[cfg(test)]
+mod test{
+    use crate::control_packets::mqtt_packet::variable_header_property::VariableHeaderProperty;
+
+    use super::*;
+
+    #[test]
+    fn test_write_to() {
+        let connack = Connack {
+            fixed_header: PacketFixedHeader::new(CONNACK_PACKET, 0),
+            variable_header: ConnackVariableHeader::new(0, 0, ConnackProperties {
+                session_expiry_interval: 0,
+                assigned_client_identifier: "client".to_string(),
+                server_keep_alive: 0,
+                authentication_method: "auth".to_string(),
+                authentication_data: 0,
+                response_information: "response".to_string(),
+                server_reference: "server".to_string(),
+                reason_string: "reason".to_string(),
+                receive_maximum: 0,
+                topic_alias_maximum: 0,
+                maximum_qos: 0,
+                retain_available: 0,
+                wildcard_subscription_available: 0,
+                subscription_identifiers_available: 0,
+                shared_subscription_available: 0,
+                user_property: ("key".to_string(), "value".to_string()),
+                maximum_packet_size: 0,
+            }).unwrap(),
+        };
+
+        let mut buffer = Vec::new();
+        connack.write_to(&mut buffer).unwrap();
+
+        let mut buffer: Vec<u8> = Vec::new();
+        connack.write_to(&mut buffer).unwrap();
+
+        let mut buffer = buffer.as_slice();
+        let connack = Connack::read_from(&mut buffer).unwrap();
+
+        assert_eq!(connack.fixed_header.packet_type, CONNACK_PACKET);
+        assert_eq!(connack.variable_header.connect_acknowledge_flags, 0);
+        assert_eq!(connack.variable_header.connect_reason_code, 0);
+        assert_eq!(connack.variable_header.properties.properties.len(), 17);
+
+        let props = connack.variable_header.properties.properties;
+
+        for p in props {
+            match p {
+                VariableHeaderProperty::SessionExpiryInterval(i) => assert_eq!(i, 0),
+                VariableHeaderProperty::AssignedClientIdentifier(s) => assert_eq!(s, "client"),
+                VariableHeaderProperty::ServerKeepAlive(i) => assert_eq!(i, 0),
+                VariableHeaderProperty::AuthenticationMethod(s) => assert_eq!(s, "auth"),
+                VariableHeaderProperty::AuthenticationData(i) => assert_eq!(i, 0),
+                VariableHeaderProperty::ResponseInformation(s) => assert_eq!(s, "response"),
+                VariableHeaderProperty::ServerReference(s) => assert_eq!(s, "server"),
+                VariableHeaderProperty::ReasonString(s) => assert_eq!(s, "reason"),
+                VariableHeaderProperty::ReceiveMaximum(i) => assert_eq!(i, 0),
+                VariableHeaderProperty::TopicAliasMaximum(i) => assert_eq!(i, 0),
+                VariableHeaderProperty::MaximumQoS(i) => assert_eq!(i, 0),
+                VariableHeaderProperty::RetainAvailable(i) => assert_eq!(i, 0),
+                VariableHeaderProperty::WildcardSubscriptionAvailable(i) => assert_eq!(i, 0),
+                VariableHeaderProperty::SubscriptionIdentifiersAvailable(i) => assert_eq!(i, 0),
+                VariableHeaderProperty::SharedSubscriptionAvailable(i) => assert_eq!(i, 0),
+                VariableHeaderProperty::UserProperty(value) => {
+                    assert_eq!(value.0, "key");
+                    assert_eq!(value.1, "value");
+                }
+                VariableHeaderProperty::MaximumPacketSize(i) => assert_eq!(i, 0),
+                _ => panic!("Invalid property")
+            }
+        }
+    }
+}
