@@ -1,7 +1,13 @@
 use std::io::Error;
+use std::io::Read;
 
-use crate::control_packets::mqtt_packet::{
-    variable_header_properties::VariableHeaderProperties, variable_header_property::*,
+use crate::{
+    control_packets::mqtt_packet::{
+        variable_header_properties::VariableHeaderProperties, variable_header_property::*,
+    },
+    data_structures::data_types::data_representation::{
+        read_two_byte_integer, read_utf8_encoded_string,
+    },
 };
 
 use super::publish::PublishProperties;
@@ -55,10 +61,8 @@ impl PublishVariableHeader {
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let topic_name_length = read_two_byte_integer(stream)?;
-        let topic_name = read_utf8_encoded_string(stream, topic_name_length as usize)?;
-
+        let topic_name = read_utf8_encoded_string(stream, topic_name_length)?;
         let packet_identifier = read_two_byte_integer(stream)?;
-
         let properties = VariableHeaderProperties::read_from(stream)?;
 
         Ok(PublishVariableHeader {
