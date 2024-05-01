@@ -5,7 +5,7 @@ use std::net::TcpStream;
 use crate::control_packets::mqtt_connack::connack::Connack;
 use crate::control_packets::mqtt_connack::connack::ConnackProperties;
 use crate::control_packets::mqtt_connect::connect::*;
-use crate::control_packets::mqtt_packet::connect_reason_code::ConnectReasonMode;
+use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 
 pub fn server_run(address: &str) -> Result<(), Error> {
@@ -28,15 +28,15 @@ fn determinate_reason_code(connect_packet: &Connect) -> u8 {
     if connect_packet.variable_header.protocol_name.name != *"MQTT"
         || connect_packet.variable_header.protocol_version != 5
     {
-        return ConnectReasonMode::UnsupportedProtocolVersion.get_id();
+        return ReasonMode::UnsupportedProtocolVersion.get_id();
     }
 
     if flags_handler::get_connect_flag_reserved(connect_packet.variable_header.connect_flags) != 0 {
-        return ConnectReasonMode::MalformedPacket.get_id();
+        return ReasonMode::MalformedPacket.get_id();
     }
 
     if flags_handler::get_connect_flag_will_qos(connect_packet.variable_header.connect_flags) != 1 {
-        return ConnectReasonMode::QoSNotSupported.get_id();
+        return ReasonMode::QoSNotSupported.get_id();
     }
 
     if !connect_packet
@@ -46,9 +46,9 @@ fn determinate_reason_code(connect_packet: &Connect) -> u8 {
         .chars()
         .all(|c| c.is_ascii_alphanumeric())
     {
-        return ConnectReasonMode::ClientIdentifierNotValid.get_id();
+        return ReasonMode::ClientIdentifierNotValid.get_id();
     }
-    ConnectReasonMode::Success.get_id()
+    ReasonMode::Success.get_id()
 }
 
 fn handle_connection(stream: &mut TcpStream) -> Result<(), Error> {
