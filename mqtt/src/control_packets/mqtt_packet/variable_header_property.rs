@@ -6,12 +6,12 @@ use crate::data_structures::data_types::data_representation::{
 };
 
 /// PROPERTIES IDS
-pub static PAYLOAD_FORMAT_INDICATOR: u8 = 1;
-pub static MESSAGE_EXPIRY_INTERVAL: u8 = 2;
-pub static CONTENT_TYPE: u8 = 3;
-pub static RESPONSE_TOPIC: u8 = 8;
-pub static CORRELATION_DATA: u8 = 9;
-pub static SUBSCRIPTION_IDENTIFIER: u8 = 11;
+pub const PAYLOAD_FORMAT_INDICATOR: u8 = 1;
+pub const MESSAGE_EXPIRY_INTERVAL: u8 = 2;
+pub const CONTENT_TYPE: u8 = 3;
+pub const RESPONSE_TOPIC: u8 = 8;
+pub const CORRELATION_DATA: u8 = 9;
+pub const SUBSCRIPTION_IDENTIFIER: u8 = 11;
 pub const SESSION_EXPIRY_INTERVAL: u8 = 17;
 pub const ASSIGNED_CLIENT_IDENTIFIER: u8 = 18;
 pub const SERVER_KEEP_ALIVE: u8 = 19;
@@ -24,7 +24,7 @@ pub const SERVER_REFERENCE: u8 = 28;
 pub const REASON_STRING: u8 = 31;
 pub const RECEIVE_MAXIMUM: u8 = 33;
 pub const TOPIC_ALIAS_MAXIMUM: u8 = 34;
-pub static TOPIC_ALIAS: u8 = 35;
+pub const TOPIC_ALIAS: u8 = 35;
 pub const MAXIMUM_QOS: u8 = 36;
 pub const RETAIN_AVAILABLE: u8 = 37;
 pub const USER_PROPERTY: u8 = 38;
@@ -152,8 +152,8 @@ impl VariableHeaderProperty {
 
     pub fn new_property_utf8_string(id: u8, str: String) -> Result<Self, Error> {
         match id {
-            3 => Ok(VariableHeaderProperty::ContentType(str)),
-            8 => Ok(VariableHeaderProperty::ResponseTopic(str)),
+            CONTENT_TYPE => Ok(VariableHeaderProperty::ContentType(str)),
+            RESPONSE_TOPIC => Ok(VariableHeaderProperty::ResponseTopic(str)),
             ASSIGNED_CLIENT_IDENTIFIER => Ok(VariableHeaderProperty::AssignedClientIdentifier(str)),
             AUTHENTICATION_METHOD => Ok(VariableHeaderProperty::AuthenticationMethod(str)),
             RESPONSE_INFORMATION => Ok(VariableHeaderProperty::ResponseInformation(str)),
@@ -168,8 +168,8 @@ impl VariableHeaderProperty {
 
     pub fn new_property_u32(id: u8, value: u32) -> Result<Self, Error> {
         match id {
-            2 => Ok(VariableHeaderProperty::MessageExpiryInterval(value)),
-            11 => Ok(VariableHeaderProperty::SubscriptionIdentifier(value)),
+            MESSAGE_EXPIRY_INTERVAL => Ok(VariableHeaderProperty::MessageExpiryInterval(value)),
+            SUBSCRIPTION_IDENTIFIER => Ok(VariableHeaderProperty::SubscriptionIdentifier(value)),
             SESSION_EXPIRY_INTERVAL => Ok(VariableHeaderProperty::SessionExpiryInterval(value)),
             MAXIMUM_PACKET_SIZE => Ok(VariableHeaderProperty::MaximumPacketSize(value)),
             _ => Err(Error::new(
@@ -181,12 +181,12 @@ impl VariableHeaderProperty {
 
     pub fn new_property_u16(id: u8, value: u16) -> Result<Self, Error> {
         match id {
-            9 => Ok(VariableHeaderProperty::CorrelationData(value)),
+            CORRELATION_DATA => Ok(VariableHeaderProperty::CorrelationData(value)),
             SERVER_KEEP_ALIVE => Ok(VariableHeaderProperty::ServerKeepAlive(value)),
             AUTHENTICATION_DATA => Ok(VariableHeaderProperty::AuthenticationData(value)),
             RECEIVE_MAXIMUM => Ok(VariableHeaderProperty::ReceiveMaximum(value)),
             TOPIC_ALIAS_MAXIMUM => Ok(VariableHeaderProperty::TopicAliasMaximum(value)),
-            35 => Ok(VariableHeaderProperty::TopicAlias(value)),
+            TOPIC_ALIAS => Ok(VariableHeaderProperty::TopicAlias(value)),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -196,7 +196,7 @@ impl VariableHeaderProperty {
 
     pub fn new_property_u8(id: u8, value: u8) -> Result<Self, Error> {
         match id {
-            1 => Ok(VariableHeaderProperty::PayloadFormatIndicator(value)),
+            PAYLOAD_FORMAT_INDICATOR => Ok(VariableHeaderProperty::PayloadFormatIndicator(value)),
             REQUEST_PROBLEM_INFORMATION => {
                 Ok(VariableHeaderProperty::RequestProblemInformation(value))
             }
@@ -227,29 +227,29 @@ impl VariableHeaderProperty {
         id: u8,
     ) -> Result<Option<Self>, FromUtf8Error> {
         let property = match id {
-            1 => {
+            PAYLOAD_FORMAT_INDICATOR => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::PayloadFormatIndicator(value))
             }
-            2 => {
+            MESSAGE_EXPIRY_INTERVAL => {
                 let value = four_byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::MessageExpiryInterval(value))
             }
-            3 => {
+            CONTENT_TYPE => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
                 Some(VariableHeaderProperty::ContentType(value))
             }
-            8 => {
+            RESPONSE_TOPIC => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
                 Some(VariableHeaderProperty::ResponseTopic(value))
             }
-            9 => {
+            CORRELATION_DATA => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::CorrelationData(value))
             }
-            11 => {
+            SUBSCRIPTION_IDENTIFIER => {
                 let value = four_byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::SubscriptionIdentifier(value))
             }
@@ -306,7 +306,7 @@ impl VariableHeaderProperty {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::TopicAliasMaximum(value))
             }
-            35 => {
+            TOPIC_ALIAS => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::TopicAlias(value))
             }

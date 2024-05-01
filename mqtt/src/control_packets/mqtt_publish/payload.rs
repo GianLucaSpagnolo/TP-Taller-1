@@ -24,7 +24,7 @@ impl _PublishPayload {
     pub fn _as_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = Vec::new();
 
-        bytes.extend_from_slice(&self.bytes_length.to_be_bytes());
+        bytes.extend_from_slice(&(self.message.len() as u16).to_be_bytes());
         bytes.extend_from_slice(self.message.as_bytes());
 
         bytes
