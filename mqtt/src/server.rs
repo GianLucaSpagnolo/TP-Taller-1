@@ -5,8 +5,8 @@ use std::net::TcpStream;
 use crate::control_packets::mqtt_connack::connack::Connack;
 use crate::control_packets::mqtt_connack::connack::ConnackProperties;
 use crate::control_packets::mqtt_connect::connect::*;
-use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
+use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
 
 pub fn server_run(address: &str) -> Result<(), Error> {
     let listener = match TcpListener::bind(address) {

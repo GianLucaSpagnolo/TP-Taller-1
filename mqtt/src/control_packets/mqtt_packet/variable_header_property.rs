@@ -29,7 +29,7 @@ pub const SHARED_SUBSCRIPTION_AVAILABLE: u8 = 42;
 #[derive(Debug)]
 pub enum VariableHeaderProperty {
     SessionExpiryInterval(u32),           // Four Byte Integer
-    AssignedClientIdentifier(String),      // UTF-8 string
+    AssignedClientIdentifier(String),     // UTF-8 string
     ServerKeepAlive(u16),                 // Two Byte Integer
     AuthenticationMethod(String),         // UTF-8 Encoded String
     AuthenticationData(u16),              // Binary Data
@@ -169,15 +169,23 @@ impl VariableHeaderProperty {
 
     pub fn new_property_u8(id: u8, value: u8) -> Result<Self, Error> {
         match id {
-            REQUEST_PROBLEM_INFORMATION => Ok(VariableHeaderProperty::RequestProblemInformation(value)),
-            REQUEST_RESPONSE_INFORMATION => Ok(VariableHeaderProperty::RequestResponseInformation(value)),
+            REQUEST_PROBLEM_INFORMATION => {
+                Ok(VariableHeaderProperty::RequestProblemInformation(value))
+            }
+            REQUEST_RESPONSE_INFORMATION => {
+                Ok(VariableHeaderProperty::RequestResponseInformation(value))
+            }
             MAXIMUM_QOS => Ok(VariableHeaderProperty::MaximumQoS(value)),
             RETAIN_AVAILABLE => Ok(VariableHeaderProperty::RetainAvailable(value)),
-            WILDCARD_SUBSCRIPTION_AVAILABLE => Ok(VariableHeaderProperty::WildcardSubscriptionAvailable(value)),
-            SUBSCRIPTION_IDENTIFIERS_AVAILABLE => Ok(VariableHeaderProperty::SubscriptionIdentifiersAvailable(
-                value,
-            )),
-            SHARED_SUBSCRIPTION_AVAILABLE => Ok(VariableHeaderProperty::SharedSubscriptionAvailable(value)),
+            WILDCARD_SUBSCRIPTION_AVAILABLE => {
+                Ok(VariableHeaderProperty::WildcardSubscriptionAvailable(value))
+            }
+            SUBSCRIPTION_IDENTIFIERS_AVAILABLE => Ok(
+                VariableHeaderProperty::SubscriptionIdentifiersAvailable(value),
+            ),
+            SHARED_SUBSCRIPTION_AVAILABLE => {
+                Ok(VariableHeaderProperty::SharedSubscriptionAvailable(value))
+            }
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",

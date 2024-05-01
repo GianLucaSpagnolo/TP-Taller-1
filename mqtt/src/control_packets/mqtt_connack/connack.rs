@@ -129,7 +129,7 @@ impl Connack {
 }
 
 #[cfg(test)]
-mod test{
+mod test {
     use crate::control_packets::mqtt_packet::variable_header_property::VariableHeaderProperty;
 
     use super::*;
@@ -138,25 +138,30 @@ mod test{
     fn test_write_to() {
         let connack = Connack {
             fixed_header: PacketFixedHeader::new(CONNACK_PACKET, 0),
-            variable_header: ConnackVariableHeader::new(0, 0, ConnackProperties {
-                session_expiry_interval: 0,
-                assigned_client_identifier: "client".to_string(),
-                server_keep_alive: 0,
-                authentication_method: "auth".to_string(),
-                authentication_data: 0,
-                response_information: "response".to_string(),
-                server_reference: "server".to_string(),
-                reason_string: "reason".to_string(),
-                receive_maximum: 0,
-                topic_alias_maximum: 0,
-                maximum_qos: 0,
-                retain_available: 0,
-                wildcard_subscription_available: 0,
-                subscription_identifiers_available: 0,
-                shared_subscription_available: 0,
-                user_property: ("key".to_string(), "value".to_string()),
-                maximum_packet_size: 0,
-            }).unwrap(),
+            variable_header: ConnackVariableHeader::new(
+                0,
+                0,
+                ConnackProperties {
+                    session_expiry_interval: 0,
+                    assigned_client_identifier: "client".to_string(),
+                    server_keep_alive: 0,
+                    authentication_method: "auth".to_string(),
+                    authentication_data: 0,
+                    response_information: "response".to_string(),
+                    server_reference: "server".to_string(),
+                    reason_string: "reason".to_string(),
+                    receive_maximum: 0,
+                    topic_alias_maximum: 0,
+                    maximum_qos: 0,
+                    retain_available: 0,
+                    wildcard_subscription_available: 0,
+                    subscription_identifiers_available: 0,
+                    shared_subscription_available: 0,
+                    user_property: ("key".to_string(), "value".to_string()),
+                    maximum_packet_size: 0,
+                },
+            )
+            .unwrap(),
         };
 
         let mut buffer = Vec::new();
@@ -197,7 +202,7 @@ mod test{
                     assert_eq!(value.1, "value");
                 }
                 VariableHeaderProperty::MaximumPacketSize(i) => assert_eq!(i, 0),
-                _ => panic!("Invalid property")
+                _ => panic!("Invalid property"),
             }
         }
     }

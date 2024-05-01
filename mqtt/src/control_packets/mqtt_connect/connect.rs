@@ -201,7 +201,8 @@ mod test {
             maximum_packet_size: 0,
         };
 
-        let connect = Connect::new(client_id.clone(), connect_flags, keep_alive, properties).unwrap();
+        let connect =
+            Connect::new(client_id.clone(), connect_flags, keep_alive, properties).unwrap();
 
         let mut buffer: Vec<u8> = Vec::new();
         connect.write_to(&mut buffer).unwrap();
@@ -210,7 +211,10 @@ mod test {
         let connect = Connect::read_from(&mut buffer).unwrap();
 
         assert_eq!(connect.fixed_header.packet_type, CONNECT_PACKET);
-        assert_eq!(connect.variable_header.protocol_name.name, PROTOCOL_NAME.to_string());
+        assert_eq!(
+            connect.variable_header.protocol_name.name,
+            PROTOCOL_NAME.to_string()
+        );
         assert_eq!(connect.variable_header.protocol_version, PROTOCOL_VERSION);
         assert_eq!(connect.variable_header.connect_flags, connect_flags);
         assert_eq!(connect.variable_header.keep_alive, keep_alive);
@@ -249,7 +253,7 @@ mod test {
                 VariableHeaderProperty::MaximumPacketSize(value) => {
                     assert_eq!(value, 0);
                 }
-                _ => panic!("Invalid property")
+                _ => panic!("Invalid property"),
             }
         }
     }

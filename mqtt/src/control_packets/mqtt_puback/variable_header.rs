@@ -93,23 +93,35 @@ mod test {
                 reason_string: "reason".to_string(),
                 user_property: ("name".to_string(), "value".to_string()),
             },
-        ).unwrap();
+        )
+        .unwrap();
 
         let mut buf = Vec::new();
-        puback_varible_header._as_bytes().iter().for_each(|b| buf.push(*b));
+        puback_varible_header
+            ._as_bytes()
+            .iter()
+            .for_each(|b| buf.push(*b));
 
         let mut stream = std::io::Cursor::new(buf);
         let puback_varible_header = _PubackVariableHeader::_read_from(&mut stream).unwrap();
 
         assert_eq!(puback_varible_header.packet_id, 1);
         assert_eq!(puback_varible_header.puback_reason_code, 0);
-        if let VariableHeaderProperty::ReasonString(reason_string) = &puback_varible_header.properties._get_property(REASON_STRING).unwrap() {
+        if let VariableHeaderProperty::ReasonString(reason_string) = &puback_varible_header
+            .properties
+            ._get_property(REASON_STRING)
+            .unwrap()
+        {
             assert_eq!(reason_string, "reason");
         } else {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::UserProperty(user_property) = &puback_varible_header.properties._get_property(USER_PROPERTY).unwrap() {
+        if let VariableHeaderProperty::UserProperty(user_property) = &puback_varible_header
+            .properties
+            ._get_property(USER_PROPERTY)
+            .unwrap()
+        {
             assert_eq!(user_property.0, "name");
             assert_eq!(user_property.1, "value");
         } else {
