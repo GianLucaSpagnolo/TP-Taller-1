@@ -1,4 +1,5 @@
 use std::io::Error;
+use std::io::Read;
 
 use crate::{
     control_packets::mqtt_packet::{
@@ -65,7 +66,7 @@ impl ConnectVariableHeader {
 
         bytes
     }
-    pub fn read_from(stream: &mut dyn std::io::Read) -> Result<Self, Error> {
+    pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let protocol_name_length = read_two_byte_integer(stream)?;
         let protocol_name = read_utf8_encoded_string(stream, protocol_name_length)?;
         let protocol_version = read_byte(stream)?;
@@ -73,7 +74,7 @@ impl ConnectVariableHeader {
         let keep_alive = read_two_byte_integer(stream)?;
         let properties = VariableHeaderProperties::read_from(stream)?;
 
-        let variable_header = ConnectVariableHeader {
+        Ok(ConnectVariableHeader {
             protocol_name: VariableHeaderProtocolName {
                 length: protocol_name_length,
                 name: protocol_name,
@@ -82,9 +83,7 @@ impl ConnectVariableHeader {
             connect_flags,
             keep_alive,
             properties,
-        };
-
-        Ok(variable_header)
+        })
     }
 }
 
