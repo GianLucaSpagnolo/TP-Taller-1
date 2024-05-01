@@ -58,7 +58,6 @@ use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, CONNA
 /// 38 - 0x26 - User Property - UTF-8 String Pair
 /// 39 - 0x27 - Maximum Packet Size - Four Byte Integer (u32)
 ///
-
 pub struct Connack {
     pub fixed_header: PacketFixedHeader,
     pub variable_header: ConnackVariableHeader,

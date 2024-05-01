@@ -11,6 +11,12 @@ mod control_packets {
         pub mod variable_header;
     }
 
+    pub mod mqtt_publish {
+        pub mod payload;
+        pub mod publish;
+        pub mod variable_header;
+    }
+
     pub mod mqtt_packet {
         pub mod fixed_header;
         pub mod flags;

@@ -3,9 +3,9 @@ use std::{
     string::FromUtf8Error,
 };
 
+use super::variable_header_property::*;
 use crate::data_structures::data_types::data_representation::read_byte;
 
-use super::variable_header_property::*;
 pub struct VariableHeaderProperties {
     pub bytes_length: u8,
     pub properties: Vec<VariableHeaderProperty>,
@@ -20,12 +20,12 @@ impl VariableHeaderProperties {
         &mut self,
         id: u8,
         first_str: String,
-        secornd_str: String,
+        second_str: String,
     ) -> Result<(), Error> {
-        self.bytes_length += 5 + first_str.len() as u8 + secornd_str.len() as u8;
+        self.bytes_length += 5 + first_str.len() as u8 + second_str.len() as u8;
 
         let prop_result =
-            VariableHeaderProperty::new_property_utf8_pair_string(id, first_str, secornd_str)?;
+            VariableHeaderProperty::new_property_utf8_pair_string(id, first_str, second_str)?;
 
         self.properties.push(prop_result);
 
