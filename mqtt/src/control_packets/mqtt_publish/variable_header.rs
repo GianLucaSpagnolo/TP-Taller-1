@@ -105,3 +105,182 @@ pub fn _new_publish_properties(
 
     Ok(variable_props)
 }
+
+#[cfg(test)]
+mod test {
+    use crate::control_packets::mqtt_packet::variable_header_property::{
+        VariableHeaderProperty, CONTENT_TYPE, CORRELATION_DATA, MESSAGE_EXPIRY_INTERVAL,
+        PAYLOAD_FORMAT_INDICATOR, RESPONSE_TOPIC, SUBSCRIPTION_IDENTIFIER, TOPIC_ALIAS,
+        USER_PROPERTY,
+    };
+
+    use super::*;
+
+    #[test]
+    fn test_publish() {
+        let topic = "topic".to_string();
+
+        let publish_varible_header = _PublishVariableHeader::_new(
+            topic.len() as u16,
+            topic,
+            1,
+            _PublishProperties {
+                payload_format_indicator: 1,
+                message_expiry_interval: 1,
+                content_type: "type".to_string(),
+                response_topic: "response".to_string(),
+                correlation_data: 1,
+                subscription_identifier: 1,
+                topic_alias: 1,
+                user_property_key: "key".to_string(),
+                user_property_value: "value".to_string(),
+            },
+        )
+        .unwrap();
+
+        let mut buf = Vec::new();
+        publish_varible_header
+            ._as_bytes()
+            .iter()
+            .for_each(|b| buf.push(*b));
+
+        let mut stream = std::io::Cursor::new(buf);
+        let publish_varible_header = _PublishVariableHeader::_read_from(&mut stream).unwrap();
+
+        assert_eq!(publish_varible_header.topic_name.length, 5);
+        assert_eq!(publish_varible_header.topic_name.name, "topic");
+        assert_eq!(publish_varible_header.packet_identifier, 1);
+
+        if let VariableHeaderProperty::PayloadFormatIndicator(payload_format_indicator) =
+            &publish_varible_header
+                .properties
+                ._get_property(PAYLOAD_FORMAT_INDICATOR)
+                .unwrap()
+        {
+            assert_eq!(*payload_format_indicator, 1);
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::MessageExpiryInterval(message_expiry_interval) =
+            &publish_varible_header
+                .properties
+                ._get_property(MESSAGE_EXPIRY_INTERVAL)
+                .unwrap()
+        {
+            assert_eq!(*message_expiry_interval, 1);
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::ContentType(content_type) = &publish_varible_header
+            .properties
+            ._get_property(CONTENT_TYPE)
+            .unwrap()
+        {
+            assert_eq!(content_type, "type");
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::ResponseTopic(response_topic) = &publish_varible_header
+            .properties
+            ._get_property(RESPONSE_TOPIC)
+            .unwrap()
+        {
+            assert_eq!(response_topic, "response");
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::CorrelationData(correlation_data) = &publish_varible_header
+            .properties
+            ._get_property(CORRELATION_DATA)
+            .unwrap()
+        {
+            assert_eq!(*correlation_data, 1);
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::SubscriptionIdentifier(subscription_identifier) =
+            &publish_varible_header
+                .properties
+                ._get_property(SUBSCRIPTION_IDENTIFIER)
+                .unwrap()
+        {
+            assert_eq!(*subscription_identifier, 1);
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::TopicAlias(topic_alias) = &publish_varible_header
+            .properties
+            ._get_property(TOPIC_ALIAS)
+            .unwrap()
+        {
+            assert_eq!(*topic_alias, 1);
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::UserProperty(user_property) = &publish_varible_header
+            .properties
+            ._get_property(USER_PROPERTY)
+            .unwrap()
+        {
+            assert_eq!(user_property.0, "key");
+            assert_eq!(user_property.1, "value");
+        } else {
+            panic!("Error");
+        }
+    }
+
+    #[test]
+    fn test_publish_variable_properties_length() {
+        let topic = "topic".to_string();
+
+        let publish_varible_header = _PublishVariableHeader::_new(
+            topic.len() as u16, // 2
+            topic,              // 5
+            1,                  // 2
+            _PublishProperties {
+                payload_format_indicator: 1,              // 1 + 1
+                message_expiry_interval: 1,               // 1 + 4
+                content_type: "type".to_string(),         // 3 + 4
+                response_topic: "response".to_string(),   // 3 + 8
+                correlation_data: 1,                      // 1 + 2
+                subscription_identifier: 1,               // 1 + 4
+                topic_alias: 1,                           // 1 + 2
+                user_property_key: "key".to_string(),     // 1 + 2 + 3
+                user_property_value: "value".to_string(), // 2 + 5
+            },
+        )
+        .unwrap();
+
+        let variable_header_length = 2
+            + "topic".to_string().len()
+            + 2
+            + 1
+            + 1
+            + 1
+            + 4
+            + 3
+            + "type".to_string().len()
+            + 3
+            + "response".to_string().len()
+            + 1
+            + 2
+            + 1
+            + 4
+            + 1
+            + 2
+            + 5
+            + "key".to_string().len()
+            + "value".to_string().len();
+        assert_eq!(
+            publish_varible_header._length(),
+            variable_header_length as u8
+        );
+    }
+}
