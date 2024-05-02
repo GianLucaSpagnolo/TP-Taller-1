@@ -29,6 +29,10 @@ mod control_packets {
         pub mod puback;
         pub mod variable_header;
     }
+
+    pub mod mqtt_pingreq {
+        pub mod pingreq;
+    }
 }
 
 mod data_structures {
