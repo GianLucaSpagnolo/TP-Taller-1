@@ -29,4 +29,21 @@ impl _PingResp {
     }
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
 
+    #[test]
+    fn pingresp() {
+        let pingresp = _PingResp::_new();
+
+        let mut buffer = Vec::new();
+        pingresp._write_to(&mut buffer).unwrap();
+
+        let mut buffer = buffer.as_slice();
+        let pingresp = _PingResp::_read_from(&mut buffer).unwrap();
+
+        assert_eq!(pingresp.fixed_header.packet_type, _PINGRESP_PACKET);
+        assert_eq!(pingresp.fixed_header.remaining_length, 0);
+    }
+}
