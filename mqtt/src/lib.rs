@@ -29,6 +29,10 @@ mod control_packets {
         pub mod puback;
         pub mod variable_header;
     }
+  
+    pub mod mqtt_pingresp {
+        pub mod pingresp;
+    }
 
     pub mod mqtt_disconnect {
         pub mod disconnect;
