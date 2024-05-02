@@ -7,6 +7,7 @@ pub static CONNACK_PACKET: u8 = 0x20;
 pub static _PUBLISH_PACKET: u8 = 0x30;
 pub static _PUBACK_PACKET: u8 = 0x40;
 pub static _PINGREQ_PACKET: u8 = 0xC0;
+pub static _PINGRESP_PACKET: u8 = 0xD0;
 pub static _DISCONNECT_PACKET: u8 = 0xE0;
 
 pub struct PacketFixedHeader {
