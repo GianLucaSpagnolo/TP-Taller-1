@@ -215,7 +215,7 @@ mod test {
         if let VariableHeaderProperty::PayloadFormatIndicator(value) =
             props._get_property(PAYLOAD_FORMAT_INDICATOR).unwrap()
         {
-            assert_eq!(value, &1);
+            assert_eq!(*value, 1);
         } else {
             panic!("Error");
         }
@@ -223,7 +223,7 @@ mod test {
         if let VariableHeaderProperty::MessageExpiryInterval(value) =
             props._get_property(MESSAGE_EXPIRY_INTERVAL).unwrap()
         {
-            assert_eq!(value, &0);
+            assert_eq!(*value, 0);
         } else {
             panic!("Error");
         }
@@ -247,7 +247,7 @@ mod test {
         if let VariableHeaderProperty::CorrelationData(value) =
             props._get_property(CORRELATION_DATA).unwrap()
         {
-            assert_eq!(value, &0);
+            assert_eq!(*value, 0);
         } else {
             panic!("Error");
         }
@@ -255,14 +255,14 @@ mod test {
         if let VariableHeaderProperty::SubscriptionIdentifier(value) =
             props._get_property(SUBSCRIPTION_IDENTIFIER).unwrap()
         {
-            assert_eq!(value, &0);
+            assert_eq!(*value, 0);
         } else {
             panic!("Error");
         }
 
         if let VariableHeaderProperty::TopicAlias(value) = props._get_property(TOPIC_ALIAS).unwrap()
         {
-            assert_eq!(value, &0);
+            assert_eq!(*value, 0);
         } else {
             panic!("Error");
         }
