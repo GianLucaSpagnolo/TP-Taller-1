@@ -75,8 +75,6 @@ pub fn _new_disconnect_properties(
     Ok(variable_props)
 }
 
-
-
 #[cfg(test)]
 mod test {
     use crate::control_packets::mqtt_packet::variable_header_property::{
@@ -105,14 +103,16 @@ mod test {
             .for_each(|b| buf.push(*b));
 
         let mut stream = std::io::Cursor::new(buf);
-        let disconnect_variable_header = _DisconnectVariableHeader::_read_from(&mut stream).unwrap();
+        let disconnect_variable_header =
+            _DisconnectVariableHeader::_read_from(&mut stream).unwrap();
 
         assert_eq!(disconnect_variable_header.disconnect_reason_code, 0);
 
-        if let VariableHeaderProperty::SessionExpiryInterval(session_expiry_interval) = &disconnect_variable_header
-            .properties
-            ._get_property(SESSION_EXPIRY_INTERVAL)
-            .unwrap()
+        if let VariableHeaderProperty::SessionExpiryInterval(session_expiry_interval) =
+            &disconnect_variable_header
+                .properties
+                ._get_property(SESSION_EXPIRY_INTERVAL)
+                .unwrap()
         {
             assert_eq!(*session_expiry_interval, 0);
         } else {
@@ -140,10 +140,11 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::ServerReference(server_reference) = &disconnect_variable_header
-            .properties
-            ._get_property(SERVER_REFERENCE)
-            .unwrap()
+        if let VariableHeaderProperty::ServerReference(server_reference) =
+            &disconnect_variable_header
+                .properties
+                ._get_property(SERVER_REFERENCE)
+                .unwrap()
         {
             assert_eq!(server_reference, "server");
         } else {

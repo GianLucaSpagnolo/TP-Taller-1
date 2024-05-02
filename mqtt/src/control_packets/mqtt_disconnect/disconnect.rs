@@ -52,11 +52,11 @@ impl _Disconnect {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use crate::control_packets::mqtt_packet::variable_header_property::{
-        VariableHeaderProperty, REASON_STRING, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL, USER_PROPERTY
+        VariableHeaderProperty, REASON_STRING, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL,
+        USER_PROPERTY,
     };
 
     use super::*;
@@ -82,7 +82,7 @@ mod test {
 
         assert_eq!(disconnect.fixed_header.packet_type, _DISCONNECT_PACKET);
         assert_eq!(disconnect.variable_header.disconnect_reason_code, 0);
-  
+
         let props = &disconnect.variable_header.properties;
 
         if let VariableHeaderProperty::SessionExpiryInterval(value) =
