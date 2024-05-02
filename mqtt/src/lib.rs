@@ -33,6 +33,11 @@ mod control_packets {
     pub mod mqtt_pingreq {
         pub mod pingreq;
     }
+  
+    pub mod mqtt_disconnect {
+        pub mod disconnect;
+        pub mod variable_header;
+    }
 }
 
 mod data_structures {
