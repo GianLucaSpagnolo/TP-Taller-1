@@ -29,5 +29,21 @@ impl _PingReq {
     }
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
 
+    #[test]
+    fn pingreq() {
+        let pingreq = _PingReq::_new();
 
+        let mut buffer = Vec::new();
+        pingreq._write_to(&mut buffer).unwrap();
+
+        let mut buffer = buffer.as_slice();
+        let pingreq = _PingReq::_read_from(&mut buffer).unwrap();
+
+        assert_eq!(pingreq.fixed_header.packet_type, _PINGREQ_PACKET);
+        assert_eq!(pingreq.fixed_header.remaining_length, 0);
+    }
+}
