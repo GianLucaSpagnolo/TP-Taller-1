@@ -23,6 +23,11 @@ mod control_packets {
         pub mod puback;
         pub mod variable_header;
     }
+
+    pub mod mqtt_disconnect {
+        pub mod disconnect;
+        pub mod variable_header;
+    }
 }
 
 mod data_structures {
