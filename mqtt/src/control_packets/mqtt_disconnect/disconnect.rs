@@ -51,3 +51,71 @@ impl _Disconnect {
         })
     }
 }
+
+
+#[cfg(test)]
+mod test {
+    use crate::control_packets::mqtt_packet::variable_header_property::{
+        VariableHeaderProperty, REASON_STRING, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL, USER_PROPERTY
+    };
+
+    use super::*;
+
+    #[test]
+    fn test_disconnect() {
+        let disconnect = _Disconnect::_new(
+            0,
+            _DisconnectProperties {
+                session_expiry_interval: 0,
+                reason_string: "reason".to_string(),
+                user_property: ("name".to_string(), "value".to_string()),
+                server_reference: "server".to_string(),
+            },
+        )
+        .unwrap();
+
+        let mut buf = Vec::new();
+        disconnect._write_to(&mut buf).unwrap();
+
+        let mut buf = std::io::Cursor::new(buf);
+        let disconnect = _Disconnect::_read_from(&mut buf).unwrap();
+
+        assert_eq!(disconnect.fixed_header.packet_type, _DISCONNECT_PACKET);
+        assert_eq!(disconnect.variable_header.disconnect_reason_code, 0);
+  
+        let props = &disconnect.variable_header.properties;
+
+        if let VariableHeaderProperty::SessionExpiryInterval(value) =
+            props._get_property(SESSION_EXPIRY_INTERVAL).unwrap()
+        {
+            assert_eq!(*value, 0);
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::ReasonString(value) =
+            props._get_property(REASON_STRING).unwrap()
+        {
+            assert_eq!(value, "reason");
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::UserProperty(value) =
+            props._get_property(USER_PROPERTY).unwrap()
+        {
+            assert_eq!(value.0, "name");
+            assert_eq!(value.1, "value");
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::ServerReference(value) =
+            props._get_property(SERVER_REFERENCE).unwrap()
+        {
+            assert_eq!(value, "server");
+        } else {
+            panic!("Error");
+        }
+    }
+}
