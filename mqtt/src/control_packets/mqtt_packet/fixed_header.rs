@@ -6,7 +6,7 @@ pub static CONNECT_PACKET: u8 = 0x10;
 pub static CONNACK_PACKET: u8 = 0x20;
 pub static _PUBLISH_PACKET: u8 = 0x30;
 pub static _PUBACK_PACKET: u8 = 0x40;
-
+pub static _PINGRESP_PACKET: u8 = 0xD0;
 pub struct PacketFixedHeader {
     pub packet_type: u8,
     pub remaining_length: u8, // This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
