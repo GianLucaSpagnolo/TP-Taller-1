@@ -151,4 +151,33 @@ mod test {
             panic!("Error");
         }
     }
+
+    #[test]
+    fn disconnect_variable_header_properties_lenght() {
+        let disconnect_variable_header = _DisconnectVariableHeader::_new(
+            0, //1
+            _DisconnectProperties {
+                session_expiry_interval: 0,                               // 1 + 4
+                reason_string: "reason".to_string(),                      // 3 + 6
+                user_property: ("name".to_string(), "value".to_string()), // 5 + 4 + 5
+                server_reference: "server".to_string(),                   //3 + 6
+            },
+        )
+        .unwrap();
+
+        let variable_header_lenght = 1
+            + 1
+            + 4
+            + 3
+            + "reason".to_string().len()
+            + 5
+            + "name".to_string().len()
+            + "value".to_string().len()
+            + 3
+            + "server".to_string().len();
+        assert_eq!(
+            disconnect_variable_header._length(),
+            variable_header_lenght as u8
+        );
+    }
 }
