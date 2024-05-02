@@ -12,8 +12,8 @@ use crate::{
 
 use super::disconnect::_DisconnectProperties;
 pub struct _DisconnectVariableHeader {
-    disconnect_reason_code: u8,
-    properties: VariableHeaderProperties,
+    pub disconnect_reason_code: u8,
+    pub properties: VariableHeaderProperties,
 }
 
 impl _DisconnectVariableHeader {
