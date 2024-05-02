@@ -74,3 +74,80 @@ pub fn _new_disconnect_properties(
 
     Ok(variable_props)
 }
+
+
+
+#[cfg(test)]
+mod test {
+    use crate::control_packets::mqtt_packet::variable_header_property::{
+        VariableHeaderProperty, REASON_STRING, USER_PROPERTY,
+    };
+
+    use super::*;
+
+    #[test]
+    fn test_disconnect() {
+        let disconnect_variable_header = _DisconnectVariableHeader::_new(
+            0,
+            _DisconnectProperties {
+                session_expiry_interval: 0,
+                reason_string: "reason".to_string(),
+                user_property: ("name".to_string(), "value".to_string()),
+                server_reference: "server".to_string(),
+            },
+        )
+        .unwrap();
+
+        let mut buf = Vec::new();
+        disconnect_variable_header
+            ._as_bytes()
+            .iter()
+            .for_each(|b| buf.push(*b));
+
+        let mut stream = std::io::Cursor::new(buf);
+        let disconnect_variable_header = _DisconnectVariableHeader::_read_from(&mut stream).unwrap();
+
+        assert_eq!(disconnect_variable_header.disconnect_reason_code, 0);
+
+        if let VariableHeaderProperty::SessionExpiryInterval(session_expiry_interval) = &disconnect_variable_header
+            .properties
+            ._get_property(SESSION_EXPIRY_INTERVAL)
+            .unwrap()
+        {
+            assert_eq!(*session_expiry_interval, 0);
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::ReasonString(reason_string) = &disconnect_variable_header
+            .properties
+            ._get_property(REASON_STRING)
+            .unwrap()
+        {
+            assert_eq!(reason_string, "reason");
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::UserProperty(user_property) = &disconnect_variable_header
+            .properties
+            ._get_property(USER_PROPERTY)
+            .unwrap()
+        {
+            assert_eq!(user_property.0, "name");
+            assert_eq!(user_property.1, "value");
+        } else {
+            panic!("Error");
+        }
+
+        if let VariableHeaderProperty::ServerReference(server_reference) = &disconnect_variable_header
+            .properties
+            ._get_property(SERVER_REFERENCE)
+            .unwrap()
+        {
+            assert_eq!(server_reference, "server");
+        } else {
+            panic!("Error");
+        }
+    }
+}
