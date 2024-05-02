@@ -10,31 +10,31 @@ use crate::{
     data_structures::data_types::data_representation::*,
 };
 
-use super::disconnect::DisconnectProperties;
-pub struct DisconnectVariableHeader {
+use super::disconnect::_DisconnectProperties;
+pub struct _DisconnectVariableHeader {
     disconnect_reason_code: u8,
     properties: VariableHeaderProperties,
 }
 
-impl DisconnectVariableHeader {
-    pub fn new(
+impl _DisconnectVariableHeader {
+    pub fn _new(
         disconnect_reason_code: u8,
-        properties: DisconnectProperties,
+        properties: _DisconnectProperties,
     ) -> Result<Self, Error> {
-        let properties = new_disconnect_properties(properties)?;
+        let properties = _new_disconnect_properties(properties)?;
 
-        let variable_header = DisconnectVariableHeader {
+        let variable_header = _DisconnectVariableHeader {
             disconnect_reason_code,
             properties,
         };
 
         Ok(variable_header)
     }
-    pub fn length(&self) -> u8 {
+    pub fn _length(&self) -> u8 {
         1 + self.properties.bytes_length
     }
 
-    pub fn as_bytes(&self) -> Vec<u8> {
+    pub fn _as_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = Vec::new();
 
         bytes.push(self.disconnect_reason_code);
@@ -43,20 +43,19 @@ impl DisconnectVariableHeader {
         bytes
     }
 
-    pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let disconnect_reason_code =
-            crate::data_structures::data_types::data_representation::read_byte(stream)?;
+    pub fn _read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+        let disconnect_reason_code = read_byte(stream)?;
         let properties = VariableHeaderProperties::read_from(stream)?;
 
-        Ok(DisconnectVariableHeader {
+        Ok(_DisconnectVariableHeader {
             disconnect_reason_code,
             properties,
         })
     }
 }
 
-pub fn new_disconnect_properties(
-    disconnect_properties: DisconnectProperties,
+pub fn _new_disconnect_properties(
+    disconnect_properties: _DisconnectProperties,
 ) -> Result<VariableHeaderProperties, Error> {
     let mut variable_props = VariableHeaderProperties::new();
 

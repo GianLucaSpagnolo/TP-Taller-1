@@ -6,7 +6,7 @@ pub static CONNECT_PACKET: u8 = 0x10;
 pub static CONNACK_PACKET: u8 = 0x20;
 pub static _PUBLISH_PACKET: u8 = 0x30;
 pub static _PUBACK_PACKET: u8 = 0x40;
-pub static DISCONNECT_PACKET: u8 = 0xE0;
+pub static _DISCONNECT_PACKET: u8 = 0xE0;
 
 pub struct PacketFixedHeader {
     pub packet_type: u8,
