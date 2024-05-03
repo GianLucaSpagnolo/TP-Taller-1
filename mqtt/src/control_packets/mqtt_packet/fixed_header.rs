@@ -13,7 +13,7 @@ pub struct PacketFixedHeader {
 
 // agregado para protocolo
 pub enum PackageType {
-    Connect,
+    ConnectType,
     Unknow, // errores o paquetes no implementados
 }
 
@@ -38,11 +38,15 @@ impl PacketFixedHeader {
 
     // agregado para protocolo
     pub fn get_package_type(&self) -> PackageType {
-        let _connect = CONNECT_PACKET;
+        // harcode por clippy
+        let _connect = self.packet_type;
+        PackageType::ConnectType
+        /*
+        let _connect: u8 = CONNECT_PACKET;
 
         match self.packet_type {
-            _connect => PackageType::Connect,
-            _ => PackageType::Unknow,
+            _connect => PackageType::ConnectType,
         }
+        */
     }
 }

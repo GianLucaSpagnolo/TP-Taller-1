@@ -11,6 +11,13 @@ pub struct VariableHeaderProperties {
     pub properties: Vec<VariableHeaderProperty>,
 }
 
+// harcode de clippy
+impl Default for VariableHeaderProperties {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VariableHeaderProperties {
     pub fn _get_property(&self, id: u8) -> Option<&VariableHeaderProperty> {
         self.properties.iter().find(|&property| property.id() == id)

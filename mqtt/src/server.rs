@@ -53,6 +53,23 @@ fn determinate_reason_code(connect_packet: &Connect) -> u8 {
     ReasonMode::Success.get_id()
 }
 
+//------------------------------------------------------------------
+
+pub enum HeaderType {
+    ConnectType,
+}
+
+pub enum PackagedPackage {
+    ConnectPackage(Connect),
+}
+// Dado un header devuelve el tipo de paquete, traducido para el protocolo
+pub fn get_package_type(fixed_header: &PacketFixedHeader) -> Option<HeaderType> {
+    match fixed_header.get_package_type() {
+        PackageType::ConnectType => Some(HeaderType::ConnectType),
+        PackageType::Unknow => None,
+    }
+}
+
 // refactorizacion para el protocolo
 // captura los bytes de la red, lee el tipo
 pub fn pack_header_bytes(stream: &mut TcpStream) -> Option<PacketFixedHeader> {
@@ -62,24 +79,30 @@ pub fn pack_header_bytes(stream: &mut TcpStream) -> Option<PacketFixedHeader> {
     }
 }
 
-// Devuelve los bytes empaquetados en la estructura
-// correspondiente.
-pub fn pack_connect_bytes(
-    stream: &mut TcpStream,
+pub fn get_package(stream: &mut TcpStream,
     fixed_header: PacketFixedHeader,
-) -> Option<Connect> {
-    match fixed_header.get_package_type() {
-        PackageType::Connect => {
-            // empaqueta el connect
-            match Connect::read_from_header(stream, fixed_header) {
-                Ok(connect_packcage) => Some(connect_packcage),
-                Err(..) => None,
-            }
-        }
-        PackageType::Unknow => None,
+    package_type: HeaderType) -> Result<PackagedPackage, Error>
+{
+    match package_type {
+        HeaderType::ConnectType => 
+            pack_bytes::<Connect>(stream, fixed_header),
     }
 }
-
+// Devuelve los bytes empaquetados en la estructura
+// correspondiente.
+pub fn pack_bytes<T>(
+    stream: &mut TcpStream,
+    fixed_header: PacketFixedHeader,
+) -> Result<PackagedPackage, Error>
+where
+    T: ReadFromHeader,
+{
+    match T::read_from_header(stream, fixed_header) {
+        Ok(connect) => Ok(PackagedPackage::ConnectPackage(connect)),
+        Err(e) => Err(e),
+    }
+}
+//------------------------------------------------------------------
 fn handle_connection(stream: &mut TcpStream) -> Result<(), Error> {
     let connect = match Connect::read_from(stream) {
         Ok(p) => {

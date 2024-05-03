@@ -1,13 +1,15 @@
 // protocolo de la app, usado por todos los clientes y el servidor
+use std::net::TcpStream;
+use mqtt::server::*;
 
 /// El protocolo traduce los paquetes de mqtt a comandos
 /// entendibles por la app
 ///
 /// para el connect:
-///      * el mqtt recibe los bytes del cliente
-///          * los empaqueta
-///     * el protocolo recibe el paquete 
-///          * traduce el paquete a acciones de la app
+///     * el mqtt recibe los bytes del cliente          -- OK
+///          * los empaqueta y devuelve al protocolo    -- OK
+///     * el protocolo recibe el paquete                -- OK
+///          * traduce el paquete a acciones de la app  -- OK
 ///     * el protocolo traduce los paquetes a acciones de alto nivel
 ///       para el logger.
 ///
@@ -99,6 +101,49 @@
 /// Password (Connect Flag - Password = 1)
 ///
  
+/// para el connect:
+///     * el mqtt recibe los bytes del cliente
+///          * los empaqueta y devuelve al protocolo -- OK
+///     * el protocolo recibe el paquete 
+///          * traduce el paquete a acciones de la app
+///     * el protocolo traduce los paquetes a acciones de alto nivel
+///       para el logger.
+///
+/// 
+
+
+pub enum ServerActions {
+    TryConnect, // guardara el exit code
+}
+
+// usada por el servidor para recibir los paquetes
+// del cliente
+// el protocolo recibe el paquete, lo procesa y traduce el
+// paquete a una accion que el servidor comprenda.
+pub fn receive_package(stream: &mut TcpStream) -> Option<ServerActions> 
+ {
+    // averiguo el tipo de paquete:
+    let fixed_header = match pack_header_bytes(stream) {
+        Some(header_type) => header_type,
+        None => return None,
+    };
+
+   match get_package_type(&fixed_header) {
+        Some(HeaderType::ConnectType) => match get_package(stream, fixed_header, HeaderType::ConnectType) {
+            Ok(pack) => match pack {
+                PackagedPackage::ConnectPackage(_pack) => 
+                    Some(ServerActions::TryConnect),
+            }
+            Err(..) => None,
+        },
+        None => None,
+    }
+
+    // le devuelve el paquete al servidor
+    // el servidor lo pasa al logger
+    // el logger le pide traduccion al protocolo
+}
+
 /*
 let connect = match Connect::read_from(stream) {
         Ok(p) => {
@@ -142,3 +187,4 @@ let connect = match Connect::read_from(stream) {
         Err(e) => return Err(e),
     };
 */
+

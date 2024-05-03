@@ -1,6 +1,7 @@
 // El logger solo sera usado por el servidor,
 // mover logger a carpeta del server.
 
+/*
 /// El logger guarda en alto nivel las acciones de todas las aplicaciones,
 /// que pasan por el servidor.
 /// Cuando el servidor recibe una accion de su protocolo, llama al logger
@@ -17,5 +18,4 @@
 ///      * accion parseada
 ///
 /// El log define el archivo, y su formato. (en un principio .csv)
-///
-
+*/
