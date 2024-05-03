@@ -1,5 +1,7 @@
 pub mod client;
 pub mod server;
+pub mod config;
+
 mod control_packets {
     pub mod mqtt_connect {
         pub mod connect;
