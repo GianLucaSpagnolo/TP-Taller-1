@@ -6,6 +6,10 @@ use crate::control_packets::mqtt_connect::payload::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
 
+// agregado para refactorizacion del server
+use crate::server::PackagedPackage;
+use crate::server::ReadFromHeader;
+
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
 /// 4 bits mas significativos: MQTT Control Packet type
@@ -114,40 +118,12 @@ pub struct ConnectProperties {
     pub maximum_packet_size: u32,
 }
 
+// --------------------------------------------------------
+// tal vez deba moverse al server...
 // agregado para protocolo
-pub trait ReadFromHeader {
-    fn read_from_header(
-        stream: &mut dyn Read,
-        fixed_header: PacketFixedHeader,
-    ) -> Result<Connect, std::io::Error>;
-}
 
-/*
-trait MyStream {
-    fn connect<A: ToSocketAddr>(addr: A) -> Result<Self>;
-    ...
-}
-impl MyStream for HttpStream { ... }
-impl MyStream for HttpsStream { ... }
-impl MyStream for TcpStream { ... }
-
- async fn _connect_timeout<T>(&self) -> Result<T>
-    where
-        T: AsyncRead + AsyncWrite + Unpin + MyStream,
-    {
-        let stream = timeout(
-            self.connect_timeout,
-            T::connect(self.url.socket_addrs(|| None)?[0])
-        ).await??;
-
-        Ok(stream)
-    }
-    https://blog.jcoglan.com/2019/04/22/generic-returns-in-rust/
-    https://users.rust-lang.org/t/rust-generic-return-type/79816
-
-*/
 impl ReadFromHeader for Connect {
-    // agergado para el protocolo, refactorizacion de MQTT para empaquetar
+    // agregado para el protocolo, refactorizacion de MQTT para empaquetar
     // varios tipos
     fn read_from_header(
         stream: &mut dyn Read,
@@ -158,22 +134,19 @@ impl ReadFromHeader for Connect {
         let payload_length = fixed_header.remaining_length - variable_header.length();
         let payload = ConnectPayload::read_from(stream, payload_length)?;
 
-        //let connect =  new_connect(fixed_header, variable_header, payload);
-        Ok(new_connect(fixed_header, variable_header, payload))
+        Ok(Connect {
+            fixed_header,
+            variable_header,
+            payload,
+        })
+    }
+
+    fn pack_package(package: Connect) -> PackagedPackage {
+        PackagedPackage::ConnectPackage(package)
     }
 }
 
-fn new_connect(
-    fixed_header: PacketFixedHeader,
-    variable_header: ConnectVariableHeader,
-    payload: ConnectPayload,
-) -> Connect {
-    Connect {
-        fixed_header,
-        variable_header,
-        payload,
-    }
-}
+// --------------------------------------------------------
 
 impl Connect {
     pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {

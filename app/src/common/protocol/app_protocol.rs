@@ -1,6 +1,7 @@
 // protocolo de la app, usado por todos los clientes y el servidor
-use std::net::TcpStream;
 use mqtt::server::*;
+use std::io::Error;
+use std::net::TcpStream;
 
 /// El protocolo traduce los paquetes de mqtt a comandos
 /// entendibles por la app
@@ -13,7 +14,6 @@ use mqtt::server::*;
 ///     * el protocolo traduce los paquetes a acciones de alto nivel
 ///       para el logger.
 ///
-
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
@@ -100,42 +100,70 @@ use mqtt::server::*;
 /// Username (Connect Flag - Username = 1)
 /// Password (Connect Flag - Password = 1)
 ///
- 
+
 /// para el connect:
 ///     * el mqtt recibe los bytes del cliente
 ///          * los empaqueta y devuelve al protocolo -- OK
-///     * el protocolo recibe el paquete 
+///     * el protocolo recibe el paquete
 ///          * traduce el paquete a acciones de la app
 ///     * el protocolo traduce los paquetes a acciones de alto nivel
 ///       para el logger.
 ///
-/// 
-
+///
 
 pub enum ServerActions {
     TryConnect, // guardara el exit code
+    PackageError,
+}
+
+pub fn server_run(address: &String) -> Result<ServerActions, Error> {
+    // prepara al servidor para la escucha
+    let listener = match server_run_bind(address) {
+        Ok(l) => l,
+        Err(e) => return Err(e),
+    };
+
+    // corre el aceptador y recibe un client stream
+    let mut client_stream = match server_run_listener(&listener) {
+        Ok(pack) => pack,
+        Err(e) => return Err(e),
+    };
+
+    // traduce el paquete recibido
+    match receive_package(&mut client_stream) {
+        Some(action) => Ok(action),
+        None => Ok(ServerActions::PackageError),
+    }
 }
 
 // usada por el servidor para recibir los paquetes
 // del cliente
 // el protocolo recibe el paquete, lo procesa y traduce el
-// paquete a una accion que el servidor comprenda.
-pub fn receive_package(stream: &mut TcpStream) -> Option<ServerActions> 
- {
+// paquete a una accion que el servidor de la app comprenda.
+pub fn receive_package(stream: &mut TcpStream) -> Option<ServerActions> {
     // averiguo el tipo de paquete:
     let fixed_header = match pack_header_bytes(stream) {
         Some(header_type) => header_type,
         None => return None,
     };
 
-   match get_package_type(&fixed_header) {
-        Some(HeaderType::ConnectType) => match get_package(stream, fixed_header, HeaderType::ConnectType) {
-            Ok(pack) => match pack {
-                PackagedPackage::ConnectPackage(_pack) => 
-                    Some(ServerActions::TryConnect),
+    match get_package_type(&fixed_header) {
+        Some(HeaderType::ConnectType) => {
+            match get_package(stream, fixed_header, HeaderType::ConnectType) {
+                Ok(pack) => match pack {
+                    PackagedPackage::ConnectPackage(_pack) =>
+                    // el servidor de la app debera poder
+                    // ejecutar el connack, para esto,
+                    // tanto el enum del server MQTT, como el
+                    // enum del protocolo, deben de tener lo necesario
+                    // para poder reconstruir los paquetes
+                    {
+                        Some(ServerActions::TryConnect)
+                    }
+                },
+                Err(..) => None,
             }
-            Err(..) => None,
-        },
+        }
         None => None,
     }
 
@@ -143,48 +171,3 @@ pub fn receive_package(stream: &mut TcpStream) -> Option<ServerActions>
     // el servidor lo pasa al logger
     // el logger le pide traduccion al protocolo
 }
-
-/*
-let connect = match Connect::read_from(stream) {
-        Ok(p) => {
-            println!(
-                "Connect packet received\n
-            Fixed header type and flags: {}\n
-            Fixed header remaining length: {}\n
-            Variable header protocol name length: {}\n
-            Variable header protocol name: {}\n
-            Variable header protocol version: {}\n
-            Variable header flags reserver: {:01b}
-            Variable header flags clean_start: {:01b}
-            Variable header flags will_flag: {:01b}
-            Variable header flags will_qos: {:02b}
-            Variable header flags will_retain: {:01b}
-            Variable header flags password: {:01b}
-            Variable header flags username: {:01b}\n
-            Variable header keep alive: {}\n
-            Variable header property length: {}\n
-            Variable header properties: {:?}\n
-            Payload client id: {}",
-                p.fixed_header.packet_type,
-                p.fixed_header.remaining_length,
-                p.variable_header.protocol_name.length,
-                p.variable_header.protocol_name.name,
-                p.variable_header.protocol_version,
-                flags_handler::get_connect_flag_reserved(p.variable_header.connect_flags),
-                flags_handler::get_connect_flag_clean_start(p.variable_header.connect_flags),
-                flags_handler::get_connect_flag_will_flag(p.variable_header.connect_flags),
-                flags_handler::get_connect_flag_will_qos(p.variable_header.connect_flags),
-                flags_handler::get_connect_flag_will_retain(p.variable_header.connect_flags),
-                flags_handler::get_connect_flag_password(p.variable_header.connect_flags),
-                flags_handler::get_connect_flag_username(p.variable_header.connect_flags),
-                p.variable_header.keep_alive,
-                p.variable_header.properties.properties.len(),
-                p.variable_header.properties.properties,
-                p.payload.fields.client_id
-            );
-            p
-        }
-        Err(e) => return Err(e),
-    };
-*/
-

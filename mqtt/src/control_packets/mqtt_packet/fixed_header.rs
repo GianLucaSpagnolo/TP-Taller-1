@@ -42,6 +42,7 @@ impl PacketFixedHeader {
         let _connect = self.packet_type;
         PackageType::ConnectType
         /*
+        // estructura escalable
         let _connect: u8 = CONNECT_PACKET;
 
         match self.packet_type {

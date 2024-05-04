@@ -11,7 +11,7 @@
 ///          * la parsea a traves del protocolo
 ///          * le agrega un timestamp y la pasa al file manager para
 ///            persistirla
-/// 
+///
 /// En un principio solo hay un archivo de log, en donde se guardaran los campos:
 ///      * timestamp
 ///      * client_id

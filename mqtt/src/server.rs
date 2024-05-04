@@ -7,8 +7,10 @@ use crate::control_packets::mqtt_connack::connack::ConnackProperties;
 use crate::control_packets::mqtt_connect::connect::*;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
+
 // agregado para protocolo
 use crate::control_packets::mqtt_packet::fixed_header::*;
+use std::io::Read;
 
 pub fn server_run(address: &str) -> Result<(), Error> {
     let listener = match TcpListener::bind(address) {
@@ -54,14 +56,48 @@ fn determinate_reason_code(connect_packet: &Connect) -> u8 {
 }
 
 //------------------------------------------------------------------
-
 pub enum HeaderType {
     ConnectType,
 }
 
+// tanto el enum del server MQTT, como el
+// enum del protocolo, deben de tener lo necesario
+// para poder reconstruir los paquetes
 pub enum PackagedPackage {
     ConnectPackage(Connect),
 }
+
+// trait implementado por todos los mensajes:
+pub trait ReadFromHeader {
+    fn read_from_header(
+        stream: &mut dyn Read,
+        fixed_header: PacketFixedHeader,
+    ) -> Result<Connect, std::io::Error>;
+
+    fn pack_package(package: Connect) -> PackagedPackage;
+}
+
+// main refactorizado del server:
+pub fn server_run_bind(address: &String) -> Result<TcpListener, Error> {
+    TcpListener::bind(address)
+}
+
+pub fn server_run_listener(listener: &TcpListener) -> Result<TcpStream, Error> {
+    let mut stream_tcp = TcpStream::connect("127.0.0.1:0000");
+
+    // hardcode temporal
+    // bloquea al servidor hasta recibir un paquete
+    if let Some(client_stream) = listener.incoming().next() {
+        stream_tcp = match client_stream {
+            Ok(stream) => Ok(stream),
+            Err(e) => return Err(e),
+        };
+        return stream_tcp;
+    };
+
+    stream_tcp
+}
+
 // Dado un header devuelve el tipo de paquete, traducido para el protocolo
 pub fn get_package_type(fixed_header: &PacketFixedHeader) -> Option<HeaderType> {
     match fixed_header.get_package_type() {
@@ -71,7 +107,7 @@ pub fn get_package_type(fixed_header: &PacketFixedHeader) -> Option<HeaderType> 
 }
 
 // refactorizacion para el protocolo
-// captura los bytes de la red, lee el tipo
+// captura los bytes de la red, y devuelve el header
 pub fn pack_header_bytes(stream: &mut TcpStream) -> Option<PacketFixedHeader> {
     match PacketFixedHeader::read_from(stream) {
         Ok(header) => Some(header),
@@ -79,15 +115,18 @@ pub fn pack_header_bytes(stream: &mut TcpStream) -> Option<PacketFixedHeader> {
     }
 }
 
-pub fn get_package(stream: &mut TcpStream,
+// devolvera el paquete encapsulado en un enum
+// interpretable por el protocolo
+pub fn get_package(
+    stream: &mut TcpStream,
     fixed_header: PacketFixedHeader,
-    package_type: HeaderType) -> Result<PackagedPackage, Error>
-{
+    package_type: HeaderType,
+) -> Result<PackagedPackage, Error> {
     match package_type {
-        HeaderType::ConnectType => 
-            pack_bytes::<Connect>(stream, fixed_header),
+        HeaderType::ConnectType => pack_bytes::<Connect>(stream, fixed_header),
     }
 }
+
 // Devuelve los bytes empaquetados en la estructura
 // correspondiente.
 pub fn pack_bytes<T>(
@@ -97,8 +136,10 @@ pub fn pack_bytes<T>(
 where
     T: ReadFromHeader,
 {
+    // Delega al tipo de paquete correspondiente la lectura de
+    // los bytes correspondientes
     match T::read_from_header(stream, fixed_header) {
-        Ok(connect) => Ok(PackagedPackage::ConnectPackage(connect)),
+        Ok(package) => Ok(T::pack_package(package)),
         Err(e) => Err(e),
     }
 }
