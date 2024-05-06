@@ -30,20 +30,15 @@ impl ConnectVariableHeader {
         2 + self.protocol_name.length as u8 + 1 + 1 + 2 + self.properties.bytes_length
     }
 
-    pub fn new(
-        protocol_name_length: u16,
-        protocol_name: String,
-        protocol_version: u8,
-        props: &ConnectProperties,
-    ) -> Result<Self, Error> {
-        let properties = new_connect_properties(props)?;
+    pub fn new(props: &ConnectProperties ) -> Result<Self, Error> {
+        let properties = new_connect_properties(&props)?;
 
         let variable_header = ConnectVariableHeader {
             protocol_name: VariableHeaderProtocolName {
-                length: protocol_name_length,
-                name: protocol_name,
+                length: props.protocol_name.len() as u16,
+                name: props.protocol_name.clone(),
             },
-            protocol_version,
+            protocol_version: props.protocol_version,
             connect_flags: props.connect_flags,
             keep_alive: props.keep_alive,
             properties,
@@ -91,35 +86,35 @@ pub fn new_connect_properties(
     let mut variable_props = VariableHeaderProperties::new();
 
     if let Some(session_expiry_interval) = connect_props.session_expiry_interval {
-        variable_props.add_u32_property(SESSION_EXPIRY_INTERVAL, session_expiry_interval);
+        variable_props.add_u32_property(SESSION_EXPIRY_INTERVAL, session_expiry_interval)?;
     };
 
     if let Some(auth_data) = connect_props.authentication_data {
-        variable_props.add_u16_property(AUTHENTICATION_DATA, auth_data);
+        variable_props.add_u16_property(AUTHENTICATION_DATA, auth_data)?;
     };
     if let Some(auth_method) = connect_props.authentication_method.clone() {
-        variable_props.add_utf8_string_property(AUTHENTICATION_METHOD, auth_method);
+        variable_props.add_utf8_string_property(AUTHENTICATION_METHOD, auth_method)?;
     };
 
     if let Some(request_problem_information) = connect_props.request_problem_information {
-        variable_props.add_u8_property(REQUEST_PROBLEM_INFORMATION, request_problem_information);
+        variable_props.add_u8_property(REQUEST_PROBLEM_INFORMATION, request_problem_information)?;
     };
     if let Some(request_response_information) = connect_props.request_response_information {
-        variable_props.add_u8_property(REQUEST_RESPONSE_INFORMATION, request_response_information);
+        variable_props.add_u8_property(REQUEST_RESPONSE_INFORMATION, request_response_information)?;
     };
     if let Some(receive_maximum) = connect_props.receive_maximum {
-        variable_props.add_u16_property(RECEIVE_MAXIMUM, receive_maximum);
+        variable_props.add_u16_property(RECEIVE_MAXIMUM, receive_maximum)?;
     };
     if let Some(topic_alias_maximum) = connect_props.topic_alias_maximum {
-        variable_props.add_u16_property(TOPIC_ALIAS_MAXIMUM, topic_alias_maximum);
+        variable_props.add_u16_property(TOPIC_ALIAS_MAXIMUM, topic_alias_maximum)?;
     };
     if let Some(user_property_key) = connect_props.user_property_key.clone() {
         if let Some(user_property_value) = connect_props.user_property_value.clone() {
-            variable_props.add_utf8_pair_string_property(USER_PROPERTY, user_property_key, user_property_value);
+            variable_props.add_utf8_pair_string_property(USER_PROPERTY, user_property_key, user_property_value)?;
         }
     };
     if let Some(maximum_packet_size) = connect_props.maximum_packet_size {
-        variable_props.add_u32_property(MAXIMUM_PACKET_SIZE, maximum_packet_size);
+        variable_props.add_u32_property(MAXIMUM_PACKET_SIZE, maximum_packet_size)?;
     };
 
     Ok(variable_props)

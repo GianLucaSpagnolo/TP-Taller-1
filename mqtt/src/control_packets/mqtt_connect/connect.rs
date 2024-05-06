@@ -102,6 +102,8 @@ pub struct Connect {
 }
 
 pub struct ConnectProperties {
+    pub protocol_name: String,
+    pub protocol_version: u8,
     pub connect_flags: u8,
     pub keep_alive: u16,
     pub session_expiry_interval: Option<u32>,
@@ -151,17 +153,11 @@ impl Connect {
         client_id: &String,
         connect_properties: &ConnectProperties,
     ) -> Result<Self, Error> {
-        let name = PROTOCOL_NAME.to_string();
 
         // La inicializacion de las propiedades deben estar en connect.rs (add_variable_header_properties)
         // Faltan inicializar variables de la instancia del cliente (ejemplo: autentificacion, etc.)
 
-        let variable_header = ConnectVariableHeader::new(
-            name.len() as u16,
-            name,
-            PROTOCOL_VERSION,
-            &connect_properties,
-        )?;
+        let variable_header = ConnectVariableHeader::new(connect_properties)?;
 
         let payload = ConnectPayload::new(client_id.clone());
         let remaining_length = variable_header.length() + payload.length();
@@ -185,6 +181,8 @@ mod test {
     fn test_connect() {
         let client_id = "test".to_string();
         let properties = ConnectProperties {
+            protocol_name: String::from(PROTOCOL_NAME),
+            protocol_version: PROTOCOL_VERSION,
             connect_flags: 0b11000000,
             keep_alive: 10,
             session_expiry_interval: Some(0),
