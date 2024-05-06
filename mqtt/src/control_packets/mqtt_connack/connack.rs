@@ -64,23 +64,26 @@ pub struct Connack {
 }
 
 pub struct ConnackProperties {
-    pub session_expiry_interval: u32,
-    pub assigned_client_identifier: String,
-    pub server_keep_alive: u16,
-    pub authentication_method: String,
-    pub authentication_data: u16,
-    pub response_information: String,
-    pub server_reference: String,
-    pub reason_string: String,
-    pub receive_maximum: u16,
-    pub topic_alias_maximum: u16,
-    pub maximum_qos: u8,
-    pub retain_available: u8,
-    pub wildcard_subscription_available: u8,
-    pub subscription_identifiers_available: u8,
-    pub shared_subscription_available: u8,
-    pub user_property: (String, String),
-    pub maximum_packet_size: u32,
+    pub connect_acknowledge_flags: u8,
+    pub connect_reason_code: u8,
+    pub session_expiry_interval: Option<u32>,
+    pub assigned_client_identifier: Option<String>,
+    pub server_keep_alive: Option<u16>,
+    pub authentication_method: Option<String>,
+    pub authentication_data: Option<u16>,
+    pub response_information: Option<String>,
+    pub server_reference: Option<String>,
+    pub reason_string: Option<String>,
+    pub receive_maximum: Option<u16>,
+    pub topic_alias_maximum: Option<u16>,
+    pub maximum_qos: Option<u8>,
+    pub retain_available: Option<u8>,
+    pub wildcard_subscription_available: Option<u8>,
+    pub subscription_identifiers_available: Option<u8>,
+    pub shared_subscription_available: Option<u8>,
+    pub user_property_key: Option<String>,
+    pub user_property_value: Option<String>,
+    pub maximum_packet_size: Option<u32>,
 }
 
 impl Connack {
@@ -107,15 +110,9 @@ impl Connack {
     }
 
     pub fn new(
-        connect_reason_code: u8,
-        connect_acknowledge_flags: u8,
-        connack_properties: ConnackProperties,
+        connack_properties: &ConnackProperties,
     ) -> Result<Self, Error> {
-        let variable_header = ConnackVariableHeader::new(
-            connect_reason_code,
-            connect_acknowledge_flags,
-            connack_properties,
-        )?;
+        let variable_header = ConnackVariableHeader::new(connack_properties)?;
 
         let remaining_length = variable_header.length();
         let fixed_header = PacketFixedHeader::new(CONNACK_PACKET, remaining_length);
@@ -129,38 +126,39 @@ impl Connack {
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::variable_header_property::VariableHeaderProperty;
+    use crate::control_packets::mqtt_packet::{reason_codes::ReasonMode, variable_header_property::VariableHeaderProperty};
 
     use super::*;
 
     #[test]
     fn test_write_to() {
+
+        let properties = ConnackProperties {
+            connect_acknowledge_flags: 0,
+            connect_reason_code: ReasonMode::Success.get_id(),
+            session_expiry_interval: Some(0),
+            assigned_client_identifier: Some("client".to_string()),
+            server_keep_alive: Some(0),
+            authentication_method: Some("auth".to_string()),
+            authentication_data: Some(0),
+            response_information: Some("response".to_string()),
+            server_reference: Some("server".to_string()),
+            reason_string: Some("reason".to_string()),
+            receive_maximum: Some(0),
+            topic_alias_maximum: Some(0),
+            maximum_qos: Some(0),
+            retain_available: Some(0),
+            wildcard_subscription_available: Some(0),
+            subscription_identifiers_available: Some(0),
+            shared_subscription_available: Some(0),
+            user_property_key: Some("key".to_string()),
+            user_property_value: Some("value".to_string()),
+            maximum_packet_size: Some(0),
+        };
+
         let connack = Connack {
             fixed_header: PacketFixedHeader::new(CONNACK_PACKET, 0),
-            variable_header: ConnackVariableHeader::new(
-                0,
-                0,
-                ConnackProperties {
-                    session_expiry_interval: 0,
-                    assigned_client_identifier: "client".to_string(),
-                    server_keep_alive: 0,
-                    authentication_method: "auth".to_string(),
-                    authentication_data: 0,
-                    response_information: "response".to_string(),
-                    server_reference: "server".to_string(),
-                    reason_string: "reason".to_string(),
-                    receive_maximum: 0,
-                    topic_alias_maximum: 0,
-                    maximum_qos: 0,
-                    retain_available: 0,
-                    wildcard_subscription_available: 0,
-                    subscription_identifiers_available: 0,
-                    shared_subscription_available: 0,
-                    user_property: ("key".to_string(), "value".to_string()),
-                    maximum_packet_size: 0,
-                },
-            )
-            .unwrap(),
+            variable_header: ConnackVariableHeader::new(&properties).unwrap(),
         };
 
         let mut buffer = Vec::new();
