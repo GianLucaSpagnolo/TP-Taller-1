@@ -2,7 +2,7 @@ use std::io::Error;
 use std::io::Read;
 use std::io::Write;
 
-use crate::config::ClientConfig;
+
 use crate::control_packets::mqtt_connect::payload::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
