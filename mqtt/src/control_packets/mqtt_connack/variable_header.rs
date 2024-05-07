@@ -42,9 +42,7 @@ impl ConnackVariableHeader {
         })
     }
 
-    pub fn new(
-        props: &ConnackProperties,
-    ) -> Result<Self, Error> {
+    pub fn new(props: &ConnackProperties) -> Result<Self, Error> {
         let properties = new_connack_properties(props)?;
 
         let variable_header = ConnackVariableHeader {
@@ -110,13 +108,16 @@ pub fn new_connack_properties(
     }
     if let Some(user_property_key) = connack_props.user_property_key.clone() {
         if let Some(user_property_value) = connack_props.user_property_value.clone() {
-            variable_props.add_utf8_pair_string_property(USER_PROPERTY, user_property_key, user_property_value)?;
+            variable_props.add_utf8_pair_string_property(
+                USER_PROPERTY,
+                user_property_key,
+                user_property_value,
+            )?;
         }
     };
     if let Some(value) = connack_props.maximum_packet_size {
         variable_props.add_u32_property(MAXIMUM_PACKET_SIZE, value)?;
     }
-    
 
     Ok(variable_props)
 }

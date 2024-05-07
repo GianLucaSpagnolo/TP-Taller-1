@@ -2,7 +2,6 @@ use std::io::Error;
 use std::io::Read;
 use std::io::Write;
 
-
 use crate::control_packets::mqtt_connect::payload::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
@@ -149,11 +148,7 @@ impl Connect {
         Ok(connect)
     }
 
-    pub fn new(
-        client_id: &String,
-        connect_properties: &ConnectProperties,
-    ) -> Result<Self, Error> {
-
+    pub fn new(client_id: &String, connect_properties: &ConnectProperties) -> Result<Self, Error> {
         // La inicializacion de las propiedades deben estar en connect.rs (add_variable_header_properties)
         // Faltan inicializar variables de la instancia del cliente (ejemplo: autentificacion, etc.)
 

@@ -24,7 +24,7 @@ impl ConnectVariableHeader {
         2 + self.protocol_name.length as u8 + 1 + 1 + 2 + self.properties.bytes_length
     }
 
-    pub fn new(props: &ConnectProperties ) -> Result<Self, Error> {
+    pub fn new(props: &ConnectProperties) -> Result<Self, Error> {
         let properties = new_connect_properties(&props)?;
 
         let variable_header = ConnectVariableHeader {
@@ -94,7 +94,8 @@ pub fn new_connect_properties(
         variable_props.add_u8_property(REQUEST_PROBLEM_INFORMATION, request_problem_information)?;
     };
     if let Some(request_response_information) = connect_props.request_response_information {
-        variable_props.add_u8_property(REQUEST_RESPONSE_INFORMATION, request_response_information)?;
+        variable_props
+            .add_u8_property(REQUEST_RESPONSE_INFORMATION, request_response_information)?;
     };
     if let Some(receive_maximum) = connect_props.receive_maximum {
         variable_props.add_u16_property(RECEIVE_MAXIMUM, receive_maximum)?;
@@ -104,7 +105,11 @@ pub fn new_connect_properties(
     };
     if let Some(user_property_key) = connect_props.user_property_key.clone() {
         if let Some(user_property_value) = connect_props.user_property_value.clone() {
-            variable_props.add_utf8_pair_string_property(USER_PROPERTY, user_property_key, user_property_value)?;
+            variable_props.add_utf8_pair_string_property(
+                USER_PROPERTY,
+                user_property_key,
+                user_property_value,
+            )?;
         }
     };
     if let Some(maximum_packet_size) = connect_props.maximum_packet_size {

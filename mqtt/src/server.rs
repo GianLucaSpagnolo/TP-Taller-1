@@ -60,11 +60,15 @@ impl Server {
             return ReasonMode::UnsupportedProtocolVersion.get_id();
         }
 
-        if flags_handler::get_connect_flag_reserved(connect_packet.variable_header.connect_flags) != 0 {
+        if flags_handler::get_connect_flag_reserved(connect_packet.variable_header.connect_flags)
+            != 0
+        {
             return ReasonMode::MalformedPacket.get_id();
         }
 
-        if flags_handler::get_connect_flag_will_qos(connect_packet.variable_header.connect_flags) != 1 {
+        if flags_handler::get_connect_flag_will_qos(connect_packet.variable_header.connect_flags)
+            != 1
+        {
             return ReasonMode::QoSNotSupported.get_id();
         }
 
@@ -80,12 +84,8 @@ impl Server {
         ReasonMode::Success.get_id()
     }
 
-
-    fn determinate_connack_properties(&self, _connect: &Connect) ->ConnackProperties{
+    fn determinate_connack_properties(&self, _connect: &Connect) -> ConnackProperties {
         let _reason_code = self.determinate_reason_code(_connect);
         todo!()
     }
-
 }
-
-

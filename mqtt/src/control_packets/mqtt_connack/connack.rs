@@ -109,9 +109,7 @@ impl Connack {
         Ok(connack)
     }
 
-    pub fn new(
-        connack_properties: &ConnackProperties,
-    ) -> Result<Self, Error> {
+    pub fn new(connack_properties: &ConnackProperties) -> Result<Self, Error> {
         let variable_header = ConnackVariableHeader::new(connack_properties)?;
 
         let remaining_length = variable_header.length();
@@ -126,13 +124,14 @@ impl Connack {
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::{reason_codes::ReasonMode, variable_header_property::VariableHeaderProperty};
+    use crate::control_packets::mqtt_packet::{
+        reason_codes::ReasonMode, variable_header_property::VariableHeaderProperty,
+    };
 
     use super::*;
 
     #[test]
     fn test_write_to() {
-
         let properties = ConnackProperties {
             connect_acknowledge_flags: 0,
             connect_reason_code: ReasonMode::Success.get_id(),
