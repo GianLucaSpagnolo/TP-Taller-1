@@ -3,8 +3,9 @@ use std::{
     string::FromUtf8Error,
 };
 
+use crate::common::data_types::data_representation::read_byte;
+
 use super::variable_header_property::*;
-use crate::data_structures::data_types::data_representation::read_byte;
 
 pub struct VariableHeaderProperties {
     pub bytes_length: u8,
@@ -88,6 +89,14 @@ impl VariableHeaderProperties {
     pub fn from_be_bytes(properties: &[u8]) -> Result<Self, FromUtf8Error> {
         let mut properties_vec: Vec<VariableHeaderProperty> = Vec::new();
         let mut i = 0;
+
+        if properties.is_empty() {
+            return Ok(VariableHeaderProperties {
+                bytes_length: 0,
+                properties: properties_vec,
+            });
+        }
+
         while i < properties.len() - 1 {
             let id = properties[i];
             i += 1;

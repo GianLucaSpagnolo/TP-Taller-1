@@ -1,8 +1,6 @@
 use std::io::{Error, Read};
 
-use crate::data_structures::data_types::data_representation::{
-    read_two_byte_integer, read_utf8_encoded_string,
-};
+use crate::common::data_types::data_representation::*;
 
 pub struct _PublishPayload {
     pub bytes_length: u8,

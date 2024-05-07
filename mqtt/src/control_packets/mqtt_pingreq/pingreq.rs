@@ -1,5 +1,4 @@
-
-use std::io::{Read, Error, Write};
+use std::io::{Error, Read, Write};
 
 use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, _PINGREQ_PACKET};
 
@@ -7,7 +6,7 @@ pub struct _PingReq {
     pub fixed_header: PacketFixedHeader,
 }
 
-impl _PingReq {  
+impl _PingReq {
     pub fn _new() -> Self {
         let fixed_header = PacketFixedHeader::new(_PINGREQ_PACKET, 0);
         _PingReq { fixed_header }
@@ -22,9 +21,7 @@ impl _PingReq {
     pub fn _read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let fixed_header = PacketFixedHeader::read_from(stream)?;
 
-        let _pingreq = _PingReq {
-            fixed_header,
-        };
+        let _pingreq = _PingReq { fixed_header };
         Ok(_pingreq)
     }
 }

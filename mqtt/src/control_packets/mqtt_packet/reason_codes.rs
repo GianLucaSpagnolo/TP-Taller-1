@@ -55,11 +55,11 @@ pub enum ReasonMode {
     _DisconnectWithWillMessage,
     _NoMatchingSubscribers,
     _UnspecifiedError,
-    MalformedPacket,
+    _MalformedPacket,
     _ProtocolError,
     _ImplementationSpecificError,
-    UnsupportedProtocolVersion,
-    ClientIdentifierNotValid,
+    _UnsupportedProtocolVersion,
+    _ClientIdentifierNotValid,
     _BadUserNameOrPassword,
     _NotAuthorized,
     _ServerUnavailable,
@@ -80,7 +80,7 @@ pub enum ReasonMode {
     _AdministrativeAction,
     _PayloadFormatInvalid,
     _RetainNotSupported,
-    QoSNotSupported,
+    _QoSNotSupported,
     _UseAnotherServer,
     _ServerMoved,
     _SharedSubscriptionsNotSupported,
@@ -98,11 +98,11 @@ impl ReasonMode {
             ReasonMode::_DisconnectWithWillMessage => 4, // DISCONNECT
             ReasonMode::_NoMatchingSubscribers => 16, // PUBACK
             ReasonMode::_UnspecifiedError => 128,  // CONNACK - PUBACK - DISCONNECT
-            ReasonMode::MalformedPacket => 129,    // DISCONNECT
+            ReasonMode::_MalformedPacket => 129,   // DISCONNECT
             ReasonMode::_ProtocolError => 130,     // DISCONNECT
             ReasonMode::_ImplementationSpecificError => 131, // CONNACK - PUBACK - DISCONNECT
-            ReasonMode::UnsupportedProtocolVersion => 132,
-            ReasonMode::ClientIdentifierNotValid => 133,
+            ReasonMode::_UnsupportedProtocolVersion => 132,
+            ReasonMode::_ClientIdentifierNotValid => 133,
             ReasonMode::_BadUserNameOrPassword => 134,
             ReasonMode::_NotAuthorized => 135, // CONNACK - PUBACK - DISCONNECT
             ReasonMode::_ServerUnavailable => 136,
@@ -123,7 +123,7 @@ impl ReasonMode {
             ReasonMode::_AdministrativeAction => 152, // DISCONNECT
             ReasonMode::_PayloadFormatInvalid => 153, // CONNACK - PUBACK - DISCONNECT
             ReasonMode::_RetainNotSupported => 154, // DISCONNECT
-            ReasonMode::QoSNotSupported => 155,   // DISCONNECT
+            ReasonMode::_QoSNotSupported => 155,  // DISCONNECT
             ReasonMode::_UseAnotherServer => 156, // DISCONNECT
             ReasonMode::_ServerMoved => 157,      // DISCONNECT
             ReasonMode::_SharedSubscriptionsNotSupported => 158, // DISCONNECT

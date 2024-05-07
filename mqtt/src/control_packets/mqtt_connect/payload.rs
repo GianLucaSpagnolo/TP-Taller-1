@@ -19,7 +19,7 @@ password: String
 
 use std::io::{Error, Read};
 
-use crate::data_structures::data_types::data_representation::{
+use crate::common::data_types::data_representation::{
     read_two_byte_integer, read_utf8_encoded_string,
 };
 

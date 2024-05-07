@@ -6,9 +6,6 @@ use crate::control_packets::mqtt_connect::payload::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
 
-static PROTOCOL_NAME: &str = "MQTT";
-static PROTOCOL_VERSION: u8 = 5;
-
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
 /// 4 bits mas significativos: MQTT Control Packet type
@@ -101,16 +98,20 @@ pub struct Connect {
 }
 
 pub struct ConnectProperties {
-    pub session_expiry_interval: u32,
-    pub authentication_method: String,
-    pub authentication_data: u16,
-    pub request_problem_information: u8,
-    pub request_response_information: u8,
-    pub receive_maximum: u16,
-    pub topic_alias_maximum: u16,
-    pub user_property_key: String,
-    pub user_property_value: String,
-    pub maximum_packet_size: u32,
+    pub protocol_name: String,
+    pub protocol_version: u8,
+    pub connect_flags: u8,
+    pub keep_alive: u16,
+    pub session_expiry_interval: Option<u32>,
+    pub authentication_method: Option<String>,
+    pub authentication_data: Option<u16>,
+    pub request_problem_information: Option<u8>,
+    pub request_response_information: Option<u8>,
+    pub receive_maximum: Option<u16>,
+    pub topic_alias_maximum: Option<u16>,
+    pub user_property_key: Option<String>,
+    pub user_property_value: Option<String>,
+    pub maximum_packet_size: Option<u32>,
 }
 
 impl Connect {
@@ -144,27 +145,13 @@ impl Connect {
         Ok(connect)
     }
 
-    pub fn new(
-        client_id: String,
-        connect_flags: u8,
-        keep_alive: u16,
-        properties: ConnectProperties,
-    ) -> Result<Self, Error> {
-        let name = PROTOCOL_NAME.to_string();
-
+    pub fn new(client_id: &str, connect_properties: &ConnectProperties) -> Result<Self, Error> {
         // La inicializacion de las propiedades deben estar en connect.rs (add_variable_header_properties)
         // Faltan inicializar variables de la instancia del cliente (ejemplo: autentificacion, etc.)
 
-        let variable_header = ConnectVariableHeader::new(
-            name.len() as u16,
-            name,
-            PROTOCOL_VERSION,
-            connect_flags,
-            keep_alive,
-            properties,
-        )?;
+        let variable_header = ConnectVariableHeader::new(connect_properties)?;
 
-        let payload = ConnectPayload::new(client_id);
+        let payload = ConnectPayload::new(client_id.to_string().clone());
         let remaining_length = variable_header.length() + payload.length();
         let fixed_header = PacketFixedHeader::new(CONNECT_PACKET, remaining_length);
 
@@ -185,23 +172,24 @@ mod test {
     #[test]
     fn test_connect() {
         let client_id = "test".to_string();
-        let connect_flags = 0b11000000;
-        let keep_alive = 10;
         let properties = ConnectProperties {
-            session_expiry_interval: 0,
-            authentication_method: "test".to_string(),
-            authentication_data: 0,
-            request_problem_information: 0,
-            request_response_information: 0,
-            receive_maximum: 0,
-            topic_alias_maximum: 0,
-            user_property_key: "test".to_string(),
-            user_property_value: "test".to_string(),
-            maximum_packet_size: 0,
+            protocol_name: String::from("MQTT"),
+            protocol_version: 5,
+            connect_flags: 0b11000000,
+            keep_alive: 10,
+            session_expiry_interval: Some(0),
+            authentication_method: Some("test".to_string()),
+            authentication_data: Some(0),
+            request_problem_information: Some(0),
+            request_response_information: Some(0),
+            receive_maximum: Some(0),
+            topic_alias_maximum: Some(0),
+            user_property_key: Some("test".to_string()),
+            user_property_value: Some("test".to_string()),
+            maximum_packet_size: Some(0),
         };
 
-        let connect =
-            Connect::new(client_id.clone(), connect_flags, keep_alive, properties).unwrap();
+        let connect = Connect::new(&client_id, &properties).unwrap();
 
         let mut buffer: Vec<u8> = Vec::new();
         connect.write_to(&mut buffer).unwrap();
@@ -212,11 +200,14 @@ mod test {
         assert_eq!(connect.fixed_header.packet_type, CONNECT_PACKET);
         assert_eq!(
             connect.variable_header.protocol_name.name,
-            PROTOCOL_NAME.to_string()
+            "MQTT".to_string()
         );
-        assert_eq!(connect.variable_header.protocol_version, PROTOCOL_VERSION);
-        assert_eq!(connect.variable_header.connect_flags, connect_flags);
-        assert_eq!(connect.variable_header.keep_alive, keep_alive);
+        assert_eq!(connect.variable_header.protocol_version, 5);
+        assert_eq!(
+            connect.variable_header.connect_flags,
+            properties.connect_flags
+        );
+        assert_eq!(connect.variable_header.keep_alive, properties.keep_alive);
         assert_eq!(connect.payload.fields.client_id, client_id);
         assert_eq!(connect.variable_header.properties.properties.len(), 9);
 
