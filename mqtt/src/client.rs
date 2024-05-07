@@ -1,6 +1,9 @@
 use std::{io::Error, net::TcpStream};
 
-use crate::{config::ClientConfig, control_packets::mqtt_connect::connect::Connect};
+use crate::{
+    config::ClientConfig,
+    control_packets::{mqtt_connack::connack::Connack, mqtt_connect::connect::Connect},
+};
 
 pub struct MqttClient {
     _id: String,
@@ -14,6 +17,11 @@ impl MqttClient {
         let connection = Connect::new(&client_id, &config.connect_properties)?;
 
         connection.write_to(&mut socket)?;
+
+        let _response = match Connack::read_from(&mut socket) {
+            Ok(p) => p,
+            Err(e) => return Err(e),
+        };
 
         Ok(MqttClient {
             _id: client_id,
