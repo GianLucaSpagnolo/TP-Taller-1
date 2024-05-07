@@ -89,6 +89,14 @@ impl VariableHeaderProperties {
     pub fn from_be_bytes(properties: &[u8]) -> Result<Self, FromUtf8Error> {
         let mut properties_vec: Vec<VariableHeaderProperty> = Vec::new();
         let mut i = 0;
+        
+        if properties.len() == 0 {
+            return Ok(VariableHeaderProperties {
+                bytes_length: 0,
+                properties: properties_vec,
+            });
+        }
+
         while i < properties.len() - 1 {
             let id = properties[i];
             i += 1;
