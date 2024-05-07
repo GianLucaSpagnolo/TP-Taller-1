@@ -17,7 +17,7 @@ impl Server {
     pub fn run(config: ServerConfig) -> Result<(), Error> {
         let server = Server { config };
 
-        let listener = match TcpListener::bind(server.config.socket_address.clone()) {
+        let listener = match TcpListener::bind(server.config.get_address()) {
             Ok(l) => l,
             Err(e) => return Err(e),
         };
@@ -53,37 +53,39 @@ impl Server {
         Ok(())
     }
 
+    fn determinate_reason_code(&self, connect_packet: &Connect) -> u8 {
+        if connect_packet.variable_header.protocol_name.name != *"MQTT"
+            || connect_packet.variable_header.protocol_version != 5
+        {
+            return ReasonMode::UnsupportedProtocolVersion.get_id();
+        }
 
-    fn determinate_connack_properties(&self, connect: &Connect) ->ConnackProperties{
+        if flags_handler::get_connect_flag_reserved(connect_packet.variable_header.connect_flags) != 0 {
+            return ReasonMode::MalformedPacket.get_id();
+        }
+
+        if flags_handler::get_connect_flag_will_qos(connect_packet.variable_header.connect_flags) != 1 {
+            return ReasonMode::QoSNotSupported.get_id();
+        }
+
+        if !connect_packet
+            .payload
+            .fields
+            .client_id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric())
+        {
+            return ReasonMode::ClientIdentifierNotValid.get_id();
+        }
+        ReasonMode::Success.get_id()
+    }
+
+
+    fn determinate_connack_properties(&self, _connect: &Connect) ->ConnackProperties{
+        let _reason_code = self.determinate_reason_code(_connect);
         todo!()
     }
 
 }
 
 
-fn determinate_reason_code(connect_packet: &Connect) -> u8 {
-    if connect_packet.variable_header.protocol_name.name != *"MQTT"
-        || connect_packet.variable_header.protocol_version != 5
-    {
-        return ReasonMode::UnsupportedProtocolVersion.get_id();
-    }
-
-    if flags_handler::get_connect_flag_reserved(connect_packet.variable_header.connect_flags) != 0 {
-        return ReasonMode::MalformedPacket.get_id();
-    }
-
-    if flags_handler::get_connect_flag_will_qos(connect_packet.variable_header.connect_flags) != 1 {
-        return ReasonMode::QoSNotSupported.get_id();
-    }
-
-    if !connect_packet
-        .payload
-        .fields
-        .client_id
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric())
-    {
-        return ReasonMode::ClientIdentifierNotValid.get_id();
-    }
-    ReasonMode::Success.get_id()
-}
