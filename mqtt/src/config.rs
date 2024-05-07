@@ -1,36 +1,33 @@
-use std::{io::Error, fs::File};
+use std::{fs::File, io::Error};
 
-use crate::{common::utils::*, control_packets::{mqtt_connack::connack::ConnackProperties, mqtt_connect::connect::ConnectProperties}};
-
+use crate::{
+    common::utils::*,
+    control_packets::{
+        mqtt_connack::connack::ConnackProperties, mqtt_connect::connect::ConnectProperties,
+        mqtt_packet::flags::flags_handler::*,
+    },
+};
 
 pub struct ClientConfig {
     pub port: u16,
-    pub socket_address: String,
+    pub ip: String,
     pub connect_properties: ConnectProperties,
 }
 
-pub struct ServerConfig {
-    pub port: u16,
-    pub socket_address: String,
-    pub connack_properties: ConnackProperties,
-
-}
-
 impl ClientConfig {
-
     pub fn get_address(&self) -> String {
-        let adress = format!("{}:{}", self.socket_address, self.port);
+        let adress = format!("{}:{}", self.ip, self.port);
         adress
     }
-    
-    fn set_params(params: &Vec<(String, String)>) -> Result<Self, Error>{
+
+    fn set_params(params: &Vec<(String, String)>) -> Result<Self, Error> {
         // seteo los parametros del cliente:
         let mut port = 0;
-        let mut socket_address = String::new();
+        let mut ip = String::new();
 
         // Corroborar que le pasen los campos obligatorios
-        
-        let mut connect_properties = ConnectProperties{
+
+        let mut connect_properties = ConnectProperties {
             protocol_name: String::new(),
             protocol_version: 0,
             connect_flags: 0,
@@ -46,67 +43,188 @@ impl ClientConfig {
             user_property_key: None,
             user_property_value: None,
         };
-        
-        // connect_flags atomicos por cada uno !
-        
+
         for param in params.iter() {
             match param.0.as_str() {
-                "port" => port = match param.1.parse::<u16>() {
-                    Ok(p) => p,
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },
-                "ip" => socket_address = param.1.clone(),
+                "port" => {
+                    port = match param.1.parse::<u16>() {
+                        Ok(p) => p,
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter",
+                            ))
+                        }
+                    }
+                }
+                "ip" => ip = param.1.clone(),
                 "protocol_name" => connect_properties.protocol_name = param.1.clone(),
-                "protocol_version" => connect_properties.protocol_version = match param.1.parse::<u8>() {
-                    Ok(p) => p,
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },
-                "connect_flags" => connect_properties.connect_flags = match param.1.parse::<u8>() {
-                    Ok(p) => p,
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },
-                "keep_alive" => connect_properties.keep_alive = match param.1.parse::<u16>() {
-                    Ok(p) => p,
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },
-                "session_expiry_interval" => connect_properties.session_expiry_interval = match param.1.parse::<u32>() {
-                    Ok(p) => Some(p),
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },
-                "receive_maximum" => connect_properties.receive_maximum = match param.1.parse::<u16>() {
-                    Ok(p) => Some(p),
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },
-                "maximum_packet_size" => connect_properties.maximum_packet_size = match param.1.parse::<u32>() {
-                    Ok(p) => Some(p),
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },
-                "topic_alias_maximum" => connect_properties.topic_alias_maximum = match param.1.parse::<u16>() {
-                    Ok(p) => Some(p),
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },
-                "request_response_information" => connect_properties.request_response_information = match param.1.parse::<u8>() {
-                    Ok(p) => Some(p),
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },
-                "request_problem_information" => connect_properties.request_problem_information = match param.1.parse::<u8>() {
-                    Ok(p) => Some(p),
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },
-                "authentication_method" => connect_properties.authentication_method = Some(param.1.clone()),
-                "authentication_data" => connect_properties.authentication_data = match param.1.parse::<u16>() {
-                    Ok(p) => Some(p),
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },  
+                "protocol_version" => {
+                    connect_properties.protocol_version = match param.1.parse::<u8>() {
+                        Ok(p) => p,
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter",
+                            ))
+                        }
+                    }
+                }
+                "flag_clean_start" => {
+                    connect_properties.connect_flags = match add_connect_flag_clean_start(
+                        connect_properties.connect_flags,
+                        param.1.clone(),
+                    ) {
+                        Ok(p) => p,
+                        Err(e) => return Err(e),
+                    }
+                }
+                "flag_will_flag" => {
+                    connect_properties.connect_flags = match add_connect_flag_will_flag(
+                        connect_properties.connect_flags,
+                        param.1.clone(),
+                    ) {
+                        Ok(p) => p,
+                        Err(e) => return Err(e),
+                    }
+                }
+                "flag_will_qos" => {
+                    connect_properties.connect_flags = match add_connect_flag_will_qos(
+                        connect_properties.connect_flags,
+                        param.1.clone(),
+                    ) {
+                        Ok(p) => p,
+                        Err(e) => return Err(e),
+                    }
+                }
+                "flag_will_retain" => {
+                    connect_properties.connect_flags = match add_connect_flag_will_retain(
+                        connect_properties.connect_flags,
+                        param.1.clone(),
+                    ) {
+                        Ok(p) => p,
+                        Err(e) => return Err(e),
+                    }
+                }
+                "flag_password" => {
+                    connect_properties.connect_flags = match add_connect_flag_password(
+                        connect_properties.connect_flags,
+                        param.1.clone(),
+                    ) {
+                        Ok(p) => p,
+                        Err(e) => return Err(e),
+                    }
+                }
+                "flag_username" => {
+                    connect_properties.connect_flags = match add_connect_flag_username(
+                        connect_properties.connect_flags,
+                        param.1.clone(),
+                    ) {
+                        Ok(p) => p,
+                        Err(e) => return Err(e),
+                    }
+                }
+                "keep_alive" => {
+                    connect_properties.keep_alive = match param.1.parse::<u16>() {
+                        Ok(p) => p,
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter",
+                            ))
+                        }
+                    }
+                }
+                "session_expiry_interval" => {
+                    connect_properties.session_expiry_interval = match param.1.parse::<u32>() {
+                        Ok(p) => Some(p),
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter",
+                            ))
+                        }
+                    }
+                }
+                "receive_maximum" => {
+                    connect_properties.receive_maximum = match param.1.parse::<u16>() {
+                        Ok(p) => Some(p),
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter",
+                            ))
+                        }
+                    }
+                }
+                "maximum_packet_size" => {
+                    connect_properties.maximum_packet_size = match param.1.parse::<u32>() {
+                        Ok(p) => Some(p),
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter",
+                            ))
+                        }
+                    }
+                }
+                "topic_alias_maximum" => {
+                    connect_properties.topic_alias_maximum = match param.1.parse::<u16>() {
+                        Ok(p) => Some(p),
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter",
+                            ))
+                        }
+                    }
+                }
+                "request_response_information" => {
+                    connect_properties.request_response_information =
+                        match catch_true_false(&param.1) {
+                            Ok(p) => Some(p),
+                            Err(e) => return Err(e),
+                        }
+                }
+                "request_problem_information" => {
+                    connect_properties.request_problem_information =
+                        match catch_true_false(&param.1) {
+                            Ok(p) => Some(p),
+                            Err(e) => return Err(e),
+                        }
+                }
+                "authentication_method" => {
+                    connect_properties.authentication_method = Some(param.1.clone())
+                }
+                "authentication_data" => {
+                    connect_properties.authentication_data = match param.1.parse::<u16>() {
+                        Ok(p) => Some(p),
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter",
+                            ))
+                        }
+                    }
+                }
                 "user_property_key" => connect_properties.user_property_key = Some(param.1.clone()),
-                "user_property_value" => connect_properties.user_property_value = Some(param.1.clone()),
-                _ => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
+                "user_property_value" => {
+                    connect_properties.user_property_value = Some(param.1.clone())
+                }
+                "username" => connect_properties.user_property_key = Some(param.1.clone()),
+                "password" => connect_properties.user_property_value = Some(param.1.clone()),
+                _ => {
+                    return Err(Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Invalid parameter",
+                    ))
+                }
             }
         }
 
         Ok(ClientConfig {
             port,
-            socket_address,
+            ip,
             connect_properties,
         })
     }
@@ -125,27 +243,31 @@ impl ClientConfig {
 
         // creo el socket con los parametros recolectados:
         println!("{:?}", parametros);
-        
+
         ClientConfig::set_params(&parametros)
     }
+}
 
+pub struct ServerConfig {
+    pub port: u16,
+    pub ip: String,
+    pub connack_properties: ConnackProperties,
 }
 
 impl ServerConfig {
-    
     pub fn get_address(&self) -> String {
-        let adress = format!("{}:{}", self.socket_address, self.port);
+        let adress = format!("{}:{}", self.ip, self.port);
         adress
     }
 
-    fn set_params(params: &Vec<(String, String)>) -> Result<Self, Error>{
+    fn set_params(params: &Vec<(String, String)>) -> Result<Self, Error> {
         // seteo los parametros del cliente:
         let mut port = 0;
-        let mut socket_address = String::new();
+        let mut ip = String::new();
 
         //chequear que tipo de parametros se le pasan
 
-        let connack_properties = ConnackProperties{
+        let connack_properties = ConnackProperties {
             connect_acknowledge_flags: 0,
             connect_reason_code: 0,
             session_expiry_interval: None,
@@ -170,19 +292,31 @@ impl ServerConfig {
 
         for param in params.iter() {
             match param.0.as_str() {
-                "port" => port = match param.1.parse::<u16>() {
-                    Ok(p) => p,
-                    Err(_) => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
-                },
-                "ip" => socket_address = param.1.clone(),
+                "port" => {
+                    port = match param.1.parse::<u16>() {
+                        Ok(p) => p,
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter",
+                            ))
+                        }
+                    }
+                }
+                "ip" => ip = param.1.clone(),
 
-                _ => return Err(Error::new(std::io::ErrorKind::InvalidData, "Invalid parameter"))
+                _ => {
+                    return Err(Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Invalid parameter",
+                    ))
+                }
             }
         }
 
         Ok(ServerConfig {
             port,
-            socket_address,
+            ip,
             connack_properties,
         })
     }
@@ -201,8 +335,7 @@ impl ServerConfig {
 
         // creo el socket con los parametros recolectados:
         println!("{:?}", parametros);
-        
+
         ServerConfig::set_params(&parametros)
     }
-
 }
