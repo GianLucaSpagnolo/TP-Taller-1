@@ -20,7 +20,7 @@ impl ClientConfig {
         adress
     }
 
-    fn set_params(params: &Vec<(String, String)>) -> Result<Self, Error> {
+    fn set_params(params: &[(String, String)]) -> Result<Self, Error> {
         // seteo los parametros del cliente:
         let mut port = 0;
         let mut ip = String::new();
@@ -241,9 +241,6 @@ impl ClientConfig {
             }
         });
 
-        // creo el socket con los parametros recolectados:
-        println!("{:?}", parametros);
-
         ClientConfig::set_params(&parametros)
     }
 }
@@ -260,7 +257,7 @@ impl ServerConfig {
         adress
     }
 
-    fn set_params(params: &Vec<(String, String)>) -> Result<Self, Error> {
+    fn set_params(params: &[(String, String)]) -> Result<Self, Error> {
         // seteo los parametros del cliente:
         let mut port = 0;
         let mut ip = String::new();
@@ -332,9 +329,6 @@ impl ServerConfig {
                 Some(())
             }
         });
-
-        // creo el socket con los parametros recolectados:
-        println!("{:?}", parametros);
 
         ServerConfig::set_params(&parametros)
     }
