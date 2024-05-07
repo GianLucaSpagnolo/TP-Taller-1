@@ -7,7 +7,7 @@ fn main() -> Result<(), Error> {
 
     let addr = config.get_address();
 
-    match Server::run(config) {
+    match Server::start_server(config) {
         Ok(_) => println!("Corriendo servidor en {:?}", addr),
         Err(e) => println!("Error en el server: {:?}", e),
     }

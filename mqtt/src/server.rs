@@ -14,7 +14,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn run(config: ServerConfig) -> Result<(), Error> {
+    pub fn start_server(config: ServerConfig) -> Result<(), Error> {
         let server = Server { config };
 
         let listener = match TcpListener::bind(server.config.get_address()) {
