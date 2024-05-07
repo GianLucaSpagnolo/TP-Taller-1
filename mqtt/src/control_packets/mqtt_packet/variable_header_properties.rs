@@ -90,7 +90,7 @@ impl VariableHeaderProperties {
         let mut properties_vec: Vec<VariableHeaderProperty> = Vec::new();
         let mut i = 0;
 
-        if properties.len() == 0 {
+        if properties.is_empty() {
             return Ok(VariableHeaderProperties {
                 bytes_length: 0,
                 properties: properties_vec,

@@ -6,9 +6,6 @@ use crate::control_packets::mqtt_connect::payload::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
 
-static PROTOCOL_NAME: &str = "MQTT";
-static PROTOCOL_VERSION: u8 = 5;
-
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
 /// 4 bits mas significativos: MQTT Control Packet type
@@ -148,13 +145,13 @@ impl Connect {
         Ok(connect)
     }
 
-    pub fn new(client_id: &String, connect_properties: &ConnectProperties) -> Result<Self, Error> {
+    pub fn new(client_id: &str, connect_properties: &ConnectProperties) -> Result<Self, Error> {
         // La inicializacion de las propiedades deben estar en connect.rs (add_variable_header_properties)
         // Faltan inicializar variables de la instancia del cliente (ejemplo: autentificacion, etc.)
 
         let variable_header = ConnectVariableHeader::new(connect_properties)?;
 
-        let payload = ConnectPayload::new(client_id.clone());
+        let payload = ConnectPayload::new(client_id.to_string().clone());
         let remaining_length = variable_header.length() + payload.length();
         let fixed_header = PacketFixedHeader::new(CONNECT_PACKET, remaining_length);
 
@@ -176,8 +173,8 @@ mod test {
     fn test_connect() {
         let client_id = "test".to_string();
         let properties = ConnectProperties {
-            protocol_name: String::from(PROTOCOL_NAME),
-            protocol_version: PROTOCOL_VERSION,
+            protocol_name: String::from("MQTT"),
+            protocol_version: 5,
             connect_flags: 0b11000000,
             keep_alive: 10,
             session_expiry_interval: Some(0),
@@ -203,9 +200,9 @@ mod test {
         assert_eq!(connect.fixed_header.packet_type, CONNECT_PACKET);
         assert_eq!(
             connect.variable_header.protocol_name.name,
-            PROTOCOL_NAME.to_string()
+            "MQTT".to_string()
         );
-        assert_eq!(connect.variable_header.protocol_version, PROTOCOL_VERSION);
+        assert_eq!(connect.variable_header.protocol_version, 5);
         assert_eq!(
             connect.variable_header.connect_flags,
             properties.connect_flags

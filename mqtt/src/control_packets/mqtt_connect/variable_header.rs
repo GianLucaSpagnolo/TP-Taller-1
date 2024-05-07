@@ -25,7 +25,7 @@ impl ConnectVariableHeader {
     }
 
     pub fn new(props: &ConnectProperties) -> Result<Self, Error> {
-        let properties = new_connect_properties(&props)?;
+        let properties = new_connect_properties(props)?;
 
         let variable_header = ConnectVariableHeader {
             protocol_name: VariableHeaderProtocolName {
