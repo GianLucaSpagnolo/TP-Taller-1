@@ -197,8 +197,7 @@ mod test {
             maximum_packet_size: Some(0),
         };
 
-        let connect =
-            Connect::new(&client_id,  &properties).unwrap();
+        let connect = Connect::new(&client_id, &properties).unwrap();
 
         let mut buffer: Vec<u8> = Vec::new();
         connect.write_to(&mut buffer).unwrap();
@@ -212,7 +211,10 @@ mod test {
             PROTOCOL_NAME.to_string()
         );
         assert_eq!(connect.variable_header.protocol_version, PROTOCOL_VERSION);
-        assert_eq!(connect.variable_header.connect_flags, properties.connect_flags);
+        assert_eq!(
+            connect.variable_header.connect_flags,
+            properties.connect_flags
+        );
         assert_eq!(connect.variable_header.keep_alive, properties.keep_alive);
         assert_eq!(connect.payload.fields.client_id, client_id);
         assert_eq!(connect.variable_header.properties.properties.len(), 9);

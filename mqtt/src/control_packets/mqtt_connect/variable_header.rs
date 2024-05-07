@@ -1,16 +1,10 @@
 use std::io::Error;
 use std::io::Read;
 
-use crate::{
-    control_packets::mqtt_packet::{
-        variable_header_properties::VariableHeaderProperties, variable_header_property::*,
-    },
-    data_structures::data_types::data_representation::{
-        read_byte, read_two_byte_integer, read_utf8_encoded_string,
-    },
-};
-
 use super::connect::ConnectProperties;
+use crate::common::data_types::data_representation::*;
+use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
+use crate::control_packets::mqtt_packet::variable_header_property::*;
 
 pub struct VariableHeaderProtocolName {
     pub length: u16,

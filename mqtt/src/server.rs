@@ -9,22 +9,21 @@ use crate::control_packets::mqtt_connect::connect::*;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
 
-
-pub struct Server{
+pub struct Server {
     config: ServerConfig,
 }
 
-impl Server{
+impl Server {
     pub fn run(config: ServerConfig) -> Result<(), Error> {
-        
-        let server = Server {
-            config,
-        };
-        
+        let server = Server { config };
+
         let listener = match TcpListener::bind(server.config.socket_address.clone()) {
             Ok(l) => l,
             Err(e) => return Err(e),
         };
+
+        // Si no recibe ninguna conexión en cierta cantidad de tiempo debe cortar la conexión (timer!)
+
         for client_stream in listener.incoming() {
             match client_stream {
                 Ok(mut stream) => {
@@ -39,7 +38,7 @@ impl Server{
     fn handle_connection(&self, stream: &mut TcpStream) -> Result<(), Error> {
         let connect = match Connect::read_from(stream) {
             Ok(p) => p,
-            Err(e) => return Err(e),
+            Err(e) => return Err(e), // Valida si el paquete es correcto, sino debe cortar al conexión
         };
 
         let connack_properties = self.determinate_connack_properties(&connect);

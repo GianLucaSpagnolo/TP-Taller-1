@@ -1,13 +1,13 @@
 use std::io::{Error, Read};
 
 use crate::{
+    common::data_types::data_representation::read_byte,
     control_packets::mqtt_packet::{
         variable_header_properties::VariableHeaderProperties,
         variable_header_property::{
             REASON_STRING, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL, USER_PROPERTY,
         },
     },
-    data_structures::data_types::data_representation::*,
 };
 
 use super::disconnect::_DisconnectProperties;

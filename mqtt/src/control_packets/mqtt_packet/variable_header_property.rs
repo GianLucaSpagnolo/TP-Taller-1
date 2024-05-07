@@ -1,9 +1,6 @@
 use std::{io::Error, string::FromUtf8Error};
 
-use crate::data_structures::data_types::data_representation::{
-    byte_integer_from_be_bytes, four_byte_integer_from_be_bytes, two_byte_integer_from_be_bytes,
-    utf8_string_from_be_bytes,
-};
+use crate::common::data_types::data_representation::*;
 
 /// PROPERTIES IDS
 pub const PAYLOAD_FORMAT_INDICATOR: u8 = 1;

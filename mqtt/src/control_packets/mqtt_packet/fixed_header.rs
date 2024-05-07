@@ -1,6 +1,6 @@
 use std::io::{Error, Read};
 
-use crate::data_structures::data_types::data_representation::read_byte;
+use crate::common::data_types::data_representation::read_byte;
 
 pub static CONNECT_PACKET: u8 = 0x10;
 pub static CONNACK_PACKET: u8 = 0x20;

@@ -1,6 +1,6 @@
 pub mod client;
-pub mod server;
 pub mod config;
+pub mod server;
 
 mod control_packets {
     pub mod mqtt_connect {
@@ -31,7 +31,7 @@ mod control_packets {
         pub mod puback;
         pub mod variable_header;
     }
-  
+
     pub mod mqtt_pingresp {
         pub mod pingresp;
     }
@@ -39,13 +39,14 @@ mod control_packets {
     pub mod mqtt_pingreq {
         pub mod pingreq;
     }
-  
+
     pub mod mqtt_disconnect {
         pub mod disconnect;
         pub mod variable_header;
     }
 }
 
-mod data_structures {
+mod common {
     pub mod data_types;
+    pub mod utils;
 }

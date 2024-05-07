@@ -3,8 +3,9 @@ use std::{
     string::FromUtf8Error,
 };
 
+use crate::common::data_types::data_representation::read_byte;
+
 use super::variable_header_property::*;
-use crate::data_structures::data_types::data_representation::read_byte;
 
 pub struct VariableHeaderProperties {
     pub bytes_length: u8,
