@@ -20,8 +20,8 @@ pub struct ConnectVariableHeader {
 }
 
 impl ConnectVariableHeader {
-    pub fn length(&self) -> u8 {
-        2 + self.protocol_name.length as u8 + 1 + 1 + 2 + self.properties.bytes_length
+    pub fn length(&self) -> u16 {
+        2 + self.protocol_name.length + 1 + 1 + 2 + self.properties.bytes_length
     }
 
     pub fn new(props: &ConnectProperties) -> Result<Self, Error> {

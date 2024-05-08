@@ -17,7 +17,7 @@ pub struct _PubackVariableHeader {
 }
 
 impl _PubackVariableHeader {
-    pub fn _length(&self) -> u8 {
+    pub fn _length(&self) -> u16 {
         1 + 2 + self.properties.bytes_length
     }
 

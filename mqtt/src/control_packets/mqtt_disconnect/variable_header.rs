@@ -30,7 +30,7 @@ impl _DisconnectVariableHeader {
 
         Ok(variable_header)
     }
-    pub fn _length(&self) -> u8 {
+    pub fn _length(&self) -> u16 {
         1 + self.properties.bytes_length
     }
 
@@ -177,7 +177,7 @@ mod test {
             + "server".to_string().len();
         assert_eq!(
             disconnect_variable_header._length(),
-            variable_header_lenght as u8
+            variable_header_lenght as u16
         );
     }
 }

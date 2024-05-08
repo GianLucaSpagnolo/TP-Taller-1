@@ -105,10 +105,9 @@ impl _Publish {
         let fixed_header = PacketFixedHeader::read_from(stream)?;
 
         let variable_header = _PublishVariableHeader::_read_from(stream)?;
+        println!("{:?}", variable_header);
 
-        let payload_length = fixed_header.remaining_length - variable_header._length();
-
-        let payload = _PublishPayload::_read_from(stream, payload_length)?;
+        let payload = _PublishPayload::_read_from(stream)?;
 
         let publish = _Publish {
             fixed_header,

@@ -3,12 +3,13 @@ use std::{
     string::FromUtf8Error,
 };
 
-use crate::common::data_types::data_representation::read_byte;
+use crate::common::data_types::data_representation::read_two_byte_integer;
 
 use super::variable_header_property::*;
 
+#[derive(Debug)]
 pub struct VariableHeaderProperties {
-    pub bytes_length: u8,
+    pub bytes_length: u16,
     pub properties: Vec<VariableHeaderProperty>,
 }
 
@@ -23,7 +24,7 @@ impl VariableHeaderProperties {
         first_str: String,
         second_str: String,
     ) -> Result<(), Error> {
-        self.bytes_length += 5 + first_str.len() as u8 + second_str.len() as u8;
+        self.bytes_length += 5 + first_str.len() as u16 + second_str.len() as u16;
 
         let prop_result =
             VariableHeaderProperty::new_property_utf8_pair_string(id, first_str, second_str)?;
@@ -34,7 +35,7 @@ impl VariableHeaderProperties {
     }
 
     pub fn add_utf8_string_property(&mut self, id: u8, str: String) -> Result<(), Error> {
-        self.bytes_length += 3 + str.len() as u8;
+        self.bytes_length += 3 + str.len() as u16;
 
         let prop_result = VariableHeaderProperty::new_property_utf8_string(id, str)?;
 
@@ -108,13 +109,13 @@ impl VariableHeaderProperties {
         }
 
         Ok(VariableHeaderProperties {
-            bytes_length: properties.len() as u8,
+            bytes_length: properties.len() as u16,
             properties: properties_vec,
         })
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let properties_len = read_byte(stream)?;
+        let properties_len = read_two_byte_integer(stream)?;
 
         let mut properties_buff = vec![0u8; properties_len as usize];
         stream.read_exact(&mut properties_buff)?;

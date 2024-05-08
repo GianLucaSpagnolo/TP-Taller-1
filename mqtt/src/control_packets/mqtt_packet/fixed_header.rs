@@ -1,6 +1,6 @@
 use std::io::{Error, Read};
 
-use crate::common::data_types::data_representation::read_byte;
+use crate::common::data_types::data_representation::{read_byte, read_two_byte_integer};
 
 pub static CONNECT_PACKET: u8 = 0x10;
 pub static CONNACK_PACKET: u8 = 0x20;
@@ -12,7 +12,7 @@ pub static _DISCONNECT_PACKET: u8 = 0xE0;
 
 pub struct PacketFixedHeader {
     pub packet_type: u8,
-    pub remaining_length: u8, // This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
+    pub remaining_length: u16, // This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 }
 
 pub fn _create_publish_header_flags(dup_flag: u8, qos_level: u8, retain: u8) -> u8 {
@@ -24,7 +24,7 @@ pub fn _create_publish_header_flags(dup_flag: u8, qos_level: u8, retain: u8) -> 
 }
 
 impl PacketFixedHeader {
-    pub fn new(packet_type: u8, remaining_length: u8) -> Self {
+    pub fn new(packet_type: u8, remaining_length: u16) -> Self {
         PacketFixedHeader {
             packet_type,
             remaining_length,
@@ -32,12 +32,17 @@ impl PacketFixedHeader {
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
-        vec![self.packet_type, self.remaining_length]
+        let mut bytes: Vec<u8> = Vec::new();
+
+        bytes.push(self.packet_type);
+        bytes.extend_from_slice(&self.remaining_length.to_be_bytes());
+
+        bytes
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let packet_type = read_byte(stream)?;
-        let remaining_length = read_byte(stream)?;
+        let remaining_length = read_two_byte_integer(stream)?;
 
         Ok(PacketFixedHeader::new(packet_type, remaining_length))
     }

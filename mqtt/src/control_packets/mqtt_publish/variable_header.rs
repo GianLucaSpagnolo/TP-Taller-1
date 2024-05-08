@@ -8,11 +8,13 @@ use crate::control_packets::mqtt_packet::{
 
 use super::publish::_PublishProperties;
 
+#[derive(Debug)]
 pub struct _VariableHeaderTopicName {
     pub length: u16,
     pub name: String,
 }
 
+#[derive(Debug)]
 pub struct _PublishVariableHeader {
     pub topic_name: _VariableHeaderTopicName,
     pub packet_identifier: u16,
@@ -20,8 +22,8 @@ pub struct _PublishVariableHeader {
 }
 
 impl _PublishVariableHeader {
-    pub fn _length(&self) -> u8 {
-        2 + self.topic_name.length as u8 + 2 + self.properties.bytes_length
+    pub fn _length(&self) -> u16 {
+        2 + self.topic_name.length + 2 + self.properties.bytes_length
     }
 
     pub fn _new(
@@ -276,7 +278,7 @@ mod test {
             + "value".to_string().len();
         assert_eq!(
             publish_varible_header._length(),
-            variable_header_length as u8
+            variable_header_length as u16
         );
     }
 }
