@@ -3,7 +3,8 @@ use std::{fs::File, io::Error};
 use crate::{
     common::utils::*,
     control_packets::{
-        mqtt_connack::connack::ConnackProperties, mqtt_connect::connect::ConnectProperties,
+        mqtt_connack::connack::ConnackProperties,
+        mqtt_connect::connect::{ConnectProperties, PayloadFields},
         mqtt_packet::flags::flags_handler::*,
     },
 };
@@ -12,6 +13,7 @@ pub struct ClientConfig {
     pub port: u16,
     pub ip: String,
     pub connect_properties: ConnectProperties,
+    pub connect_payload: PayloadFields,
 }
 
 impl ClientConfig {
@@ -222,10 +224,26 @@ impl ClientConfig {
             }
         }
 
+        let connect_payload = PayloadFields {
+            will_delay_interval: None,
+            payload_format_indicator: None,
+            message_expiry_interval: None,
+            content_type: None,
+            response_topic: None,
+            correlation_data: None,
+            user_property_key: None,
+            user_property_value: None,
+            will_topic: None,
+            will_payload: None,
+            username: None,
+            password: None,
+        };
+
         Ok(ClientConfig {
             port,
             ip,
             connect_properties,
+            connect_payload,
         })
     }
 

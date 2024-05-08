@@ -14,7 +14,11 @@ impl MqttClient {
     pub fn new(client_id: String, config: ClientConfig) -> Result<Self, Error> {
         let mut socket = TcpStream::connect(config.get_address())?;
 
-        let connection = Connect::new(&client_id, &config.connect_properties)?;
+        let connection = Connect::new(
+            &client_id,
+            &config.connect_properties,
+            &config.connect_payload,
+        )?;
 
         connection.write_to(&mut socket)?;
 
