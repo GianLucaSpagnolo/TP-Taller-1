@@ -2,13 +2,15 @@ use std::io::{Error, Read};
 
 use crate::common::data_types::data_representation::{read_byte, read_two_byte_integer};
 
-pub static CONNECT_PACKET: u8 = 0x10;
-pub static CONNACK_PACKET: u8 = 0x20;
-pub static _PUBLISH_PACKET: u8 = 0x30;
-pub static _PUBACK_PACKET: u8 = 0x40;
-pub static _PINGREQ_PACKET: u8 = 0xC0;
-pub static _PINGRESP_PACKET: u8 = 0xD0;
-pub static _DISCONNECT_PACKET: u8 = 0xE0;
+use super::packet::generic_packet::PacketType;
+
+pub const CONNECT_PACKET: u8 = 0x10;
+pub const CONNACK_PACKET: u8 = 0x20;
+pub const _PUBLISH_PACKET: u8 = 0x30;
+pub const _PUBACK_PACKET: u8 = 0x40;
+pub const _PINGREQ_PACKET: u8 = 0xC0;
+pub const _PINGRESP_PACKET: u8 = 0xD0;
+pub const _DISCONNECT_PACKET: u8 = 0xE0;
 
 pub struct PacketFixedHeader {
     pub packet_type: u8,
@@ -45,5 +47,14 @@ impl PacketFixedHeader {
         let remaining_length = read_two_byte_integer(stream)?;
 
         Ok(PacketFixedHeader::new(packet_type, remaining_length))
+    }
+
+    // agregado para protocolo
+    pub fn get_package_type(&self) -> PacketType {
+        match self.packet_type {
+            CONNECT_PACKET => PacketType::ConnectType,
+            CONNACK_PACKET => PacketType::ConnackType,
+            _ => PacketType::Unknow,
+        }
     }
 }

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::io::Error;
 use std::net::TcpListener;
 use std::net::TcpStream;
@@ -6,7 +7,9 @@ use std::net::TcpStream;
 use crate::config::ServerConfig;
 use crate::control_packets::mqtt_connack::connack::*;
 use crate::control_packets::mqtt_connect::connect::*;
+use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
+use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
 
 pub struct WillMessage {
@@ -21,6 +24,22 @@ pub struct SessionState {
     _will_message: Option<WillMessage>,
 }
 
+pub enum ServerActions {
+    ConnectionEstablished,
+    TryConnect, // guardara el exit code
+    PackageError,
+}
+
+impl fmt::Display for ServerActions {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ServerActions::ConnectionEstablished => write!(f, "Conexion establecida"),
+            ServerActions::TryConnect => write!(f, "Intentando conectar"),
+            ServerActions::PackageError => write!(f, "Error en el paquete"),
+        }
+    }
+}
+
 pub struct Server {
     config: ServerConfig,
     sessions: HashMap<String, SessionState>,
@@ -28,7 +47,67 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn start_server(config: ServerConfig) -> Result<(), Error> {
+    // usada por el servidor para recibir los paquetes
+    // del cliente
+    // el protocolo recibe el paquete, lo procesa y traduce el
+    // paquete a una accion que el servidor de la app comprenda.
+    fn process_packet(&mut self, mut stream: &mut TcpStream) -> Result<ServerActions, Error> {
+        // averiguo el tipo de paquete:
+        let fixed_header = match PacketFixedHeader::read_from(stream) {
+            Ok(header_type) => header_type,
+            Err(e) => return Err(e),
+        };
+
+        match get_server_packet(
+            stream,
+            fixed_header.get_package_type(),
+            fixed_header.remaining_length,
+        ) {
+            Ok(pack) => match pack {
+                ServerPacketRecived::ConnectPacket(pack) => {
+                    let connack_properties: ConnackProperties = self.handle_connection(*pack)?;
+                    let connack_packet: Connack = Connack::new(&connack_properties)?;
+                    match connack_packet.write_to(&mut stream) {
+                        Ok(_) => Ok(ServerActions::ConnectionEstablished),
+                        Err(e) => Err(e),
+                    }
+                }
+                _ => Ok(ServerActions::PackageError),
+                // el servidor de la app debera poder
+                // ejecutar el connack, para esto,
+                // tanto el enum del server MQTT, como el
+                // enum del protocolo, deben de tener lo necesario
+                // para poder reconstruir los paquetes
+            },
+            Err(e) => Err(e),
+        }
+    }
+
+    fn run_listener(&mut self, listener: &TcpListener) -> Result<ServerActions, Error> {
+        // bloquea al servidor hasta recibir un paquete
+        for client_stream in listener.incoming() {
+            match client_stream {
+                Ok(mut stream) => match self.process_packet(&mut stream) {
+                    Ok(a) => {
+                        print!(" Conexion establecida: {} ", a)
+                    } // logger,
+                    Err(e) => return Err(e),
+                },
+                Err(e) => return Err(e),
+            };
+        }
+
+        Err(Error::new(
+            std::io::ErrorKind::Other,
+            "No se pudo recibir el paquete",
+        ))
+    }
+
+    // le devuelve el paquete al servidor
+    // el servidor lo pasa al logger
+    // el logger le pide traduccion al protocolo
+
+    pub fn start_server(config: ServerConfig) -> Result<ServerActions, Error> {
         let mut server = Server {
             config,
             sessions: HashMap::new(),
@@ -40,23 +119,11 @@ impl Server {
             Err(e) => return Err(e),
         };
 
-        // Si no recibe ninguna conexión en cierta cantidad de tiempo debe cortar la conexión (timer!)
-
-        for client_stream in listener.incoming() {
-            match client_stream {
-                Ok(mut stream) => {
-                    let connack_properties: ConnackProperties =
-                        server.handle_connection(&mut stream)?;
-                    let connack_packet: Connack = Connack::new(&connack_properties)?;
-                    match connack_packet.write_to(&mut stream) {
-                        Ok(_) => {}
-                        Err(e) => return Err(e),
-                    };
-                }
-                Err(e) => return Err(e),
-            }
+        // corre el aceptador y recibe un client stream
+        match server.run_listener(&listener) {
+            Ok(action) => Ok(action),
+            Err(e) => Err(e),
         }
-        Ok(())
     }
 
     fn create_will_message(
@@ -104,12 +171,7 @@ impl Server {
         }
     }
 
-    fn handle_connection(&mut self, stream: &mut TcpStream) -> Result<ConnackProperties, Error> {
-        let connect = match Connect::read_from(stream) {
-            Ok(p) => p,
-            Err(e) => return Err(e), // Valida si el paquete es correcto, sino debe cortar al conexión
-        };
-
+    fn handle_connection(&mut self, connect: Connect) -> Result<ConnackProperties, Error> {
         // Si no recibe ninguna conexión en cierta cantidad de tiempo debe cortar la conexión (timer!)
 
         // Connect Flags:
@@ -209,9 +271,16 @@ impl Server {
         }
         ReasonMode::Success.get_id()
     }
+}
 
-    fn _determinate_connack_properties(&self, _connect: &Connect) -> ConnackProperties {
-        let _reason_code = self.determinate_reason_code(_connect);
-        todo!()
+// Si no recibe ninguna conexión en cierta cantidad de tiempo debe cortar la conexión (timer!)
+/*
+for client_stream in listener.incoming() {
+    match client_stream {
+        Ok(mut stream) => {
+
+        }
+        Err(e) => return Err(e),
     }
 }
+*/

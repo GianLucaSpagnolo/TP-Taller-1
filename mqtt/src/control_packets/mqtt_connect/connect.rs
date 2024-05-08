@@ -5,6 +5,7 @@ use std::io::Write;
 use crate::control_packets::mqtt_connect::payload::*;
 use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
+use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
@@ -92,7 +93,6 @@ use crate::control_packets::mqtt_packet::fixed_header::*;
 /// Password (Connect Flag - Password = 1)
 ///
 pub struct Connect {
-    pub fixed_header: PacketFixedHeader,
     pub variable_header: ConnectVariableHeader,
     pub payload: ConnectPayload,
 }
@@ -130,37 +130,42 @@ pub struct PayloadFields {
     pub password: Option<String>,
 }
 
-impl Connect {
-    pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header = self.fixed_header.as_bytes();
-        stream.write_all(&fixed_header)?;
-
-        let variable_header = self.variable_header.as_bytes();
-        stream.write_all(&variable_header)?;
-
-        let payload_fields = self.payload.as_bytes();
-        stream.write_all(&payload_fields)?;
-
-        Ok(())
-    }
-
-    pub fn read_from(stream: &mut dyn Read) -> Result<Connect, Error> {
-        let fixed_header = PacketFixedHeader::read_from(stream)?;
-
+impl Serialization for Connect {
+    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Connect, Error> {
         let variable_header = ConnectVariableHeader::read_from(stream)?;
 
-        let payload_length = fixed_header.remaining_length - variable_header.length();
+        let payload_length = remaining_length - variable_header.length();
 
         let payload = ConnectPayload::read_from(stream, payload_length)?;
 
         let connect = Connect {
-            fixed_header,
             variable_header,
             payload,
         };
         Ok(connect)
     }
 
+    fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
+        let variable_header_bytes = self.variable_header.as_bytes();
+        let payload_fields_bytes = self.payload.as_bytes();
+
+        let remaining_length = self.variable_header.length() + self.payload.length();
+        let fixed_header = PacketFixedHeader::new(CONNECT_PACKET, remaining_length);
+        let fixed_header_bytes = fixed_header.as_bytes();
+
+        stream.write_all(&fixed_header_bytes)?;
+        stream.write_all(&variable_header_bytes)?;
+        stream.write_all(&payload_fields_bytes)?;
+
+        Ok(())
+    }
+
+    fn pack_server_packet(package: Connect) -> ServerPacketRecived {
+        ServerPacketRecived::ConnectPacket(Box::new(package))
+    }
+}
+
+impl Connect {
     pub fn new(
         client_id: &str,
         connect_properties: &ConnectProperties,
@@ -169,11 +174,7 @@ impl Connect {
         let variable_header = ConnectVariableHeader::new(connect_properties)?;
         let payload = ConnectPayload::new(client_id.to_string(), payload_fields)?;
 
-        let remaining_length = variable_header.length() + payload.length();
-        let fixed_header = PacketFixedHeader::new(CONNECT_PACKET, remaining_length);
-
         Ok(Connect {
-            fixed_header,
             variable_header,
             payload,
         })
@@ -227,9 +228,11 @@ mod test {
         connect.write_to(&mut buffer).unwrap();
 
         let mut buffer = buffer.as_slice();
-        let connect = Connect::read_from(&mut buffer).unwrap();
+        let connect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        let connect =
+            Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(connect.fixed_header.packet_type, CONNECT_PACKET);
+        assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
         assert_eq!(
             connect.variable_header.protocol_name.name,
             "MQTT".to_string()
@@ -358,9 +361,11 @@ mod test {
         connect.write_to(&mut buffer).unwrap();
 
         let mut buffer = buffer.as_slice();
-        let connect = Connect::read_from(&mut buffer).unwrap();
+        let connect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        let connect =
+            Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(connect.fixed_header.packet_type, CONNECT_PACKET);
+        assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
         assert_eq!(
             connect.variable_header.protocol_name.name,
             "MQTT".to_string()

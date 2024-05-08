@@ -1,7 +1,10 @@
 use std::io::{Error, Read, Write};
 
 use super::variable_header::ConnackVariableHeader;
-use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, CONNACK_PACKET};
+use crate::control_packets::mqtt_packet::{
+    fixed_header::{PacketFixedHeader, CONNACK_PACKET},
+    packet::generic_packet::*,
+};
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
@@ -59,7 +62,6 @@ use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, CONNA
 /// 39 - 0x27 - Maximum Packet Size - Four Byte Integer (u32)
 ///
 pub struct Connack {
-    pub fixed_header: PacketFixedHeader,
     pub variable_header: ConnackVariableHeader,
 }
 
@@ -86,39 +88,36 @@ pub struct ConnackProperties {
     pub maximum_packet_size: Option<u32>,
 }
 
-impl Connack {
-    pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header = self.fixed_header.as_bytes();
-        stream.write_all(&fixed_header)?;
+impl Serialization for Connack {
+    fn read_from(stream: &mut dyn Read, _remaining_length: u16) -> Result<Connack, Error> {
+        let variable_header = ConnackVariableHeader::read_from(stream)?;
 
-        let variable_header = self.variable_header.as_bytes();
-        stream.write_all(&variable_header)?;
+        let connect = Connack { variable_header };
+        Ok(connect)
+    }
+
+    fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
+        let variable_header_bytes = self.variable_header.as_bytes();
+        let remaining_length = self.variable_header.length();
+        let fixed_header = PacketFixedHeader::new(CONNACK_PACKET, remaining_length);
+        let fixed_header_bytes = fixed_header.as_bytes();
+
+        stream.write_all(&fixed_header_bytes)?;
+        stream.write_all(&variable_header_bytes)?;
 
         Ok(())
     }
 
-    pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let fixed_header = PacketFixedHeader::read_from(stream)?;
-
-        let variable_header = ConnackVariableHeader::read_from(stream)?;
-
-        let connack = Connack {
-            fixed_header,
-            variable_header,
-        };
-        Ok(connack)
+    fn pack_client_packet(package: Connack) -> ClientPacketRecived {
+        ClientPacketRecived::ConnackPacket(Box::new(package))
     }
+}
 
+impl Connack {
     pub fn new(connack_properties: &ConnackProperties) -> Result<Self, Error> {
         let variable_header = ConnackVariableHeader::new(connack_properties)?;
 
-        let remaining_length = variable_header.length();
-        let fixed_header = PacketFixedHeader::new(CONNACK_PACKET, remaining_length);
-
-        Ok(Connack {
-            fixed_header,
-            variable_header,
-        })
+        Ok(Connack { variable_header })
     }
 }
 
@@ -156,7 +155,6 @@ mod test {
         };
 
         let connack = Connack {
-            fixed_header: PacketFixedHeader::new(CONNACK_PACKET, 0),
             variable_header: ConnackVariableHeader::new(&properties).unwrap(),
         };
 
@@ -167,9 +165,12 @@ mod test {
         connack.write_to(&mut buffer).unwrap();
 
         let mut buffer = buffer.as_slice();
-        let connack = Connack::read_from(&mut buffer).unwrap();
+        let connack_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
 
-        assert_eq!(connack.fixed_header.packet_type, CONNACK_PACKET);
+        let connack =
+            Connack::read_from(&mut buffer, connack_fixed_header.remaining_length).unwrap();
+
+        assert_eq!(connack_fixed_header.packet_type, CONNACK_PACKET);
         assert_eq!(connack.variable_header.connect_acknowledge_flags, 0);
         assert_eq!(connack.variable_header.connect_reason_code, 0);
         assert_eq!(connack.variable_header.properties.properties.len(), 17);
