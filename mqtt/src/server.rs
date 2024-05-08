@@ -9,10 +9,16 @@ use crate::control_packets::mqtt_connect::connect::*;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
 
+pub struct WillMessage {
+    _will_topic: String,
+    _will_payload: u16,
+}
+
 pub struct SessionState {
     state: bool,
     _session_expiry_interval: u32,
     _subscriptions: Vec<String>,
+    _will_message: Option<WillMessage>,
 }
 
 pub struct Server {
@@ -53,8 +59,28 @@ impl Server {
         Ok(())
     }
 
-    fn open_new_session(&mut self, client_id: String) -> u8 {
-        if let Some(session) = self.sessions.get_mut(&client_id) {
+    fn create_will_message(
+        &mut self,
+        will_flag: u8,
+        will_topic: Option<String>,
+        will_payload: Option<u16>,
+    ) -> Option<WillMessage> {
+        if will_flag == 1 {
+            if let (Some(topic), Some(payload)) = (will_topic, will_payload) {
+                Some(WillMessage {
+                    _will_topic: topic,
+                    _will_payload: payload,
+                })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    fn open_new_session(&mut self, connect: Connect) -> u8 {
+        if let Some(session) = self.sessions.get_mut(&connect.payload.client_id) {
             // Resumes session
             session.state = true;
             1
@@ -64,15 +90,22 @@ impl Server {
                 state: true,
                 _session_expiry_interval: 0,
                 _subscriptions: Vec::new(),
+                _will_message: self.create_will_message(
+                    flags_handler::_get_connect_flag_will_flag(
+                        connect.variable_header.connect_flags,
+                    ),
+                    connect.payload.will_topic,
+                    connect.payload.will_payload,
+                ),
             };
 
-            self.sessions.insert(client_id, session);
+            self.sessions.insert(connect.payload.client_id, session);
             0
         }
     }
 
     fn handle_connection(&mut self, stream: &mut TcpStream) -> Result<ConnackProperties, Error> {
-        let _connect = match Connect::read_from(stream) {
+        let connect = match Connect::read_from(stream) {
             Ok(p) => p,
             Err(e) => return Err(e), // Valida si el paquete es correcto, sino debe cortar al conexión
         };
@@ -80,11 +113,6 @@ impl Server {
         // Si no recibe ninguna conexión en cierta cantidad de tiempo debe cortar la conexión (timer!)
 
         // Connect Flags:
-        // - Will Flag: si es 1, un Will Message debe ser almacenado en el servidor y asociado a la sesion.
-        // El will message esta compuesto de will properties, will topic y will payload fields del payload del CONNECT packet.
-        // El will message debe ser publicado despues de que una network connection se cierra y la sesion expira, o el willdelay interval haya pasado
-        // El will message debe ser borrado en caso de que el servidor reciba un DISCONNECT packet con reason code 0x00, o una nueva Network Connection con Clean Start = 1
-        // con el mismo client identifier. Tambien debe ser borrado de la session state en caso de que ya haya sido publicado
         // - Will Retain: Si will flag == 0, will retain == 0.
         // Si will flag == 1, will retain puede ser 0 o 1. En caso de ser 1, el servidor debe almacenar el mensaje y enviarlo a los suscriptores en caso de que el cliente se desconecte
         // (si will retain == 0, debe enviarse como un normal message, si will retain == 1, debe enviarse como un Retained Message)
@@ -124,22 +152,26 @@ impl Server {
             shared_subscription_available: None,
         };
 
-        connack_properties.connect_reason_code = self._determinate_reason_code(&_connect);
+        connack_properties.connect_reason_code = self.determinate_reason_code(&connect);
 
         // Clean start: si es 1, el cliente y servidor deben descartar cualquier session state asociado con el Client Identifier. Session Present flag in connack = 0
         // Clean Start: si es 0, el cliente y servidor deben mantener el session state asociado con el Client Identifier.
         // En caso de que no exista dicha sesion, hay que crearla
-        if flags_handler::_get_connect_flag_clean_start(_connect.variable_header.connect_flags) == 1
+        if flags_handler::_get_connect_flag_clean_start(connect.variable_header.connect_flags) == 1
         {
-            self.sessions.remove(&_connect.payload.fields.client_id);
+            self.sessions.remove(&connect.payload.client_id);
         }
-        connack_properties.connect_acknowledge_flags =
-            self.open_new_session(_connect.payload.fields.client_id);
+        // - Will Flag: si es 1, un Will Message debe ser almacenado en el servidor y asociado a la sesion.
+        // El will message esta compuesto de will properties, will topic y will payload fields del payload del CONNECT packet.
+        // El will message debe ser publicado despues de que una network connection se cierra y la sesion expira, o el willdelay interval haya pasado
+        // El will message debe ser borrado en caso de que el servidor reciba un DISCONNECT packet con reason code 0x00, o una nueva Network Connection con Clean Start = 1
+        // con el mismo client identifier. Tambien debe ser borrado de la session state en caso de que ya haya sido publicado
+        connack_properties.connect_acknowledge_flags = self.open_new_session(connect);
 
         Ok(connack_properties)
     }
 
-    fn _determinate_reason_code(&self, connect_packet: &Connect) -> u8 {
+    fn determinate_reason_code(&self, connect_packet: &Connect) -> u8 {
         // Si ya se recibió un CONNECT packet, se debe procesar como un Protocol Error (reason code 130) y cerrar la conexion.
         if self._connect_received {
             return ReasonMode::_ProtocolError.get_id();
@@ -169,7 +201,6 @@ impl Server {
 
         if !connect_packet
             .payload
-            .fields
             .client_id
             .chars()
             .all(|c| c.is_ascii_alphanumeric())
@@ -180,7 +211,7 @@ impl Server {
     }
 
     fn _determinate_connack_properties(&self, _connect: &Connect) -> ConnackProperties {
-        let _reason_code = self._determinate_reason_code(_connect);
+        let _reason_code = self.determinate_reason_code(_connect);
         todo!()
     }
 }
