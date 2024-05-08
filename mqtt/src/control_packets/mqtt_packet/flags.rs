@@ -47,12 +47,6 @@ pub mod flags_handler {
         _apply_mask_to_n_bits(flags, 0, 1)
     }
 
-    pub fn _create_connect_acknowledge_flags(session_present_flag: u8) -> u8 {
-        let mut connect_acknowledge_flags: u8 = 0;
-        connect_acknowledge_flags |= session_present_flag;
-        connect_acknowledge_flags
-    }
-
     pub fn add_connect_flag_clean_start(
         mut connect_flags: u8,
         clean_start: String,
