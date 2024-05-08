@@ -15,6 +15,7 @@ pub const SERVER_KEEP_ALIVE: u8 = 19;
 pub const AUTHENTICATION_METHOD: u8 = 21;
 pub const AUTHENTICATION_DATA: u8 = 22;
 pub const REQUEST_PROBLEM_INFORMATION: u8 = 23;
+pub const WILL_DELAY_INTERVAL: u8 = 24;
 pub const REQUEST_RESPONSE_INFORMATION: u8 = 25;
 pub const RESPONSE_INFORMATION: u8 = 26;
 pub const SERVER_REFERENCE: u8 = 28;
@@ -44,6 +45,7 @@ pub enum VariableHeaderProperty {
     AuthenticationMethod(String),         // UTF-8 Encoded String
     AuthenticationData(u16),              // Binary Data
     RequestProblemInformation(u8),        // Byte
+    WillDelayInterval(u32),               // Four Byte Integer
     RequestResponseInformation(u8),       // Byte
     ResponseInformation(String),          // UTF-8 string
     ServerReference(String),              // UTF-8 string
@@ -112,6 +114,7 @@ impl VariableHeaderProperty {
             VariableHeaderProperty::AuthenticationMethod(_) => AUTHENTICATION_METHOD,
             VariableHeaderProperty::AuthenticationData(_) => AUTHENTICATION_DATA,
             VariableHeaderProperty::RequestProblemInformation(_) => REQUEST_PROBLEM_INFORMATION,
+            VariableHeaderProperty::WillDelayInterval(_) => WILL_DELAY_INTERVAL,
             VariableHeaderProperty::RequestResponseInformation(_) => REQUEST_RESPONSE_INFORMATION,
             VariableHeaderProperty::ResponseInformation(_) => RESPONSE_INFORMATION,
             VariableHeaderProperty::ServerReference(_) => SERVER_REFERENCE,
@@ -168,6 +171,7 @@ impl VariableHeaderProperty {
             MESSAGE_EXPIRY_INTERVAL => Ok(VariableHeaderProperty::MessageExpiryInterval(value)),
             SUBSCRIPTION_IDENTIFIER => Ok(VariableHeaderProperty::SubscriptionIdentifier(value)),
             SESSION_EXPIRY_INTERVAL => Ok(VariableHeaderProperty::SessionExpiryInterval(value)),
+            WILL_DELAY_INTERVAL => Ok(VariableHeaderProperty::WillDelayInterval(value)),
             MAXIMUM_PACKET_SIZE => Ok(VariableHeaderProperty::MaximumPacketSize(value)),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
@@ -276,6 +280,10 @@ impl VariableHeaderProperty {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::RequestProblemInformation(value))
             }
+            WILL_DELAY_INTERVAL => {
+                let value = four_byte_integer_from_be_bytes(buff, buff_size);
+                Some(VariableHeaderProperty::WillDelayInterval(value))
+            }
             REQUEST_RESPONSE_INFORMATION => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
                 Some(VariableHeaderProperty::RequestResponseInformation(value))
@@ -379,6 +387,9 @@ impl VariableHeaderProperty {
             }
             VariableHeaderProperty::RequestProblemInformation(value) => {
                 write_u8_property_as_bytes(bytes, self.id(), value)
+            }
+            VariableHeaderProperty::WillDelayInterval(value) => {
+                write_u32_property_as_bytes(bytes, self.id(), value)
             }
             VariableHeaderProperty::RequestResponseInformation(value) => {
                 write_u8_property_as_bytes(bytes, self.id(), value)
