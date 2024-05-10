@@ -2,6 +2,7 @@ use std::io::Error;
 use std::io::Read;
 
 use crate::common::data_types::data_representation::*;
+use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 use crate::control_packets::mqtt_packet::packet_property::*;
 
@@ -62,20 +63,20 @@ impl Clone for ConnectProperties {
     }
 }
 
-impl ConnectProperties {
+impl PacketProperties for ConnectProperties {
 
-    pub fn variable_props_size(&self) -> u16 {
+    fn variable_props_size(&self) -> u16 {
         let header = self.as_variable_header_properties().unwrap();
         header.properties.len() as u16
     }
 
-    pub fn size_of(&self) -> u16 {
+    fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size =  std::mem::size_of::<u16>() + self.protocol_name.len() + std::mem::size_of::<u8>() + std::mem::size_of::<u8>() + std::mem::size_of::<u16>();
         fixed_props_size as u16 + variable_props.bytes_length
     }
 
-    pub fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
+    fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
         let mut variable_props = VariableHeaderProperties::new();
 
         if let Some(session_expiry_interval) = self.session_expiry_interval {
@@ -115,7 +116,7 @@ impl ConnectProperties {
     }
 
 
-    pub fn as_bytes(&self) -> Result<Vec<u8>, Error> {
+    fn as_bytes(&self) -> Result<Vec<u8>, Error> {
         
         let mut bytes: Vec<u8> = Vec::new();
         let variable_header_properties = self.as_variable_header_properties()?;
@@ -131,7 +132,8 @@ impl ConnectProperties {
 
         Ok(bytes)
     }
-    pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+    
+    fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let protocol_name_length = read_two_byte_integer(stream)?;
         let protocol_name = read_utf8_encoded_string(stream, protocol_name_length)?;
         let protocol_version = read_byte(stream)?;

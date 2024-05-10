@@ -5,6 +5,7 @@ use std::io::Write;
 use crate::control_packets::mqtt_connect::payload::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
+use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 
 use super::connect_properties::ConnectProperties;
 
