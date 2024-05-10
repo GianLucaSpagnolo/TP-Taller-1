@@ -1,6 +1,5 @@
 use std::{
-    io::{Error, Read},
-    string::FromUtf8Error,
+    io::{Error, Read}, mem::{size_of, size_of_val}, string::FromUtf8Error
 };
 
 use crate::common::data_types::data_representation::read_two_byte_integer;
@@ -30,7 +29,7 @@ impl VariableHeaderProperties {
         first_str: String,
         second_str: String,
     ) -> Result<(), Error> {
-        self.bytes_length += 5 + first_str.len() as u16 + second_str.len() as u16;
+        self.bytes_length += size_of_val(&id) as u16 + size_of::<u16>() as u16 + size_of::<u16>() as u16 + first_str.len() as u16 + second_str.len() as u16;
 
         let prop_result =
             PacketProperty::new_property_utf8_pair_string(id, first_str, second_str)?;
@@ -41,7 +40,7 @@ impl VariableHeaderProperties {
     }
 
     pub fn add_utf8_string_property(&mut self, id: u8, str: String) -> Result<(), Error> {
-        self.bytes_length += 3 + str.len() as u16;
+        self.bytes_length += size_of_val(&id) as u16 + size_of::<u16>() as u16 + str.len() as u16;
 
         let prop_result = PacketProperty::new_property_utf8_string(id, str)?;
 
@@ -51,7 +50,7 @@ impl VariableHeaderProperties {
     }
 
     pub fn add_u32_property(&mut self, id: u8, value: u32) -> Result<(), Error> {
-        self.bytes_length += 1 + 4;
+        self.bytes_length += size_of_val(&id) as u16 + size_of_val(&value) as u16;
 
         let prop_result = PacketProperty::new_property_u32(id, value)?;
 
@@ -60,7 +59,7 @@ impl VariableHeaderProperties {
     }
 
     pub fn add_u16_property(&mut self, id: u8, value: u16) -> Result<(), Error> {
-        self.bytes_length += 1 + 2;
+        self.bytes_length += size_of_val(&id) as u16 + size_of_val(&value) as u16;
 
         let prop_result = PacketProperty::new_property_u16(id, value)?;
 
@@ -69,7 +68,7 @@ impl VariableHeaderProperties {
     }
 
     pub fn add_u8_property(&mut self, id: u8, value: u8) -> Result<(), Error> {
-        self.bytes_length += 1 + 1;
+        self.bytes_length += size_of_val(&id) as u16 + size_of_val(&value) as u16;
 
         let prop_result = PacketProperty::new_property_u8(id, value)?;
 
