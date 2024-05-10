@@ -54,8 +54,8 @@ impl _Disconnect {
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::variable_header_property::{
-        VariableHeaderProperty, REASON_STRING, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL,
+    use crate::control_packets::mqtt_packet::packet_property::{
+        PacketProperty, REASON_STRING, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL,
         USER_PROPERTY,
     };
 
@@ -85,7 +85,7 @@ mod test {
 
         let props = &disconnect.variable_header.properties;
 
-        if let VariableHeaderProperty::SessionExpiryInterval(value) =
+        if let PacketProperty::SessionExpiryInterval(value) =
             props._get_property(SESSION_EXPIRY_INTERVAL).unwrap()
         {
             assert_eq!(*value, 0);
@@ -93,7 +93,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::ReasonString(value) =
+        if let PacketProperty::ReasonString(value) =
             props._get_property(REASON_STRING).unwrap()
         {
             assert_eq!(value, "reason");
@@ -101,7 +101,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::UserProperty(value) =
+        if let PacketProperty::UserProperty(value) =
             props._get_property(USER_PROPERTY).unwrap()
         {
             assert_eq!(value.0, "name");
@@ -110,7 +110,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::ServerReference(value) =
+        if let PacketProperty::ServerReference(value) =
             props._get_property(SERVER_REFERENCE).unwrap()
         {
             assert_eq!(value, "server");

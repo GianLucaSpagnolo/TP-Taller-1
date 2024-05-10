@@ -124,7 +124,7 @@ impl Connack {
 #[cfg(test)]
 mod test {
     use crate::control_packets::mqtt_packet::{
-        reason_codes::ReasonMode, variable_header_property::VariableHeaderProperty,
+        reason_codes::ReasonMode, packet_property::PacketProperty,
     };
 
     use super::*;
@@ -179,26 +179,26 @@ mod test {
 
         for p in props {
             match p {
-                VariableHeaderProperty::SessionExpiryInterval(i) => assert_eq!(i, 0),
-                VariableHeaderProperty::AssignedClientIdentifier(s) => assert_eq!(s, "client"),
-                VariableHeaderProperty::ServerKeepAlive(i) => assert_eq!(i, 0),
-                VariableHeaderProperty::AuthenticationMethod(s) => assert_eq!(s, "auth"),
-                VariableHeaderProperty::AuthenticationData(i) => assert_eq!(i, 0),
-                VariableHeaderProperty::ResponseInformation(s) => assert_eq!(s, "response"),
-                VariableHeaderProperty::ServerReference(s) => assert_eq!(s, "server"),
-                VariableHeaderProperty::ReasonString(s) => assert_eq!(s, "reason"),
-                VariableHeaderProperty::ReceiveMaximum(i) => assert_eq!(i, 0),
-                VariableHeaderProperty::TopicAliasMaximum(i) => assert_eq!(i, 0),
-                VariableHeaderProperty::MaximumQoS(i) => assert_eq!(i, 0),
-                VariableHeaderProperty::RetainAvailable(i) => assert_eq!(i, 0),
-                VariableHeaderProperty::WildcardSubscriptionAvailable(i) => assert_eq!(i, 0),
-                VariableHeaderProperty::SubscriptionIdentifiersAvailable(i) => assert_eq!(i, 0),
-                VariableHeaderProperty::SharedSubscriptionAvailable(i) => assert_eq!(i, 0),
-                VariableHeaderProperty::UserProperty(value) => {
+                PacketProperty::SessionExpiryInterval(i) => assert_eq!(i, 0),
+                PacketProperty::AssignedClientIdentifier(s) => assert_eq!(s, "client"),
+                PacketProperty::ServerKeepAlive(i) => assert_eq!(i, 0),
+                PacketProperty::AuthenticationMethod(s) => assert_eq!(s, "auth"),
+                PacketProperty::AuthenticationData(i) => assert_eq!(i, 0),
+                PacketProperty::ResponseInformation(s) => assert_eq!(s, "response"),
+                PacketProperty::ServerReference(s) => assert_eq!(s, "server"),
+                PacketProperty::ReasonString(s) => assert_eq!(s, "reason"),
+                PacketProperty::ReceiveMaximum(i) => assert_eq!(i, 0),
+                PacketProperty::TopicAliasMaximum(i) => assert_eq!(i, 0),
+                PacketProperty::MaximumQoS(i) => assert_eq!(i, 0),
+                PacketProperty::RetainAvailable(i) => assert_eq!(i, 0),
+                PacketProperty::WildcardSubscriptionAvailable(i) => assert_eq!(i, 0),
+                PacketProperty::SubscriptionIdentifiersAvailable(i) => assert_eq!(i, 0),
+                PacketProperty::SharedSubscriptionAvailable(i) => assert_eq!(i, 0),
+                PacketProperty::UserProperty(value) => {
                     assert_eq!(value.0, "key");
                     assert_eq!(value.1, "value");
                 }
-                VariableHeaderProperty::MaximumPacketSize(i) => assert_eq!(i, 0),
+                PacketProperty::MaximumPacketSize(i) => assert_eq!(i, 0),
                 _ => panic!("Invalid property"),
             }
         }

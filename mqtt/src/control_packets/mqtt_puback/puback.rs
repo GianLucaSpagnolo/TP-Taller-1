@@ -118,8 +118,8 @@ impl _Puback {
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::variable_header_property::{
-        VariableHeaderProperty, REASON_STRING, USER_PROPERTY,
+    use crate::control_packets::mqtt_packet::packet_property::{
+        PacketProperty, REASON_STRING, USER_PROPERTY,
     };
 
     use super::*;
@@ -148,7 +148,7 @@ mod test {
 
         let props = &puback.variable_header.properties;
 
-        if let VariableHeaderProperty::UserProperty(value) =
+        if let PacketProperty::UserProperty(value) =
             props._get_property(USER_PROPERTY).unwrap()
         {
             assert_eq!(value.0, "name");
@@ -157,7 +157,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::ReasonString(value) =
+        if let PacketProperty::ReasonString(value) =
             props._get_property(REASON_STRING).unwrap()
         {
             assert_eq!(value, "reason");

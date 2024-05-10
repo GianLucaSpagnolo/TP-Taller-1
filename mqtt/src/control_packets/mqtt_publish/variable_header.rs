@@ -3,7 +3,7 @@ use std::io::Read;
 
 use crate::common::data_types::data_representation::*;
 use crate::control_packets::mqtt_packet::{
-    variable_header_properties::VariableHeaderProperties, variable_header_property::*,
+    variable_header_properties::VariableHeaderProperties, packet_property::*,
 };
 
 use super::publish::_PublishProperties;
@@ -106,8 +106,8 @@ pub fn _new_publish_properties(
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::variable_header_property::{
-        VariableHeaderProperty, CONTENT_TYPE, CORRELATION_DATA, MESSAGE_EXPIRY_INTERVAL,
+    use crate::control_packets::mqtt_packet::packet_property::{
+        PacketProperty, CONTENT_TYPE, CORRELATION_DATA, MESSAGE_EXPIRY_INTERVAL,
         PAYLOAD_FORMAT_INDICATOR, RESPONSE_TOPIC, SUBSCRIPTION_IDENTIFIER, TOPIC_ALIAS,
         USER_PROPERTY,
     };
@@ -149,7 +149,7 @@ mod test {
         assert_eq!(publish_varible_header.topic_name.name, "topic");
         assert_eq!(publish_varible_header.packet_identifier, 1);
 
-        if let VariableHeaderProperty::PayloadFormatIndicator(payload_format_indicator) =
+        if let PacketProperty::PayloadFormatIndicator(payload_format_indicator) =
             &publish_varible_header
                 .properties
                 ._get_property(PAYLOAD_FORMAT_INDICATOR)
@@ -160,7 +160,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::MessageExpiryInterval(message_expiry_interval) =
+        if let PacketProperty::MessageExpiryInterval(message_expiry_interval) =
             &publish_varible_header
                 .properties
                 ._get_property(MESSAGE_EXPIRY_INTERVAL)
@@ -171,7 +171,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::ContentType(content_type) = &publish_varible_header
+        if let PacketProperty::ContentType(content_type) = &publish_varible_header
             .properties
             ._get_property(CONTENT_TYPE)
             .unwrap()
@@ -181,7 +181,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::ResponseTopic(response_topic) = &publish_varible_header
+        if let PacketProperty::ResponseTopic(response_topic) = &publish_varible_header
             .properties
             ._get_property(RESPONSE_TOPIC)
             .unwrap()
@@ -191,7 +191,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::CorrelationData(correlation_data) = &publish_varible_header
+        if let PacketProperty::CorrelationData(correlation_data) = &publish_varible_header
             .properties
             ._get_property(CORRELATION_DATA)
             .unwrap()
@@ -201,7 +201,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::SubscriptionIdentifier(subscription_identifier) =
+        if let PacketProperty::SubscriptionIdentifier(subscription_identifier) =
             &publish_varible_header
                 .properties
                 ._get_property(SUBSCRIPTION_IDENTIFIER)
@@ -212,7 +212,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::TopicAlias(topic_alias) = &publish_varible_header
+        if let PacketProperty::TopicAlias(topic_alias) = &publish_varible_header
             .properties
             ._get_property(TOPIC_ALIAS)
             .unwrap()
@@ -222,7 +222,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::UserProperty(user_property) = &publish_varible_header
+        if let PacketProperty::UserProperty(user_property) = &publish_varible_header
             .properties
             ._get_property(USER_PROPERTY)
             .unwrap()

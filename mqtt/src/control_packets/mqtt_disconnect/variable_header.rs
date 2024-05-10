@@ -4,7 +4,7 @@ use crate::{
     common::data_types::data_representation::read_byte,
     control_packets::mqtt_packet::{
         variable_header_properties::VariableHeaderProperties,
-        variable_header_property::{
+        packet_property::{
             REASON_STRING, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL, USER_PROPERTY,
         },
     },
@@ -77,8 +77,8 @@ pub fn _new_disconnect_properties(
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::variable_header_property::{
-        VariableHeaderProperty, REASON_STRING, USER_PROPERTY,
+    use crate::control_packets::mqtt_packet::packet_property::{
+        PacketProperty, REASON_STRING, USER_PROPERTY,
     };
 
     use super::*;
@@ -108,7 +108,7 @@ mod test {
 
         assert_eq!(disconnect_variable_header.disconnect_reason_code, 0);
 
-        if let VariableHeaderProperty::SessionExpiryInterval(session_expiry_interval) =
+        if let PacketProperty::SessionExpiryInterval(session_expiry_interval) =
             &disconnect_variable_header
                 .properties
                 ._get_property(SESSION_EXPIRY_INTERVAL)
@@ -119,7 +119,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::ReasonString(reason_string) = &disconnect_variable_header
+        if let PacketProperty::ReasonString(reason_string) = &disconnect_variable_header
             .properties
             ._get_property(REASON_STRING)
             .unwrap()
@@ -129,7 +129,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::UserProperty(user_property) = &disconnect_variable_header
+        if let PacketProperty::UserProperty(user_property) = &disconnect_variable_header
             .properties
             ._get_property(USER_PROPERTY)
             .unwrap()
@@ -140,7 +140,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::ServerReference(server_reference) =
+        if let PacketProperty::ServerReference(server_reference) =
             &disconnect_variable_header
                 .properties
                 ._get_property(SERVER_REFERENCE)

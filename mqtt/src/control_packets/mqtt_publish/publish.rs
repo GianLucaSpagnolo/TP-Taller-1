@@ -155,8 +155,8 @@ impl _Publish {
 mod test {
     use crate::control_packets::mqtt_packet::{
         fixed_header::_PUBLISH_PACKET,
-        variable_header_property::{
-            VariableHeaderProperty, CONTENT_TYPE, CORRELATION_DATA, MESSAGE_EXPIRY_INTERVAL,
+        packet_property::{
+            PacketProperty, CONTENT_TYPE, CORRELATION_DATA, MESSAGE_EXPIRY_INTERVAL,
             PAYLOAD_FORMAT_INDICATOR, RESPONSE_TOPIC, SUBSCRIPTION_IDENTIFIER, TOPIC_ALIAS,
             USER_PROPERTY,
         },
@@ -211,7 +211,7 @@ mod test {
 
         let props = &publish.variable_header.properties;
 
-        if let VariableHeaderProperty::PayloadFormatIndicator(value) =
+        if let PacketProperty::PayloadFormatIndicator(value) =
             props._get_property(PAYLOAD_FORMAT_INDICATOR).unwrap()
         {
             assert_eq!(*value, 1);
@@ -219,7 +219,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::MessageExpiryInterval(value) =
+        if let PacketProperty::MessageExpiryInterval(value) =
             props._get_property(MESSAGE_EXPIRY_INTERVAL).unwrap()
         {
             assert_eq!(*value, 0);
@@ -227,7 +227,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::ContentType(value) =
+        if let PacketProperty::ContentType(value) =
             props._get_property(CONTENT_TYPE).unwrap()
         {
             assert_eq!(value, "type");
@@ -235,7 +235,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::ResponseTopic(value) =
+        if let PacketProperty::ResponseTopic(value) =
             props._get_property(RESPONSE_TOPIC).unwrap()
         {
             assert_eq!(value, "response");
@@ -243,7 +243,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::CorrelationData(value) =
+        if let PacketProperty::CorrelationData(value) =
             props._get_property(CORRELATION_DATA).unwrap()
         {
             assert_eq!(*value, 0);
@@ -251,7 +251,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::SubscriptionIdentifier(value) =
+        if let PacketProperty::SubscriptionIdentifier(value) =
             props._get_property(SUBSCRIPTION_IDENTIFIER).unwrap()
         {
             assert_eq!(*value, 0);
@@ -259,14 +259,14 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::TopicAlias(value) = props._get_property(TOPIC_ALIAS).unwrap()
+        if let PacketProperty::TopicAlias(value) = props._get_property(TOPIC_ALIAS).unwrap()
         {
             assert_eq!(*value, 0);
         } else {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::UserProperty(value) =
+        if let PacketProperty::UserProperty(value) =
             props._get_property(USER_PROPERTY).unwrap()
         {
             assert_eq!(value.0, "key");

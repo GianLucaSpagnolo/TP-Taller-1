@@ -25,7 +25,8 @@ mod control_packets {
         pub mod packet;
         pub mod reason_codes;
         pub mod variable_header_properties;
-        pub mod variable_header_property;
+        pub mod packet_property;
+        pub mod packet_properties;
     }
 
     pub mod mqtt_puback {

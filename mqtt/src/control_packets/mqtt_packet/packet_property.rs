@@ -32,7 +32,7 @@ pub const SUBSCRIPTION_IDENTIFIERS_AVAILABLE: u8 = 41;
 pub const SHARED_SUBSCRIPTION_AVAILABLE: u8 = 42;
 
 #[derive(Debug)]
-pub enum VariableHeaderProperty {
+pub enum PacketProperty {
     PayloadFormatIndicator(u8),           // One bit
     MessageExpiryInterval(u32),           // Four Byte Integer
     ContentType(String),                  // UTF-8 Encoded String
@@ -99,40 +99,97 @@ fn write_utf8_string_pair_property_as_bytes(
     write_utf8_string_as_bytes(bytes, second);
 }
 
-impl VariableHeaderProperty {
+impl PacketProperty {
     pub fn id(&self) -> u8 {
         match self {
-            VariableHeaderProperty::PayloadFormatIndicator(_) => PAYLOAD_FORMAT_INDICATOR,
-            VariableHeaderProperty::MessageExpiryInterval(_) => MESSAGE_EXPIRY_INTERVAL,
-            VariableHeaderProperty::ContentType(_) => CONTENT_TYPE,
-            VariableHeaderProperty::ResponseTopic(_) => RESPONSE_TOPIC,
-            VariableHeaderProperty::CorrelationData(_) => CORRELATION_DATA,
-            VariableHeaderProperty::SubscriptionIdentifier(_) => SUBSCRIPTION_IDENTIFIER,
-            VariableHeaderProperty::SessionExpiryInterval(_) => SESSION_EXPIRY_INTERVAL,
-            VariableHeaderProperty::AssignedClientIdentifier(_) => ASSIGNED_CLIENT_IDENTIFIER,
-            VariableHeaderProperty::ServerKeepAlive(_) => SERVER_KEEP_ALIVE,
-            VariableHeaderProperty::AuthenticationMethod(_) => AUTHENTICATION_METHOD,
-            VariableHeaderProperty::AuthenticationData(_) => AUTHENTICATION_DATA,
-            VariableHeaderProperty::RequestProblemInformation(_) => REQUEST_PROBLEM_INFORMATION,
-            VariableHeaderProperty::WillDelayInterval(_) => WILL_DELAY_INTERVAL,
-            VariableHeaderProperty::RequestResponseInformation(_) => REQUEST_RESPONSE_INFORMATION,
-            VariableHeaderProperty::ResponseInformation(_) => RESPONSE_INFORMATION,
-            VariableHeaderProperty::ServerReference(_) => SERVER_REFERENCE,
-            VariableHeaderProperty::ReasonString(_) => REASON_STRING,
-            VariableHeaderProperty::ReceiveMaximum(_) => RECEIVE_MAXIMUM,
-            VariableHeaderProperty::TopicAliasMaximum(_) => TOPIC_ALIAS_MAXIMUM,
-            VariableHeaderProperty::TopicAlias(_) => TOPIC_ALIAS,
-            VariableHeaderProperty::MaximumQoS(_) => MAXIMUM_QOS,
-            VariableHeaderProperty::RetainAvailable(_) => RETAIN_AVAILABLE,
-            VariableHeaderProperty::UserProperty(_) => USER_PROPERTY,
-            VariableHeaderProperty::MaximumPacketSize(_) => MAXIMUM_PACKET_SIZE,
-            VariableHeaderProperty::WildcardSubscriptionAvailable(_) => {
+            PacketProperty::PayloadFormatIndicator(_) => PAYLOAD_FORMAT_INDICATOR,
+            PacketProperty::MessageExpiryInterval(_) => MESSAGE_EXPIRY_INTERVAL,
+            PacketProperty::ContentType(_) => CONTENT_TYPE,
+            PacketProperty::ResponseTopic(_) => RESPONSE_TOPIC,
+            PacketProperty::CorrelationData(_) => CORRELATION_DATA,
+            PacketProperty::SubscriptionIdentifier(_) => SUBSCRIPTION_IDENTIFIER,
+            PacketProperty::SessionExpiryInterval(_) => SESSION_EXPIRY_INTERVAL,
+            PacketProperty::AssignedClientIdentifier(_) => ASSIGNED_CLIENT_IDENTIFIER,
+            PacketProperty::ServerKeepAlive(_) => SERVER_KEEP_ALIVE,
+            PacketProperty::AuthenticationMethod(_) => AUTHENTICATION_METHOD,
+            PacketProperty::AuthenticationData(_) => AUTHENTICATION_DATA,
+            PacketProperty::RequestProblemInformation(_) => REQUEST_PROBLEM_INFORMATION,
+            PacketProperty::WillDelayInterval(_) => WILL_DELAY_INTERVAL,
+            PacketProperty::RequestResponseInformation(_) => REQUEST_RESPONSE_INFORMATION,
+            PacketProperty::ResponseInformation(_) => RESPONSE_INFORMATION,
+            PacketProperty::ServerReference(_) => SERVER_REFERENCE,
+            PacketProperty::ReasonString(_) => REASON_STRING,
+            PacketProperty::ReceiveMaximum(_) => RECEIVE_MAXIMUM,
+            PacketProperty::TopicAliasMaximum(_) => TOPIC_ALIAS_MAXIMUM,
+            PacketProperty::TopicAlias(_) => TOPIC_ALIAS,
+            PacketProperty::MaximumQoS(_) => MAXIMUM_QOS,
+            PacketProperty::RetainAvailable(_) => RETAIN_AVAILABLE,
+            PacketProperty::UserProperty(_) => USER_PROPERTY,
+            PacketProperty::MaximumPacketSize(_) => MAXIMUM_PACKET_SIZE,
+            PacketProperty::WildcardSubscriptionAvailable(_) => {
                 WILDCARD_SUBSCRIPTION_AVAILABLE
             }
-            VariableHeaderProperty::SubscriptionIdentifiersAvailable(_) => {
+            PacketProperty::SubscriptionIdentifiersAvailable(_) => {
                 SUBSCRIPTION_IDENTIFIERS_AVAILABLE
             }
-            VariableHeaderProperty::SharedSubscriptionAvailable(_) => SHARED_SUBSCRIPTION_AVAILABLE,
+            PacketProperty::SharedSubscriptionAvailable(_) => SHARED_SUBSCRIPTION_AVAILABLE,
+        }
+    }
+
+    pub fn value_u8(&self) -> Option<u8> {
+        match self {
+            PacketProperty::PayloadFormatIndicator(value) => Some(*value),
+            PacketProperty::RequestProblemInformation(value) => Some(*value),
+            PacketProperty::RequestResponseInformation(value) => Some(*value),
+            PacketProperty::MaximumQoS(value) => Some(*value),
+            PacketProperty::RetainAvailable(value) => Some(*value),
+            PacketProperty::WildcardSubscriptionAvailable(value) => Some(*value),
+            PacketProperty::SubscriptionIdentifiersAvailable(value) => Some(*value),
+            PacketProperty::SharedSubscriptionAvailable(value) => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub fn value_u16(&self) -> Option<u16> {
+        match self {
+            PacketProperty::CorrelationData(value) => Some(*value),
+            PacketProperty::ServerKeepAlive(value) => Some(*value),
+            PacketProperty::AuthenticationData(value) => Some(*value),
+            PacketProperty::ReceiveMaximum(value) => Some(*value),
+            PacketProperty::TopicAliasMaximum(value) => Some(*value),
+            PacketProperty::TopicAlias(value) => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub fn value_u32(&self) -> Option<u32> {
+        match self {
+            PacketProperty::MessageExpiryInterval(value) => Some(*value),
+            PacketProperty::SubscriptionIdentifier(value) => Some(*value),
+            PacketProperty::SessionExpiryInterval(value) => Some(*value),
+            PacketProperty::WillDelayInterval(value) => Some(*value),
+            PacketProperty::MaximumPacketSize(value) => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub fn value_string(&self) -> Option<String> {
+        match self {
+            PacketProperty::ContentType(value) => Some(value.clone()),
+            PacketProperty::ResponseTopic(value) => Some(value.clone()),
+            PacketProperty::AssignedClientIdentifier(value) => Some(value.clone()),
+            PacketProperty::AuthenticationMethod(value) => Some(value.clone()),
+            PacketProperty::ResponseInformation(value) => Some(value.clone()),
+            PacketProperty::ServerReference(value) => Some(value.clone()),
+            PacketProperty::ReasonString(value) => Some(value.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn value_string_pair(&self) -> Option<(String, String)> {
+        match self {
+            PacketProperty::UserProperty(value) => Some((value.0.clone(), value.1.clone())),
+            _ => None,
         }
     }
 
@@ -142,7 +199,7 @@ impl VariableHeaderProperty {
         second: String,
     ) -> Result<Self, Error> {
         match id {
-            USER_PROPERTY => Ok(VariableHeaderProperty::UserProperty((first, second))),
+            USER_PROPERTY => Ok(PacketProperty::UserProperty((first, second))),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -152,13 +209,13 @@ impl VariableHeaderProperty {
 
     pub fn new_property_utf8_string(id: u8, str: String) -> Result<Self, Error> {
         match id {
-            CONTENT_TYPE => Ok(VariableHeaderProperty::ContentType(str)),
-            RESPONSE_TOPIC => Ok(VariableHeaderProperty::ResponseTopic(str)),
-            ASSIGNED_CLIENT_IDENTIFIER => Ok(VariableHeaderProperty::AssignedClientIdentifier(str)),
-            AUTHENTICATION_METHOD => Ok(VariableHeaderProperty::AuthenticationMethod(str)),
-            RESPONSE_INFORMATION => Ok(VariableHeaderProperty::ResponseInformation(str)),
-            SERVER_REFERENCE => Ok(VariableHeaderProperty::ServerReference(str)),
-            REASON_STRING => Ok(VariableHeaderProperty::ReasonString(str)),
+            CONTENT_TYPE => Ok(PacketProperty::ContentType(str)),
+            RESPONSE_TOPIC => Ok(PacketProperty::ResponseTopic(str)),
+            ASSIGNED_CLIENT_IDENTIFIER => Ok(PacketProperty::AssignedClientIdentifier(str)),
+            AUTHENTICATION_METHOD => Ok(PacketProperty::AuthenticationMethod(str)),
+            RESPONSE_INFORMATION => Ok(PacketProperty::ResponseInformation(str)),
+            SERVER_REFERENCE => Ok(PacketProperty::ServerReference(str)),
+            REASON_STRING => Ok(PacketProperty::ReasonString(str)),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -168,11 +225,11 @@ impl VariableHeaderProperty {
 
     pub fn new_property_u32(id: u8, value: u32) -> Result<Self, Error> {
         match id {
-            MESSAGE_EXPIRY_INTERVAL => Ok(VariableHeaderProperty::MessageExpiryInterval(value)),
-            SUBSCRIPTION_IDENTIFIER => Ok(VariableHeaderProperty::SubscriptionIdentifier(value)),
-            SESSION_EXPIRY_INTERVAL => Ok(VariableHeaderProperty::SessionExpiryInterval(value)),
-            WILL_DELAY_INTERVAL => Ok(VariableHeaderProperty::WillDelayInterval(value)),
-            MAXIMUM_PACKET_SIZE => Ok(VariableHeaderProperty::MaximumPacketSize(value)),
+            MESSAGE_EXPIRY_INTERVAL => Ok(PacketProperty::MessageExpiryInterval(value)),
+            SUBSCRIPTION_IDENTIFIER => Ok(PacketProperty::SubscriptionIdentifier(value)),
+            SESSION_EXPIRY_INTERVAL => Ok(PacketProperty::SessionExpiryInterval(value)),
+            WILL_DELAY_INTERVAL => Ok(PacketProperty::WillDelayInterval(value)),
+            MAXIMUM_PACKET_SIZE => Ok(PacketProperty::MaximumPacketSize(value)),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -182,12 +239,12 @@ impl VariableHeaderProperty {
 
     pub fn new_property_u16(id: u8, value: u16) -> Result<Self, Error> {
         match id {
-            CORRELATION_DATA => Ok(VariableHeaderProperty::CorrelationData(value)),
-            SERVER_KEEP_ALIVE => Ok(VariableHeaderProperty::ServerKeepAlive(value)),
-            AUTHENTICATION_DATA => Ok(VariableHeaderProperty::AuthenticationData(value)),
-            RECEIVE_MAXIMUM => Ok(VariableHeaderProperty::ReceiveMaximum(value)),
-            TOPIC_ALIAS_MAXIMUM => Ok(VariableHeaderProperty::TopicAliasMaximum(value)),
-            TOPIC_ALIAS => Ok(VariableHeaderProperty::TopicAlias(value)),
+            CORRELATION_DATA => Ok(PacketProperty::CorrelationData(value)),
+            SERVER_KEEP_ALIVE => Ok(PacketProperty::ServerKeepAlive(value)),
+            AUTHENTICATION_DATA => Ok(PacketProperty::AuthenticationData(value)),
+            RECEIVE_MAXIMUM => Ok(PacketProperty::ReceiveMaximum(value)),
+            TOPIC_ALIAS_MAXIMUM => Ok(PacketProperty::TopicAliasMaximum(value)),
+            TOPIC_ALIAS => Ok(PacketProperty::TopicAlias(value)),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -197,23 +254,23 @@ impl VariableHeaderProperty {
 
     pub fn new_property_u8(id: u8, value: u8) -> Result<Self, Error> {
         match id {
-            PAYLOAD_FORMAT_INDICATOR => Ok(VariableHeaderProperty::PayloadFormatIndicator(value)),
+            PAYLOAD_FORMAT_INDICATOR => Ok(PacketProperty::PayloadFormatIndicator(value)),
             REQUEST_PROBLEM_INFORMATION => {
-                Ok(VariableHeaderProperty::RequestProblemInformation(value))
+                Ok(PacketProperty::RequestProblemInformation(value))
             }
             REQUEST_RESPONSE_INFORMATION => {
-                Ok(VariableHeaderProperty::RequestResponseInformation(value))
+                Ok(PacketProperty::RequestResponseInformation(value))
             }
-            MAXIMUM_QOS => Ok(VariableHeaderProperty::MaximumQoS(value)),
-            RETAIN_AVAILABLE => Ok(VariableHeaderProperty::RetainAvailable(value)),
+            MAXIMUM_QOS => Ok(PacketProperty::MaximumQoS(value)),
+            RETAIN_AVAILABLE => Ok(PacketProperty::RetainAvailable(value)),
             WILDCARD_SUBSCRIPTION_AVAILABLE => {
-                Ok(VariableHeaderProperty::WildcardSubscriptionAvailable(value))
+                Ok(PacketProperty::WildcardSubscriptionAvailable(value))
             }
             SUBSCRIPTION_IDENTIFIERS_AVAILABLE => Ok(
-                VariableHeaderProperty::SubscriptionIdentifiersAvailable(value),
+                PacketProperty::SubscriptionIdentifiersAvailable(value),
             ),
             SHARED_SUBSCRIPTION_AVAILABLE => {
-                Ok(VariableHeaderProperty::SharedSubscriptionAvailable(value))
+                Ok(PacketProperty::SharedSubscriptionAvailable(value))
             }
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
@@ -230,98 +287,98 @@ impl VariableHeaderProperty {
         let property = match id {
             PAYLOAD_FORMAT_INDICATOR => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::PayloadFormatIndicator(value))
+                Some(PacketProperty::PayloadFormatIndicator(value))
             }
             MESSAGE_EXPIRY_INTERVAL => {
                 let value = four_byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::MessageExpiryInterval(value))
+                Some(PacketProperty::MessageExpiryInterval(value))
             }
             CONTENT_TYPE => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
-                Some(VariableHeaderProperty::ContentType(value))
+                Some(PacketProperty::ContentType(value))
             }
             RESPONSE_TOPIC => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
-                Some(VariableHeaderProperty::ResponseTopic(value))
+                Some(PacketProperty::ResponseTopic(value))
             }
             CORRELATION_DATA => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::CorrelationData(value))
+                Some(PacketProperty::CorrelationData(value))
             }
             SUBSCRIPTION_IDENTIFIER => {
                 let value = four_byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::SubscriptionIdentifier(value))
+                Some(PacketProperty::SubscriptionIdentifier(value))
             }
             SESSION_EXPIRY_INTERVAL => {
                 let value = four_byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::SessionExpiryInterval(value))
+                Some(PacketProperty::SessionExpiryInterval(value))
             }
             ASSIGNED_CLIENT_IDENTIFIER => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
-                Some(VariableHeaderProperty::AssignedClientIdentifier(value))
+                Some(PacketProperty::AssignedClientIdentifier(value))
             }
             SERVER_KEEP_ALIVE => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::ServerKeepAlive(value))
+                Some(PacketProperty::ServerKeepAlive(value))
             }
             AUTHENTICATION_METHOD => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
-                Some(VariableHeaderProperty::AuthenticationMethod(value))
+                Some(PacketProperty::AuthenticationMethod(value))
             }
             AUTHENTICATION_DATA => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::AuthenticationData(value))
+                Some(PacketProperty::AuthenticationData(value))
             }
             REQUEST_PROBLEM_INFORMATION => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::RequestProblemInformation(value))
+                Some(PacketProperty::RequestProblemInformation(value))
             }
             WILL_DELAY_INTERVAL => {
                 let value = four_byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::WillDelayInterval(value))
+                Some(PacketProperty::WillDelayInterval(value))
             }
             REQUEST_RESPONSE_INFORMATION => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::RequestResponseInformation(value))
+                Some(PacketProperty::RequestResponseInformation(value))
             }
             RESPONSE_INFORMATION => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
-                Some(VariableHeaderProperty::ResponseInformation(value))
+                Some(PacketProperty::ResponseInformation(value))
             }
             SERVER_REFERENCE => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
-                Some(VariableHeaderProperty::ServerReference(value))
+                Some(PacketProperty::ServerReference(value))
             }
             REASON_STRING => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
-                Some(VariableHeaderProperty::ReasonString(value))
+                Some(PacketProperty::ReasonString(value))
             }
             RECEIVE_MAXIMUM => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::ReceiveMaximum(value))
+                Some(PacketProperty::ReceiveMaximum(value))
             }
             TOPIC_ALIAS_MAXIMUM => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::TopicAliasMaximum(value))
+                Some(PacketProperty::TopicAliasMaximum(value))
             }
             TOPIC_ALIAS => {
                 let value = two_byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::TopicAlias(value))
+                Some(PacketProperty::TopicAlias(value))
             }
             MAXIMUM_QOS => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::MaximumQoS(value))
+                Some(PacketProperty::MaximumQoS(value))
             }
             RETAIN_AVAILABLE => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::RetainAvailable(value))
+                Some(PacketProperty::RetainAvailable(value))
             }
             USER_PROPERTY => {
                 let key_len = two_byte_integer_from_be_bytes(buff, buff_size);
@@ -330,25 +387,25 @@ impl VariableHeaderProperty {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
                 let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
 
-                Some(VariableHeaderProperty::UserProperty((key, value)))
+                Some(PacketProperty::UserProperty((key, value)))
             }
             MAXIMUM_PACKET_SIZE => {
                 let value = four_byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::MaximumPacketSize(value))
+                Some(PacketProperty::MaximumPacketSize(value))
             }
             WILDCARD_SUBSCRIPTION_AVAILABLE => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::WildcardSubscriptionAvailable(value))
+                Some(PacketProperty::WildcardSubscriptionAvailable(value))
             }
             SUBSCRIPTION_IDENTIFIERS_AVAILABLE => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::SubscriptionIdentifiersAvailable(
+                Some(PacketProperty::SubscriptionIdentifiersAvailable(
                     value,
                 ))
             }
             SHARED_SUBSCRIPTION_AVAILABLE => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
-                Some(VariableHeaderProperty::SharedSubscriptionAvailable(value))
+                Some(PacketProperty::SharedSubscriptionAvailable(value))
             }
             _ => None,
         };
@@ -358,85 +415,85 @@ impl VariableHeaderProperty {
 
     pub fn write_as_bytes(&self, bytes: &mut Vec<u8>) {
         match self {
-            VariableHeaderProperty::PayloadFormatIndicator(value) => {
+            PacketProperty::PayloadFormatIndicator(value) => {
                 write_u8_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::MessageExpiryInterval(value) => {
+            PacketProperty::MessageExpiryInterval(value) => {
                 write_u32_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::ContentType(value) => {
+            PacketProperty::ContentType(value) => {
                 write_utf8_string_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::ResponseTopic(value) => {
+            PacketProperty::ResponseTopic(value) => {
                 write_utf8_string_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::CorrelationData(value) => {
+            PacketProperty::CorrelationData(value) => {
                 write_u16_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::SubscriptionIdentifier(value) => {
+            PacketProperty::SubscriptionIdentifier(value) => {
                 write_u32_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::SessionExpiryInterval(value) => {
+            PacketProperty::SessionExpiryInterval(value) => {
                 write_u32_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::AuthenticationMethod(value) => {
+            PacketProperty::AuthenticationMethod(value) => {
                 write_utf8_string_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::AuthenticationData(value) => {
+            PacketProperty::AuthenticationData(value) => {
                 write_u16_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::RequestProblemInformation(value) => {
+            PacketProperty::RequestProblemInformation(value) => {
                 write_u8_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::WillDelayInterval(value) => {
+            PacketProperty::WillDelayInterval(value) => {
                 write_u32_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::RequestResponseInformation(value) => {
+            PacketProperty::RequestResponseInformation(value) => {
                 write_u8_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::ReceiveMaximum(value) => {
+            PacketProperty::ReceiveMaximum(value) => {
                 write_u16_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::TopicAliasMaximum(value) => {
+            PacketProperty::TopicAliasMaximum(value) => {
                 write_u16_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::TopicAlias(value) => {
+            PacketProperty::TopicAlias(value) => {
                 write_u16_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::UserProperty(value) => {
+            PacketProperty::UserProperty(value) => {
                 write_utf8_string_pair_property_as_bytes(bytes, self.id(), &value.0, &value.1)
             }
-            VariableHeaderProperty::MaximumPacketSize(value) => {
+            PacketProperty::MaximumPacketSize(value) => {
                 write_u32_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::AssignedClientIdentifier(value) => {
+            PacketProperty::AssignedClientIdentifier(value) => {
                 write_utf8_string_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::ServerKeepAlive(value) => {
+            PacketProperty::ServerKeepAlive(value) => {
                 write_u16_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::ResponseInformation(value) => {
+            PacketProperty::ResponseInformation(value) => {
                 write_utf8_string_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::ServerReference(value) => {
+            PacketProperty::ServerReference(value) => {
                 write_utf8_string_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::ReasonString(value) => {
+            PacketProperty::ReasonString(value) => {
                 write_utf8_string_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::MaximumQoS(value) => {
+            PacketProperty::MaximumQoS(value) => {
                 write_u8_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::RetainAvailable(value) => {
+            PacketProperty::RetainAvailable(value) => {
                 write_u8_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::WildcardSubscriptionAvailable(value) => {
+            PacketProperty::WildcardSubscriptionAvailable(value) => {
                 write_u8_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::SubscriptionIdentifiersAvailable(value) => {
+            PacketProperty::SubscriptionIdentifiersAvailable(value) => {
                 write_u8_property_as_bytes(bytes, self.id(), value)
             }
-            VariableHeaderProperty::SharedSubscriptionAvailable(value) => {
+            PacketProperty::SharedSubscriptionAvailable(value) => {
                 write_u8_property_as_bytes(bytes, self.id(), value)
             }
         }
