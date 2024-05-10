@@ -1,9 +1,16 @@
-use mqtt::client::*;
+use std::io::Error;
 
-fn main() {
-    let address = "127.0.0.1:5000".to_string();
-    match client_connect(&address) {
-        Ok(_) => println!("Conexión exitosa"),
-        Err(e) => println!("Error en el cliente: {:?}", e),
+use mqtt::{client::MqttClient, config::ClientConfig};
+
+fn main() -> Result<(), Error> {
+    let config = ClientConfig::from_file(String::from("app/files/client.txt"))?;
+
+    let addr = config.get_address();
+
+    match MqttClient::new(String::from("client123"), config) {
+        Ok(_) => println!("Corriendo servidor en {:?}", addr),
+        Err(e) => println!("Error en el server: {:?}", e),
     }
+
+    Ok(())
 }

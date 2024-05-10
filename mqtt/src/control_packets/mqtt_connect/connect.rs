@@ -3,12 +3,14 @@ use std::io::Read;
 use std::io::Write;
 
 use crate::control_packets::mqtt_connect::payload::*;
-use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
 
 // agregado para refactorizacion del server
 use crate::server::PackagedPackage;
 use crate::server::ReadFromHeader;
+use crate::control_packets::mqtt_packet::packet::generic_packet::*;
+
+use super::connect_properties::ConnectProperties;
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
@@ -95,27 +97,60 @@ use crate::server::ReadFromHeader;
 /// Username (Connect Flag - Username = 1)
 /// Password (Connect Flag - Password = 1)
 ///
-
-static PROTOCOL_NAME: &str = "MQTT";
-static PROTOCOL_VERSION: u8 = 5;
-
 pub struct Connect {
-    pub fixed_header: PacketFixedHeader,
-    pub variable_header: ConnectVariableHeader,
+    pub properties: ConnectProperties,
     pub payload: ConnectPayload,
 }
 
-pub struct ConnectProperties {
-    pub session_expiry_interval: u32,
-    pub authentication_method: String,
-    pub authentication_data: u16,
-    pub request_problem_information: u8,
-    pub request_response_information: u8,
-    pub receive_maximum: u16,
-    pub topic_alias_maximum: u16,
-    pub user_property_key: String,
-    pub user_property_value: String,
-    pub maximum_packet_size: u32,
+pub struct PayloadFields {
+    pub will_delay_interval: Option<u32>,
+    pub payload_format_indicator: Option<u8>,
+    pub message_expiry_interval: Option<u32>,
+    pub content_type: Option<String>,
+    pub response_topic: Option<String>,
+    pub correlation_data: Option<u16>,
+    pub user_property_key: Option<String>,
+    pub user_property_value: Option<String>,
+
+    pub will_topic: Option<String>,
+    pub will_payload: Option<u16>, // Binary Data
+    pub username: Option<String>,
+    pub password: Option<String>,
+}
+
+impl Serialization for Connect {
+    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Connect, Error> {
+        let properties = ConnectProperties::read_from(stream)?;
+
+        let payload_length = remaining_length - properties.size_of();
+
+        let payload = ConnectPayload::read_from(stream, payload_length)?;
+
+        let connect = Connect {
+            properties,
+            payload,
+        };
+        Ok(connect)
+    }
+
+    fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
+        let properties = self.properties.as_bytes()?;
+        let payload_fields_bytes = self.payload.as_bytes();
+
+        let remaining_length = self.properties.size_of() + self.payload.length();
+        let fixed_header = PacketFixedHeader::new(CONNECT_PACKET, remaining_length);
+        let fixed_header_bytes = fixed_header.as_bytes();
+
+        stream.write_all(&fixed_header_bytes)?;
+        stream.write_all(&properties)?;
+        stream.write_all(&payload_fields_bytes)?;
+
+        Ok(())
+    }
+
+    fn pack_server_packet(package: Connect) -> ServerPacketRecived {
+        ServerPacketRecived::ConnectPacket(Box::new(package))
+    }
 }
 
 // --------------------------------------------------------
@@ -135,8 +170,7 @@ impl ReadFromHeader for Connect {
         let payload = ConnectPayload::read_from(stream, payload_length)?;
 
         Ok(Connect {
-            fixed_header,
-            variable_header,
+            properties,
             payload,
         })
     }
@@ -147,65 +181,16 @@ impl ReadFromHeader for Connect {
 }
 
 // --------------------------------------------------------
-
 impl Connect {
-    pub fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header = self.fixed_header.as_bytes();
-        stream.write_all(&fixed_header)?;
-
-        let variable_header = self.variable_header.as_bytes();
-        stream.write_all(&variable_header)?;
-
-        let payload_fields = self.payload.as_bytes();
-        stream.write_all(&payload_fields)?;
-
-        Ok(())
-    }
-
-    pub fn read_from(stream: &mut dyn Read) -> Result<Connect, std::io::Error> {
-        let fixed_header = PacketFixedHeader::read_from(stream)?;
-
-        let variable_header = ConnectVariableHeader::read_from(stream)?;
-
-        let payload_length = fixed_header.remaining_length - variable_header.length();
-
-        let payload = ConnectPayload::read_from(stream, payload_length)?;
-
-        let connect = Connect {
-            fixed_header,
-            variable_header,
-            payload,
-        };
-        Ok(connect)
-    }
-
     pub fn new(
-        client_id: String,
-        connect_flags: u8,
-        keep_alive: u16,
+        client_id: &str,
         properties: ConnectProperties,
+        payload_fields: &PayloadFields,
     ) -> Result<Self, Error> {
-        let name = PROTOCOL_NAME.to_string();
-
-        // La inicializacion de las propiedades deben estar en connect.rs (add_variable_header_properties)
-        // Faltan inicializar variables de la instancia del cliente (ejemplo: autentificacion, etc.)
-
-        let variable_header = ConnectVariableHeader::new(
-            name.len() as u16,
-            name,
-            PROTOCOL_VERSION,
-            connect_flags,
-            keep_alive,
-            properties,
-        )?;
-
-        let payload = ConnectPayload::new(client_id);
-        let remaining_length = variable_header.length() + payload.length();
-        let fixed_header = PacketFixedHeader::new(CONNECT_PACKET, remaining_length);
+        let payload = ConnectPayload::new(client_id.to_string(), payload_fields)?;
 
         Ok(Connect {
-            fixed_header,
-            variable_header,
+            properties,
             payload,
         })
     }
@@ -213,82 +198,288 @@ impl Connect {
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::variable_header_property::VariableHeaderProperty;
+    use crate::control_packets::{mqtt_connect::connect_properties::ConnectProperties, mqtt_packet::packet_property::PacketProperty};
 
     use super::*;
 
     #[test]
     fn test_connect() {
         let client_id = "test".to_string();
-        let connect_flags = 0b11000000;
-        let keep_alive = 10;
         let properties = ConnectProperties {
-            session_expiry_interval: 0,
-            authentication_method: "test".to_string(),
-            authentication_data: 0,
-            request_problem_information: 0,
-            request_response_information: 0,
-            receive_maximum: 0,
-            topic_alias_maximum: 0,
-            user_property_key: "test".to_string(),
-            user_property_value: "test".to_string(),
-            maximum_packet_size: 0,
+            protocol_name: "MQTT".to_string(),
+            protocol_version: 5,
+            connect_flags: 0b11000000,
+            keep_alive: 10,
+            session_expiry_interval: Some(0),
+            authentication_method: Some("test".to_string()),
+            authentication_data: Some(0),
+            request_problem_information: Some(0),
+            request_response_information: Some(0),
+            receive_maximum: Some(0),
+            topic_alias_maximum: Some(0),
+            user_property: Some(("test_key".to_string(), "test_value".to_string())),
+            maximum_packet_size: Some(0)
         };
 
-        let connect =
-            Connect::new(client_id.clone(), connect_flags, keep_alive, properties).unwrap();
+        let payload_fields = PayloadFields {
+            will_delay_interval: Some(30),
+            payload_format_indicator: Some(1),
+            message_expiry_interval: Some(20),
+            content_type: Some("content".to_string()),
+            response_topic: Some("response".to_string()),
+            correlation_data: Some(0),
+            user_property_key: Some("key".to_string()),
+            user_property_value: Some("value".to_string()),
+            will_topic: Some("topic".to_string()),
+            will_payload: Some(10),
+            username: Some("username".to_string()),
+            password: Some("password".to_string()),
+        };
+
+        let connect = Connect::new(&client_id, properties.clone(), &payload_fields).unwrap();
 
         let mut buffer: Vec<u8> = Vec::new();
         connect.write_to(&mut buffer).unwrap();
 
         let mut buffer = buffer.as_slice();
-        let connect = Connect::read_from(&mut buffer).unwrap();
+        let connect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        let connect =
+            Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(connect.fixed_header.packet_type, CONNECT_PACKET);
+        assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
         assert_eq!(
-            connect.variable_header.protocol_name.name,
-            PROTOCOL_NAME.to_string()
+            connect.properties.protocol_name,
+            "MQTT".to_string()
         );
-        assert_eq!(connect.variable_header.protocol_version, PROTOCOL_VERSION);
-        assert_eq!(connect.variable_header.connect_flags, connect_flags);
-        assert_eq!(connect.variable_header.keep_alive, keep_alive);
-        assert_eq!(connect.payload.fields.client_id, client_id);
-        assert_eq!(connect.variable_header.properties.properties.len(), 9);
+        assert_eq!(connect.properties.protocol_version, 5);
+        assert_eq!(
+            connect.properties.connect_flags,
+            properties.connect_flags
+        );
+        assert_eq!(connect.properties.keep_alive, properties.keep_alive);
+        assert_eq!(connect.properties.variable_props_size(), 9);
 
-        let props = connect.variable_header.properties.properties;
+        let props = connect.properties;
 
-        for p in props {
+        if let Some(value) = props.session_expiry_interval {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.authentication_method {
+            assert_eq!(value, "test".to_string());
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.authentication_data {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.request_problem_information {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.request_response_information {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.receive_maximum {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.topic_alias_maximum {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.user_property {
+            assert_eq!(value.0, "test_key".to_string());
+            assert_eq!(value.1, "test_value".to_string());
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.maximum_packet_size {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+
+        assert_eq!(connect.payload.client_id, "test".to_string());
+        assert_eq!(connect.payload.will_properties.properties.len(), 7);
+
+        let payload_props = connect.payload.will_properties.properties;
+
+        for p in payload_props {
             match p {
-                VariableHeaderProperty::SessionExpiryInterval(value) => {
+                PacketProperty::WillDelayInterval(value) => {
+                    assert_eq!(value, 30);
+                }
+                PacketProperty::PayloadFormatIndicator(value) => {
+                    assert_eq!(value, 1);
+                }
+                PacketProperty::MessageExpiryInterval(value) => {
+                    assert_eq!(value, 20);
+                }
+                PacketProperty::ContentType(value) => {
+                    assert_eq!(value, "content".to_string());
+                }
+                PacketProperty::ResponseTopic(value) => {
+                    assert_eq!(value, "response".to_string());
+                }
+                PacketProperty::CorrelationData(value) => {
                     assert_eq!(value, 0);
                 }
-                VariableHeaderProperty::AuthenticationMethod(value) => {
-                    assert_eq!(value, "test".to_string());
-                }
-                VariableHeaderProperty::AuthenticationData(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::RequestProblemInformation(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::RequestResponseInformation(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::ReceiveMaximum(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::TopicAliasMaximum(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::UserProperty(value) => {
-                    assert_eq!(value.0, "test".to_string());
-                    assert_eq!(value.1, "test".to_string());
-                }
-                VariableHeaderProperty::MaximumPacketSize(value) => {
-                    assert_eq!(value, 0);
+                PacketProperty::UserProperty(value) => {
+                    assert_eq!(value.0, "key".to_string());
+                    assert_eq!(value.1, "value".to_string());
                 }
                 _ => panic!("Invalid property"),
             }
         }
+
+        assert_eq!(connect.payload.will_topic, Some("topic".to_string()));
+        assert_eq!(connect.payload.will_payload, Some(10));
+        assert_eq!(connect.payload.username, Some("username".to_string()));
+        assert_eq!(connect.payload.password, Some("password".to_string()));
+    }
+
+    #[test]
+    fn test_connect_empty_payload() {
+        let client_id = "test2".to_string();
+        let properties = ConnectProperties {
+            protocol_name: String::from("MQTT"),
+            protocol_version: 5,
+            connect_flags: 0b11000000,
+            keep_alive: 10,
+            session_expiry_interval: Some(0),
+            authentication_method: Some("test".to_string()),
+            authentication_data: Some(0),
+            request_problem_information: Some(0),
+            request_response_information: Some(0),
+            receive_maximum: Some(0),
+            topic_alias_maximum: Some(0),
+            user_property: Some(("test_key".to_string(), "test_value".to_string())),
+            maximum_packet_size: Some(0),
+        };
+
+        let payload_fields = PayloadFields {
+            will_delay_interval: None,
+            payload_format_indicator: None,
+            message_expiry_interval: None,
+            content_type: None,
+            response_topic: None,
+            correlation_data: None,
+            user_property_key: None,
+            user_property_value: None,
+            will_topic: None,
+            will_payload: None,
+            username: None,
+            password: None,
+        };
+
+        let connect = Connect::new(&client_id, properties.clone(), &payload_fields).unwrap();
+
+        let mut buffer: Vec<u8> = Vec::new();
+        connect.write_to(&mut buffer).unwrap();
+
+        let mut buffer = buffer.as_slice();
+        let connect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        let connect =
+            Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
+
+        assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
+        assert_eq!(
+            connect.properties.protocol_name,
+            "MQTT".to_string()
+        );
+        assert_eq!(connect.properties.protocol_version, 5);
+        assert_eq!(
+            connect.properties.connect_flags,
+            properties.connect_flags
+        );
+        assert_eq!(connect.properties.keep_alive, properties.keep_alive);
+        assert_eq!(connect.properties.variable_props_size(), 9);
+
+        let props = connect.properties;
+
+        if let Some(value) = props.session_expiry_interval {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.authentication_method {
+            assert_eq!(value, "test".to_string());
+        } else {
+            panic!("Invalid property");
+        }  
+
+        if let Some(value) = props.authentication_data {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.request_problem_information {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.request_response_information {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.receive_maximum {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.topic_alias_maximum {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.user_property {
+            assert_eq!(value.0, "test_key".to_string());
+            assert_eq!(value.1, "test_value".to_string());
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.maximum_packet_size {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+
+        assert_eq!(connect.payload.client_id, "test2".to_string());
+        assert_eq!(connect.payload.will_properties.properties.len(), 0);
+
+        let payload_props = connect.payload.will_properties.properties;
+
+        assert!(payload_props.is_empty());
+        assert_eq!(connect.payload.will_topic, None);
+        assert_eq!(connect.payload.will_payload, None);
+        assert_eq!(connect.payload.username, None);
+        assert_eq!(connect.payload.password, None);
     }
 }

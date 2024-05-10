@@ -1,12 +1,7 @@
 pub mod data_representation {
     use std::{
-        io::{Error, Read},
-        string::FromUtf8Error,
+        mem::size_of, io::{Error, Read}, string::FromUtf8Error
     };
-
-    static U8_SIZE: usize = 1;
-    static U16_SIZE: usize = 2;
-    static U32_SIZE: usize = 4;
 
     pub fn read_byte(stream: &mut dyn Read) -> Result<u8, Error> {
         let mut read_buff = [0u8; 1];
@@ -39,20 +34,20 @@ pub mod data_representation {
     pub fn four_byte_integer_from_be_bytes(buff: &[u8], buff_size: &mut usize) -> u32 {
         let mut local_buff: [u8; 4] = [0; 4];
         local_buff.copy_from_slice(&buff[*buff_size..*buff_size + 4]);
-        *buff_size += U32_SIZE;
+        *buff_size += size_of::<u32>();
         u32::from_be_bytes(local_buff)
     }
 
     pub fn two_byte_integer_from_be_bytes(buff: &[u8], buff_size: &mut usize) -> u16 {
         let mut local_buff: [u8; 2] = [0; 2];
         local_buff.copy_from_slice(&buff[*buff_size..*buff_size + 2]);
-        *buff_size += U16_SIZE;
+        *buff_size += size_of::<u16>();
         u16::from_be_bytes(local_buff)
     }
 
     pub fn byte_integer_from_be_bytes(buff: &[u8], buff_size: &mut usize) -> u8 {
         let value = buff[*buff_size];
-        *buff_size += U8_SIZE;
+        *buff_size += size_of::<u8>();
         value
     }
 

@@ -1,11 +1,11 @@
 use std::io::Error;
 
 use crate::{
+    common::data_types::data_representation::*,
     control_packets::mqtt_packet::{
         variable_header_properties::VariableHeaderProperties,
-        variable_header_property::{REASON_STRING, USER_PROPERTY},
+        packet_property::{REASON_STRING, USER_PROPERTY},
     },
-    data_structures::data_types::data_representation::*,
 };
 
 use super::puback::_PubackProperties;
@@ -17,7 +17,7 @@ pub struct _PubackVariableHeader {
 }
 
 impl _PubackVariableHeader {
-    pub fn _length(&self) -> u8 {
+    pub fn _length(&self) -> u16 {
         1 + 2 + self.properties.bytes_length
     }
 
@@ -78,8 +78,8 @@ pub fn _new_puback_properties(
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::variable_header_property::{
-        VariableHeaderProperty, REASON_STRING, USER_PROPERTY,
+    use crate::control_packets::mqtt_packet::packet_property::{
+        PacketProperty, REASON_STRING, USER_PROPERTY,
     };
 
     use super::*;
@@ -107,7 +107,7 @@ mod test {
 
         assert_eq!(puback_varible_header.packet_id, 1);
         assert_eq!(puback_varible_header.puback_reason_code, 0);
-        if let VariableHeaderProperty::ReasonString(reason_string) = &puback_varible_header
+        if let PacketProperty::ReasonString(reason_string) = &puback_varible_header
             .properties
             ._get_property(REASON_STRING)
             .unwrap()
@@ -117,7 +117,7 @@ mod test {
             panic!("Error");
         }
 
-        if let VariableHeaderProperty::UserProperty(user_property) = &puback_varible_header
+        if let PacketProperty::UserProperty(user_property) = &puback_varible_header
             .properties
             ._get_property(USER_PROPERTY)
             .unwrap()

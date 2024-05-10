@@ -51,58 +51,86 @@
 
 pub enum ReasonMode {
     Success,
+    _NormalDisconnection,
+    _DisconnectWithWillMessage,
     _NoMatchingSubscribers,
     _UnspecifiedError,
-    MalformedPacket,
+    _MalformedPacket,
     _ProtocolError,
     _ImplementationSpecificError,
-    UnsupportedProtocolVersion,
-    ClientIdentifierNotValid,
+    _UnsupportedProtocolVersion,
+    _ClientIdentifierNotValid,
     _BadUserNameOrPassword,
     _NotAuthorized,
     _ServerUnavailable,
     _ServerBusy,
     _Banned,
+    _ServerShuttingDown,
     _BadAuthenticationMethod,
+    _KeepAliveTimeout,
+    _SessionTakenOver,
+    _TopicFilterInvalid,
     _TopicNameInvalid,
     _PacketIdentifierInUse,
+    _ReceiveMaximumExceeded,
+    _TopicAliasInvalid,
     _PacketTooLarge,
+    _MessageRateTooHigh,
     _QuotaExceeded,
+    _AdministrativeAction,
     _PayloadFormatInvalid,
     _RetainNotSupported,
-    QoSNotSupported,
+    _QoSNotSupported,
     _UseAnotherServer,
     _ServerMoved,
+    _SharedSubscriptionsNotSupported,
     _ConnectionRateExceeded,
+    _MaximumConnectTime,
+    _SubscriptionIdentifiersNotSupported,
+    _WildcardSubscriptionsNotSupported,
 }
 
 impl ReasonMode {
     pub fn get_id(&self) -> u8 {
         match *self {
             ReasonMode::Success => 0,
+            ReasonMode::_NormalDisconnection => 0, // DISCONNECT
+            ReasonMode::_DisconnectWithWillMessage => 4, // DISCONNECT
             ReasonMode::_NoMatchingSubscribers => 16, // PUBACK
-            ReasonMode::_UnspecifiedError => 128,     // CONNACK - PUBACK
-            ReasonMode::MalformedPacket => 129,
-            ReasonMode::_ProtocolError => 130,
-            ReasonMode::_ImplementationSpecificError => 131, // CONNACK - PUBACK
-            ReasonMode::UnsupportedProtocolVersion => 132,
-            ReasonMode::ClientIdentifierNotValid => 133,
+            ReasonMode::_UnspecifiedError => 128,  // CONNACK - PUBACK - DISCONNECT
+            ReasonMode::_MalformedPacket => 129,   // DISCONNECT
+            ReasonMode::_ProtocolError => 130,     // DISCONNECT
+            ReasonMode::_ImplementationSpecificError => 131, // CONNACK - PUBACK - DISCONNECT
+            ReasonMode::_UnsupportedProtocolVersion => 132,
+            ReasonMode::_ClientIdentifierNotValid => 133,
             ReasonMode::_BadUserNameOrPassword => 134,
-            ReasonMode::_NotAuthorized => 135, // CONNACK - PUBACK
+            ReasonMode::_NotAuthorized => 135, // CONNACK - PUBACK - DISCONNECT
             ReasonMode::_ServerUnavailable => 136,
-            ReasonMode::_ServerBusy => 137,
+            ReasonMode::_ServerBusy => 137, // DISCONNECT
             ReasonMode::_Banned => 138,
+            ReasonMode::_ServerShuttingDown => 139, // DISCONNECT
             ReasonMode::_BadAuthenticationMethod => 140,
-            ReasonMode::_TopicNameInvalid => 144, // CONNACK - PUBACK
+            ReasonMode::_KeepAliveTimeout => 141, // DISCONNECT
+            ReasonMode::_SessionTakenOver => 142, // DISCONNECT
+            ReasonMode::_TopicFilterInvalid => 143, // DISCONNECT
+            ReasonMode::_TopicNameInvalid => 144, // CONNACK - PUBACK - DISCONNECT
             ReasonMode::_PacketIdentifierInUse => 145, // PUBACK
-            ReasonMode::_PacketTooLarge => 149,
-            ReasonMode::_QuotaExceeded => 151, // CONNACK - PUBACK
-            ReasonMode::_PayloadFormatInvalid => 153, // CONNACK - PUBACK
-            ReasonMode::_RetainNotSupported => 154,
-            ReasonMode::QoSNotSupported => 155,
-            ReasonMode::_UseAnotherServer => 156,
-            ReasonMode::_ServerMoved => 157,
-            ReasonMode::_ConnectionRateExceeded => 159,
+            ReasonMode::_ReceiveMaximumExceeded => 147, // DISCONNECT
+            ReasonMode::_TopicAliasInvalid => 148, // DISCONNECT
+            ReasonMode::_PacketTooLarge => 149,   // DISCONNECT
+            ReasonMode::_MessageRateTooHigh => 150, // DISCONNECT
+            ReasonMode::_QuotaExceeded => 151,    // CONNACK - PUBACK - DISCONNECT
+            ReasonMode::_AdministrativeAction => 152, // DISCONNECT
+            ReasonMode::_PayloadFormatInvalid => 153, // CONNACK - PUBACK - DISCONNECT
+            ReasonMode::_RetainNotSupported => 154, // DISCONNECT
+            ReasonMode::_QoSNotSupported => 155,  // DISCONNECT
+            ReasonMode::_UseAnotherServer => 156, // DISCONNECT
+            ReasonMode::_ServerMoved => 157,      // DISCONNECT
+            ReasonMode::_SharedSubscriptionsNotSupported => 158, // DISCONNECT
+            ReasonMode::_ConnectionRateExceeded => 159, // DISCONNECT
+            ReasonMode::_MaximumConnectTime => 160, // DISCONNECT
+            ReasonMode::_SubscriptionIdentifiersNotSupported => 161, // DISCONNECT
+            ReasonMode::_WildcardSubscriptionsNotSupported => 162, // DISCONNECT
         }
     }
 }
