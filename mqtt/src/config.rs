@@ -4,7 +4,7 @@ use crate::{
     common::utils::*,
     control_packets::{
         mqtt_connack::connack::ConnackProperties,
-        mqtt_connect::connect::{ConnectProperties, PayloadFields},
+        mqtt_connect::{connect::PayloadFields, connect_properties::ConnectProperties},
         mqtt_packet::flags::flags_handler::*,
     },
 };
@@ -42,8 +42,7 @@ impl ClientConfig {
             request_problem_information: None,
             authentication_method: None,
             authentication_data: None,
-            user_property_key: None,
-            user_property_value: None,
+            user_property: None,
         };
 
         for param in params.iter() {
@@ -209,12 +208,6 @@ impl ClientConfig {
                         }
                     }
                 }
-                "user_property_key" => connect_properties.user_property_key = Some(param.1.clone()),
-                "user_property_value" => {
-                    connect_properties.user_property_value = Some(param.1.clone())
-                }
-                "username" => connect_properties.user_property_key = Some(param.1.clone()),
-                "password" => connect_properties.user_property_value = Some(param.1.clone()),
                 _ => {
                     return Err(Error::new(
                         std::io::ErrorKind::InvalidData,

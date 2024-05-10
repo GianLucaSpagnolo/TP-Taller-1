@@ -3,9 +3,10 @@ use std::io::Read;
 use std::io::Write;
 
 use crate::control_packets::mqtt_connect::payload::*;
-use crate::control_packets::mqtt_connect::variable_header::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
+
+use super::connect_properties::ConnectProperties;
 
 /// # FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
@@ -93,25 +94,8 @@ use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 /// Password (Connect Flag - Password = 1)
 ///
 pub struct Connect {
-    pub variable_header: ConnectVariableHeader,
+    pub properties: ConnectProperties,
     pub payload: ConnectPayload,
-}
-
-pub struct ConnectProperties {
-    pub protocol_name: String,
-    pub protocol_version: u8,
-    pub connect_flags: u8,
-    pub keep_alive: u16,
-    pub session_expiry_interval: Option<u32>,
-    pub authentication_method: Option<String>,
-    pub authentication_data: Option<u16>,
-    pub request_problem_information: Option<u8>,
-    pub request_response_information: Option<u8>,
-    pub receive_maximum: Option<u16>,
-    pub topic_alias_maximum: Option<u16>,
-    pub user_property_key: Option<String>,
-    pub user_property_value: Option<String>,
-    pub maximum_packet_size: Option<u32>,
 }
 
 pub struct PayloadFields {
@@ -132,29 +116,29 @@ pub struct PayloadFields {
 
 impl Serialization for Connect {
     fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Connect, Error> {
-        let variable_header = ConnectVariableHeader::read_from(stream)?;
+        let properties = ConnectProperties::read_from(stream)?;
 
-        let payload_length = remaining_length - variable_header.length();
+        let payload_length = remaining_length - properties.size_of();
 
         let payload = ConnectPayload::read_from(stream, payload_length)?;
 
         let connect = Connect {
-            variable_header,
+            properties,
             payload,
         };
         Ok(connect)
     }
 
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let variable_header_bytes = self.variable_header.as_bytes();
+        let properties = self.properties.as_bytes()?;
         let payload_fields_bytes = self.payload.as_bytes();
 
-        let remaining_length = self.variable_header.length() + self.payload.length();
+        let remaining_length = self.properties.size_of() + self.payload.length();
         let fixed_header = PacketFixedHeader::new(CONNECT_PACKET, remaining_length);
         let fixed_header_bytes = fixed_header.as_bytes();
 
         stream.write_all(&fixed_header_bytes)?;
-        stream.write_all(&variable_header_bytes)?;
+        stream.write_all(&properties)?;
         stream.write_all(&payload_fields_bytes)?;
 
         Ok(())
@@ -168,14 +152,13 @@ impl Serialization for Connect {
 impl Connect {
     pub fn new(
         client_id: &str,
-        connect_properties: &ConnectProperties,
+        properties: ConnectProperties,
         payload_fields: &PayloadFields,
     ) -> Result<Self, Error> {
-        let variable_header = ConnectVariableHeader::new(connect_properties)?;
         let payload = ConnectPayload::new(client_id.to_string(), payload_fields)?;
 
         Ok(Connect {
-            variable_header,
+            properties,
             payload,
         })
     }
@@ -183,7 +166,7 @@ impl Connect {
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::variable_header_property::VariableHeaderProperty;
+    use crate::control_packets::{mqtt_connect::connect_properties::ConnectProperties, mqtt_packet::packet_property::PacketProperty};
 
     use super::*;
 
@@ -191,7 +174,7 @@ mod test {
     fn test_connect() {
         let client_id = "test".to_string();
         let properties = ConnectProperties {
-            protocol_name: String::from("MQTT"),
+            protocol_name: "MQTT".to_string(),
             protocol_version: 5,
             connect_flags: 0b11000000,
             keep_alive: 10,
@@ -202,9 +185,8 @@ mod test {
             request_response_information: Some(0),
             receive_maximum: Some(0),
             topic_alias_maximum: Some(0),
-            user_property_key: Some("test".to_string()),
-            user_property_value: Some("test".to_string()),
-            maximum_packet_size: Some(0),
+            user_property: Some(("test_key".to_string(), "test_value".to_string())),
+            maximum_packet_size: Some(0)
         };
 
         let payload_fields = PayloadFields {
@@ -222,7 +204,7 @@ mod test {
             password: Some("password".to_string()),
         };
 
-        let connect = Connect::new(&client_id, &properties, &payload_fields).unwrap();
+        let connect = Connect::new(&client_id, properties.clone(), &payload_fields).unwrap();
 
         let mut buffer: Vec<u8> = Vec::new();
         connect.write_to(&mut buffer).unwrap();
@@ -234,52 +216,74 @@ mod test {
 
         assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
         assert_eq!(
-            connect.variable_header.protocol_name.name,
+            connect.properties.protocol_name,
             "MQTT".to_string()
         );
-        assert_eq!(connect.variable_header.protocol_version, 5);
+        assert_eq!(connect.properties.protocol_version, 5);
         assert_eq!(
-            connect.variable_header.connect_flags,
+            connect.properties.connect_flags,
             properties.connect_flags
         );
-        assert_eq!(connect.variable_header.keep_alive, properties.keep_alive);
-        assert_eq!(connect.variable_header.properties.properties.len(), 9);
+        assert_eq!(connect.properties.keep_alive, properties.keep_alive);
+        assert_eq!(connect.properties.variable_props_size(), 9);
 
-        let props = connect.variable_header.properties.properties;
+        let props = connect.properties;
 
-        for p in props {
-            match p {
-                VariableHeaderProperty::SessionExpiryInterval(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::AuthenticationMethod(value) => {
-                    assert_eq!(value, "test".to_string());
-                }
-                VariableHeaderProperty::AuthenticationData(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::RequestProblemInformation(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::RequestResponseInformation(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::ReceiveMaximum(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::TopicAliasMaximum(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::UserProperty(value) => {
-                    assert_eq!(value.0, "test".to_string());
-                    assert_eq!(value.1, "test".to_string());
-                }
-                VariableHeaderProperty::MaximumPacketSize(value) => {
-                    assert_eq!(value, 0);
-                }
-                _ => panic!("Invalid property"),
-            }
+        if let Some(value) = props.session_expiry_interval {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
         }
+
+        if let Some(value) = props.authentication_method {
+            assert_eq!(value, "test".to_string());
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.authentication_data {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.request_problem_information {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.request_response_information {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.receive_maximum {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.topic_alias_maximum {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.user_property {
+            assert_eq!(value.0, "test_key".to_string());
+            assert_eq!(value.1, "test_value".to_string());
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.maximum_packet_size {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
 
         assert_eq!(connect.payload.client_id, "test".to_string());
         assert_eq!(connect.payload.will_properties.properties.len(), 7);
@@ -288,25 +292,25 @@ mod test {
 
         for p in payload_props {
             match p {
-                VariableHeaderProperty::WillDelayInterval(value) => {
+                PacketProperty::WillDelayInterval(value) => {
                     assert_eq!(value, 30);
                 }
-                VariableHeaderProperty::PayloadFormatIndicator(value) => {
+                PacketProperty::PayloadFormatIndicator(value) => {
                     assert_eq!(value, 1);
                 }
-                VariableHeaderProperty::MessageExpiryInterval(value) => {
+                PacketProperty::MessageExpiryInterval(value) => {
                     assert_eq!(value, 20);
                 }
-                VariableHeaderProperty::ContentType(value) => {
+                PacketProperty::ContentType(value) => {
                     assert_eq!(value, "content".to_string());
                 }
-                VariableHeaderProperty::ResponseTopic(value) => {
+                PacketProperty::ResponseTopic(value) => {
                     assert_eq!(value, "response".to_string());
                 }
-                VariableHeaderProperty::CorrelationData(value) => {
+                PacketProperty::CorrelationData(value) => {
                     assert_eq!(value, 0);
                 }
-                VariableHeaderProperty::UserProperty(value) => {
+                PacketProperty::UserProperty(value) => {
                     assert_eq!(value.0, "key".to_string());
                     assert_eq!(value.1, "value".to_string());
                 }
@@ -335,8 +339,7 @@ mod test {
             request_response_information: Some(0),
             receive_maximum: Some(0),
             topic_alias_maximum: Some(0),
-            user_property_key: Some("test".to_string()),
-            user_property_value: Some("test".to_string()),
+            user_property: Some(("test_key".to_string(), "test_value".to_string())),
             maximum_packet_size: Some(0),
         };
 
@@ -355,7 +358,7 @@ mod test {
             password: None,
         };
 
-        let connect = Connect::new(&client_id, &properties, &payload_fields).unwrap();
+        let connect = Connect::new(&client_id, properties.clone(), &payload_fields).unwrap();
 
         let mut buffer: Vec<u8> = Vec::new();
         connect.write_to(&mut buffer).unwrap();
@@ -367,52 +370,74 @@ mod test {
 
         assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
         assert_eq!(
-            connect.variable_header.protocol_name.name,
+            connect.properties.protocol_name,
             "MQTT".to_string()
         );
-        assert_eq!(connect.variable_header.protocol_version, 5);
+        assert_eq!(connect.properties.protocol_version, 5);
         assert_eq!(
-            connect.variable_header.connect_flags,
+            connect.properties.connect_flags,
             properties.connect_flags
         );
-        assert_eq!(connect.variable_header.keep_alive, properties.keep_alive);
-        assert_eq!(connect.variable_header.properties.properties.len(), 9);
+        assert_eq!(connect.properties.keep_alive, properties.keep_alive);
+        assert_eq!(connect.properties.variable_props_size(), 9);
 
-        let props = connect.variable_header.properties.properties;
+        let props = connect.properties;
 
-        for p in props {
-            match p {
-                VariableHeaderProperty::SessionExpiryInterval(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::AuthenticationMethod(value) => {
-                    assert_eq!(value, "test".to_string());
-                }
-                VariableHeaderProperty::AuthenticationData(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::RequestProblemInformation(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::RequestResponseInformation(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::ReceiveMaximum(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::TopicAliasMaximum(value) => {
-                    assert_eq!(value, 0);
-                }
-                VariableHeaderProperty::UserProperty(value) => {
-                    assert_eq!(value.0, "test".to_string());
-                    assert_eq!(value.1, "test".to_string());
-                }
-                VariableHeaderProperty::MaximumPacketSize(value) => {
-                    assert_eq!(value, 0);
-                }
-                _ => panic!("Invalid property"),
-            }
+        if let Some(value) = props.session_expiry_interval {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
         }
+
+        if let Some(value) = props.authentication_method {
+            assert_eq!(value, "test".to_string());
+        } else {
+            panic!("Invalid property");
+        }  
+
+        if let Some(value) = props.authentication_data {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.request_problem_information {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.request_response_information {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.receive_maximum {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.topic_alias_maximum {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.user_property {
+            assert_eq!(value.0, "test_key".to_string());
+            assert_eq!(value.1, "test_value".to_string());
+        } else {
+            panic!("Invalid property");
+        }
+
+        if let Some(value) = props.maximum_packet_size {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid property");
+        }
+
 
         assert_eq!(connect.payload.client_id, "test2".to_string());
         assert_eq!(connect.payload.will_properties.properties.len(), 0);

@@ -19,7 +19,7 @@ impl MqttClient {
 
         let connection = Connect::new(
             &client_id,
-            &config.connect_properties,
+            config.connect_properties.clone(),
             &config.connect_payload,
         )?;
 

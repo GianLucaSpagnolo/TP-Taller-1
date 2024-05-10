@@ -5,8 +5,8 @@ pub mod server;
 mod control_packets {
     pub mod mqtt_connect {
         pub mod connect;
+        pub mod connect_properties;
         pub mod payload;
-        pub mod variable_header;
     }
     pub mod mqtt_connack {
         pub mod connack;

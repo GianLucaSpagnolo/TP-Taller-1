@@ -159,7 +159,7 @@ impl Server {
                 _subscriptions: Vec::new(),
                 _will_message: self.create_will_message(
                     flags_handler::_get_connect_flag_will_flag(
-                        connect.variable_header.connect_flags,
+                        connect.properties.connect_flags,
                     ),
                     connect.payload.will_topic,
                     connect.payload.will_payload,
@@ -219,7 +219,7 @@ impl Server {
         // Clean start: si es 1, el cliente y servidor deben descartar cualquier session state asociado con el Client Identifier. Session Present flag in connack = 0
         // Clean Start: si es 0, el cliente y servidor deben mantener el session state asociado con el Client Identifier.
         // En caso de que no exista dicha sesion, hay que crearla
-        if flags_handler::_get_connect_flag_clean_start(connect.variable_header.connect_flags) == 1
+        if flags_handler::_get_connect_flag_clean_start(connect.properties.connect_flags) == 1
         {
             self.sessions.remove(&connect.payload.client_id);
         }
@@ -241,21 +241,21 @@ impl Server {
 
         // Protocol Name: "MQTT" - En caso de ser diferente, debe procesarlo como  Unsupported Protocol Version (reason code 132) y cerrar la conexion.
         // Protocol Version: 5 - En caso de ser diferente, debe procesarlo como  Unsupported Protocol Version (reason code 132) y cerrar la conexion.
-        if connect_packet.variable_header.protocol_name.name != *"MQTT"
-            || connect_packet.variable_header.protocol_version != 5
+        if connect_packet.properties.protocol_name != *"MQTT"
+            || connect_packet.properties.protocol_version != 5
         {
             return ReasonMode::_UnsupportedProtocolVersion.get_id();
         }
 
         // Reserved: 0. En caso de recibir 1 debe devolver Malformed Packet (reason code 129) y cerrar la conexion
-        if flags_handler::_get_connect_flag_reserved(connect_packet.variable_header.connect_flags)
+        if flags_handler::_get_connect_flag_reserved(connect_packet.properties.connect_flags)
             != 0
         {
             return ReasonMode::_MalformedPacket.get_id();
         }
 
         // - Will QoS: 1. En caso de recibir 3 debe devolver QoS Not Supported (reason code 155) y cerrar la conexion
-        if flags_handler::_get_connect_flag_will_qos(connect_packet.variable_header.connect_flags)
+        if flags_handler::_get_connect_flag_will_qos(connect_packet.properties.connect_flags)
             <= 1
         {
             return ReasonMode::_QoSNotSupported.get_id();

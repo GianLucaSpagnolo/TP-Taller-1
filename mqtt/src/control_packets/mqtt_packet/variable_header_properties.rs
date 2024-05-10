@@ -13,6 +13,12 @@ pub struct VariableHeaderProperties {
     pub properties: Vec<PacketProperty>,
 }
 
+impl Default for VariableHeaderProperties {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VariableHeaderProperties {
     pub fn _get_property(&self, id: u8) -> Option<&PacketProperty> {
         self.properties.iter().find(|&property| property.id() == id)
