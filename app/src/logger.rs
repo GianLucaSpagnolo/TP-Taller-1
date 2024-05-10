@@ -48,11 +48,6 @@ fn log_action(action: &mut String, file: &mut File, client_id: &usize) -> Result
     write_line(&mut line, file)
 }
 
-#[derive(Debug)]
-pub enum MyErrors {
-    SomeError,
-}
-
 pub fn log_actions(route: &String) -> Result<(), Error> {
     let open_file: File = open_log_file(route)?;
 
