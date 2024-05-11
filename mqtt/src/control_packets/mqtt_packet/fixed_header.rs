@@ -54,6 +54,7 @@ impl PacketFixedHeader {
         match self.packet_type {
             CONNECT_PACKET => PacketType::ConnectType,
             CONNACK_PACKET => PacketType::ConnackType,
+            _DISCONNECT_PACKET => PacketType::DisconnectType,
             _ => PacketType::Unknow,
         }
     }

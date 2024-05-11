@@ -2,8 +2,7 @@ use std::io::{Error, Read};
 
 use super::variable_header_properties::VariableHeaderProperties;
 
-pub trait PacketProperties<Properties=Self>{
-
+pub trait PacketProperties<Properties = Self> {
     /// Devuelve la cantidad de propiedades opcionales que tiene el paquete
     fn variable_props_size(&self) -> u16;
 
@@ -17,5 +16,7 @@ pub trait PacketProperties<Properties=Self>{
     fn as_bytes(&self) -> Result<Vec<u8>, Error>;
 
     /// Lee las propiedades del paquete desde un stream
-    fn read_from(stream: &mut dyn Read) -> Result<Self, Error> where Self: Sized;
+    fn read_from(stream: &mut dyn Read) -> Result<Self, Error>
+    where
+        Self: Sized;
 }

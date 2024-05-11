@@ -4,18 +4,23 @@ pub mod generic_packet {
         net::TcpStream,
     };
 
-    use crate::control_packets::{mqtt_connack::connack::Connack, mqtt_connect::connect::Connect};
+    use crate::control_packets::{
+        mqtt_connack::connack::Connack, mqtt_connect::connect::Connect,
+        mqtt_disconnect::disconnect::_Disconnect,
+    };
 
     pub enum PacketType {
         ConnectType,
         ConnackType,
+        DisconnectType,
         Unknow, // errores o paquetes no implementados
     }
 
     pub enum PacketReceived {
-        ConnectPacket(Box<Connect>),
-        ConnackPacket(Box<Connack>),
-        UnknowPacket,
+        Connect(Box<Connect>),
+        Connack(Box<Connack>),
+        Disconnect(Box<_Disconnect>),
+        Unknow,
     }
 
     // trait implementado por todos los mensajes:
@@ -25,7 +30,7 @@ pub mod generic_packet {
         fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error>;
 
         fn packed_package(_package: Packet) -> PacketReceived {
-            PacketReceived::UnknowPacket
+            PacketReceived::Unknow
         }
     }
 

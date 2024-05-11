@@ -1,5 +1,7 @@
 use std::{
-    io::{Error, Read}, mem::{size_of, size_of_val}, string::FromUtf8Error
+    io::{Error, Read},
+    mem::{size_of, size_of_val},
+    string::FromUtf8Error,
 };
 
 use crate::common::data_types::data_representation::read_two_byte_integer;
@@ -29,10 +31,13 @@ impl VariableHeaderProperties {
         first_str: String,
         second_str: String,
     ) -> Result<(), Error> {
-        self.bytes_length += size_of_val(&id) as u16 + size_of::<u16>() as u16 + size_of::<u16>() as u16 + first_str.len() as u16 + second_str.len() as u16;
+        self.bytes_length += size_of_val(&id) as u16
+            + size_of::<u16>() as u16
+            + size_of::<u16>() as u16
+            + first_str.len() as u16
+            + second_str.len() as u16;
 
-        let prop_result =
-            PacketProperty::new_property_utf8_pair_string(id, first_str, second_str)?;
+        let prop_result = PacketProperty::new_property_utf8_pair_string(id, first_str, second_str)?;
 
         self.properties.push(prop_result);
 
@@ -106,8 +111,7 @@ impl VariableHeaderProperties {
         while i < properties.len() - 1 {
             let id = properties[i];
             i += 1;
-            let property =
-                PacketProperty::new_property_from_be_bytes(properties, &mut i, id)?;
+            let property = PacketProperty::new_property_from_be_bytes(properties, &mut i, id)?;
             if let Some(p) = property {
                 properties_vec.push(p);
             }
