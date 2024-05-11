@@ -3,7 +3,7 @@ use std::{fs::File, io::Error};
 use crate::{
     common::utils::*,
     control_packets::{
-        mqtt_connack::connack::ConnackProperties,
+        mqtt_connack::connack_properties::ConnackProperties,
         mqtt_connect::{connect_properties::ConnectProperties, payload::ConnectPayload},
         mqtt_packet::flags::flags_handler::*,
     },
@@ -267,8 +267,7 @@ impl ServerConfig {
             wildcard_subscription_available: None,
             subscription_identifiers_available: None,
             shared_subscription_available: None,
-            user_property_key: Some(String::new()),
-            user_property_value: Some(String::new()),
+            user_property: Some((String::new(), String::new())),
             maximum_packet_size: None,
         };
 
