@@ -9,10 +9,10 @@ mod control_packets {
         pub mod connect_properties;
         pub mod payload;
     }
-    
+
     pub mod mqtt_connack {
         pub mod connack;
-        pub mod variable_header;
+        pub mod connack_properties;
     }
 
     pub mod mqtt_publish {
