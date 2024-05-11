@@ -1,6 +1,7 @@
 use std::io::{Error, Read, Write};
 
-use super::variable_header::ConnackVariableHeader;
+use super::connack_properties::ConnackProperties;
+use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_packet::{
     fixed_header::{PacketFixedHeader, CONNACK_PACKET},
     packet::generic_packet::*,
@@ -62,48 +63,24 @@ use crate::control_packets::mqtt_packet::{
 /// 39 - 0x27 - Maximum Packet Size - Four Byte Integer (u32)
 ///
 pub struct Connack {
-    pub variable_header: ConnackVariableHeader,
-}
-
-pub struct ConnackProperties {
-    pub connect_acknowledge_flags: u8,
-    pub connect_reason_code: u8,
-    pub session_expiry_interval: Option<u32>,
-    pub assigned_client_identifier: Option<String>,
-    pub server_keep_alive: Option<u16>,
-    pub authentication_method: Option<String>,
-    pub authentication_data: Option<u16>,
-    pub response_information: Option<String>,
-    pub server_reference: Option<String>,
-    pub reason_string: Option<String>,
-    pub receive_maximum: Option<u16>,
-    pub topic_alias_maximum: Option<u16>,
-    pub maximum_qos: Option<u8>,
-    pub retain_available: Option<u8>,
-    pub wildcard_subscription_available: Option<u8>,
-    pub subscription_identifiers_available: Option<u8>,
-    pub shared_subscription_available: Option<u8>,
-    pub user_property_key: Option<String>,
-    pub user_property_value: Option<String>,
-    pub maximum_packet_size: Option<u32>,
+    pub properties: ConnackProperties,
 }
 
 impl Serialization for Connack {
     fn read_from(stream: &mut dyn Read, _remaining_length: u16) -> Result<Connack, Error> {
-        let variable_header = ConnackVariableHeader::read_from(stream)?;
+        let properties = ConnackProperties::read_from(stream)?;
 
-        let connect = Connack { variable_header };
-        Ok(connect)
+        Ok(Connack { properties })
     }
 
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let variable_header_bytes = self.variable_header.as_bytes();
-        let remaining_length = self.variable_header.length();
+        let properties_bytes = self.properties.as_bytes()?;
+        let remaining_length = self.properties.size_of();
         let fixed_header = PacketFixedHeader::new(CONNACK_PACKET, remaining_length);
         let fixed_header_bytes = fixed_header.as_bytes();
 
         stream.write_all(&fixed_header_bytes)?;
-        stream.write_all(&variable_header_bytes)?;
+        stream.write_all(&properties_bytes)?;
 
         Ok(())
     }
@@ -114,20 +91,17 @@ impl Serialization for Connack {
 }
 
 impl Connack {
-    pub fn new(connack_properties: &ConnackProperties) -> Result<Self, Error> {
-        let variable_header = ConnackVariableHeader::new(connack_properties)?;
-
-        Ok(Connack { variable_header })
+    pub fn new(properties: ConnackProperties) -> Self {
+        Connack { properties }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::{
-        packet_property::PacketProperty, reason_codes::ReasonMode,
-    };
 
     use super::*;
+    use crate::control_packets::mqtt_connack::connack_properties::ConnackProperties;
+    use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
 
     #[test]
     fn test_write_to() {
@@ -149,14 +123,11 @@ mod test {
             wildcard_subscription_available: Some(0),
             subscription_identifiers_available: Some(0),
             shared_subscription_available: Some(0),
-            user_property_key: Some("key".to_string()),
-            user_property_value: Some("value".to_string()),
+            user_property: Some(("test_key".to_string(), "test_value".to_string())),
             maximum_packet_size: Some(0),
         };
 
-        let connack = Connack {
-            variable_header: ConnackVariableHeader::new(&properties).unwrap(),
-        };
+        let connack = Connack::new(properties);
 
         let mut buffer = Vec::new();
         connack.write_to(&mut buffer).unwrap();
@@ -171,36 +142,113 @@ mod test {
             Connack::read_from(&mut buffer, connack_fixed_header.remaining_length).unwrap();
 
         assert_eq!(connack_fixed_header.packet_type, CONNACK_PACKET);
-        assert_eq!(connack.variable_header.connect_acknowledge_flags, 0);
-        assert_eq!(connack.variable_header.connect_reason_code, 0);
-        assert_eq!(connack.variable_header.properties.properties.len(), 17);
+        assert_eq!(connack.properties.connect_acknowledge_flags, 0);
+        assert_eq!(connack.properties.connect_reason_code, 0);
+        assert_eq!(connack.properties.variable_props_size(), 17);
 
-        let props = connack.variable_header.properties.properties;
+        let props = connack.properties;
 
-        for p in props {
-            match p {
-                PacketProperty::SessionExpiryInterval(i) => assert_eq!(i, 0),
-                PacketProperty::AssignedClientIdentifier(s) => assert_eq!(s, "client"),
-                PacketProperty::ServerKeepAlive(i) => assert_eq!(i, 0),
-                PacketProperty::AuthenticationMethod(s) => assert_eq!(s, "auth"),
-                PacketProperty::AuthenticationData(i) => assert_eq!(i, 0),
-                PacketProperty::ResponseInformation(s) => assert_eq!(s, "response"),
-                PacketProperty::ServerReference(s) => assert_eq!(s, "server"),
-                PacketProperty::ReasonString(s) => assert_eq!(s, "reason"),
-                PacketProperty::ReceiveMaximum(i) => assert_eq!(i, 0),
-                PacketProperty::TopicAliasMaximum(i) => assert_eq!(i, 0),
-                PacketProperty::MaximumQoS(i) => assert_eq!(i, 0),
-                PacketProperty::RetainAvailable(i) => assert_eq!(i, 0),
-                PacketProperty::WildcardSubscriptionAvailable(i) => assert_eq!(i, 0),
-                PacketProperty::SubscriptionIdentifiersAvailable(i) => assert_eq!(i, 0),
-                PacketProperty::SharedSubscriptionAvailable(i) => assert_eq!(i, 0),
-                PacketProperty::UserProperty(value) => {
-                    assert_eq!(value.0, "key");
-                    assert_eq!(value.1, "value");
-                }
-                PacketProperty::MaximumPacketSize(i) => assert_eq!(i, 0),
-                _ => panic!("Invalid property"),
-            }
+        if let Some(value) = props.session_expiry_interval {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid Session Expiry Interval");
+        }
+
+        if let Some(value) = props.assigned_client_identifier {
+            assert_eq!(value, "client");
+        } else {
+            panic!("Invalid Assigned Client Identifier");
+        }
+
+        if let Some(value) = props.server_keep_alive {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid Server Keep Alive");
+        }
+
+        if let Some(value) = props.authentication_method {
+            assert_eq!(value, "auth");
+        } else {
+            panic!("Invalid Authentication Method");
+        }
+
+        if let Some(value) = props.authentication_data {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid Authentication Data");
+        }
+
+        if let Some(value) = props.response_information {
+            assert_eq!(value, "response");
+        } else {
+            panic!("Invalid Response Information");
+        }
+
+        if let Some(value) = props.server_reference {
+            assert_eq!(value, "server");
+        } else {
+            panic!("Invalid Server Reference");
+        }
+
+        if let Some(value) = props.reason_string {
+            assert_eq!(value, "reason");
+        } else {
+            panic!("Invalid Reason String");
+        }
+
+        if let Some(value) = props.receive_maximum {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid Receive Maximum");
+        }
+
+        if let Some(value) = props.topic_alias_maximum {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid Topic Alias Maximum");
+        }
+
+        if let Some(value) = props.maximum_qos {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid Maximum QoS");
+        }
+
+        if let Some(value) = props.retain_available {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid Retain Available");
+        }
+
+        if let Some(value) = props.wildcard_subscription_available {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid Wildcard Subscription Available");
+        }
+
+        if let Some(value) = props.subscription_identifiers_available {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid Subscription Identifiers Available");
+        }
+
+        if let Some(value) = props.shared_subscription_available {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid Shared Subscription Available");
+        }
+
+        if let Some(value) = props.user_property {
+            assert_eq!(value.0, "test_key");
+            assert_eq!(value.1, "test_value");
+        } else {
+            panic!("Invalid User Property");
+        }
+
+        if let Some(value) = props.maximum_packet_size {
+            assert_eq!(value, 0);
+        } else {
+            panic!("Invalid Maximum Packet Size");
         }
     }
 }
