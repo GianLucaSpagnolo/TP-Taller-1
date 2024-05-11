@@ -4,7 +4,7 @@ use crate::{
     common::utils::*,
     control_packets::{
         mqtt_connack::connack::ConnackProperties,
-        mqtt_connect::{connect::PayloadFields, connect_properties::ConnectProperties},
+        mqtt_connect::{connect_properties::ConnectProperties, payload::ConnectPayload},
         mqtt_packet::flags::flags_handler::*,
     },
 };
@@ -13,7 +13,7 @@ pub struct ClientConfig {
     pub port: u16,
     pub ip: String,
     pub connect_properties: ConnectProperties,
-    pub connect_payload: PayloadFields,
+    pub connect_payload: ConnectPayload,
 }
 
 impl ClientConfig {
@@ -28,22 +28,7 @@ impl ClientConfig {
         let mut ip = String::new();
 
         // Corroborar que le pasen los campos obligatorios
-
-        let mut connect_properties = ConnectProperties {
-            protocol_name: String::new(),
-            protocol_version: 0,
-            connect_flags: 0,
-            keep_alive: 0,
-            session_expiry_interval: None,
-            receive_maximum: None,
-            maximum_packet_size: None,
-            topic_alias_maximum: None,
-            request_response_information: None,
-            request_problem_information: None,
-            authentication_method: None,
-            authentication_data: None,
-            user_property: None,
-        };
+        let mut connect_properties = ConnectProperties::default();
 
         for param in params.iter() {
             match param.0.as_str() {
@@ -53,7 +38,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Port",
                             ))
                         }
                     }
@@ -66,7 +51,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Protocol Version",
                             ))
                         }
                     }
@@ -131,7 +116,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Keep Alive",
                             ))
                         }
                     }
@@ -142,7 +127,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Session Expiry Interval",
                             ))
                         }
                     }
@@ -153,7 +138,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Receive Maximum",
                             ))
                         }
                     }
@@ -164,7 +149,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter:  Maximum Packet Size",
                             ))
                         }
                     }
@@ -175,7 +160,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Topic Alias Maximum",
                             ))
                         }
                     }
@@ -203,34 +188,23 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Authentiation Data",
                             ))
                         }
                     }
                 }
+
                 _ => {
                     return Err(Error::new(
                         std::io::ErrorKind::InvalidData,
-                        "Invalid parameter",
+                        "Invalid parameter: Parameter not found",
                     ))
                 }
             }
         }
 
-        let connect_payload = PayloadFields {
-            will_delay_interval: None,
-            payload_format_indicator: None,
-            message_expiry_interval: None,
-            content_type: None,
-            response_topic: None,
-            correlation_data: None,
-            user_property_key: None,
-            user_property_value: None,
-            will_topic: None,
-            will_payload: None,
-            username: None,
-            password: None,
-        };
+        let connect_payload = ConnectPayload::default();
+        // Faltan agregar los campos del payload desde el archivo de configuracion!
 
         Ok(ClientConfig {
             port,

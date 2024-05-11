@@ -64,7 +64,7 @@ impl Server {
             fixed_header.remaining_length,
         ) {
             Ok(pack) => match pack {
-                PacketReceived::ConnectPacket(pack) => {
+                PacketReceived::Connect(pack) => {
                     let connack_properties: ConnackProperties = self.handle_connection(*pack)?;
                     let connack_packet: Connack = Connack::new(&connack_properties)?;
                     match connack_packet.write_to(&mut stream) {
@@ -106,7 +106,6 @@ impl Server {
     // le devuelve el paquete al servidor
     // el servidor lo pasa al logger
     // el logger le pide traduccion al protocolo
-
     pub fn start_server(config: ServerConfig) -> Result<ServerActions, Error> {
         let mut server = Server {
             config,
@@ -158,9 +157,7 @@ impl Server {
                 _session_expiry_interval: 0,
                 _subscriptions: Vec::new(),
                 _will_message: self.create_will_message(
-                    flags_handler::_get_connect_flag_will_flag(
-                        connect.properties.connect_flags,
-                    ),
+                    flags_handler::_get_connect_flag_will_flag(connect.properties.connect_flags),
                     connect.payload.will_topic,
                     connect.payload.will_payload,
                 ),
@@ -219,8 +216,7 @@ impl Server {
         // Clean start: si es 1, el cliente y servidor deben descartar cualquier session state asociado con el Client Identifier. Session Present flag in connack = 0
         // Clean Start: si es 0, el cliente y servidor deben mantener el session state asociado con el Client Identifier.
         // En caso de que no exista dicha sesion, hay que crearla
-        if flags_handler::_get_connect_flag_clean_start(connect.properties.connect_flags) == 1
-        {
+        if flags_handler::_get_connect_flag_clean_start(connect.properties.connect_flags) == 1 {
             self.sessions.remove(&connect.payload.client_id);
         }
         // - Will Flag: si es 1, un Will Message debe ser almacenado en el servidor y asociado a la sesion.
@@ -248,16 +244,12 @@ impl Server {
         }
 
         // Reserved: 0. En caso de recibir 1 debe devolver Malformed Packet (reason code 129) y cerrar la conexion
-        if flags_handler::_get_connect_flag_reserved(connect_packet.properties.connect_flags)
-            != 0
-        {
+        if flags_handler::_get_connect_flag_reserved(connect_packet.properties.connect_flags) != 0 {
             return ReasonMode::_MalformedPacket.get_id();
         }
 
         // - Will QoS: 1. En caso de recibir 3 debe devolver QoS Not Supported (reason code 155) y cerrar la conexion
-        if flags_handler::_get_connect_flag_will_qos(connect_packet.properties.connect_flags)
-            <= 1
-        {
+        if flags_handler::_get_connect_flag_will_qos(connect_packet.properties.connect_flags) <= 1 {
             return ReasonMode::_QoSNotSupported.get_id();
         }
 

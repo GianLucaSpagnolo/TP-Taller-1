@@ -18,10 +18,9 @@ impl MqttClient {
         let mut stream = TcpStream::connect(config.get_address())?;
 
         let connection = Connect::new(
-            &client_id,
             config.connect_properties.clone(),
-            &config.connect_payload,
-        )?;
+            config.connect_payload.clone(),
+        );
 
         connection.write_to(&mut stream)?;
 
@@ -48,7 +47,7 @@ impl MqttClient {
         };
 
         let _acklnowledge = match packet_recived {
-            PacketReceived::ConnackPacket(ack) => *ack,
+            PacketReceived::Connack(ack) => *ack,
             _ => {
                 return Err(Error::new(
                     std::io::ErrorKind::Other,
