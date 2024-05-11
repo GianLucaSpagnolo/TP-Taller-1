@@ -1,28 +1,29 @@
 use std::io::{Error, Read, Write};
 
-use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, _PINGRESP_PACKET};
+use crate::control_packets::mqtt_packet::{fixed_header::{PacketFixedHeader, _PINGRESP_PACKET}, packet::generic_packet::{PacketReceived, Serialization}};
 
-pub struct _PingResp {
-    pub fixed_header: PacketFixedHeader,
+pub struct _PingResp {}
+
+impl Serialization for _PingResp {
+    fn read_from(_stream: &mut dyn Read, _remaining_length: u16) -> Result<Self, Error> {
+        Ok(_PingResp{})
+    }
+    fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
+        let fixed_header = PacketFixedHeader::new(_PINGRESP_PACKET, 0);
+        let fixed_header_bytes = fixed_header.as_bytes();
+        stream.write_all(&fixed_header_bytes)?;
+
+        Ok(())
+    }
+
+    fn packed_package(package: _PingResp) -> PacketReceived {
+        PacketReceived::PingResp(Box::new(package))
+    }
 }
 
 impl _PingResp {
     pub fn _new() -> Self {
-        let fixed_header = PacketFixedHeader::new(_PINGRESP_PACKET, 0);
-        _PingResp { fixed_header }
-    }
-
-    pub fn _write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header = self.fixed_header.as_bytes();
-        stream.write_all(&fixed_header)?;
-
-        Ok(())
-    }
-    pub fn _read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let fixed_header = PacketFixedHeader::read_from(stream)?;
-
-        let _pingresp = _PingResp { fixed_header };
-        Ok(_pingresp)
+        _PingResp { }
     }
 }
 
@@ -35,12 +36,11 @@ mod test {
         let pingresp = _PingResp::_new();
 
         let mut buffer = Vec::new();
-        pingresp._write_to(&mut buffer).unwrap();
+        pingresp.write_to(&mut buffer).unwrap();
 
         let mut buffer = buffer.as_slice();
-        let pingresp = _PingResp::_read_from(&mut buffer).unwrap();
+        let pingresp_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
 
-        assert_eq!(pingresp.fixed_header.packet_type, _PINGRESP_PACKET);
-        assert_eq!(pingresp.fixed_header.remaining_length, 0);
+        assert_eq!(pingresp_fixed_header.packet_type, _PINGRESP_PACKET);
     }
 }
