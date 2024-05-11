@@ -6,13 +6,14 @@ pub mod generic_packet {
 
     use crate::control_packets::{
         mqtt_connack::connack::Connack, mqtt_connect::connect::Connect,
-        mqtt_disconnect::disconnect::_Disconnect,
+        mqtt_disconnect::disconnect::_Disconnect, mqtt_pingresp::pingresp::_PingResp,
     };
 
     pub enum PacketType {
         ConnectType,
         ConnackType,
         DisconnectType,
+        _PingRespType,
         Unknow, // errores o paquetes no implementados
     }
 
@@ -20,6 +21,7 @@ pub mod generic_packet {
         Connect(Box<Connect>),
         Connack(Box<Connack>),
         Disconnect(Box<_Disconnect>),
+        PingResp(Box<_PingResp>),
         Unknow,
     }
 
