@@ -1,12 +1,15 @@
 use std::io::{Error, Read, Write};
 
-use crate::control_packets::mqtt_packet::{fixed_header::{PacketFixedHeader, _PINGRESP_PACKET}, packet::generic_packet::{PacketReceived, Serialization}};
+use crate::control_packets::mqtt_packet::{
+    fixed_header::{PacketFixedHeader, _PINGRESP_PACKET},
+    packet::generic_packet::{PacketReceived, Serialization},
+};
 
 pub struct _PingResp {}
 
 impl Serialization for _PingResp {
     fn read_from(_stream: &mut dyn Read, _remaining_length: u16) -> Result<Self, Error> {
-        Ok(_PingResp{})
+        Ok(_PingResp {})
     }
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let fixed_header = PacketFixedHeader::new(_PINGRESP_PACKET, 0);
@@ -23,7 +26,7 @@ impl Serialization for _PingResp {
 
 impl _PingResp {
     pub fn _new() -> Self {
-        _PingResp { }
+        _PingResp {}
     }
 }
 
