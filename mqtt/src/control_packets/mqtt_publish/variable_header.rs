@@ -3,7 +3,7 @@ use std::io::Read;
 
 use crate::common::data_types::data_representation::*;
 use crate::control_packets::mqtt_packet::{
-    variable_header_properties::VariableHeaderProperties, packet_property::*,
+    packet_property::*, variable_header_properties::VariableHeaderProperties,
 };
 
 use super::publish::_PublishProperties;

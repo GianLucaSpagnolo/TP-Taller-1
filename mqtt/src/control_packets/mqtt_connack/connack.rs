@@ -109,7 +109,7 @@ impl Serialization for Connack {
     }
 
     fn packed_package(package: Connack) -> PacketReceived {
-        PacketReceived::ConnackPacket(Box::new(package))
+        PacketReceived::Connack(Box::new(package))
     }
 }
 
@@ -124,7 +124,7 @@ impl Connack {
 #[cfg(test)]
 mod test {
     use crate::control_packets::mqtt_packet::{
-        reason_codes::ReasonMode, packet_property::PacketProperty,
+        packet_property::PacketProperty, reason_codes::ReasonMode,
     };
 
     use super::*;

@@ -227,17 +227,13 @@ mod test {
             panic!("Error");
         }
 
-        if let PacketProperty::ContentType(value) =
-            props._get_property(CONTENT_TYPE).unwrap()
-        {
+        if let PacketProperty::ContentType(value) = props._get_property(CONTENT_TYPE).unwrap() {
             assert_eq!(value, "type");
         } else {
             panic!("Error");
         }
 
-        if let PacketProperty::ResponseTopic(value) =
-            props._get_property(RESPONSE_TOPIC).unwrap()
-        {
+        if let PacketProperty::ResponseTopic(value) = props._get_property(RESPONSE_TOPIC).unwrap() {
             assert_eq!(value, "response");
         } else {
             panic!("Error");
@@ -259,16 +255,13 @@ mod test {
             panic!("Error");
         }
 
-        if let PacketProperty::TopicAlias(value) = props._get_property(TOPIC_ALIAS).unwrap()
-        {
+        if let PacketProperty::TopicAlias(value) = props._get_property(TOPIC_ALIAS).unwrap() {
             assert_eq!(*value, 0);
         } else {
             panic!("Error");
         }
 
-        if let PacketProperty::UserProperty(value) =
-            props._get_property(USER_PROPERTY).unwrap()
-        {
+        if let PacketProperty::UserProperty(value) = props._get_property(USER_PROPERTY).unwrap() {
             assert_eq!(value.0, "key");
             assert_eq!(value.1, "value");
         } else {

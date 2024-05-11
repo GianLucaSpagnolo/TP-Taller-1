@@ -148,18 +148,14 @@ mod test {
 
         let props = &puback.variable_header.properties;
 
-        if let PacketProperty::UserProperty(value) =
-            props._get_property(USER_PROPERTY).unwrap()
-        {
+        if let PacketProperty::UserProperty(value) = props._get_property(USER_PROPERTY).unwrap() {
             assert_eq!(value.0, "name");
             assert_eq!(value.1, "value");
         } else {
             panic!("Error");
         }
 
-        if let PacketProperty::ReasonString(value) =
-            props._get_property(REASON_STRING).unwrap()
-        {
+        if let PacketProperty::ReasonString(value) = props._get_property(REASON_STRING).unwrap() {
             assert_eq!(value, "reason");
         } else {
             panic!("Error");
