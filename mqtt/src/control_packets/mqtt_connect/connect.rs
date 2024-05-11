@@ -145,8 +145,8 @@ impl Serialization for Connect {
         Ok(())
     }
 
-    fn pack_server_packet(package: Connect) -> ServerPacketRecived {
-        ServerPacketRecived::ConnectPacket(Box::new(package))
+    fn packed_package(package: Connect) -> PacketReceived {
+        PacketReceived::ConnectPacket(Box::new(package))
     }
 }
 

@@ -31,7 +31,7 @@ impl MqttClient {
         };
 
         let packet_recived = match fixed_header.get_package_type() {
-            PacketType::ConnackType => match get_client_packet(
+            PacketType::ConnackType => match get_packet(
                 &mut stream,
                 fixed_header.get_package_type(),
                 fixed_header.remaining_length,
@@ -48,7 +48,7 @@ impl MqttClient {
         };
 
         let _acklnowledge = match packet_recived {
-            ClientPacketRecived::ConnackPacket(ack) => *ack,
+            PacketReceived::ConnackPacket(ack) => *ack,
             _ => {
                 return Err(Error::new(
                     std::io::ErrorKind::Other,

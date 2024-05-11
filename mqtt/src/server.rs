@@ -58,13 +58,13 @@ impl Server {
             Err(e) => return Err(e),
         };
 
-        match get_server_packet(
+        match get_packet(
             stream,
             fixed_header.get_package_type(),
             fixed_header.remaining_length,
         ) {
             Ok(pack) => match pack {
-                ServerPacketRecived::ConnectPacket(pack) => {
+                PacketReceived::ConnectPacket(pack) => {
                     let connack_properties: ConnackProperties = self.handle_connection(*pack)?;
                     let connack_packet: Connack = Connack::new(&connack_properties)?;
                     match connack_packet.write_to(&mut stream) {

@@ -108,8 +108,8 @@ impl Serialization for Connack {
         Ok(())
     }
 
-    fn pack_client_packet(package: Connack) -> ClientPacketRecived {
-        ClientPacketRecived::ConnackPacket(Box::new(package))
+    fn packed_package(package: Connack) -> PacketReceived {
+        PacketReceived::ConnackPacket(Box::new(package))
     }
 }
 
