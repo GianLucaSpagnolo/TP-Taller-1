@@ -8,9 +8,17 @@ use crate::control_packets::mqtt_packet::{
 pub struct _PingResp {}
 
 impl Serialization for _PingResp {
-    fn read_from(_stream: &mut dyn Read, _remaining_length: u16) -> Result<Self, Error> {
+    fn read_from(_stream: &mut dyn Read, remaining_length: u16) -> Result<Self, Error> {
+        if remaining_length != 0 {
+            return Err(Error::new(
+                std::io::ErrorKind::InvalidData,
+                "PingResp packet must have remaining length 0",
+            ));
+        }
+
         Ok(_PingResp {})
     }
+
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let fixed_header = PacketFixedHeader::new(_PINGRESP_PACKET, 0);
         let fixed_header_bytes = fixed_header.as_bytes();

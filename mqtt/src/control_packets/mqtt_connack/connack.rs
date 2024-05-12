@@ -67,8 +67,12 @@ pub struct Connack {
 }
 
 impl Serialization for Connack {
-    fn read_from(stream: &mut dyn Read, _remaining_length: u16) -> Result<Connack, Error> {
-        let properties = ConnackProperties::read_from(stream)?;
+    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Connack, Error> {
+        let mut aux_buffer = vec![0; remaining_length as usize];
+        stream.read_exact(&mut aux_buffer)?;
+        let mut buffer = aux_buffer.as_slice();
+
+        let properties = ConnackProperties::read_from(&mut buffer)?;
 
         Ok(Connack { properties })
     }
@@ -112,7 +116,7 @@ mod test {
             assigned_client_identifier: Some("client".to_string()),
             server_keep_alive: Some(0),
             authentication_method: Some("auth".to_string()),
-            authentication_data: Some(0),
+            authentication_data: Some("auth_data".to_string()),
             response_information: Some("response".to_string()),
             server_reference: Some("server".to_string()),
             reason_string: Some("reason".to_string()),
@@ -170,7 +174,7 @@ mod test {
         }
 
         if let Some(value) = props.authentication_data {
-            assert_eq!(value, 0);
+            assert_eq!(value, "auth_data");
         } else {
             panic!("Invalid Authentication Data");
         }

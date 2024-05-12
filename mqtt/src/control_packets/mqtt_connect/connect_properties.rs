@@ -13,7 +13,7 @@ pub struct ConnectProperties {
     pub keep_alive: u16,
     pub session_expiry_interval: Option<u32>,
     pub authentication_method: Option<String>,
-    pub authentication_data: Option<u16>,
+    pub authentication_data: Option<String>,
     pub request_problem_information: Option<u8>,
     pub request_response_information: Option<u8>,
     pub receive_maximum: Option<u16>,
@@ -51,7 +51,7 @@ impl Clone for ConnectProperties {
             keep_alive: self.keep_alive,
             session_expiry_interval: self.session_expiry_interval,
             authentication_method: self.authentication_method.clone(),
-            authentication_data: self.authentication_data,
+            authentication_data: self.authentication_data.clone(),
             request_problem_information: self.request_problem_information,
             request_response_information: self.request_response_information,
             receive_maximum: self.receive_maximum,
@@ -85,8 +85,8 @@ impl PacketProperties for ConnectProperties {
             variable_props.add_u32_property(SESSION_EXPIRY_INTERVAL, session_expiry_interval)?;
         };
 
-        if let Some(auth_data) = self.authentication_data {
-            variable_props.add_u16_property(AUTHENTICATION_DATA, auth_data)?;
+        if let Some(auth_data) = self.authentication_data.clone() {
+            variable_props.add_utf8_string_property(AUTHENTICATION_DATA, auth_data)?;
         };
         if let Some(auth_method) = self.authentication_method.clone() {
             variable_props.add_utf8_string_property(AUTHENTICATION_METHOD, auth_method)?;
@@ -165,7 +165,7 @@ impl PacketProperties for ConnectProperties {
                     authentication_method = property.value_string();
                 }
                 AUTHENTICATION_DATA => {
-                    authentication_data = property.value_u16();
+                    authentication_data = property.value_string();
                 }
                 REQUEST_PROBLEM_INFORMATION => {
                     request_problem_information = property.value_u8();

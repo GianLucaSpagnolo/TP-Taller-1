@@ -14,8 +14,12 @@ pub struct _Disconnect {
 }
 
 impl Serialization for _Disconnect {
-    fn read_from(stream: &mut dyn Read, _remaining_lenght: u16) -> Result<Self, Error> {
-        let properties = _DisconnectProperties::read_from(stream)?;
+    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Self, Error> {
+        let mut aux_buffer = vec![0; remaining_length as usize];
+        stream.read_exact(&mut aux_buffer)?;
+        let mut buffer = aux_buffer.as_slice();
+
+        let properties = _DisconnectProperties::read_from(&mut buffer)?;
 
         let disconnect = _Disconnect { properties };
 
