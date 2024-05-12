@@ -12,13 +12,22 @@ use std::{
 };
 
 pub fn open_file(route: &String) -> Result<File, Error> {
-    let open_result = OpenOptions::new().append(true).open(route);
+    let open_result = OpenOptions::new().read(true).append(true).open(route);
 
     match open_result {
         Ok(file) => Ok(file),
-        Err(e) => {
-            eprintln!("\nCould not find file: '{}' at the given path", route);
-            Err(e)
+        Err(..) => {
+            // eprintln!("\nCould not find file: '{}' at the given path", route);
+            // crea el archivo
+           match OpenOptions::new().create_new(true).append(true)
+                .open(route) {
+                    Ok(created_file) => {
+                        Ok(created_file)},
+                    Err(e) => {
+                        eprintln!("\nCould not find file: '{}' at the given path, error when try to create it", route);
+                        Err(e)
+                    }
+                }
         }
     }
 }
@@ -34,10 +43,10 @@ pub fn read_file(archivo: &File) -> Option<Vec<String>> {
 
     for line in lector.lines() {
         match line {
-            Err(..) => {
-                eprintln!("Error reading file");
+            Err(e) => {
+                eprintln!("Error at reading file: {}", e);
                 return None;
-            }
+            },
             Ok(line) => lines.push(line),
         };
     }

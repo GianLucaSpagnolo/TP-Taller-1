@@ -1,7 +1,8 @@
 // protocolo de la app, usado por todos los clientes y el servidor
 use mqtt::server::*;
 use std::io::Error;
-use std::net::TcpStream;
+use std::net::{TcpListener, TcpStream};
+// use std::ptr::addr_eq;
 
 /// El protocolo traduce los paquetes de mqtt a comandos
 /// entendibles por la app
@@ -116,6 +117,18 @@ pub enum ServerActions {
     PackageError,
 }
 
+pub fn server_bind_address(address: &String) -> Result<TcpListener, Error> {
+    if !address.contains(':') {
+        return Err(Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Invalid ip - port format, must be: ip:port",
+        ))
+    }
+    mqtt::server::server_run_bind(address)
+}
+
+
+/*
 pub fn server_run(address: &String) -> Result<ServerActions, Error> {
     // prepara al servidor para la escucha
     let listener = match server_run_bind(address) {
@@ -135,12 +148,25 @@ pub fn server_run(address: &String) -> Result<ServerActions, Error> {
         None => Ok(ServerActions::PackageError),
     }
 }
+*/
 
 // usada por el servidor para recibir los paquetes
 // del cliente
 // el protocolo recibe el paquete, lo procesa y traduce el
 // paquete a una accion que el servidor de la app comprenda.
-pub fn receive_package(stream: &mut TcpStream) -> Option<ServerActions> {
+pub fn receive_package(stream: &mut TcpStream, server: &mut Server) -> ServerActions {
+    match server.process_packet(stream) {
+        Ok(_) => todo!(),
+        Err(_) => todo!(),
+    }
+}
+
+/*
+// usada por el servidor para recibir los paquetes
+// del cliente
+// el protocolo recibe el paquete, lo procesa y traduce el
+// paquete a una accion que el servidor de la app comprenda.
+pub fn receive_package(stream: &mut TcpStream) -> ServerActions {
     // averiguo el tipo de paquete:
     let fixed_header = match pack_header_bytes(stream) {
         Some(header_type) => header_type,
@@ -171,3 +197,4 @@ pub fn receive_package(stream: &mut TcpStream) -> Option<ServerActions> {
     // el servidor lo pasa al logger
     // el logger le pide traduccion al protocolo
 }
+*/

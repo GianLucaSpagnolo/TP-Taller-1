@@ -13,8 +13,8 @@ use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
 
 // agregado para protocolo
-use crate::control_packets::mqtt_packet::fixed_header::*;
-use std::io::Read;
+// use crate::control_packets::mqtt_packet::fixed_header::*;
+// use std::io::Read;
 
 pub struct WillMessage {
     _will_topic: String,
@@ -50,66 +50,38 @@ pub struct Server {
     _connect_received: bool,
 }
 
-impl Server {
-    // usada por el servidor para recibir los paquetes
-    // del cliente
-    // el protocolo recibe el paquete, lo procesa y traduce el
-    // paquete a una accion que el servidor de la app comprenda.
-    fn process_packet(&mut self, mut stream: &mut TcpStream) -> Result<ServerActions, Error> {
-        // averiguo el tipo de paquete:
-        let fixed_header = match PacketFixedHeader::read_from(stream) {
-            Ok(header_type) => header_type,
-            Err(e) => return Err(e),
-        };
+// main refactorizado del server:
+pub fn server_run_bind(address: &String) -> Result<TcpListener, Error> {
+    TcpListener::bind(address)
+}
 
-        match get_server_packet(
-            stream,
-            fixed_header.get_package_type(),
-            fixed_header.remaining_length,
-        ) {
-            Ok(pack) => match pack {
-                ServerPacketRecived::ConnectPacket(pack) => {
-                    let connack_properties: ConnackProperties = self.handle_connection(*pack)?;
-                    let connack_packet: Connack = Connack::new(&connack_properties)?;
-                    match connack_packet.write_to(&mut stream) {
-                        Ok(_) => Ok(ServerActions::ConnectionEstablished),
-                        Err(e) => Err(e),
-                    }
-                }
-                _ => Ok(ServerActions::PackageError),
-                // el servidor de la app debera poder
-                // ejecutar el connack, para esto,
-                // tanto el enum del server MQTT, como el
-                // enum del protocolo, deben de tener lo necesario
-                // para poder reconstruir los paquetes
-            },
-            Err(e) => Err(e),
-        }
+pub fn new(config :ServerConfig) -> Server {
+    Server {
+        config,
+        sessions: HashMap::new(),
+        _connect_received: false,
     }
+}   
 
-    fn run_listener(&mut self, listener: &TcpListener) -> Result<ServerActions, Error> {
+impl Server {
+    
+    /*
+    pub fn server_run_listener(listener: &TcpListener) -> Result<TcpStream, Error> {
+        let mut stream_tcp = TcpStream::connect("127.0.0.1:0000");
+
+        // hardcode temporal
         // bloquea al servidor hasta recibir un paquete
-        for client_stream in listener.incoming() {
-            match client_stream {
-                Ok(mut stream) => match self.process_packet(&mut stream) {
-                    Ok(a) => {
-                        print!(" Conexion establecida: {} ", a)
-                    } // logger,
-                    Err(e) => return Err(e),
-                },
+        if let Some(client_stream) = listener.incoming().next() {
+            stream_tcp = match client_stream {
+                Ok(stream) => Ok(stream),
                 Err(e) => return Err(e),
             };
-        }
+            return stream_tcp;
+        };
 
-        Err(Error::new(
-            std::io::ErrorKind::Other,
-            "No se pudo recibir el paquete",
-        ))
+        stream_tcp
     }
-
-    // le devuelve el paquete al servidor
-    // el servidor lo pasa al logger
-    // el logger le pide traduccion al protocolo
+    */
 
     pub fn start_server(config: ServerConfig) -> Result<ServerActions, Error> {
         let mut server = Server {
@@ -129,6 +101,68 @@ impl Server {
             Err(e) => Err(e),
         }
     }
+
+    fn run_listener(&mut self, listener: &TcpListener) -> Result<ServerActions, Error> {
+        // bloquea al servidor hasta recibir un paquete
+        for client_stream in listener.incoming() {
+            match client_stream {
+                Ok(mut stream) => match self.process_packet(&mut stream) {
+                    Ok(a) => {
+                        print!(" Conexion establecida: {} ", a)
+                    } // logger,
+
+                    Err(e) => return Err(e),
+                },
+                Err(e) => return Err(e),
+            };
+        }
+
+        Err(Error::new(
+            std::io::ErrorKind::Other,
+            "No se pudo recibir el paquete",
+        ))
+    }
+
+    // usada por el servidor para recibir los paquetes
+    // del cliente
+    // el protocolo recibe el paquete, lo procesa y traduce el
+    // paquete a una accion que el servidor de la app comprenda.
+    pub fn process_packet(&mut self, mut stream: &mut TcpStream) -> Result<ServerActions, Error> {
+        // averiguo el tipo de paquete:
+        let fixed_header = match PacketFixedHeader::read_from(stream) {
+            Ok(header_type) => header_type,
+            Err(e) => return Err(e),
+        };
+
+        match get_server_packet(
+            stream,
+            fixed_header.get_package_type(),
+            fixed_header.remaining_length,
+        ) {
+            Ok(pack) => match pack {
+                ServerPacketRecived::ConnectPacket(pack) => {
+                    let connack_properties: ConnackProperties = self.handle_connection(*pack)?;
+                    let connack_packet: Connack = Connack::new(&connack_properties)?;
+
+                    match connack_packet.write_to(&mut stream) {
+                        Ok(_) => Ok(ServerActions::ConnectionEstablished),
+                        Err(e) => Err(e),
+                    }
+                }
+                _ => Ok(ServerActions::PackageError),
+                // el servidor de la app debera poder
+                // ejecutar el connack, para esto,
+                // tanto el enum del server MQTT, como el
+                // enum del protocolo, deben de tener lo necesario
+                // para poder reconstruir los paquetes
+            },
+            Err(e) => Err(e),
+        }
+    }
+
+    // le devuelve el paquete al servidor
+    // el servidor lo pasa al logger
+    // el logger le pide traduccion al protocolo
 
     fn create_will_message(
         &mut self,
@@ -278,6 +312,7 @@ impl Server {
 }
 
 //------------------------------------------------------------------
+/*
 pub enum HeaderType {
     ConnectType,
 }
@@ -322,10 +357,13 @@ pub fn server_run_listener(listener: &TcpListener) -> Result<TcpStream, Error> {
 
 // Dado un header devuelve el tipo de paquete, traducido para el protocolo
 pub fn get_package_type(fixed_header: &PacketFixedHeader) -> Option<HeaderType> {
+    /*/
     match fixed_header.get_package_type() {
-        PackageType::ConnectType => Some(HeaderType::ConnectType),
-        PackageType::Unknow => None,
+        PacketType::ConnectType => Some(HeaderType::ConnectType),
+        PacketType::Unknow => None,
     }
+    */
+    PacketType::Unknow
 }
 
 // refactorizacion para el protocolo
@@ -365,16 +403,5 @@ where
         Err(e) => Err(e),
     }
 }
-//------------------------------------------------------------------
-
-// Si no recibe ninguna conexión en cierta cantidad de tiempo debe cortar la conexión (timer!)
-/*
-for client_stream in listener.incoming() {
-    match client_stream {
-        Ok(mut stream) => {
-
-        }
-        Err(e) => return Err(e),
-    }
-}
 */
+//------------------------------------------------------------------

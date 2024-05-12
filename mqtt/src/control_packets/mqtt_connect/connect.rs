@@ -6,8 +6,8 @@ use crate::control_packets::mqtt_connect::payload::*;
 use crate::control_packets::mqtt_packet::fixed_header::*;
 
 // agregado para refactorizacion del server
-use crate::server::PackagedPackage;
-use crate::server::ReadFromHeader;
+//use crate::server::PackagedPackage;
+//use crate::server::ReadFromHeader;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 
 use super::connect_properties::ConnectProperties;
@@ -156,7 +156,7 @@ impl Serialization for Connect {
 // --------------------------------------------------------
 // tal vez deba moverse al server...
 // agregado para protocolo
-
+/*
 impl ReadFromHeader for Connect {
     // agregado para el protocolo, refactorizacion de MQTT para empaquetar
     // varios tipos
@@ -179,7 +179,7 @@ impl ReadFromHeader for Connect {
         PackagedPackage::ConnectPackage(package)
     }
 }
-
+*/
 // --------------------------------------------------------
 impl Connect {
     pub fn new(

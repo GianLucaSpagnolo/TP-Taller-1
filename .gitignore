@@ -15,3 +15,7 @@ Cargo.lock
 
 #IDES
 .vscode
+
+#log files
+*.tmp
+*.csv
