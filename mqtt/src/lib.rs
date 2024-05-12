@@ -33,7 +33,7 @@ mod control_packets {
 
     pub mod mqtt_puback {
         pub mod puback;
-        pub mod variable_header;
+        pub mod puback_properties;
     }
 
     pub mod mqtt_pingresp {
