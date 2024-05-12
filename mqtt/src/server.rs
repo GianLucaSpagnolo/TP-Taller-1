@@ -15,7 +15,7 @@ use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
 
 pub struct WillMessage {
     _will_topic: String,
-    _will_payload: u16,
+    _will_payload: String,
 }
 
 pub struct SessionState {
@@ -130,7 +130,7 @@ impl Server {
         &mut self,
         will_flag: u8,
         will_topic: Option<String>,
-        will_payload: Option<u16>,
+        will_payload: Option<String>,
     ) -> Option<WillMessage> {
         if will_flag == 1 {
             if let (Some(topic), Some(payload)) = (will_topic, will_payload) {

@@ -178,7 +178,7 @@ mod test {
             user_property: Some(("key".to_string(), "value".to_string())),
 
             will_topic: Some("topic".to_string()),
-            will_payload: Some(10),
+            will_payload: Some("payload".to_string()),
             username: Some("username".to_string()),
             password: Some("password".to_string()),
         };
@@ -314,7 +314,7 @@ mod test {
         }
 
         if let Some(value) = payload_props.will_payload {
-            assert_eq!(value, 10);
+            assert_eq!(value, "payload".to_string());
         } else {
             panic!("Invalid property");
         }

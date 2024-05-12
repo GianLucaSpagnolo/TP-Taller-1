@@ -18,7 +18,7 @@ pub struct ConnectPayload {
     pub user_property: Option<(String, String)>,
     // Campos opcionales
     pub will_topic: Option<String>,
-    pub will_payload: Option<u16>,
+    pub will_payload: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
 }
@@ -54,7 +54,7 @@ impl Clone for ConnectPayload {
             correlation_data: self.correlation_data.clone(),
             user_property: self.user_property.clone(),
             will_topic: self.will_topic.clone(),
-            will_payload: self.will_payload,
+            will_payload: self.will_payload.clone(),
             username: self.username.clone(),
             password: self.password.clone(),
         }
@@ -74,8 +74,8 @@ impl PacketProperties for ConnectPayload {
         if let Some(will_topic) = &self.will_topic {
             payload_fields += std::mem::size_of::<u16>() + will_topic.len();
         }
-        if self.will_payload.is_some() {
-            payload_fields += std::mem::size_of::<u16>();
+        if let Some(will_payload) = &self.will_payload {
+            payload_fields += std::mem::size_of::<u16>() + will_payload.len();
         }
         if let Some(username) = &self.username {
             payload_fields += std::mem::size_of::<u16>() + username.len();
@@ -140,8 +140,9 @@ impl PacketProperties for ConnectPayload {
             bytes.extend_from_slice(&(will_topic.len() as u16).to_be_bytes());
             bytes.extend_from_slice(will_topic.as_bytes());
         }
-        if let Some(will_payload) = self.will_payload {
-            bytes.extend_from_slice(&will_payload.to_be_bytes());
+        if let Some(will_payload) = self.will_payload.clone() {
+            bytes.extend_from_slice(&(will_payload.len() as u16).to_be_bytes());
+            bytes.extend_from_slice(will_payload.as_bytes());
         }
         if let Some(username) = self.username.clone() {
             bytes.extend_from_slice(&(username.len() as u16).to_be_bytes());
@@ -201,10 +202,11 @@ impl PacketProperties for ConnectPayload {
             will_topic = Some(read_utf8_encoded_string(stream, will_topic_len).unwrap());
         }
 
-        let will_payload = match read_two_byte_integer(stream) {
-            Ok(w_payload) => Some(w_payload),
-            Err(_) => None,
-        };
+        let mut will_payload = None;
+        let will_payload_len = read_two_byte_integer(stream).unwrap_or(0);
+        if will_payload_len > 0 {
+            will_payload = Some(read_utf8_encoded_string(stream, will_payload_len).unwrap());
+        }
 
         let mut username: Option<String> = None;
         let username_len = read_two_byte_integer(stream).unwrap_or(0);
