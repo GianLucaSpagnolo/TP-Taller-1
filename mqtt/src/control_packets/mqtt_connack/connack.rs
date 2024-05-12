@@ -129,9 +129,6 @@ mod test {
 
         let connack = Connack::new(properties);
 
-        let mut buffer = Vec::new();
-        connack.write_to(&mut buffer).unwrap();
-
         let mut buffer: Vec<u8> = Vec::new();
         connack.write_to(&mut buffer).unwrap();
 
