@@ -26,7 +26,7 @@ pub struct ConnectPayload {
 impl Default for ConnectPayload {
     fn default() -> Self {
         ConnectPayload {
-            client_id: "".to_string(),
+            client_id: String::new(),
             will_delay_interval: None,
             payload_format_indicator: None,
             message_expiry_interval: None,
