@@ -39,7 +39,7 @@ pub struct ThreadPool {
 
 impl ThreadPool {
     pub fn build(size: usize) -> Result<ThreadPool, Error> {
-        if size <= 0 {
+        if size == 0 {
             return Err(Error::new(
                 std::io::ErrorKind::Other,
                 "El tamaño del pool debe ser mayor a 0",

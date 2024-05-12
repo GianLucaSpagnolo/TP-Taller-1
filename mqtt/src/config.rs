@@ -265,7 +265,7 @@ pub struct ServerConfig {
 impl Clone for ServerConfig {
     fn clone(&self) -> Self {
         ServerConfig {
-            ip: self.ip.clone(),
+            ip: self.ip,
             port: self.port,
             maximum_threads: self.maximum_threads,
         }
