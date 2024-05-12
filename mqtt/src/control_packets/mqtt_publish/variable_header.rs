@@ -89,7 +89,7 @@ pub fn _new_publish_properties(
     )?;
     variable_props.add_utf8_string_property(CONTENT_TYPE, publish_props.content_type)?;
     variable_props.add_utf8_string_property(RESPONSE_TOPIC, publish_props.response_topic)?;
-    variable_props.add_u16_property(CORRELATION_DATA, publish_props.correlation_data)?;
+    variable_props.add_utf8_string_property(CORRELATION_DATA, publish_props.correlation_data)?;
     variable_props.add_u32_property(
         SUBSCRIPTION_IDENTIFIER,
         publish_props.subscription_identifier,
@@ -107,9 +107,8 @@ pub fn _new_publish_properties(
 #[cfg(test)]
 mod test {
     use crate::control_packets::mqtt_packet::packet_property::{
-        PacketProperty, CONTENT_TYPE, CORRELATION_DATA, MESSAGE_EXPIRY_INTERVAL,
-        PAYLOAD_FORMAT_INDICATOR, RESPONSE_TOPIC, SUBSCRIPTION_IDENTIFIER, TOPIC_ALIAS,
-        USER_PROPERTY,
+        PacketProperty, CONTENT_TYPE, MESSAGE_EXPIRY_INTERVAL, PAYLOAD_FORMAT_INDICATOR,
+        RESPONSE_TOPIC, SUBSCRIPTION_IDENTIFIER, TOPIC_ALIAS, USER_PROPERTY,
     };
 
     use super::*;
@@ -127,7 +126,7 @@ mod test {
                 message_expiry_interval: 1,
                 content_type: "type".to_string(),
                 response_topic: "response".to_string(),
-                correlation_data: 1,
+                correlation_data: "data".to_string(),
                 subscription_identifier: 1,
                 topic_alias: 1,
                 user_property_key: "key".to_string(),
@@ -191,16 +190,6 @@ mod test {
             panic!("Error");
         }
 
-        if let PacketProperty::CorrelationData(correlation_data) = &publish_varible_header
-            .properties
-            ._get_property(CORRELATION_DATA)
-            .unwrap()
-        {
-            assert_eq!(*correlation_data, 1);
-        } else {
-            panic!("Error");
-        }
-
         if let PacketProperty::SubscriptionIdentifier(subscription_identifier) =
             &publish_varible_header
                 .properties
@@ -247,7 +236,7 @@ mod test {
                 message_expiry_interval: 1,               // 1 + 4
                 content_type: "type".to_string(),         // 3 + 4
                 response_topic: "response".to_string(),   // 3 + 8
-                correlation_data: 1,                      // 1 + 2
+                correlation_data: "data".to_string(),     // 3 + 4
                 subscription_identifier: 1,               // 1 + 4
                 topic_alias: 1,                           // 1 + 2
                 user_property_key: "key".to_string(),     // 1 + 2 + 3
@@ -267,7 +256,8 @@ mod test {
             + "type".to_string().len()
             + 3
             + "response".to_string().len()
-            + 1
+            + 3
+            + "data".to_string().len()
             + 2
             + 1
             + 4

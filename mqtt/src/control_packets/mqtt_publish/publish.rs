@@ -80,7 +80,7 @@ pub struct _PublishProperties {
     pub message_expiry_interval: u32,
     pub topic_alias: u16,
     pub response_topic: String,
-    pub correlation_data: u16,
+    pub correlation_data: String,
     pub user_property_key: String,
     pub user_property_value: String,
     pub subscription_identifier: u32,
@@ -105,7 +105,6 @@ impl _Publish {
         let fixed_header = PacketFixedHeader::read_from(stream)?;
 
         let variable_header = _PublishVariableHeader::_read_from(stream)?;
-        println!("{:?}", variable_header);
 
         let payload = _PublishPayload::_read_from(stream)?;
 
@@ -156,9 +155,8 @@ mod test {
     use crate::control_packets::mqtt_packet::{
         fixed_header::_PUBLISH_PACKET,
         packet_property::{
-            PacketProperty, CONTENT_TYPE, CORRELATION_DATA, MESSAGE_EXPIRY_INTERVAL,
-            PAYLOAD_FORMAT_INDICATOR, RESPONSE_TOPIC, SUBSCRIPTION_IDENTIFIER, TOPIC_ALIAS,
-            USER_PROPERTY,
+            PacketProperty, CONTENT_TYPE, MESSAGE_EXPIRY_INTERVAL, PAYLOAD_FORMAT_INDICATOR,
+            RESPONSE_TOPIC, SUBSCRIPTION_IDENTIFIER, TOPIC_ALIAS, USER_PROPERTY,
         },
     };
 
@@ -177,7 +175,7 @@ mod test {
                 message_expiry_interval: 0,
                 topic_alias: 0,
                 response_topic: "response".to_string(),
-                correlation_data: 0,
+                correlation_data: "data".to_string(),
                 user_property_key: "key".to_string(),
                 user_property_value: "value".to_string(),
                 subscription_identifier: 0,
@@ -235,14 +233,6 @@ mod test {
 
         if let PacketProperty::ResponseTopic(value) = props._get_property(RESPONSE_TOPIC).unwrap() {
             assert_eq!(value, "response");
-        } else {
-            panic!("Error");
-        }
-
-        if let PacketProperty::CorrelationData(value) =
-            props._get_property(CORRELATION_DATA).unwrap()
-        {
-            assert_eq!(*value, 0);
         } else {
             panic!("Error");
         }

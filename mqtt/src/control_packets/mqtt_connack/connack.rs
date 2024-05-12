@@ -116,7 +116,7 @@ mod test {
             assigned_client_identifier: Some("client".to_string()),
             server_keep_alive: Some(0),
             authentication_method: Some("auth".to_string()),
-            authentication_data: Some(0),
+            authentication_data: Some("auth_data".to_string()),
             response_information: Some("response".to_string()),
             server_reference: Some("server".to_string()),
             reason_string: Some("reason".to_string()),
@@ -177,7 +177,7 @@ mod test {
         }
 
         if let Some(value) = props.authentication_data {
-            assert_eq!(value, 0);
+            assert_eq!(value, "auth_data");
         } else {
             panic!("Invalid Authentication Data");
         }

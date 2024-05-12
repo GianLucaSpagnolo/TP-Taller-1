@@ -14,7 +14,7 @@ pub struct ConnectPayload {
     pub message_expiry_interval: Option<u32>,
     pub content_type: Option<String>,
     pub response_topic: Option<String>,
-    pub correlation_data: Option<u16>,
+    pub correlation_data: Option<String>,
     pub user_property: Option<(String, String)>,
     // Campos opcionales
     pub will_topic: Option<String>,
@@ -51,7 +51,7 @@ impl Clone for ConnectPayload {
             message_expiry_interval: self.message_expiry_interval,
             content_type: self.content_type.clone(),
             response_topic: self.response_topic.clone(),
-            correlation_data: self.correlation_data,
+            correlation_data: self.correlation_data.clone(),
             user_property: self.user_property.clone(),
             will_topic: self.will_topic.clone(),
             will_payload: self.will_payload,
@@ -110,8 +110,9 @@ impl PacketProperties for ConnectPayload {
             payload_props.add_utf8_string_property(RESPONSE_TOPIC, response_topic.to_string())?;
         }
 
-        if let Some(correlation_data) = self.correlation_data {
-            payload_props.add_u16_property(CORRELATION_DATA, correlation_data)?;
+        if let Some(correlation_data) = &self.correlation_data {
+            payload_props
+                .add_utf8_string_property(CORRELATION_DATA, correlation_data.to_string())?;
         }
 
         if let Some(user_property) = self.user_property.clone() {
@@ -156,7 +157,6 @@ impl PacketProperties for ConnectPayload {
 
     fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let client_id_len = read_two_byte_integer(stream)?;
-        println!("client_id_len: {}", client_id_len);
         let client_id = read_utf8_encoded_string(stream, client_id_len)?;
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
 
@@ -186,7 +186,7 @@ impl PacketProperties for ConnectPayload {
                     response_topic = property.value_string();
                 }
                 CORRELATION_DATA => {
-                    correlation_data = property.value_u16();
+                    correlation_data = property.value_string();
                 }
                 USER_PROPERTY => {
                     user_property = property.value_string_pair();

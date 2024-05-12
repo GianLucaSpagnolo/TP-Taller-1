@@ -16,7 +16,7 @@ pub struct ConnackProperties {
     pub assigned_client_identifier: Option<String>,
     pub server_keep_alive: Option<u16>,
     pub authentication_method: Option<String>,
-    pub authentication_data: Option<u16>,
+    pub authentication_data: Option<String>,
     pub response_information: Option<String>,
     pub server_reference: Option<String>,
     pub reason_string: Option<String>,
@@ -40,7 +40,7 @@ impl Clone for ConnackProperties {
             assigned_client_identifier: self.assigned_client_identifier.clone(),
             server_keep_alive: self.server_keep_alive,
             authentication_method: self.authentication_method.clone(),
-            authentication_data: self.authentication_data,
+            authentication_data: self.authentication_data.clone(),
             response_information: self.response_information.clone(),
             server_reference: self.server_reference.clone(),
             reason_string: self.reason_string.clone(),
@@ -85,8 +85,8 @@ impl PacketProperties for ConnackProperties {
         if let Some(value) = self.authentication_method.clone() {
             variable_props.add_utf8_string_property(AUTHENTICATION_METHOD, value)?;
         }
-        if let Some(value) = self.authentication_data {
-            variable_props.add_u16_property(AUTHENTICATION_DATA, value)?;
+        if let Some(value) = self.authentication_data.clone() {
+            variable_props.add_utf8_string_property(AUTHENTICATION_DATA, value)?;
         }
         if let Some(value) = self.response_information.clone() {
             variable_props.add_utf8_string_property(RESPONSE_INFORMATION, value)?;
@@ -183,7 +183,7 @@ impl PacketProperties for ConnackProperties {
                     authentication_method = property.value_string();
                 }
                 AUTHENTICATION_DATA => {
-                    authentication_data = property.value_u16();
+                    authentication_data = property.value_string();
                 }
                 RESPONSE_INFORMATION => {
                     response_information = property.value_string();

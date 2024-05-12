@@ -65,7 +65,7 @@ use super::payload::ConnectPayload;
 /// PROPERTIES: Connect
 /// 17 - 0x11 - Session Expiry Interval - Four Byte Integer
 /// 21 - 0x15 - Authentication Method - UTF-8 Encoded String
-/// 22 - 0x16 - Authentication Data - Binary Data
+/// 22 - 0x16 - Authentication Data - Binary Data (String)
 /// 23 - 0x17 - Request Problem Information - Byte
 /// 25 - 0x19 - Request Response Information - Byte
 /// 33 - 0x21 - Receive Maximum - Two Byte Integer
@@ -158,7 +158,7 @@ mod test {
             keep_alive: 10,
             session_expiry_interval: Some(0),
             authentication_method: Some("test".to_string()),
-            authentication_data: Some(0),
+            authentication_data: Some("auth".to_string()),
             request_problem_information: Some(0),
             request_response_information: Some(0),
             receive_maximum: Some(0),
@@ -174,7 +174,7 @@ mod test {
             message_expiry_interval: Some(20),
             content_type: Some("content".to_string()),
             response_topic: Some("response".to_string()),
-            correlation_data: Some(0),
+            correlation_data: Some("correlation".to_string()),
             user_property: Some(("key".to_string(), "value".to_string())),
 
             will_topic: Some("topic".to_string()),
@@ -217,7 +217,7 @@ mod test {
         }
 
         if let Some(value) = props.authentication_data {
-            assert_eq!(value, 0);
+            assert_eq!(value, "auth".to_string());
         } else {
             panic!("Invalid property");
         }
@@ -295,7 +295,7 @@ mod test {
         }
 
         if let Some(value) = payload_props.correlation_data {
-            assert_eq!(value, 0);
+            assert_eq!(value, "correlation".to_string());
         } else {
             panic!("Invalid property");
         }
