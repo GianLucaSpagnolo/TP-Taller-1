@@ -259,7 +259,7 @@ impl Config for ClientConfig {
 pub struct ServerConfig {
     pub ip: IpAddr,
     pub port: u16,
-    pub maximum_threads: u16,
+    pub maximum_threads: usize,
 }
 
 impl Clone for ServerConfig {
@@ -284,8 +284,6 @@ impl Config for ServerConfig {
         let mut port = None;
         let mut maximum_threads = None;
 
-        //chequear que tipo de parametros se le pasan
-
         for param in params.iter() {
             match param.0.as_str() {
                 "ip" => ip = match param.1.parse::<IpAddr>() {
@@ -293,7 +291,7 @@ impl Config for ServerConfig {
                     Err(_) => {
                         return Err(Error::new(
                             std::io::ErrorKind::InvalidData,
-                            "Invalid parameter",
+                            "Invalid ip parameter",
                         ))
                     }
                 },
@@ -303,19 +301,19 @@ impl Config for ServerConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid port parameter",
                             ))
                         }
                     }
                 }
 
-                "threads_max" => {
-                    maximum_threads = match param.1.parse::<u16>() {
+                "maximum_threads" => {
+                    maximum_threads = match param.1.parse::<usize>() {
                         Ok(p) => Some(p),
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid maximum threads parameter",
                             ))
                         }
                     };
@@ -337,7 +335,7 @@ impl Config for ServerConfig {
         }
         Err(Error::new(
             std::io::ErrorKind::InvalidData,
-            "Invalid parameter",
+            "Config fields are missing",
         ))
     }
 

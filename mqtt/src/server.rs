@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::io::Error;
-use std::net::{TcpStream, SocketAddr};
+use std::net::TcpStream;
 
-use crate::config::{Config, ServerConfig};
+use crate::config::ServerConfig;
 use crate::control_packets::mqtt_connack::connack::*;
 use crate::control_packets::mqtt_connect::connect::*;
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
@@ -60,7 +60,7 @@ impl fmt::Display for ServerActions {
 }
 
 pub struct Server {
-    config: ServerConfig,
+    pub config: ServerConfig,
     sessions: HashMap<String, SessionState>,
     _connect_received: bool,
 }
@@ -82,10 +82,6 @@ impl Server {
             sessions: HashMap::new(),
             _connect_received: false,
         }
-    }
-
-    pub fn get_address(&self) -> SocketAddr {
-        self.config.get_socket_address()
     }
 
     // usada por el servidor para recibir los paquetes

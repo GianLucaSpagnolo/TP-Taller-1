@@ -91,8 +91,7 @@ fn handle_client(
 }
 
 fn run_listener(server: Server, listener: &TcpListener) -> Result<ServerActions, Error> {
-    let maximum_clients = 4; //server.config
-    let pool = ThreadPool::build(maximum_clients)?;
+    let pool = ThreadPool::build(server.config.maximum_threads)?;
 
     let server_ref = Arc::new(Mutex::new(server));
 
@@ -114,7 +113,7 @@ fn run_listener(server: Server, listener: &TcpListener) -> Result<ServerActions,
 pub fn start_server(config: ServerConfig) -> Result<ServerActions, Error> {
     let server = Server::new(config);
 
-    let listener = match TcpListener::bind(server.get_address()) {
+    let listener = match TcpListener::bind(server.config.get_socket_address()) {
         Ok(l) => l,
         Err(e) => return Err(e),
     };
