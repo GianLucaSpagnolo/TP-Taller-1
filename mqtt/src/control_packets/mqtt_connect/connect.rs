@@ -87,7 +87,7 @@ use super::payload::ConnectPayload;
 ///  - 2(0x02) - Message Expiry Interval
 ///  - 3(0x03) - Content Type
 ///  - 8(0x08) - Response Topic
-///  - 9(0x09) - Correlation Data
+///  - 9(0x09) - Correlation Data (String)
 ///  - 38(0x26) - User Property
 /// Will Topic (Connect Flag - Will Flag = 1)
 /// Will Payload (Connect Flag - Will Flag = 1)

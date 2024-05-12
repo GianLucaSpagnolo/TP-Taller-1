@@ -47,7 +47,7 @@ use crate::control_packets::mqtt_publish::variable_header::*;
 /// 2 - 0x02 - Message Expiry Interval - 4 bytes
 /// 35 - 0x23 - Topic Alias - 2 bytes
 /// 8 - 0x08 - Response Topic - UTF-8 encoded string
-/// 9 - 0x09 - Correlation Data - Binary Data
+/// 9 - 0x09 - Correlation Data - Binary Data (String)
 /// 38 - 0x26 - User Property - UTF-8 String Pair
 /// 11 - 0x0B - Subscription Identifier - Variable Byte Integer (valor entre 1 y 268,435,455)
 /// 3 - 0x03 - Content Type - UTF-8 Encoded String
