@@ -5,6 +5,7 @@ use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, _PUBA
 use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
 use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
+
 /// PUBACK Packet – Publish acknowledgment
 /// The PUBACK packet is the response to a PUBLISH packet with QoS level 1. A PUBACK packet is sent by the server to the client to confirm receipt and processing of a PUBLISH packet.
 ///
@@ -71,8 +72,12 @@ pub struct _Puback {
 }
 
 impl Serialization for _Puback {
-    fn read_from(stream: &mut dyn Read, _remaining_length: u16) -> Result<Self, std::io::Error> {
-        let properties = _PubackProperties::read_from(stream)?;
+    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Self, std::io::Error> {
+        let mut aux_buffer = vec![0; remaining_length as usize];
+        stream.read_exact(&mut aux_buffer)?;
+        let mut buffer = aux_buffer.as_slice();
+
+        let properties = _PubackProperties::read_from(&mut buffer)?;
 
         Ok(_Puback { properties })
     }
@@ -114,9 +119,11 @@ mod test {
         };
         let puback = _Puback::_new(properties);
 
+        // ESCRIBE EL PACKET EN EL BUFFER
         let mut buf = Vec::new();
         puback.write_to(&mut buf).unwrap();
 
+        // LEE EL PACKET DEL BUFFER
         let mut buf = buf.as_slice();
         let puback_fixed_header = PacketFixedHeader::read_from(&mut buf).unwrap();
 
@@ -141,5 +148,34 @@ mod test {
         } else {
             panic!("Invalid User Property");
         }
+    }
+
+    #[test]
+    fn test_puback_no_properties() {
+        let properties = _PubackProperties {
+            packet_id: 2,
+            puback_reason_code: 0,
+            reason_string: None,
+            user_property: None,
+        };
+        let puback = _Puback::_new(properties);
+
+        // ESCRIBE EL PACKET EN EL BUFFER
+        let mut buf = Vec::new();
+        puback.write_to(&mut buf).unwrap();
+
+        // LEE EL PACKET DEL BUFFER
+        let mut buf = buf.as_slice();
+        let puback_fixed_header = PacketFixedHeader::read_from(&mut buf).unwrap();
+
+        let puback = _Puback::read_from(&mut buf, puback_fixed_header.remaining_length).unwrap();
+
+        assert_eq!(puback_fixed_header.get_packet_type(), _PUBACK_PACKET);
+        assert_eq!(puback.properties.packet_id, 2);
+        assert_eq!(puback.properties.puback_reason_code, 0);
+        assert_eq!(puback.properties.variable_props_size(), 0);
+
+        assert_eq!(puback.properties.reason_string, None);
+        assert_eq!(puback.properties.user_property, None);
     }
 }

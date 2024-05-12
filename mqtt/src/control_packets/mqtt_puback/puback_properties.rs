@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub struct _PubackProperties {
-    pub packet_id: u16, // Nombre de los bits: User Name Flag, Password Flag, Will Retain, Will QoS (2 bytes), Will Flag, Clean Start, Reserved
+    pub packet_id: u16,
     pub puback_reason_code: u8,
     pub reason_string: Option<String>,
     pub user_property: Option<(String, String)>,
@@ -35,8 +35,8 @@ impl PacketProperties for _PubackProperties {
 
     fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
-        let fixed_props_size =
-            std::mem::size_of::<u16>() + std::mem::size_of::<u16>() + std::mem::size_of::<u8>();
+        let fixed_props_size = std::mem::size_of::<u16>() + std::mem::size_of::<u8>();
+
         fixed_props_size as u16 + variable_props.bytes_length
     }
 
