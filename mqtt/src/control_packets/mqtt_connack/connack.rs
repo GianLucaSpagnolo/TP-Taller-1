@@ -133,9 +133,6 @@ mod test {
 
         let connack = Connack::new(properties);
 
-        let mut buffer = Vec::new();
-        connack.write_to(&mut buffer).unwrap();
-
         let mut buffer: Vec<u8> = Vec::new();
         connack.write_to(&mut buffer).unwrap();
 
@@ -145,7 +142,7 @@ mod test {
         let connack =
             Connack::read_from(&mut buffer, connack_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(connack_fixed_header.packet_type, CONNACK_PACKET);
+        assert_eq!(connack_fixed_header.get_packet_type(), CONNACK_PACKET);
         assert_eq!(connack.properties.connect_acknowledge_flags, 0);
         assert_eq!(connack.properties.connect_reason_code, 0);
         assert_eq!(connack.properties.variable_props_size(), 17);

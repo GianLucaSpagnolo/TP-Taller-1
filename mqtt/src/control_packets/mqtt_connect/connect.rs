@@ -148,13 +148,14 @@ impl Connect {
 mod test {
     use super::*;
     use crate::control_packets::mqtt_connect::connect_properties::ConnectProperties;
+    use crate::control_packets::mqtt_packet::flags::flags_handler;
 
     #[test]
     fn test_connect() {
         let properties = ConnectProperties {
             protocol_name: "MQTT".to_string(),
             protocol_version: 5,
-            connect_flags: 0b11000000,
+            connect_flags: 0xD6,
             keep_alive: 10,
             session_expiry_interval: Some(0),
             authentication_method: Some("test".to_string()),
@@ -195,10 +196,39 @@ mod test {
         let connect =
             Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
+        assert_eq!(connect_fixed_header.get_packet_type(), CONNECT_PACKET);
         assert_eq!(connect.properties.protocol_name, "MQTT".to_string());
         assert_eq!(connect.properties.protocol_version, 5);
-        assert_eq!(connect.properties.connect_flags, 0b11000000);
+
+        assert_eq!(
+            flags_handler::_get_connect_flag_username(connect.properties.connect_flags),
+            1
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_password(connect.properties.connect_flags),
+            1
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_will_retain(connect.properties.connect_flags),
+            0
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_will_qos(connect.properties.connect_flags),
+            2
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_will_flag(connect.properties.connect_flags),
+            1
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_clean_start(connect.properties.connect_flags),
+            1
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_reserved(connect.properties.connect_flags),
+            0
+        );
+
         assert_eq!(connect.properties.keep_alive, 10);
         assert_eq!(connect.properties.variable_props_size(), 9);
 
@@ -337,7 +367,7 @@ mod test {
         let properties = ConnectProperties {
             protocol_name: String::from("MQTT"),
             protocol_version: 5,
-            connect_flags: 0b11000000,
+            connect_flags: 0x10,
             keep_alive: 10,
             session_expiry_interval: None,
             authentication_method: None,
@@ -378,10 +408,39 @@ mod test {
         let new_connect =
             Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
+        assert_eq!(connect_fixed_header.get_packet_type(), CONNECT_PACKET);
         assert_eq!(new_connect.properties.protocol_name, "MQTT".to_string());
         assert_eq!(new_connect.properties.protocol_version, 5);
-        assert_eq!(new_connect.properties.connect_flags, 0b11000000);
+
+        assert_eq!(
+            flags_handler::_get_connect_flag_username(connect.properties.connect_flags),
+            0
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_password(connect.properties.connect_flags),
+            0
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_will_retain(connect.properties.connect_flags),
+            0
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_will_qos(connect.properties.connect_flags),
+            2
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_will_flag(connect.properties.connect_flags),
+            0
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_clean_start(connect.properties.connect_flags),
+            0
+        );
+        assert_eq!(
+            flags_handler::_get_connect_flag_reserved(connect.properties.connect_flags),
+            0
+        );
+
         assert_eq!(new_connect.properties.keep_alive, 10);
         assert_eq!(new_connect.properties.variable_props_size(), 0);
 

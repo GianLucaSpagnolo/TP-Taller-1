@@ -26,14 +26,13 @@ mod control_packets {
     }
 
     pub mod mqtt_publish {
-        pub mod payload;
         pub mod publish;
-        pub mod variable_header;
+        pub mod publish_properties;
     }
 
     pub mod mqtt_puback {
         pub mod puback;
-        pub mod variable_header;
+        pub mod puback_properties;
     }
 
     pub mod mqtt_pingreq {

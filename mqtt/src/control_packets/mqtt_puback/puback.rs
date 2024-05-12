@@ -1,8 +1,10 @@
 use std::io::{Error, Read, Write};
 
+use super::puback_properties::_PubackProperties;
 use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, _PUBACK_PACKET};
-
-use super::variable_header::_PubackVariableHeader;
+use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
+use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
+use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 
 /// PUBACK Packet – Publish acknowledgment
 /// The PUBACK packet is the response to a PUBLISH packet with QoS level 1. A PUBACK packet is sent by the server to the client to confirm receipt and processing of a PUBLISH packet.
@@ -66,99 +68,114 @@ use super::variable_header::_PubackVariableHeader;
 /// The Payload of the PUBACK packet is empty.
 
 pub struct _Puback {
-    pub fixed_header: PacketFixedHeader,
-    pub variable_header: _PubackVariableHeader,
+    pub properties: _PubackProperties,
 }
 
-pub struct _PubackProperties {
-    pub reason_string: String,
-    pub user_property: (String, String),
-}
+impl Serialization for _Puback {
+    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Self, std::io::Error> {
+        let mut aux_buffer = vec![0; remaining_length as usize];
+        stream.read_exact(&mut aux_buffer)?;
+        let mut buffer = aux_buffer.as_slice();
 
-impl _Puback {
-    pub fn _write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header = self.fixed_header.as_bytes();
-        stream.write_all(&fixed_header)?;
+        let properties = _PubackProperties::read_from(&mut buffer)?;
 
-        let variable_header = self.variable_header._as_bytes();
-        stream.write_all(&variable_header)?;
+        Ok(_Puback { properties })
+    }
+
+    fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
+        let properties_bytes = self.properties.as_bytes()?;
+        let remaining_length = self.properties.size_of();
+        let fixed_header = PacketFixedHeader::new(_PUBACK_PACKET, remaining_length);
+        let fixed_header_bytes = fixed_header.as_bytes();
+
+        stream.write_all(&fixed_header_bytes)?;
+        stream.write_all(&properties_bytes)?;
 
         Ok(())
     }
 
-    pub fn _read_from(stream: &mut dyn Read) -> Result<Self, std::io::Error> {
-        let fixed_header = PacketFixedHeader::read_from(stream)?;
-
-        let variable_header = _PubackVariableHeader::_read_from(stream)?;
-
-        let connect = _Puback {
-            fixed_header,
-            variable_header,
-        };
-        Ok(connect)
+    fn packed_package(package: _Puback) -> PacketReceived {
+        PacketReceived::Puback(Box::new(package))
     }
+}
 
-    pub fn _new(
-        packet_id: u16,
-        puback_reason_code: u8,
-        puback_properties: _PubackProperties,
-    ) -> Result<Self, Error> {
-        let variable_header =
-            _PubackVariableHeader::_new(packet_id, puback_reason_code, puback_properties)?;
-
-        let remaining_length = variable_header._length();
-        let fixed_header = PacketFixedHeader::new(_PUBACK_PACKET, remaining_length);
-
-        Ok(_Puback {
-            fixed_header,
-            variable_header,
-        })
+impl _Puback {
+    pub fn _new(properties: _PubackProperties) -> Self {
+        _Puback { properties }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::packet_property::{
-        PacketProperty, REASON_STRING, USER_PROPERTY,
-    };
-
     use super::*;
 
     #[test]
     fn test_puback() {
-        let puback = _Puback::_new(
-            1,
-            0,
-            _PubackProperties {
-                reason_string: "reason".to_string(),
-                user_property: ("name".to_string(), "value".to_string()),
-            },
-        )
-        .unwrap();
+        let properties = _PubackProperties {
+            packet_id: 1,
+            puback_reason_code: 0,
+            reason_string: Some("reason".to_string()),
+            user_property: Some(("name".to_string(), "value".to_string())),
+        };
+        let puback = _Puback::_new(properties);
 
+        // ESCRIBE EL PACKET EN EL BUFFER
         let mut buf = Vec::new();
-        puback._write_to(&mut buf).unwrap();
+        puback.write_to(&mut buf).unwrap();
 
-        let mut buf = std::io::Cursor::new(buf);
-        let puback = _Puback::_read_from(&mut buf).unwrap();
+        // LEE EL PACKET DEL BUFFER
+        let mut buf = buf.as_slice();
+        let puback_fixed_header = PacketFixedHeader::read_from(&mut buf).unwrap();
 
-        assert_eq!(puback.fixed_header.packet_type, _PUBACK_PACKET);
-        assert_eq!(puback.variable_header.packet_id, 1);
-        assert_eq!(puback.variable_header.puback_reason_code, 0);
+        let puback = _Puback::read_from(&mut buf, puback_fixed_header.remaining_length).unwrap();
 
-        let props = &puback.variable_header.properties;
+        assert_eq!(puback_fixed_header.get_packet_type(), _PUBACK_PACKET);
+        assert_eq!(puback.properties.packet_id, 1);
+        assert_eq!(puback.properties.puback_reason_code, 0);
+        assert_eq!(puback.properties.variable_props_size(), 2);
 
-        if let PacketProperty::UserProperty(value) = props._get_property(USER_PROPERTY).unwrap() {
+        let props = puback.properties;
+
+        if let Some(value) = props.reason_string {
+            assert_eq!(value, "reason");
+        } else {
+            panic!("Invalid Reason String");
+        }
+
+        if let Some(value) = props.user_property {
             assert_eq!(value.0, "name");
             assert_eq!(value.1, "value");
         } else {
-            panic!("Error");
+            panic!("Invalid User Property");
         }
+    }
 
-        if let PacketProperty::ReasonString(value) = props._get_property(REASON_STRING).unwrap() {
-            assert_eq!(value, "reason");
-        } else {
-            panic!("Error");
-        }
+    #[test]
+    fn test_puback_no_properties() {
+        let properties = _PubackProperties {
+            packet_id: 2,
+            puback_reason_code: 0,
+            reason_string: None,
+            user_property: None,
+        };
+        let puback = _Puback::_new(properties);
+
+        // ESCRIBE EL PACKET EN EL BUFFER
+        let mut buf = Vec::new();
+        puback.write_to(&mut buf).unwrap();
+
+        // LEE EL PACKET DEL BUFFER
+        let mut buf = buf.as_slice();
+        let puback_fixed_header = PacketFixedHeader::read_from(&mut buf).unwrap();
+
+        let puback = _Puback::read_from(&mut buf, puback_fixed_header.remaining_length).unwrap();
+
+        assert_eq!(puback_fixed_header.get_packet_type(), _PUBACK_PACKET);
+        assert_eq!(puback.properties.packet_id, 2);
+        assert_eq!(puback.properties.puback_reason_code, 0);
+        assert_eq!(puback.properties.variable_props_size(), 0);
+
+        assert_eq!(puback.properties.reason_string, None);
+        assert_eq!(puback.properties.user_property, None);
     }
 }

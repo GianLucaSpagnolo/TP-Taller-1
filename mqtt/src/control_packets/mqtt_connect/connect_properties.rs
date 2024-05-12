@@ -9,7 +9,7 @@ use crate::control_packets::mqtt_packet::variable_header_properties::VariableHea
 pub struct ConnectProperties {
     pub protocol_name: String,
     pub protocol_version: u8,
-    pub connect_flags: u8,
+    pub connect_flags: u8, // Nombre de los bits: User Name Flag, Password Flag, Will Retain, Will QoS (2 bytes), Will Flag, Clean Start, Reserved
     pub keep_alive: u16,
     pub session_expiry_interval: Option<u32>,
     pub authentication_method: Option<String>,

@@ -6,44 +6,59 @@ pub mod flags_handler {
         (flags >> shifts) & mask
     }
 
-    /// FLAG: RESERVED
+    /// CONNECT FLAG: RESERVED
     pub fn _get_connect_flag_reserved(flags: u8) -> u8 {
         _apply_mask_to_n_bits(flags, 0, 1)
     }
 
-    /// FLAG: CLEAN START
+    /// CONNECT FLAG: CLEAN START
     pub fn _get_connect_flag_clean_start(flags: u8) -> u8 {
         _apply_mask_to_n_bits(flags, 1, 1)
     }
 
-    /// FLAG: WILL FLAG
+    /// CONNECT FLAG: WILL FLAG
     pub fn _get_connect_flag_will_flag(flags: u8) -> u8 {
         _apply_mask_to_n_bits(flags, 2, 1)
     }
 
-    /// FLAG: WILL QoS
+    /// CONNECT FLAG: WILL QoS
     pub fn _get_connect_flag_will_qos(flags: u8) -> u8 {
         _apply_mask_to_n_bits(flags, 3, 2)
     }
 
-    /// FLAG: WILL RETAIN
+    /// CONNECT FLAG: WILL RETAIN
     pub fn _get_connect_flag_will_retain(flags: u8) -> u8 {
         _apply_mask_to_n_bits(flags, 5, 1)
     }
 
-    /// FLAG: PASSWORD
+    /// CONNECT FLAG: PASSWORD
     pub fn _get_connect_flag_password(flags: u8) -> u8 {
         _apply_mask_to_n_bits(flags, 6, 1)
     }
 
-    /// FLAG: USERNAME
+    /// CONNECT FLAG: USERNAME
     pub fn _get_connect_flag_username(flags: u8) -> u8 {
         _apply_mask_to_n_bits(flags, 7, 1)
     }
 
-    /// FLAG: SESSION PRESENT
+    /// CONNECT FLAG: SESSION PRESENT
     /// This flag is used in the CONNACK packet to indicate if a session is already present
     pub fn _get_connect_acknowledge_flag_session_present(flags: u8) -> u8 {
+        _apply_mask_to_n_bits(flags, 0, 1)
+    }
+
+    /// PUBLISH FLAG: DUP
+    pub fn _get_publish_dup_flag(flags: u8) -> u8 {
+        _apply_mask_to_n_bits(flags, 3, 1)
+    }
+
+    /// PUBLISH FLAG: QoS
+    pub fn _get_publish_qos_level(flags: u8) -> u8 {
+        _apply_mask_to_n_bits(flags, 1, 2)
+    }
+
+    /// PUBLISH FLAG: RETAIN
+    pub fn _get_publish_retain(flags: u8) -> u8 {
         _apply_mask_to_n_bits(flags, 0, 1)
     }
 
