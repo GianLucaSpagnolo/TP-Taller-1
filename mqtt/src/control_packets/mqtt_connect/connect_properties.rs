@@ -25,8 +25,8 @@ pub struct ConnectProperties {
 impl Default for ConnectProperties {
     fn default() -> Self {
         ConnectProperties {
-            protocol_name: "MQTT".to_string(),
-            protocol_version: 5,
+            protocol_name: String::new(),
+            protocol_version: 0,
             connect_flags: 0,
             keep_alive: 0,
             session_expiry_interval: None,
