@@ -3,7 +3,6 @@ use std::{fs::File, io::Error};
 use crate::{
     common::utils::*,
     control_packets::{
-        mqtt_connack::connack::ConnackProperties,
         mqtt_connect::{connect_properties::ConnectProperties, payload::ConnectPayload},
         mqtt_packet::flags::flags_handler::*,
     },
@@ -233,7 +232,15 @@ impl ClientConfig {
 pub struct ServerConfig {
     pub port: u16,
     pub ip: String,
-    pub connack_properties: ConnackProperties,
+}
+
+impl Clone for ServerConfig {
+    fn clone(&self) -> Self {
+        ServerConfig {
+            port: self.port,
+            ip: self.ip.clone(),
+        }
+    }
 }
 
 impl ServerConfig {
@@ -248,29 +255,6 @@ impl ServerConfig {
         let mut ip = String::new();
 
         //chequear que tipo de parametros se le pasan
-
-        let connack_properties = ConnackProperties {
-            connect_acknowledge_flags: 0,
-            connect_reason_code: 0,
-            session_expiry_interval: None,
-            assigned_client_identifier: Some(String::new()),
-            server_keep_alive: None,
-            authentication_method: Some(String::new()),
-            authentication_data: None,
-            response_information: Some(String::new()),
-            server_reference: Some(String::new()),
-            reason_string: Some(String::new()),
-            receive_maximum: None,
-            topic_alias_maximum: None,
-            maximum_qos: None,
-            retain_available: None,
-            wildcard_subscription_available: None,
-            subscription_identifiers_available: None,
-            shared_subscription_available: None,
-            user_property_key: Some(String::new()),
-            user_property_value: Some(String::new()),
-            maximum_packet_size: None,
-        };
 
         for param in params.iter() {
             match param.0.as_str() {
@@ -296,11 +280,7 @@ impl ServerConfig {
             }
         }
 
-        Ok(ServerConfig {
-            port,
-            ip,
-            connack_properties,
-        })
+        Ok(ServerConfig { port, ip })
     }
 
     pub fn from_file(file_path: String) -> Result<Self, Error> {

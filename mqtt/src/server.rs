@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::io::Error;
-use std::net::TcpListener;
 use std::net::TcpStream;
 
 use crate::config::ServerConfig;
@@ -17,11 +16,31 @@ pub struct WillMessage {
     _will_payload: u16,
 }
 
+impl Clone for WillMessage {
+    fn clone(&self) -> Self {
+        WillMessage {
+            _will_topic: self._will_topic.clone(),
+            _will_payload: self._will_payload,
+        }
+    }
+}
+
 pub struct SessionState {
     state: bool,
     _session_expiry_interval: u32,
     _subscriptions: Vec<String>,
     _will_message: Option<WillMessage>,
+}
+
+impl Clone for SessionState {
+    fn clone(&self) -> Self {
+        SessionState {
+            state: self.state,
+            _session_expiry_interval: self._session_expiry_interval,
+            _subscriptions: self._subscriptions.clone(),
+            _will_message: self._will_message.clone(),
+        }
+    }
 }
 
 pub enum ServerActions {
@@ -46,20 +65,42 @@ pub struct Server {
     _connect_received: bool,
 }
 
+impl Clone for Server {
+    fn clone(&self) -> Self {
+        Server {
+            config: self.config.clone(),
+            sessions: self.sessions.clone(),
+            _connect_received: self._connect_received,
+        }
+    }
+}
+
 impl Server {
+    pub fn new(config: ServerConfig) -> Self {
+        Server {
+            config,
+            sessions: HashMap::new(),
+            _connect_received: false,
+        }
+    }
+
+    pub fn get_address(&self) -> String {
+        self.config.get_address()
+    }
+
     // usada por el servidor para recibir los paquetes
     // del cliente
     // el protocolo recibe el paquete, lo procesa y traduce el
     // paquete a una accion que el servidor de la app comprenda.
-    fn process_packet(&mut self, mut stream: &mut TcpStream) -> Result<ServerActions, Error> {
+    pub fn process_packet(&mut self, mut stream: TcpStream) -> Result<ServerActions, Error> {
         // averiguo el tipo de paquete:
-        let fixed_header = match PacketFixedHeader::read_from(stream) {
+        let fixed_header = match PacketFixedHeader::read_from(&mut stream) {
             Ok(header_type) => header_type,
             Err(e) => return Err(e),
         };
 
         match get_packet(
-            stream,
+            &mut stream,
             fixed_header.get_package_type(),
             fixed_header.remaining_length,
         ) {
@@ -72,55 +113,16 @@ impl Server {
                         Err(e) => Err(e),
                     }
                 }
-                _ => Ok(ServerActions::PackageError),
+                _ => Err(Error::new(
+                    std::io::ErrorKind::Other,
+                    "Server - Paquete desconocido",
+                )),
                 // el servidor de la app debera poder
                 // ejecutar el connack, para esto,
                 // tanto el enum del server MQTT, como el
                 // enum del protocolo, deben de tener lo necesario
                 // para poder reconstruir los paquetes
             },
-            Err(e) => Err(e),
-        }
-    }
-
-    fn run_listener(&mut self, listener: &TcpListener) -> Result<ServerActions, Error> {
-        // bloquea al servidor hasta recibir un paquete
-        for client_stream in listener.incoming() {
-            match client_stream {
-                Ok(mut stream) => match self.process_packet(&mut stream) {
-                    Ok(a) => {
-                        print!(" Conexion establecida: {} ", a)
-                    } // logger,
-                    Err(e) => return Err(e),
-                },
-                Err(e) => return Err(e),
-            };
-        }
-
-        Err(Error::new(
-            std::io::ErrorKind::Other,
-            "No se pudo recibir el paquete",
-        ))
-    }
-
-    // le devuelve el paquete al servidor
-    // el servidor lo pasa al logger
-    // el logger le pide traduccion al protocolo
-    pub fn start_server(config: ServerConfig) -> Result<ServerActions, Error> {
-        let mut server = Server {
-            config,
-            sessions: HashMap::new(),
-            _connect_received: false,
-        };
-
-        let listener = match TcpListener::bind(server.config.get_address()) {
-            Ok(l) => l,
-            Err(e) => return Err(e),
-        };
-
-        // corre el aceptador y recibe un client stream
-        match server.run_listener(&listener) {
-            Ok(action) => Ok(action),
             Err(e) => Err(e),
         }
     }
