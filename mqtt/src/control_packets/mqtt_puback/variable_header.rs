@@ -3,8 +3,8 @@ use std::io::Error;
 use crate::{
     common::data_types::data_representation::*,
     control_packets::mqtt_packet::{
-        variable_header_properties::VariableHeaderProperties,
         packet_property::{REASON_STRING, USER_PROPERTY},
+        variable_header_properties::VariableHeaderProperties,
     },
 };
 

@@ -23,10 +23,10 @@ mod control_packets {
         pub mod fixed_header;
         pub mod flags;
         pub mod packet;
+        pub mod packet_properties;
+        pub mod packet_property;
         pub mod reason_codes;
         pub mod variable_header_properties;
-        pub mod packet_property;
-        pub mod packet_properties;
     }
 
     pub mod mqtt_puback {

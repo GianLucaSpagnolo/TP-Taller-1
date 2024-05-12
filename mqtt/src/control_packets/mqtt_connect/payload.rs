@@ -5,8 +5,8 @@ use super::connect::PayloadFields;
 use crate::common::data_types::data_representation::{
     read_two_byte_integer, read_utf8_encoded_string,
 };
-use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 use crate::control_packets::mqtt_packet::packet_property::*;
+use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
 pub struct ConnectPayload {
     pub bytes_length: u16,

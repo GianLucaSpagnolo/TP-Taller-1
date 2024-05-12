@@ -1,6 +1,8 @@
 pub mod data_representation {
     use std::{
-        mem::size_of, io::{Error, Read}, string::FromUtf8Error
+        io::{Error, Read},
+        mem::size_of,
+        string::FromUtf8Error,
     };
 
     pub fn read_byte(stream: &mut dyn Read) -> Result<u8, Error> {

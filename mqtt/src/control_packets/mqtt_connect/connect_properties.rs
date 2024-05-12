@@ -2,8 +2,8 @@ use std::io::Error;
 use std::io::Read;
 
 use crate::common::data_types::data_representation::*;
-use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 use crate::control_packets::mqtt_packet::packet_property::*;
+use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
 pub struct ConnectProperties {
     pub protocol_name: String,
@@ -19,7 +19,6 @@ pub struct ConnectProperties {
     pub topic_alias_maximum: Option<u16>,
     pub user_property: Option<(String, String)>,
     pub maximum_packet_size: Option<u32>,
-
 }
 
 impl Default for ConnectProperties {
@@ -63,7 +62,6 @@ impl Clone for ConnectProperties {
 }
 
 impl ConnectProperties {
-
     pub fn variable_props_size(&self) -> u16 {
         let header = self.as_variable_header_properties().unwrap();
         header.properties.len() as u16
@@ -71,7 +69,11 @@ impl ConnectProperties {
 
     pub fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
-        let fixed_props_size =  std::mem::size_of::<u16>() + self.protocol_name.len() + std::mem::size_of::<u8>() + std::mem::size_of::<u8>() + std::mem::size_of::<u16>();
+        let fixed_props_size = std::mem::size_of::<u16>()
+            + self.protocol_name.len()
+            + std::mem::size_of::<u8>()
+            + std::mem::size_of::<u8>()
+            + std::mem::size_of::<u16>();
         fixed_props_size as u16 + variable_props.bytes_length
     }
 
@@ -90,7 +92,8 @@ impl ConnectProperties {
         };
 
         if let Some(request_problem_information) = self.request_problem_information {
-            variable_props.add_u8_property(REQUEST_PROBLEM_INFORMATION, request_problem_information)?;
+            variable_props
+                .add_u8_property(REQUEST_PROBLEM_INFORMATION, request_problem_information)?;
         };
         if let Some(request_response_information) = self.request_response_information {
             variable_props
@@ -104,9 +107,13 @@ impl ConnectProperties {
         };
 
         if let Some(user_property) = self.user_property.clone() {
-            variable_props.add_utf8_pair_string_property(USER_PROPERTY, user_property.0, user_property.1)?;
+            variable_props.add_utf8_pair_string_property(
+                USER_PROPERTY,
+                user_property.0,
+                user_property.1,
+            )?;
         };
-        
+
         if let Some(maximum_packet_size) = self.maximum_packet_size {
             variable_props.add_u32_property(MAXIMUM_PACKET_SIZE, maximum_packet_size)?;
         };
@@ -114,9 +121,7 @@ impl ConnectProperties {
         Ok(variable_props)
     }
 
-
     pub fn as_bytes(&self) -> Result<Vec<u8>, Error> {
-        
         let mut bytes: Vec<u8> = Vec::new();
         let variable_header_properties = self.as_variable_header_properties()?;
 
@@ -195,8 +200,7 @@ impl ConnectProperties {
             receive_maximum,
             topic_alias_maximum,
             user_property,
-            maximum_packet_size
+            maximum_packet_size,
         })
     }
 }
-

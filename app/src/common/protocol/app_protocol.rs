@@ -122,33 +122,10 @@ pub fn server_bind_address(address: &String) -> Result<TcpListener, Error> {
         return Err(Error::new(
             std::io::ErrorKind::InvalidData,
             "Invalid ip - port format, must be: ip:port",
-        ))
+        ));
     }
     mqtt::server::server_run_bind(address)
 }
-
-
-/*
-pub fn server_run(address: &String) -> Result<ServerActions, Error> {
-    // prepara al servidor para la escucha
-    let listener = match server_run_bind(address) {
-        Ok(l) => l,
-        Err(e) => return Err(e),
-    };
-
-    // corre el aceptador y recibe un client stream
-    let mut client_stream = match server_run_listener(&listener) {
-        Ok(pack) => pack,
-        Err(e) => return Err(e),
-    };
-
-    // traduce el paquete recibido
-    match receive_package(&mut client_stream) {
-        Some(action) => Ok(action),
-        None => Ok(ServerActions::PackageError),
-    }
-}
-*/
 
 // usada por el servidor para recibir los paquetes
 // del cliente

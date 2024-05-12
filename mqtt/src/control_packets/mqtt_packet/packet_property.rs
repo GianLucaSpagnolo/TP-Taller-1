@@ -126,9 +126,7 @@ impl PacketProperty {
             PacketProperty::RetainAvailable(_) => RETAIN_AVAILABLE,
             PacketProperty::UserProperty(_) => USER_PROPERTY,
             PacketProperty::MaximumPacketSize(_) => MAXIMUM_PACKET_SIZE,
-            PacketProperty::WildcardSubscriptionAvailable(_) => {
-                WILDCARD_SUBSCRIPTION_AVAILABLE
-            }
+            PacketProperty::WildcardSubscriptionAvailable(_) => WILDCARD_SUBSCRIPTION_AVAILABLE,
             PacketProperty::SubscriptionIdentifiersAvailable(_) => {
                 SUBSCRIPTION_IDENTIFIERS_AVAILABLE
             }
@@ -255,23 +253,17 @@ impl PacketProperty {
     pub fn new_property_u8(id: u8, value: u8) -> Result<Self, Error> {
         match id {
             PAYLOAD_FORMAT_INDICATOR => Ok(PacketProperty::PayloadFormatIndicator(value)),
-            REQUEST_PROBLEM_INFORMATION => {
-                Ok(PacketProperty::RequestProblemInformation(value))
-            }
-            REQUEST_RESPONSE_INFORMATION => {
-                Ok(PacketProperty::RequestResponseInformation(value))
-            }
+            REQUEST_PROBLEM_INFORMATION => Ok(PacketProperty::RequestProblemInformation(value)),
+            REQUEST_RESPONSE_INFORMATION => Ok(PacketProperty::RequestResponseInformation(value)),
             MAXIMUM_QOS => Ok(PacketProperty::MaximumQoS(value)),
             RETAIN_AVAILABLE => Ok(PacketProperty::RetainAvailable(value)),
             WILDCARD_SUBSCRIPTION_AVAILABLE => {
                 Ok(PacketProperty::WildcardSubscriptionAvailable(value))
             }
-            SUBSCRIPTION_IDENTIFIERS_AVAILABLE => Ok(
-                PacketProperty::SubscriptionIdentifiersAvailable(value),
-            ),
-            SHARED_SUBSCRIPTION_AVAILABLE => {
-                Ok(PacketProperty::SharedSubscriptionAvailable(value))
+            SUBSCRIPTION_IDENTIFIERS_AVAILABLE => {
+                Ok(PacketProperty::SubscriptionIdentifiersAvailable(value))
             }
+            SHARED_SUBSCRIPTION_AVAILABLE => Ok(PacketProperty::SharedSubscriptionAvailable(value)),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -399,9 +391,7 @@ impl PacketProperty {
             }
             SUBSCRIPTION_IDENTIFIERS_AVAILABLE => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);
-                Some(PacketProperty::SubscriptionIdentifiersAvailable(
-                    value,
-                ))
+                Some(PacketProperty::SubscriptionIdentifiersAvailable(value))
             }
             SHARED_SUBSCRIPTION_AVAILABLE => {
                 let value = byte_integer_from_be_bytes(buff, buff_size);

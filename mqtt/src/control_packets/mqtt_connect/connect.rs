@@ -198,7 +198,10 @@ impl Connect {
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::{mqtt_connect::connect_properties::ConnectProperties, mqtt_packet::packet_property::PacketProperty};
+    use crate::control_packets::{
+        mqtt_connect::connect_properties::ConnectProperties,
+        mqtt_packet::packet_property::PacketProperty,
+    };
 
     use super::*;
 
@@ -218,7 +221,7 @@ mod test {
             receive_maximum: Some(0),
             topic_alias_maximum: Some(0),
             user_property: Some(("test_key".to_string(), "test_value".to_string())),
-            maximum_packet_size: Some(0)
+            maximum_packet_size: Some(0),
         };
 
         let payload_fields = PayloadFields {
@@ -247,15 +250,9 @@ mod test {
             Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 
         assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
-        assert_eq!(
-            connect.properties.protocol_name,
-            "MQTT".to_string()
-        );
+        assert_eq!(connect.properties.protocol_name, "MQTT".to_string());
         assert_eq!(connect.properties.protocol_version, 5);
-        assert_eq!(
-            connect.properties.connect_flags,
-            properties.connect_flags
-        );
+        assert_eq!(connect.properties.connect_flags, properties.connect_flags);
         assert_eq!(connect.properties.keep_alive, properties.keep_alive);
         assert_eq!(connect.properties.variable_props_size(), 9);
 
@@ -315,7 +312,6 @@ mod test {
         } else {
             panic!("Invalid property");
         }
-
 
         assert_eq!(connect.payload.client_id, "test".to_string());
         assert_eq!(connect.payload.will_properties.properties.len(), 7);
@@ -401,15 +397,9 @@ mod test {
             Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 
         assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
-        assert_eq!(
-            connect.properties.protocol_name,
-            "MQTT".to_string()
-        );
+        assert_eq!(connect.properties.protocol_name, "MQTT".to_string());
         assert_eq!(connect.properties.protocol_version, 5);
-        assert_eq!(
-            connect.properties.connect_flags,
-            properties.connect_flags
-        );
+        assert_eq!(connect.properties.connect_flags, properties.connect_flags);
         assert_eq!(connect.properties.keep_alive, properties.keep_alive);
         assert_eq!(connect.properties.variable_props_size(), 9);
 
@@ -425,7 +415,7 @@ mod test {
             assert_eq!(value, "test".to_string());
         } else {
             panic!("Invalid property");
-        }  
+        }
 
         if let Some(value) = props.authentication_data {
             assert_eq!(value, 0);
@@ -469,7 +459,6 @@ mod test {
         } else {
             panic!("Invalid property");
         }
-
 
         assert_eq!(connect.payload.client_id, "test2".to_string());
         assert_eq!(connect.payload.will_properties.properties.len(), 0);

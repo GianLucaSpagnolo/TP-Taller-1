@@ -55,8 +55,7 @@ impl _Disconnect {
 #[cfg(test)]
 mod test {
     use crate::control_packets::mqtt_packet::packet_property::{
-        PacketProperty, REASON_STRING, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL,
-        USER_PROPERTY,
+        PacketProperty, REASON_STRING, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL, USER_PROPERTY,
     };
 
     use super::*;
@@ -93,17 +92,13 @@ mod test {
             panic!("Error");
         }
 
-        if let PacketProperty::ReasonString(value) =
-            props._get_property(REASON_STRING).unwrap()
-        {
+        if let PacketProperty::ReasonString(value) = props._get_property(REASON_STRING).unwrap() {
             assert_eq!(value, "reason");
         } else {
             panic!("Error");
         }
 
-        if let PacketProperty::UserProperty(value) =
-            props._get_property(USER_PROPERTY).unwrap()
-        {
+        if let PacketProperty::UserProperty(value) = props._get_property(USER_PROPERTY).unwrap() {
             assert_eq!(value.0, "name");
             assert_eq!(value.1, "value");
         } else {

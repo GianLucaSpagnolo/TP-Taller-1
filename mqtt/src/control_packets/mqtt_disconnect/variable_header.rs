@@ -3,10 +3,10 @@ use std::io::{Error, Read};
 use crate::{
     common::data_types::data_representation::read_byte,
     control_packets::mqtt_packet::{
-        variable_header_properties::VariableHeaderProperties,
         packet_property::{
             REASON_STRING, SERVER_REFERENCE, SESSION_EXPIRY_INTERVAL, USER_PROPERTY,
         },
+        variable_header_properties::VariableHeaderProperties,
     },
 };
 
@@ -140,11 +140,10 @@ mod test {
             panic!("Error");
         }
 
-        if let PacketProperty::ServerReference(server_reference) =
-            &disconnect_variable_header
-                .properties
-                ._get_property(SERVER_REFERENCE)
-                .unwrap()
+        if let PacketProperty::ServerReference(server_reference) = &disconnect_variable_header
+            .properties
+            ._get_property(SERVER_REFERENCE)
+            .unwrap()
         {
             assert_eq!(server_reference, "server");
         } else {
