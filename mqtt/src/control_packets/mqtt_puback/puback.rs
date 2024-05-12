@@ -122,7 +122,7 @@ mod test {
 
         let puback = _Puback::read_from(&mut buf, puback_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(puback_fixed_header.packet_type, _PUBACK_PACKET);
+        assert_eq!(puback_fixed_header.get_packet_type(), _PUBACK_PACKET);
         assert_eq!(puback.properties.packet_id, 1);
         assert_eq!(puback.properties.puback_reason_code, 0);
         assert_eq!(puback.properties.variable_props_size(), 2);

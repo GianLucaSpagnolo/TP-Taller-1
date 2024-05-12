@@ -17,14 +17,6 @@ pub struct PacketFixedHeader {
     pub remaining_length: u16, // This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 }
 
-pub fn _create_publish_header_flags(dup_flag: u8, qos_level: u8, retain: u8) -> u8 {
-    let mut type_and_flags = _PUBLISH_PACKET;
-    type_and_flags |= dup_flag << 3;
-    type_and_flags |= qos_level << 1;
-    type_and_flags |= retain;
-    type_and_flags
-}
-
 impl PacketFixedHeader {
     pub fn new(packet_type: u8, remaining_length: u16) -> Self {
         PacketFixedHeader {
@@ -49,9 +41,13 @@ impl PacketFixedHeader {
         Ok(PacketFixedHeader::new(packet_type, remaining_length))
     }
 
+    pub fn get_packet_type(&self) -> u8 {
+        self.packet_type & 0xF0
+    }
+
     // agregado para protocolo
     pub fn get_package_type(&self) -> PacketType {
-        match self.packet_type {
+        match self.get_packet_type() {
             CONNECT_PACKET => PacketType::ConnectType,
             CONNACK_PACKET => PacketType::ConnackType,
             _DISCONNECT_PACKET => PacketType::DisconnectType,

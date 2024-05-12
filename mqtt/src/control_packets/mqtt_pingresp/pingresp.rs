@@ -52,6 +52,6 @@ mod test {
         let mut buffer = buffer.as_slice();
         let pingresp_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
 
-        assert_eq!(pingresp_fixed_header.packet_type, _PINGRESP_PACKET);
+        assert_eq!(pingresp_fixed_header.get_packet_type(), _PINGRESP_PACKET);
     }
 }

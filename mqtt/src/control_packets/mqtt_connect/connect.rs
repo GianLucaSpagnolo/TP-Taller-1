@@ -195,7 +195,7 @@ mod test {
         let connect =
             Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
+        assert_eq!(connect_fixed_header.get_packet_type(), CONNECT_PACKET);
         assert_eq!(connect.properties.protocol_name, "MQTT".to_string());
         assert_eq!(connect.properties.protocol_version, 5);
         assert_eq!(connect.properties.connect_flags, 0b11000000);
@@ -378,7 +378,7 @@ mod test {
         let new_connect =
             Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(connect_fixed_header.packet_type, CONNECT_PACKET);
+        assert_eq!(connect_fixed_header.get_packet_type(), CONNECT_PACKET);
         assert_eq!(new_connect.properties.protocol_name, "MQTT".to_string());
         assert_eq!(new_connect.properties.protocol_version, 5);
         assert_eq!(new_connect.properties.connect_flags, 0b11000000);
