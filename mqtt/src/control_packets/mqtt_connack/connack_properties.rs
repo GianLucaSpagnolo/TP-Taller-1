@@ -65,8 +65,7 @@ impl PacketProperties for ConnackProperties {
 
     fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
-        let fixed_props_size =
-            std::mem::size_of::<u16>() + std::mem::size_of::<u8>() + std::mem::size_of::<u8>();
+        let fixed_props_size = std::mem::size_of::<u8>() + std::mem::size_of::<u8>();
         fixed_props_size as u16 + variable_props.bytes_length
     }
 

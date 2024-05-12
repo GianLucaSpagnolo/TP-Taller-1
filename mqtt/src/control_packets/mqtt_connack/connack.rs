@@ -67,8 +67,12 @@ pub struct Connack {
 }
 
 impl Serialization for Connack {
-    fn read_from(stream: &mut dyn Read, _remaining_length: u16) -> Result<Connack, Error> {
-        let properties = ConnackProperties::read_from(stream)?;
+    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Connack, Error> {
+        let mut aux_buffer = vec![0; remaining_length as usize];
+        stream.read_exact(&mut aux_buffer)?;
+        let mut buffer = aux_buffer.as_slice();
+
+        let properties = ConnackProperties::read_from(&mut buffer)?;
 
         Ok(Connack { properties })
     }
