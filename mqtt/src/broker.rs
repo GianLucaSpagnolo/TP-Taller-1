@@ -1,5 +1,5 @@
 use mqtt::{
-    config::ServerConfig,
+    config::{Config, ServerConfig},
     server::{Server, ServerActions},
 };
 
@@ -137,7 +137,7 @@ fn main() -> Result<(), Error> {
 
     let config = ServerConfig::from_file(String::from(config_path))?;
 
-    let addr = config.get_address();
+    let addr = config.get_socket_address();
 
     match start_server(config) {
         Ok(_) => println!("Corriendo servidor en {:?}", addr),

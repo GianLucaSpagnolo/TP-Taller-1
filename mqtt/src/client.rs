@@ -1,7 +1,7 @@
 use std::{io::Error, net::TcpStream};
 
 use crate::{
-    config::ClientConfig,
+    config::{ClientConfig, Config},
     control_packets::{
         mqtt_connect::connect::Connect,
         mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
@@ -15,7 +15,7 @@ pub struct MqttClient {
 
 impl MqttClient {
     pub fn new(client_id: String, config: ClientConfig) -> Result<Self, Error> {
-        let mut stream = TcpStream::connect(config.get_address())?;
+        let mut stream = TcpStream::connect(config.get_socket_address())?;
 
         let connection = Connect::new(
             config.connect_properties.clone(),

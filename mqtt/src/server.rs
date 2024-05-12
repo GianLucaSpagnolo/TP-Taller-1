@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::io::Error;
-use std::net::TcpStream;
+use std::net::{TcpStream, SocketAddr};
 
-use crate::config::ServerConfig;
+use crate::config::{Config, ServerConfig};
 use crate::control_packets::mqtt_connack::connack::*;
 use crate::control_packets::mqtt_connect::connect::*;
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
@@ -84,8 +84,8 @@ impl Server {
         }
     }
 
-    pub fn get_address(&self) -> String {
-        self.config.get_address()
+    pub fn get_address(&self) -> SocketAddr {
+        self.config.get_socket_address()
     }
 
     // usada por el servidor para recibir los paquetes
