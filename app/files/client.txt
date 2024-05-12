@@ -1,6 +1,6 @@
-ip : 127.0.0.1
-port : 5000
-protocol_name : MQTT
-protocol_version : 5
-keep_alive : 60
-flag_clean_start : true
+ip: 127.0.0.1
+port: 5000
+protocol_name: MQTT
+protocol_version: 5
+keep_alive: 60
+flag_clean_start: true
