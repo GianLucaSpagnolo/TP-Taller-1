@@ -7,62 +7,37 @@ use crate::control_packets::mqtt_packet::{
     packet_property::*, variable_header_properties::VariableHeaderProperties,
 };
 
-#[derive(Debug)]
-pub struct _VariableHeaderTopicName {
-    pub length: u16,
-    pub name: String,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct _PublishProperties {
-    pub topic_name: _VariableHeaderTopicName,
+    pub topic_name: String,
     pub packet_identifier: u16,
     pub payload_format_indicator: Option<u8>,
     pub message_expiry_interval: Option<u32>,
     pub topic_alias: Option<u16>,
     pub response_topic: Option<String>,
-    pub correlation_data: Option<u16>,
+    pub correlation_data: Option<String>,
     pub user_property: Option<(String, String)>,
     pub subscription_identifier: Option<u32>,
     pub content_type: Option<String>,
-}
 
-impl Default for _PublishProperties {
-    fn default() -> Self {
-        _PublishProperties {
-            topic_name: _VariableHeaderTopicName {
-                length: 0,
-                name: String::new(),
-            },
-            packet_identifier: 0,
-            payload_format_indicator: None,
-            message_expiry_interval: None,
-            topic_alias: None,
-            response_topic: None,
-            correlation_data: None,
-            user_property: None,
-            subscription_identifier: None,
-            content_type: None,
-        }
-    }
+    pub application_message: Option<String>, // Payload
 }
 
 impl Clone for _PublishProperties {
     fn clone(&self) -> Self {
         _PublishProperties {
-            topic_name: _VariableHeaderTopicName {
-                length: self.topic_name.length,
-                name: self.topic_name.name.clone(),
-            },
+            topic_name: self.topic_name.clone(),
             packet_identifier: self.packet_identifier,
             payload_format_indicator: self.payload_format_indicator,
             message_expiry_interval: self.message_expiry_interval,
             topic_alias: self.topic_alias,
             response_topic: self.response_topic.clone(),
-            correlation_data: self.correlation_data,
+            correlation_data: self.correlation_data.clone(),
             user_property: self.user_property.clone(),
             subscription_identifier: self.subscription_identifier,
             content_type: self.content_type.clone(),
+
+            application_message: self.application_message.clone(),
         }
     }
 }
@@ -75,8 +50,15 @@ impl PacketProperties for _PublishProperties {
 
     fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
-        let fixed_props_size = std::mem::size_of::<u16>() + std::mem::size_of::<u16>();
-        fixed_props_size as u16 + variable_props.bytes_length
+        let fixed_props_size =
+            std::mem::size_of::<u16>() + self.topic_name.len() + std::mem::size_of::<u16>();
+
+        let mut payload_size = 0;
+        if let Some(application_message) = &self.application_message {
+            payload_size += std::mem::size_of::<u16>() + application_message.len();
+        }
+
+        fixed_props_size as u16 + variable_props.bytes_length + payload_size as u16
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
@@ -98,8 +80,8 @@ impl PacketProperties for _PublishProperties {
             variable_props.add_utf8_string_property(RESPONSE_TOPIC, response_topic.clone())?;
         }
 
-        if let Some(correlation_data) = self.correlation_data {
-            variable_props.add_u16_property(CORRELATION_DATA, correlation_data)?;
+        if let Some(correlation_data) = &self.correlation_data {
+            variable_props.add_utf8_string_property(CORRELATION_DATA, correlation_data.clone())?;
         }
 
         if let Some(user_property) = self.user_property.clone() {
@@ -125,10 +107,17 @@ impl PacketProperties for _PublishProperties {
         let mut bytes: Vec<u8> = Vec::new();
         let variable_header_properties = self.as_variable_header_properties()?;
 
-        bytes.extend_from_slice(&self.topic_name.length.to_be_bytes());
-        bytes.extend_from_slice(self.topic_name.name.as_bytes());
+        let topic_name_len = self.topic_name.len() as u16;
+        bytes.extend_from_slice(&topic_name_len.to_be_bytes());
+
+        bytes.extend_from_slice(self.topic_name.as_bytes());
         bytes.extend_from_slice(&self.packet_identifier.to_be_bytes());
         bytes.extend_from_slice(&variable_header_properties.as_bytes());
+
+        if let Some(application_message) = self.application_message.clone() {
+            bytes.extend_from_slice(&(application_message.len() as u16).to_be_bytes());
+            bytes.extend_from_slice(application_message.as_bytes());
+        }
 
         Ok(bytes)
     }
@@ -163,7 +152,7 @@ impl PacketProperties for _PublishProperties {
                     response_topic = property.value_string();
                 }
                 CORRELATION_DATA => {
-                    correlation_data = property.value_u16();
+                    correlation_data = property.value_string();
                 }
                 USER_PROPERTY => {
                     user_property = property.value_string_pair();
@@ -177,11 +166,16 @@ impl PacketProperties for _PublishProperties {
                 _ => {}
             }
         }
+
+        let mut application_message = None;
+        let application_message_len = read_two_byte_integer(stream).unwrap_or(0);
+        if application_message_len > 0 {
+            application_message =
+                Some(read_utf8_encoded_string(stream, application_message_len).unwrap());
+        }
+
         Ok(_PublishProperties {
-            topic_name: _VariableHeaderTopicName {
-                length: topic_name_length,
-                name: topic_name,
-            },
+            topic_name,
             packet_identifier,
             payload_format_indicator,
             message_expiry_interval,
@@ -191,6 +185,7 @@ impl PacketProperties for _PublishProperties {
             user_property,
             subscription_identifier,
             content_type,
+            application_message,
         })
     }
 }

@@ -26,7 +26,6 @@ mod control_packets {
     }
 
     pub mod mqtt_publish {
-        pub mod payload;
         pub mod publish;
         pub mod publish_properties;
     }

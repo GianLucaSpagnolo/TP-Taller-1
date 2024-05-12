@@ -5,7 +5,6 @@ use std::io::Write;
 use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
-use crate::control_packets::mqtt_publish::payload::*;
 use crate::control_packets::mqtt_publish::publish_properties::*;
 /// ### PUBLISH PACKET (Puede ser enviado por el cliente o el servidor)
 ///
@@ -71,22 +70,21 @@ use crate::control_packets::mqtt_publish::publish_properties::*;
 ///
 pub struct _Publish {
     pub properties: _PublishProperties,
-    pub payload: _PublishPayload,
 }
 
 impl Serialization for _Publish {
-    fn read_from(stream: &mut dyn Read, _remaining_length: u16) -> Result<_Publish, Error> {
-        let properties = _PublishProperties::read_from(stream)?;
+    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<_Publish, Error> {
+        let mut aux_buffer = vec![0; remaining_length as usize];
+        stream.read_exact(&mut aux_buffer)?;
+        let mut buffer = aux_buffer.as_slice();
 
-        let payload = _PublishPayload::_read_from(stream)?;
-        Ok(_Publish {
-            properties,
-            payload,
-        })
+        let properties = _PublishProperties::read_from(&mut buffer)?;
+
+        Ok(_Publish { properties })
     }
 
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let remaining_length = self.properties.size_of() + self.payload._length();
+        let remaining_length = self.properties.size_of();
         let fixed_header = PacketFixedHeader::new(_PUBLISH_PACKET, remaining_length);
         let fixed_header_bytes = fixed_header.as_bytes();
 
@@ -94,9 +92,6 @@ impl Serialization for _Publish {
 
         let properties = self.properties.as_bytes()?;
         stream.write_all(&properties)?;
-
-        let payload_fields = self.payload._as_bytes();
-        stream.write_all(&payload_fields)?;
 
         Ok(())
     }
@@ -109,11 +104,8 @@ impl Serialization for _Publish {
 }
 
 impl _Publish {
-    pub fn _new(properties: _PublishProperties, payload: _PublishPayload) -> Self {
-        _Publish {
-            properties,
-            payload,
-        }
+    pub fn _new(properties: _PublishProperties) -> Self {
+        _Publish { properties }
     }
 }
 
@@ -125,37 +117,34 @@ mod test {
 
     #[test]
     fn test_publish() {
-        let topic_name = _VariableHeaderTopicName {
-            length: 10,
-            name: "mensajeria".to_string(),
-        };
         let properties = _PublishProperties {
-            topic_name,
+            topic_name: "mensajeria".to_string(),
             packet_identifier: 1,
             payload_format_indicator: Some(1),
             message_expiry_interval: Some(0),
             topic_alias: Some(0),
             response_topic: Some("response".to_string()),
-            correlation_data: Some(0),
+            correlation_data: Some("data".to_string()),
             user_property: Some(("test_key".to_string(), "test_value".to_string())),
             subscription_identifier: Some(0),
             content_type: Some("type".to_string()),
+            application_message: Some("message".to_string()),
         };
 
-        let payload = _PublishPayload::_new("message".to_string());
-        let publish = _Publish::_new(properties, payload);
+        let publish = _Publish::_new(properties);
 
+        // ESCRIBE EL PACKET EN EL BUFFER
         let mut bytes = Vec::new();
         publish.write_to(&mut bytes).unwrap();
 
+        // LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let publish_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
         let publish =
             _Publish::read_from(&mut buffer, publish_fixed_header.remaining_length).unwrap();
 
         assert_eq!(publish_fixed_header.packet_type, _PUBLISH_PACKET);
-        assert_eq!(publish.properties.topic_name.length, 10);
-        assert_eq!(publish.properties.topic_name.name, "mensajeria".to_string());
+        assert_eq!(publish.properties.topic_name, "mensajeria".to_string());
         assert_eq!(publish.properties.packet_identifier, 1);
 
         let props = publish.properties;
@@ -185,7 +174,7 @@ mod test {
         }
 
         if let Some(value) = props.correlation_data {
-            assert_eq!(value, 0);
+            assert_eq!(value, "data".to_string());
         } else {
             panic!("Error");
         }
@@ -209,6 +198,10 @@ mod test {
             panic!("Error");
         }
 
-        assert_eq!(publish.payload.message, "message".to_string());
+        if let Some(value) = props.application_message {
+            assert_eq!(value, "message");
+        } else {
+            panic!("Error");
+        }
     }
 }
