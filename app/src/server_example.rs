@@ -2,7 +2,7 @@ use std::{net::TcpStream, process::ExitCode, sync::mpsc::channel, thread};
 
 use app::{
     common::protocol::app_protocol::server_bind_address,
-    logger::{log_actions, open_log_file},
+    logger::log_actions,
 };
 use mqtt::{config::ServerConfig, server::*};
 
@@ -96,7 +96,7 @@ fn main() -> ExitCode {
 
     // termino la conexion con el logger:
     // cierro el read_pipe:
-    
+
     for thread in threads {
         let _ = thread.join();
     };

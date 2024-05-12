@@ -1,7 +1,7 @@
 // El logger solo sera usado por el servidor,
 // mover logger a carpeta del server.
 
-use chrono::{offset, Utc};
+use chrono;
 /// El logger guarda en alto nivel las acciones de todas las aplicaciones,
 /// que pasan por el servidor.
 /// Cuando el servidor recibe una accion de su protocolo, llama al logger
@@ -69,7 +69,7 @@ fn translate_server_message(action: &String, file: &mut File) -> Result<(), Erro
     let server_id :usize = match action.split(';').next() {
         Some(part) => match part.parse::<usize>() {
             Ok(val) => val,
-            Err(e) => return Err(Error::new(
+            Err(..) => return Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Logger translate server id error",
             )),
@@ -84,8 +84,7 @@ fn translate_server_message(action: &String, file: &mut File) -> Result<(), Erro
             "Logger translate server error message error",
         )),
     };
-    
-    return log_action(&mut error , file, &server_id)
+    log_action(&mut error , file, &server_id)
 }
 
 fn translate_and_log(action: &String, file: &mut File) -> Result<(), Error> {
@@ -131,7 +130,7 @@ pub fn log_actions(log_file_route: &String, read_pipe: &Receiver<String>, write_
             }
         };
 
-        // escribe lo recivido en el log
+        // escribe lo recibido en el log
         let _ = translate_and_log(&received, &mut open_file);
     }
 }
