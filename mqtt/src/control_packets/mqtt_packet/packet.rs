@@ -7,7 +7,8 @@ pub mod generic_packet {
     use crate::control_packets::{
         mqtt_connack::connack::Connack, mqtt_connect::connect::Connect,
         mqtt_disconnect::disconnect::_Disconnect, mqtt_pingreq::pingreq::_PingReq,
-        mqtt_pingresp::pingresp::_PingResp, mqtt_publish::publish::_Publish,
+        mqtt_pingresp::pingresp::_PingResp, mqtt_puback::puback::_Puback,
+        mqtt_publish::publish::_Publish,
     };
 
     pub enum PacketType {
@@ -17,6 +18,7 @@ pub mod generic_packet {
         _PingRespType,
         _PingReqType,
         _PublishType,
+        _PubackType,
         Unknow, // errores o paquetes no implementados
     }
 
@@ -27,6 +29,7 @@ pub mod generic_packet {
         PingResp(Box<_PingResp>),
         PingReq(Box<_PingReq>),
         Publish(Box<_Publish>),
+        Puback(Box<_Puback>),
         Unknow,
     }
 
