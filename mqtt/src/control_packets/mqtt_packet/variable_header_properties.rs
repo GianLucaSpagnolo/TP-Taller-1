@@ -83,7 +83,7 @@ impl VariableHeaderProperties {
 
     pub fn new() -> Self {
         VariableHeaderProperties {
-            bytes_length: 0,
+            bytes_length: std::mem::size_of::<u16>() as u16,
             properties: vec![],
         }
     }
@@ -124,7 +124,8 @@ impl VariableHeaderProperties {
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let properties_len = read_two_byte_integer(stream)?;
+        let mut properties_len = read_two_byte_integer(stream)?;
+        properties_len -= size_of::<u16>() as u16;
 
         let mut properties_buff = vec![0u8; properties_len as usize];
         stream.read_exact(&mut properties_buff)?;

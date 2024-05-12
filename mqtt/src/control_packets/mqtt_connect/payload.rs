@@ -69,19 +69,19 @@ impl PacketProperties for ConnectPayload {
 
     fn size_of(&self) -> u16 {
         let payload_props = self.as_variable_header_properties().unwrap();
-        let mut payload_fields = self.client_id.len();
+        let mut payload_fields = std::mem::size_of::<u16>() + self.client_id.len();
 
         if let Some(will_topic) = &self.will_topic {
-            payload_fields += will_topic.len();
+            payload_fields += std::mem::size_of::<u16>() + will_topic.len();
         }
         if self.will_payload.is_some() {
             payload_fields += std::mem::size_of::<u16>();
         }
         if let Some(username) = &self.username {
-            payload_fields += username.len();
+            payload_fields += std::mem::size_of::<u16>() + username.len();
         }
         if let Some(password) = &self.password {
-            payload_fields += password.len();
+            payload_fields += std::mem::size_of::<u16>() + password.len();
         }
 
         payload_fields as u16 + payload_props.bytes_length
@@ -156,6 +156,7 @@ impl PacketProperties for ConnectPayload {
 
     fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let client_id_len = read_two_byte_integer(stream)?;
+        println!("client_id_len: {}", client_id_len);
         let client_id = read_utf8_encoded_string(stream, client_id_len)?;
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
 
