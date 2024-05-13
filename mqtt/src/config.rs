@@ -1,4 +1,8 @@
-use std::{fs::File, io::Error, net::{IpAddr, SocketAddr}};
+use std::{
+    fs::File,
+    io::Error,
+    net::{IpAddr, SocketAddr},
+};
 
 use crate::{
     common::utils::*,
@@ -9,28 +13,29 @@ use crate::{
 };
 
 pub trait Config<Config = Self> {
-
-    fn set_params(params: &[(String, String)]) -> Result<Self, Error> where
+    fn set_params(params: &[(String, String)]) -> Result<Self, Error>
+    where
         Self: Sized;
 
-    fn from_file(file_path: String) -> Result<Self, Error> where
-        Self: Sized {
-            let archivo_abierto: Option<File> = abrir_archivo(&file_path);
-            let mut parametros = Vec::new();
+    fn from_file(file_path: String) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
+        let archivo_abierto: Option<File> = abrir_archivo(&file_path);
+        let mut parametros = Vec::new();
 
-            archivo_abierto.map(|archivo| match leer_archivo(&archivo) {
-                None => None,
-                Some(lineas_leidas) => {
-                    parametros = obtener_parametros_archivo(lineas_leidas, 2);
-                    Some(())
-                }
-            });
+        archivo_abierto.map(|archivo| match leer_archivo(&archivo) {
+            None => None,
+            Some(lineas_leidas) => {
+                parametros = obtener_parametros_archivo(lineas_leidas, 2);
+                Some(())
+            }
+        });
 
-            Self::set_params(&parametros)
-        }
-    
+        Self::set_params(&parametros)
+    }
+
     fn get_socket_address(&self) -> SocketAddr;
-    
 }
 
 pub struct ClientConfig {
@@ -41,7 +46,6 @@ pub struct ClientConfig {
 }
 
 impl Config for ClientConfig {
-
     fn get_socket_address(&self) -> SocketAddr {
         SocketAddr::new(self.ip, self.port)
     }
@@ -56,15 +60,17 @@ impl Config for ClientConfig {
 
         for param in params.iter() {
             match param.0.as_str() {
-                "ip" => ip = match param.1.parse::<IpAddr>() {
-                    Ok(p) => Some(p),
-                    Err(_) => {
-                        return Err(Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            "Invalid parameter",
-                        ))
+                "ip" => {
+                    ip = match param.1.parse::<IpAddr>() {
+                        Ok(p) => Some(p),
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter",
+                            ))
+                        }
                     }
-                },
+                }
                 "port" => {
                     port = match param.1.parse::<u16>() {
                         Ok(p) => Some(p),
@@ -235,25 +241,23 @@ impl Config for ClientConfig {
             }
         }
 
-        if let (Some(ip), Some(port)) = (ip,port) {
-
+        if let (Some(ip), Some(port)) = (ip, port) {
             let connect_payload = ConnectPayload::default();
             // Faltan agregar los campos del payload desde el archivo de configuracion!
-    
+
             return Ok(ClientConfig {
                 ip,
                 port,
                 connect_properties,
                 connect_payload,
-            })
+            });
         }
-        
+
         Err(Error::new(
             std::io::ErrorKind::InvalidData,
             "Invalid parameter: Ip",
         ))
     }
-
 }
 
 pub struct ServerConfig {
@@ -273,10 +277,9 @@ impl Clone for ServerConfig {
 }
 
 impl Config for ServerConfig {
-
     fn get_socket_address(&self) -> SocketAddr {
         SocketAddr::new(self.ip, self.port)
-    }   
+    }
 
     fn set_params(params: &[(String, String)]) -> Result<Self, Error> {
         // seteo los parametros obligatorios del servidor:
@@ -286,15 +289,17 @@ impl Config for ServerConfig {
 
         for param in params.iter() {
             match param.0.as_str() {
-                "ip" => ip = match param.1.parse::<IpAddr>() {
-                    Ok(p) => Some(p),
-                    Err(_) => {
-                        return Err(Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            "Invalid ip parameter",
-                        ))
+                "ip" => {
+                    ip = match param.1.parse::<IpAddr>() {
+                        Ok(p) => Some(p),
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid ip parameter",
+                            ))
+                        }
                     }
-                },
+                }
                 "port" => {
                     port = match param.1.parse::<u16>() {
                         Ok(p) => Some(p),
@@ -317,9 +322,7 @@ impl Config for ServerConfig {
                             ))
                         }
                     };
-                    
                 }
-
 
                 _ => {
                     return Err(Error::new(
@@ -329,14 +332,17 @@ impl Config for ServerConfig {
                 }
             }
         }
-        
+
         if let (Some(port), Some(ip), Some(maximum_threads)) = (port, ip, maximum_threads) {
-            return Ok(ServerConfig { port, ip, maximum_threads })
+            return Ok(ServerConfig {
+                port,
+                ip,
+                maximum_threads,
+            });
         }
         Err(Error::new(
             std::io::ErrorKind::InvalidData,
             "Config fields are missing",
         ))
     }
-
 }

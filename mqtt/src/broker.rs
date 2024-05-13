@@ -3,10 +3,7 @@ use mqtt::{
     server::Server,
 };
 
-use std::{
-    env,
-    io::Error
-};
+use std::{env, io::Error};
 
 fn main() -> Result<(), Error> {
     let args: Vec<String> = env::args().collect();
@@ -21,7 +18,7 @@ fn main() -> Result<(), Error> {
     let config_path = &args[1];
 
     let config = ServerConfig::from_file(String::from(config_path))?;
-    
+
     let server = Server::new(config);
 
     match server.start_server() {

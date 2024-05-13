@@ -122,7 +122,6 @@ impl Server {
     // el servidor lo pasa al logger
     // el logger le pide traduccion al protocolo
     pub fn start_server(self) -> Result<ServerActions, Error> {
-        
         let listener = match TcpListener::bind(self.config.get_socket_address()) {
             Ok(l) => l,
             Err(e) => return Err(e),
@@ -157,10 +156,8 @@ impl Server {
                         Err(e) => Err(e),
                     }
                 }
-                PacketReceived::Disconnect(_pack) =>{
-                    Ok(ServerActions::DesconnectClient)
-                }
-                /*                 
+                PacketReceived::Disconnect(_pack) => Ok(ServerActions::DesconnectClient),
+                /*
                 PacketReceived::Publish(_pack) => {
                     let topic = pack.topic_name;
                     self.sessions.into_iter().map(|(id, session)| if session.active {
@@ -173,7 +170,7 @@ impl Server {
                         Ok(_) => Ok(ServerActions::ConnectionEstablished),
                         Err(e) => Err(e),
                     }
-                }  
+                }
                 */
                 _ => Err(Error::new(
                     std::io::ErrorKind::Other,

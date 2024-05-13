@@ -62,7 +62,7 @@ pub fn obtener_parametros_archivo(
             None => None,
             Some(param) => {
                 let mut aux = String::from(param);
-                aux.pop();  // saco el ':'
+                aux.pop(); // saco el ':'
                 key = aux;
                 Some(())
             }

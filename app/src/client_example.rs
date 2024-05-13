@@ -1,6 +1,9 @@
 use std::io::Error;
 
-use mqtt::{client::MqttClient, config::{ClientConfig, Config}};
+use mqtt::{
+    client::MqttClient,
+    config::{ClientConfig, Config},
+};
 
 fn main() -> Result<(), Error> {
     let config = ClientConfig::from_file(String::from("app/files/client.txt"))?;
