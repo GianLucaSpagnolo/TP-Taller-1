@@ -61,4 +61,29 @@ impl MqttClient {
             _config: config,
         })
     }
+    
+    pub fn publish(){
+        todo!()
+    }
+
+    pub fn subscribe(){
+        todo!()
+    }
+    
+    pub fn unsubscribe(){
+        todo!()
+    }
+
+    pub fn listen_messages_incoming(){
+        todo!()
+    }
+
+    pub fn disconnect(){
+        todo!()
+    }
+
+    pub fn pin_request(){
+        todo!()
+    }
+
 }
