@@ -14,22 +14,22 @@ pub mod generic_packet {
     pub enum PacketType {
         ConnectType,
         ConnackType,
-        DisconnectType,
-        _PingRespType,
-        _PingReqType,
         _PublishType,
         _PubackType,
+        _PingReqType,
+        _PingRespType,
+        DisconnectType,
         Unknow, // errores o paquetes no implementados
     }
 
     pub enum PacketReceived {
         Connect(Box<Connect>),
         Connack(Box<Connack>),
-        Disconnect(Box<_Disconnect>),
-        PingResp(Box<_PingResp>),
-        PingReq(Box<_PingReq>),
         Publish(Box<_Publish>),
         Puback(Box<_Puback>),
+        PingReq(Box<_PingReq>),
+        PingResp(Box<_PingResp>),
+        Disconnect(Box<_Disconnect>),
         Unknow,
     }
 
@@ -53,6 +53,12 @@ pub mod generic_packet {
     ) -> Result<PacketReceived, Error> {
         match package_type {
             PacketType::ConnectType => pack_bytes::<Connect>(stream, remaining_length),
+            PacketType::ConnackType => pack_bytes::<Connack>(stream, remaining_length),
+            PacketType::_PublishType => pack_bytes::<_Publish>(stream, remaining_length),
+            PacketType::_PubackType => pack_bytes::<_Puback>(stream, remaining_length),
+            PacketType::_PingReqType => pack_bytes::<_PingReq>(stream, remaining_length),
+            PacketType::_PingRespType => pack_bytes::<_PingResp>(stream, remaining_length),
+            PacketType::DisconnectType => pack_bytes::<_Disconnect>(stream, remaining_length),
             _ => Err(Error::new(
                 std::io::ErrorKind::Other,
                 "Server processing - Paquete no implementado",
