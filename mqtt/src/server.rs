@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::config::{Config, ServerConfig};
 use crate::control_packets::mqtt_connack::connack::*;
+use crate::control_packets::mqtt_connack::connack_properties::ConnackProperties;
 use crate::control_packets::mqtt_connect::connect::*;
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
@@ -15,7 +16,7 @@ use crate::thread_pool::ThreadPool;
 
 pub struct WillMessage {
     _will_topic: String,
-    _will_payload: u16,
+    _will_payload: String,
 }
 
 impl Clone for WillMessage {
@@ -150,7 +151,7 @@ impl Server {
             Ok(pack) => match pack {
                 PacketReceived::Connect(pack) => {
                     let connack_properties: ConnackProperties = self.handle_connection(*pack)?;
-                    let connack_packet: Connack = Connack::new(&connack_properties)?;
+                    let connack_packet: Connack = Connack::new(connack_properties);
                     match connack_packet.write_to(&mut stream) {
                         Ok(_) => Ok(ServerActions::ConnectionEstablished),
                         Err(e) => Err(e),
@@ -190,7 +191,7 @@ impl Server {
         &mut self,
         will_flag: u8,
         will_topic: Option<String>,
-        will_payload: Option<u16>,
+        will_payload: Option<String>,
     ) -> Option<WillMessage> {
         if will_flag == 1 {
             if let (Some(topic), Some(payload)) = (will_topic, will_payload) {
@@ -259,8 +260,7 @@ impl Server {
             receive_maximum: None,
             maximum_packet_size: None,
             topic_alias_maximum: None,
-            user_property_key: None,
-            user_property_value: None,
+            user_property: None,
             authentication_method: None,
             authentication_data: None,
             response_information: None,

@@ -6,6 +6,7 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_packet::packet_property::*;
 use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
+#[derive(Default)]
 pub struct ConnectPayload {
     pub client_id: String,
     // Payload Properties
@@ -14,32 +15,13 @@ pub struct ConnectPayload {
     pub message_expiry_interval: Option<u32>,
     pub content_type: Option<String>,
     pub response_topic: Option<String>,
-    pub correlation_data: Option<u16>,
+    pub correlation_data: Option<String>,
     pub user_property: Option<(String, String)>,
     // Campos opcionales
     pub will_topic: Option<String>,
-    pub will_payload: Option<u16>,
+    pub will_payload: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
-}
-
-impl Default for ConnectPayload {
-    fn default() -> Self {
-        ConnectPayload {
-            client_id: "".to_string(),
-            will_delay_interval: None,
-            payload_format_indicator: None,
-            message_expiry_interval: None,
-            content_type: None,
-            response_topic: None,
-            correlation_data: None,
-            user_property: None,
-            will_topic: None,
-            will_payload: None,
-            username: None,
-            password: None,
-        }
-    }
 }
 
 impl Clone for ConnectPayload {
@@ -51,10 +33,10 @@ impl Clone for ConnectPayload {
             message_expiry_interval: self.message_expiry_interval,
             content_type: self.content_type.clone(),
             response_topic: self.response_topic.clone(),
-            correlation_data: self.correlation_data,
+            correlation_data: self.correlation_data.clone(),
             user_property: self.user_property.clone(),
             will_topic: self.will_topic.clone(),
-            will_payload: self.will_payload,
+            will_payload: self.will_payload.clone(),
             username: self.username.clone(),
             password: self.password.clone(),
         }
@@ -69,19 +51,19 @@ impl PacketProperties for ConnectPayload {
 
     fn size_of(&self) -> u16 {
         let payload_props = self.as_variable_header_properties().unwrap();
-        let mut payload_fields = self.client_id.len();
+        let mut payload_fields = std::mem::size_of::<u16>() + self.client_id.len();
 
         if let Some(will_topic) = &self.will_topic {
-            payload_fields += will_topic.len();
+            payload_fields += std::mem::size_of::<u16>() + will_topic.len();
         }
-        if self.will_payload.is_some() {
-            payload_fields += std::mem::size_of::<u16>();
+        if let Some(will_payload) = &self.will_payload {
+            payload_fields += std::mem::size_of::<u16>() + will_payload.len();
         }
         if let Some(username) = &self.username {
-            payload_fields += username.len();
+            payload_fields += std::mem::size_of::<u16>() + username.len();
         }
         if let Some(password) = &self.password {
-            payload_fields += password.len();
+            payload_fields += std::mem::size_of::<u16>() + password.len();
         }
 
         payload_fields as u16 + payload_props.bytes_length
@@ -110,8 +92,9 @@ impl PacketProperties for ConnectPayload {
             payload_props.add_utf8_string_property(RESPONSE_TOPIC, response_topic.to_string())?;
         }
 
-        if let Some(correlation_data) = self.correlation_data {
-            payload_props.add_u16_property(CORRELATION_DATA, correlation_data)?;
+        if let Some(correlation_data) = &self.correlation_data {
+            payload_props
+                .add_utf8_string_property(CORRELATION_DATA, correlation_data.to_string())?;
         }
 
         if let Some(user_property) = self.user_property.clone() {
@@ -139,8 +122,9 @@ impl PacketProperties for ConnectPayload {
             bytes.extend_from_slice(&(will_topic.len() as u16).to_be_bytes());
             bytes.extend_from_slice(will_topic.as_bytes());
         }
-        if let Some(will_payload) = self.will_payload {
-            bytes.extend_from_slice(&will_payload.to_be_bytes());
+        if let Some(will_payload) = self.will_payload.clone() {
+            bytes.extend_from_slice(&(will_payload.len() as u16).to_be_bytes());
+            bytes.extend_from_slice(will_payload.as_bytes());
         }
         if let Some(username) = self.username.clone() {
             bytes.extend_from_slice(&(username.len() as u16).to_be_bytes());
@@ -185,7 +169,7 @@ impl PacketProperties for ConnectPayload {
                     response_topic = property.value_string();
                 }
                 CORRELATION_DATA => {
-                    correlation_data = property.value_u16();
+                    correlation_data = property.value_string();
                 }
                 USER_PROPERTY => {
                     user_property = property.value_string_pair();
@@ -200,10 +184,11 @@ impl PacketProperties for ConnectPayload {
             will_topic = Some(read_utf8_encoded_string(stream, will_topic_len).unwrap());
         }
 
-        let will_payload = match read_two_byte_integer(stream) {
-            Ok(w_payload) => Some(w_payload),
-            Err(_) => None,
-        };
+        let mut will_payload = None;
+        let will_payload_len = read_two_byte_integer(stream).unwrap_or(0);
+        if will_payload_len > 0 {
+            will_payload = Some(read_utf8_encoded_string(stream, will_payload_len).unwrap());
+        }
 
         let mut username: Option<String> = None;
         let username_len = read_two_byte_integer(stream).unwrap_or(0);

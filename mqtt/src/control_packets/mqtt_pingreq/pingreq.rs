@@ -1,28 +1,40 @@
 use std::io::{Error, Read, Write};
 
-use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, _PINGREQ_PACKET};
+use crate::control_packets::mqtt_packet::{
+    fixed_header::{PacketFixedHeader, _PINGREQ_PACKET},
+    packet::generic_packet::{PacketReceived, Serialization},
+};
 
-pub struct _PingReq {
-    pub fixed_header: PacketFixedHeader,
+pub struct _PingReq {}
+
+impl Serialization for _PingReq {
+    fn read_from(_stream: &mut dyn Read, remaining_length: u16) -> Result<Self, Error> {
+        if remaining_length != 0 {
+            return Err(Error::new(
+                std::io::ErrorKind::InvalidData,
+                "PingReq packet must have remaining length 0",
+            ));
+        }
+
+        Ok(_PingReq::_new())
+    }
+
+    fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
+        let fixed_header = PacketFixedHeader::new(_PINGREQ_PACKET, 0);
+        let fixed_header_bytes = fixed_header.as_bytes();
+        stream.write_all(&fixed_header_bytes)?;
+
+        Ok(())
+    }
+
+    fn packed_package(package: _PingReq) -> PacketReceived {
+        PacketReceived::PingReq(Box::new(package))
+    }
 }
 
 impl _PingReq {
     pub fn _new() -> Self {
-        let fixed_header = PacketFixedHeader::new(_PINGREQ_PACKET, 0);
-        _PingReq { fixed_header }
-    }
-
-    pub fn _write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
-        let fixed_header = self.fixed_header.as_bytes();
-        stream.write_all(&fixed_header)?;
-
-        Ok(())
-    }
-    pub fn _read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let fixed_header = PacketFixedHeader::read_from(stream)?;
-
-        let _pingreq = _PingReq { fixed_header };
-        Ok(_pingreq)
+        _PingReq {}
     }
 }
 
@@ -35,12 +47,11 @@ mod test {
         let pingreq = _PingReq::_new();
 
         let mut buffer = Vec::new();
-        pingreq._write_to(&mut buffer).unwrap();
+        pingreq.write_to(&mut buffer).unwrap();
 
         let mut buffer = buffer.as_slice();
-        let pingreq = _PingReq::_read_from(&mut buffer).unwrap();
+        let pingreq_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
 
-        assert_eq!(pingreq.fixed_header.packet_type, _PINGREQ_PACKET);
-        assert_eq!(pingreq.fixed_header.remaining_length, 0);
+        assert_eq!(pingreq_fixed_header.get_packet_type(), _PINGREQ_PACKET);
     }
 }

@@ -221,15 +221,7 @@ impl Config for ClientConfig {
                     connect_properties.authentication_method = Some(param.1.clone())
                 }
                 "authentication_data" => {
-                    connect_properties.authentication_data = match param.1.parse::<u16>() {
-                        Ok(p) => Some(p),
-                        Err(_) => {
-                            return Err(Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                "Invalid parameter: Authentiation Data",
-                            ))
-                        }
-                    }
+                    connect_properties.authentication_data = Some(param.1.clone())
                 }
 
                 _ => {
