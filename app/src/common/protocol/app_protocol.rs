@@ -2,7 +2,6 @@
 use mqtt::server::*;
 use std::io::Error;
 use std::net::{TcpListener, TcpStream};
-// use std::ptr::addr_eq;
 
 /// El protocolo traduce los paquetes de mqtt a comandos
 /// entendibles por la app
@@ -112,10 +111,11 @@ use std::net::{TcpListener, TcpStream};
 ///
 ///
 
-pub enum ServerActions {
+pub enum ProtocolActions {
     TryConnect, // guardara el exit code
     PackageError,
 }
+
 
 pub fn server_bind_address(address: &String) -> Result<TcpListener, Error> {
     if !address.contains(':') {
@@ -131,11 +131,25 @@ pub fn server_bind_address(address: &String) -> Result<TcpListener, Error> {
 // del cliente
 // el protocolo recibe el paquete, lo procesa y traduce el
 // paquete a una accion que el servidor de la app comprenda.
-pub fn receive_package(stream: &mut TcpStream, server: &mut Server) -> ServerActions {
+pub fn receive_package(stream: &mut TcpStream, server: &mut Server) -> ProtocolActions {
     match server.process_packet(stream) {
         Ok(_) => todo!(),
         Err(_) => todo!(),
     }
+}
+
+// translations
+// segun el tipo de paquete, lo traduce a un mensaje
+// entendible por el logger
+pub fn translate_received_package(package_type: &ProtocolActions) -> String {
+    match package_type {
+        ProtocolActions::TryConnect => translate_connect_package(),
+        ProtocolActions::PackageError => String::from("Unknow package received"),
+    }
+}
+
+fn translate_connect_package() -> String {
+    String::from("Client try to connect")
 }
 
 /*

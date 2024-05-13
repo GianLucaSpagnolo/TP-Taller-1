@@ -19,7 +19,12 @@ pub fn open_file(route: &String) -> Result<File, Error> {
         Err(..) => {
             // eprintln!("\nCould not find file: '{}' at the given path", route);
             // crea el archivo
-            match OpenOptions::new().create_new(true).read(true).append(true).open(route) {
+            match OpenOptions::new()
+                .create_new(true)
+                .read(true)
+                .append(true)
+                .open(route)
+            {
                 Ok(created_file) => Ok(created_file),
                 Err(e) => {
                     eprintln!("\nCould not find file: '{}' at the given path, error when try to create it", route);
