@@ -7,7 +7,7 @@ use crate::control_packets::mqtt_packet::{
     packet_property::*, variable_header_properties::VariableHeaderProperties,
 };
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct _PublishProperties {
     pub topic_name: String,
     pub packet_identifier: u16,

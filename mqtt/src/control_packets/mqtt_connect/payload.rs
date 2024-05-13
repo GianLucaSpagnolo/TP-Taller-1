@@ -6,6 +6,7 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_packet::packet_property::*;
 use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
+#[derive(Default)]
 pub struct ConnectPayload {
     pub client_id: String,
     // Payload Properties
@@ -21,25 +22,6 @@ pub struct ConnectPayload {
     pub will_payload: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
-}
-
-impl Default for ConnectPayload {
-    fn default() -> Self {
-        ConnectPayload {
-            client_id: String::new(),
-            will_delay_interval: None,
-            payload_format_indicator: None,
-            message_expiry_interval: None,
-            content_type: None,
-            response_topic: None,
-            correlation_data: None,
-            user_property: None,
-            will_topic: None,
-            will_payload: None,
-            username: None,
-            password: None,
-        }
-    }
 }
 
 impl Clone for ConnectPayload {

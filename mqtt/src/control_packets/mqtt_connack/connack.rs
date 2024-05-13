@@ -7,7 +7,9 @@ use crate::control_packets::mqtt_packet::{
     packet::generic_packet::*,
 };
 
-/// # FIXED HEADER: 2 BYTES
+/// ## CONNACK PACKET
+///
+/// ### FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
 /// 4 bits mas significativos: MQTT Control Packet type
 /// 0010: CONNACK
@@ -21,10 +23,10 @@ use crate::control_packets::mqtt_packet::{
 /// Remaining Length
 /// This is the length of the Variable Header. It is encoded as a Variable Byte Integer.
 ///
-/// # VARIBALE HEADER
+/// ### VARIBALE HEADER
 /// Connect Acknowledge Flags, Connect Reason Code, and Properties
 ///
-/// ## Connect Acknowledge Flags
+/// #### Connect Acknowledge Flags
 /// Byte 1 is the "Connect Acknowledge Flags".
 ///
 /// Bits 7-1 are reserved and MUST be set to 0
@@ -35,7 +37,7 @@ use crate::control_packets::mqtt_packet::{
 ///
 /// The Server sending the CONNACK packet MUST use one of the Connect Reason Code values
 ///
-/// ## Properties
+/// #### Properties
 /// byte 3
 /// Length (suma de todas las properties)
 /// byte 4 en adelante:
@@ -108,9 +110,9 @@ mod test {
     use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
 
     #[test]
-    fn test_write_to() {
+    fn test_connack() {
         let properties = ConnackProperties {
-            connect_acknowledge_flags: 0,
+            connect_acknowledge_flags: 0x01,
             connect_reason_code: ReasonMode::Success.get_id(),
             session_expiry_interval: Some(0),
             assigned_client_identifier: Some("client".to_string()),
@@ -133,9 +135,11 @@ mod test {
 
         let connack = Connack::new(properties);
 
+        // ESCRIBE EL PACKET EN EL BUFFER
         let mut buffer: Vec<u8> = Vec::new();
         connack.write_to(&mut buffer).unwrap();
 
+        // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let connack_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
 
@@ -143,7 +147,7 @@ mod test {
             Connack::read_from(&mut buffer, connack_fixed_header.remaining_length).unwrap();
 
         assert_eq!(connack_fixed_header.get_packet_type(), CONNACK_PACKET);
-        assert_eq!(connack.properties.connect_acknowledge_flags, 0);
+        assert_eq!(connack.properties.connect_acknowledge_flags, 0x01);
         assert_eq!(connack.properties.connect_reason_code, 0);
         assert_eq!(connack.properties.variable_props_size(), 17);
 
@@ -251,5 +255,50 @@ mod test {
         } else {
             panic!("Invalid Maximum Packet Size");
         }
+    }
+
+    #[test]
+    fn test_connack_empty_properties() {
+        let properties = ConnackProperties {
+            connect_acknowledge_flags: 0x00,
+            connect_reason_code: ReasonMode::Success.get_id(),
+            ..Default::default()
+        };
+
+        let connack = Connack::new(properties);
+
+        // ESCRIBE EL PACKET EN EL BUFFER
+        let mut buffer: Vec<u8> = Vec::new();
+        connack.write_to(&mut buffer).unwrap();
+
+        // LEE EL PACKET DEL BUFFER
+        let mut buffer = buffer.as_slice();
+        let connack_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+
+        let connack =
+            Connack::read_from(&mut buffer, connack_fixed_header.remaining_length).unwrap();
+
+        assert_eq!(connack_fixed_header.get_packet_type(), CONNACK_PACKET);
+        assert_eq!(connack.properties.connect_acknowledge_flags, 0x00);
+        assert_eq!(connack.properties.connect_reason_code, 0);
+        assert_eq!(connack.properties.variable_props_size(), 0);
+
+        assert_eq!(connack.properties.session_expiry_interval, None);
+        assert_eq!(connack.properties.assigned_client_identifier, None);
+        assert_eq!(connack.properties.server_keep_alive, None);
+        assert_eq!(connack.properties.authentication_method, None);
+        assert_eq!(connack.properties.authentication_data, None);
+        assert_eq!(connack.properties.response_information, None);
+        assert_eq!(connack.properties.server_reference, None);
+        assert_eq!(connack.properties.reason_string, None);
+        assert_eq!(connack.properties.receive_maximum, None);
+        assert_eq!(connack.properties.topic_alias_maximum, None);
+        assert_eq!(connack.properties.maximum_qos, None);
+        assert_eq!(connack.properties.retain_available, None);
+        assert_eq!(connack.properties.wildcard_subscription_available, None);
+        assert_eq!(connack.properties.subscription_identifiers_available, None);
+        assert_eq!(connack.properties.shared_subscription_available, None);
+        assert_eq!(connack.properties.user_property, None);
+        assert_eq!(connack.properties.maximum_packet_size, None);
     }
 }

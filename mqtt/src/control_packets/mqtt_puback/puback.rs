@@ -6,10 +6,11 @@ use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
 use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 
-/// PUBACK Packet – Publish acknowledgment
+/// ## PUBACK PACKET
+///
 /// The PUBACK packet is the response to a PUBLISH packet with QoS level 1. A PUBACK packet is sent by the server to the client to confirm receipt and processing of a PUBLISH packet.
 ///
-/// # Fixed Header
+/// ### Fixed Header
 /// The Fixed Header of the PUBACK packet contains the following fields in the order: Control Packet Type, Remaining Length.
 ///
 /// PRIMER BYTE
@@ -25,16 +26,16 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 /// Remaining Length
 /// This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 ///
-/// # Variable Header
+/// ### Variable Header
 /// The Variable Header of the PUBACK packet contains the following fields in the order: Packet Identifier, PUBACK Reason Code, and Properties.
 ///
-/// ## Packet Identifier
+/// #### Packet Identifier
 /// The Packet Identifier field contains the Packet Identifier of the PUBLISH packet that was received by the server.
 ///
 /// BYTE 1: Most Significant Byte of the Packet Identifier (MSB)
 /// BYTE 2: Least Significant Byte of the Packet Identifier (LSB)
 ///
-/// ## PUBACK Reason Code
+/// #### PUBACK Reason Code
 /// The PUBACK Reason Code is a one byte unsigned value that indicates the result of the PUBLISH processing.
 ///
 /// BYTE 3: PUBACK Reason Code
@@ -49,7 +50,7 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 /// 151 - Quota Exceeded - The message is not accepted, and the client or server is not authorized to send messages.
 /// 153 - Payload Format Invalid - The message contains an unexpected or invalid data value.
 ///
-/// ## Properties
+/// #### Properties
 ///
 /// 1. Property Length
 /// BYTE 4: Property Length (Variable Byte Integer)
@@ -64,9 +65,6 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 /// BYTE n: User Property (UTF-8 string pair)
 /// ...
 ///
-/// ## Payload
-/// The Payload of the PUBACK packet is empty.
-
 pub struct _Puback {
     pub properties: _PubackProperties,
 }
@@ -154,10 +152,9 @@ mod test {
     fn test_puback_no_properties() {
         let properties = _PubackProperties {
             packet_id: 2,
-            puback_reason_code: 0,
-            reason_string: None,
-            user_property: None,
+            ..Default::default()
         };
+
         let puback = _Puback::_new(properties);
 
         // ESCRIBE EL PACKET EN EL BUFFER

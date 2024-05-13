@@ -241,27 +241,7 @@ impl ServerConfig {
 
         //chequear que tipo de parametros se le pasan
 
-        let connack_properties = ConnackProperties {
-            connect_acknowledge_flags: 0,
-            connect_reason_code: 0,
-            session_expiry_interval: None,
-            assigned_client_identifier: Some(String::new()),
-            server_keep_alive: None,
-            authentication_method: Some(String::new()),
-            authentication_data: Some(String::new()),
-            response_information: Some(String::new()),
-            server_reference: Some(String::new()),
-            reason_string: Some(String::new()),
-            receive_maximum: None,
-            topic_alias_maximum: None,
-            maximum_qos: None,
-            retain_available: None,
-            wildcard_subscription_available: None,
-            subscription_identifiers_available: None,
-            shared_subscription_available: None,
-            user_property: Some((String::new(), String::new())),
-            maximum_packet_size: None,
-        };
+        let connack_properties = ConnackProperties::default();
 
         for param in params.iter() {
             match param.0.as_str() {

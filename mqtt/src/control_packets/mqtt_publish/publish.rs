@@ -6,9 +6,9 @@ use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_publish::publish_properties::*;
-/// ### PUBLISH PACKET (Puede ser enviado por el cliente o el servidor)
+/// ## PUBLISH PACKET
 ///
-/// # FIXED HEADER: 2 BYTES
+/// ### FIXED HEADER: 2 BYTES
 /// Primer byte:
 /// 4 bits mas significativos: MQTT Control Packet type
 /// Bit en posicion 3: DUP Flag
@@ -35,7 +35,7 @@ use crate::control_packets::mqtt_publish::publish_properties::*;
 /// El Remaining Length es el numero de bytes que quedan en el paquete despues del Fixed Header y que contienen el Variable Header y el Payload
 ///
 ///
-/// # VARIABLE HEADER:
+/// ### VARIABLE HEADER:
 /// Length Topic Name: 2 bytes
 /// Topic Name (obligatorio): UTF-8 encoded string
 /// Packet Identifier (unicamente en paquetes con QoS 1 o 2): 2 bytes
@@ -51,7 +51,7 @@ use crate::control_packets::mqtt_publish::publish_properties::*;
 /// 11 - 0x0B - Subscription Identifier - Variable Byte Integer (valor entre 1 y 268,435,455)
 /// 3 - 0x03 - Content Type - UTF-8 Encoded String
 ///
-/// # PAYLOAD:
+/// ### PAYLOAD:
 /// Contiene el mensaje de la aplicacion que esta siendo publicado.
 /// El contenido y el formato depende de la aplicacion
 /// Largo del Payload: Remaining Length - Variable Header Length
@@ -237,16 +237,8 @@ mod test {
     fn test_publish_empty_optional_fields() {
         let properties = _PublishProperties {
             topic_name: "mensajeria".to_string(),
-            packet_identifier: 0,
-            payload_format_indicator: None,
-            message_expiry_interval: None,
-            topic_alias: None,
-            response_topic: None,
-            correlation_data: None,
-            user_property: None,
-            subscription_identifier: None,
-            content_type: None,
-            application_message: None,
+            packet_identifier: 2,
+            ..Default::default()
         };
 
         let publish = _Publish::_new(0, 0, 0, properties);
@@ -276,7 +268,7 @@ mod test {
         );
 
         assert_eq!(publish.properties.topic_name, "mensajeria".to_string());
-        assert_eq!(publish.properties.packet_identifier, 0);
+        assert_eq!(publish.properties.packet_identifier, 2);
 
         assert_eq!(publish.properties.payload_format_indicator, None);
         assert_eq!(publish.properties.message_expiry_interval, None);

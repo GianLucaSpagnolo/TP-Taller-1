@@ -9,6 +9,7 @@ use crate::{
     },
 };
 
+#[derive(Default)]
 pub struct _PubackProperties {
     pub packet_id: u16,
     pub puback_reason_code: u8,

@@ -9,7 +9,9 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use super::connect_properties::ConnectProperties;
 use super::payload::ConnectPayload;
 
-/// # FIXED HEADER: 2 BYTES
+/// ## CONNECT PACKET
+///
+/// ### FIXED HEADER: 2 BYTES
 /// PRIMER BYTE
 /// 4 bits mas significativos: MQTT Control Packet type
 /// 0001: CONNECT
@@ -23,7 +25,7 @@ use super::payload::ConnectPayload;
 /// Remaining Length
 /// This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 ///
-/// # VARIABLE HEADER: Packet Identifier de 2 BYTES
+/// ### VARIABLE HEADER: Packet Identifier de 2 BYTES
 ///
 /// CONNECT no necesita el Package Identifier
 ///
@@ -42,7 +44,7 @@ use super::payload::ConnectPayload;
 /// Description
 /// byte 7 - Version (5)
 ///
-/// ## CONNECT FLAGS
+/// #### Connect Flags
 /// byte 8
 /// User Name Flag (1)
 /// Password Flag (1)
@@ -58,7 +60,7 @@ use super::payload::ConnectPayload;
 /// byte 10
 /// Keep Alive LSB (10)
 ///
-/// ## Properties
+/// #### Properties
 /// byte 11
 /// Length (suma de todas las properties)
 /// byte 12 en adelante:
@@ -73,7 +75,7 @@ use super::payload::ConnectPayload;
 /// 38 - 0x26 - User Property - UTF-8 String Pair
 /// 39 - 0x27 - Maximum Packet Size - Four Byte Integer
 ///
-/// # PAYLOAD
+/// ### PAYLOAD
 /// The Payload of the CONNECT packet contains one or more length-prefixed fields, whose presence is determined by the flags in the Variable Header.
 /// The Payload contains one or more encoded fields. They specify a unique Client identifier for the Client, a Will Topic, Will Payload, User Name and
 /// Password. All but the Client identifier can be omitted and their presence is determined based on flags in the Variable Header.
@@ -365,36 +367,15 @@ mod test {
     #[test]
     fn test_connect_empty_payload_and_properties() {
         let properties = ConnectProperties {
-            protocol_name: String::from("MQTT"),
+            protocol_name: "MQTT".to_string(),
             protocol_version: 5,
             connect_flags: 0x10,
             keep_alive: 10,
-            session_expiry_interval: None,
-            authentication_method: None,
-            authentication_data: None,
-            request_problem_information: None,
-            request_response_information: None,
-            receive_maximum: None,
-            topic_alias_maximum: None,
-            user_property: None,
-            maximum_packet_size: None,
+            ..Default::default()
         };
 
-        let payload = ConnectPayload {
-            client_id: "test2".to_string(),
-            will_delay_interval: None,
-            payload_format_indicator: None,
-            message_expiry_interval: None,
-            content_type: None,
-            response_topic: None,
-            correlation_data: None,
-            user_property: None,
-
-            will_topic: None,
-            will_payload: None,
-            username: None,
-            password: None,
-        };
+        let mut payload = ConnectPayload::default();
+        payload.client_id = "test2".to_string();
 
         let connect = Connect::new(properties, payload);
 

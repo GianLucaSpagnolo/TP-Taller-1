@@ -107,13 +107,12 @@ mod test {
 
     #[test]
     fn test_disconnect_empty_properties() {
-        let disconnect = _Disconnect::_new(_DisconnectProperties {
+        let properties = _DisconnectProperties {
             disconnect_reason_code: 1,
-            session_expiry_interval: None,
-            reason_string: None,
-            user_property: None,
-            server_reference: None,
-        });
+            ..Default::default()
+        };
+
+        let disconnect = _Disconnect::_new(properties);
 
         // ESCRIBE EL PACKET EN EL BUFFER
         let mut buffer: Vec<u8> = Vec::new();

@@ -8,7 +8,7 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
+#[derive(Default)]
 pub struct ConnackProperties {
     pub connect_acknowledge_flags: u8,
     pub connect_reason_code: u8,

@@ -6,6 +6,7 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_packet::packet_property::*;
 use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
+#[derive(Default)]
 pub struct ConnectProperties {
     pub protocol_name: String,
     pub protocol_version: u8,
@@ -20,26 +21,6 @@ pub struct ConnectProperties {
     pub topic_alias_maximum: Option<u16>,
     pub user_property: Option<(String, String)>,
     pub maximum_packet_size: Option<u32>,
-}
-
-impl Default for ConnectProperties {
-    fn default() -> Self {
-        ConnectProperties {
-            protocol_name: String::new(),
-            protocol_version: 0,
-            connect_flags: 0,
-            keep_alive: 0,
-            session_expiry_interval: None,
-            authentication_method: None,
-            authentication_data: None,
-            request_problem_information: None,
-            request_response_information: None,
-            receive_maximum: None,
-            topic_alias_maximum: None,
-            user_property: None,
-            maximum_packet_size: None,
-        }
-    }
 }
 
 impl Clone for ConnectProperties {
