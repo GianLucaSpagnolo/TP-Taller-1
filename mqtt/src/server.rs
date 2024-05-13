@@ -23,7 +23,7 @@ impl Clone for WillMessage {
     fn clone(&self) -> Self {
         WillMessage {
             _will_topic: self._will_topic.clone(),
-            _will_payload: self._will_payload,
+            _will_payload: self._will_payload.clone(),
         }
     }
 }
