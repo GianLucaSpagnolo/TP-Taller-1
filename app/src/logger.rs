@@ -22,15 +22,10 @@
 use chrono;
 use chrono::prelude::*;
 use std::{
-    fs::File, io::Error, ops::Deref, sync::mpsc::{Receiver, Sender}, thread
+    fs::File, io::Error, sync::mpsc::{ Receiver, Sender}
 };
 use crate::common::file_manager::{open_file, read_file, write_line};
 
-pub struct Logger {
-    read_pipe: Receiver<String>,
-    write_pipe: Sender<String>,
-    log_file: File,
-}
 
 // file manager
 fn file_was_created(file: &File) -> bool {
@@ -58,6 +53,12 @@ fn open_log_file(route: &String) -> Result<File, Error> {
     }
 }
 
+/*
+pub struct Logger {
+    read_pipe: Receiver<String>,
+    write_pipe: Sender<String>,
+    log_file: File,
+}
 
 impl Logger {
     pub fn create_logger(r_pipe: Receiver<String>,
@@ -70,25 +71,87 @@ impl Logger {
                 log_file: file,
             })
         }
-    
+
     pub fn log(&self, r_pipe: Receiver<String>, file_name: &String) {
         let mut threads = vec![];
         let name = file_name.deref().to_string();
-        threads.push(thread::spawn(move || {
-            match log_events(&r_pipe, &name) {
-                Err(e) => Err(e),
-                Ok(..) => Ok(()),
-            }
+        //let tr_pipe = &self.read_pipe;
+        let (tw_pipe, tr_pipe) = mpsc::channel::<String>();
+        let mut file = &self.log_file;
+
+        threads.push(thread::scope(move |scope| {
+            scope.spawn(move || {
+                // let _ = tw_pipe.send(String::from("t"));
+                let mut received = match tr_pipe.recv() {
+                    Ok(action) => action,
+                        Err(e) => String::from(""),
+                };
+
+                self.translate(&received);
+
+                /*
+                match log_events(tr_pipe, &name) {
+                    Err(e) => Err(e),
+                    Ok(..) => Ok(()),
+                };
+                
+                let mut received;
+                loop {
+                    received = match tr_pipe.recv() {
+                    Ok(action) => action,
+                        Err(..) => {
+                            return Err::<String, std::io::Error>(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Logger recv error",
+                           ))
+                        }
+                    };
+                
+                    // escribe lo recibido en el log
+                    let _ = translate_and_log(&received, &mut &self.log_file);
+                }
+                */
+            });
         }));
+
+
     }
 
+    fn translate(&self, action :&String) {
+
+    }
     
 }
 
-fn log_events(read_pipe: &Receiver<String>, log_file: &String) -> Result<(), Error>{
+fn log_events(read_pipe: &Receiver<String>, log_file_path: &String) -> Result<(), Error>{
 
-    Ok(())
+    let mut received;
+    let mut log_file: File = match open_log_file(log_file_path) {
+        Ok(file) => {
+            file
+        }
+        Err(e) => {
+            return Err(e);
+        }
+    };
+
+    loop {
+        received = match read_pipe.recv() {
+        Ok(action) => action,
+            Err(..) => {
+                return Err(Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Logger recv error",
+               ))
+            }
+        };
+    
+        // escribe lo recibido en el log
+        let _ = translate_and_log(&received, &mut log_file);
+    }
+    // Ok(())
 }
+*/
 
 pub fn log_actions(log_file_route: &String, read_pipe: &Receiver<String>, write_pipe: &Sender<String>,) -> Result<(), Error> {
     // abrira el archivo, cuando haga una funcion que maneje el thread
@@ -120,9 +183,9 @@ pub fn log_actions(log_file_route: &String, read_pipe: &Receiver<String>, write_
     
             // escribe lo recibido en el log
             let _ = translate_and_log(&received, &mut log_file);
-        };
+        }
     
-    Ok(())
+    //Ok(())
 }
 
 fn translate_and_log(action: &str, log_file: &mut File) -> Result<(), Error> {
