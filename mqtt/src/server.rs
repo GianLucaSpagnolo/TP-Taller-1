@@ -1,15 +1,17 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::io::Error;
-use std::net::TcpStream;
+use std::net::{TcpListener, TcpStream};
+use std::sync::{Arc, Mutex};
 
-use crate::config::ServerConfig;
+use crate::config::{Config, ServerConfig};
 use crate::control_packets::mqtt_connack::connack::*;
 use crate::control_packets::mqtt_connect::connect::*;
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
+use crate::thread_pool::ThreadPool;
 
 pub struct WillMessage {
     _will_topic: String,
@@ -26,7 +28,7 @@ impl Clone for WillMessage {
 }
 
 pub struct SessionState {
-    state: bool,
+    active: bool,
     _session_expiry_interval: u32,
     _subscriptions: Vec<String>,
     _will_message: Option<WillMessage>,
@@ -35,7 +37,7 @@ pub struct SessionState {
 impl Clone for SessionState {
     fn clone(&self) -> Self {
         SessionState {
-            state: self.state,
+            active: self.active,
             _session_expiry_interval: self._session_expiry_interval,
             _subscriptions: self._subscriptions.clone(),
             _will_message: self._will_message.clone(),
@@ -45,6 +47,7 @@ impl Clone for SessionState {
 
 pub enum ServerActions {
     ConnectionEstablished,
+    DesconnectClient,
     TryConnect, // guardara el exit code
     PackageError,
 }
@@ -55,6 +58,7 @@ impl fmt::Display for ServerActions {
             ServerActions::ConnectionEstablished => write!(f, "Conexion establecida"),
             ServerActions::TryConnect => write!(f, "Intentando conectar"),
             ServerActions::PackageError => write!(f, "Error en el paquete"),
+            ServerActions::DesconnectClient => write!(f, "Desconectando cliente"),
         }
     }
 }
@@ -84,6 +88,50 @@ impl Server {
         }
     }
 
+    fn handle_client(
+        server: Arc<Mutex<Server>>,
+        client_stream: TcpStream,
+        pool: &ThreadPool,
+    ) -> Result<ServerActions, Error> {
+        match pool.execute(move || -> Result<ServerActions, Error> {
+            server.lock().unwrap().process_packet(client_stream)
+        }) {
+            Ok(_) => Ok(ServerActions::ConnectionEstablished),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn run_listener(self, listener: &TcpListener) -> Result<ServerActions, Error> {
+        let pool = ThreadPool::build(self.config.maximum_threads)?;
+
+        let server_ref = Arc::new(Mutex::new(self));
+
+        for client_stream in listener.incoming() {
+            let shared_server = server_ref.clone();
+
+            Self::handle_client(shared_server, client_stream?, &pool)?;
+        }
+
+        Err(Error::new(
+            std::io::ErrorKind::Other,
+            "No se pudo recibir el paquete",
+        ))
+    }
+
+    // le devuelve el paquete al servidor
+    // el servidor lo pasa al logger
+    // el logger le pide traduccion al protocolo
+    pub fn start_server(self) -> Result<ServerActions, Error> {
+        
+        let listener = match TcpListener::bind(self.config.get_socket_address()) {
+            Ok(l) => l,
+            Err(e) => return Err(e),
+        };
+
+        // corre un listener en un thread pool
+        self.run_listener(&listener)
+    }
+
     // usada por el servidor para recibir los paquetes
     // del cliente
     // el protocolo recibe el paquete, lo procesa y traduce el
@@ -109,6 +157,24 @@ impl Server {
                         Err(e) => Err(e),
                     }
                 }
+                PacketReceived::Disconnect(_pack) =>{
+                    Ok(ServerActions::DesconnectClient)
+                }
+                /*                 
+                PacketReceived::Publish(_pack) => {
+                    let topic = pack.topic_name;
+                    self.sessions.into_iter().map(|(id, session)| if session.active {
+                        if session._subscriptions.contains(&topic) {
+                            self.publish(session.client, pack);
+                        }
+                    });
+                    let puback = puback::Puback::new(0);
+                    match puback.write_to(&mut stream) {
+                        Ok(_) => Ok(ServerActions::ConnectionEstablished),
+                        Err(e) => Err(e),
+                    }
+                }  
+                */
                 _ => Err(Error::new(
                     std::io::ErrorKind::Other,
                     "Server - Paquete desconocido",
@@ -146,12 +212,12 @@ impl Server {
     fn open_new_session(&mut self, connect: Connect) -> u8 {
         if let Some(session) = self.sessions.get_mut(&connect.payload.client_id) {
             // Resumes session
-            session.state = true;
+            session.active = true;
             1
         } else {
             // New session
             let session = SessionState {
-                state: true,
+                active: true,
                 _session_expiry_interval: 0,
                 _subscriptions: Vec::new(),
                 _will_message: self.create_will_message(

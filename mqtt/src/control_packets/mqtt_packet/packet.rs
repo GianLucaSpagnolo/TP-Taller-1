@@ -43,6 +43,7 @@ pub mod generic_packet {
     ) -> Result<PacketReceived, Error> {
         match package_type {
             PacketType::ConnectType => pack_bytes::<Connect>(stream, remaining_length),
+            PacketType::ConnackType => pack_bytes::<Connack>(stream, remaining_length),
             _ => Err(Error::new(
                 std::io::ErrorKind::Other,
                 "Server processing - Paquete no implementado",
