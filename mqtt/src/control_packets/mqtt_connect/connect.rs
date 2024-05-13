@@ -374,8 +374,10 @@ mod test {
             ..Default::default()
         };
 
-        let mut payload = ConnectPayload::default();
-        payload.client_id = "test2".to_string();
+        let payload = ConnectPayload {
+            client_id: "test2".to_string(),
+            ..Default::default()
+        };
 
         let connect = Connect::new(properties, payload);
 
