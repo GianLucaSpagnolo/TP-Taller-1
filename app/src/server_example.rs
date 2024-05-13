@@ -1,9 +1,10 @@
-use std::{net::TcpStream, process::ExitCode, sync::mpsc::{channel, Receiver, Sender}, thread};
+use std::{fmt::Error, net::TcpStream, process::ExitCode, sync::mpsc::{channel, Receiver, Sender}, thread};
 
 use app::{common::protocol::app_protocol::{receive_package, server_bind_address, translate_received_package, ProtocolActions}, logger::{log_actions}};
 use mqtt::{config::ServerConfig, server::*};
 
-// logger
+// logger 
+// ----------------------------------------------
 pub fn write_logger(write_pipe: &Sender<String>, msg: &String, client_id: &usize, separator: &String) {
     
     let message = if !msg.contains('\n') {
@@ -18,12 +19,16 @@ pub fn write_logger(write_pipe: &Sender<String>, msg: &String, client_id: &usize
 
 pub struct ServerLogger {
     write_pipe: Sender<String>,
+    read_pipe: Receiver<String>,
+    // threads :Vec<std::thread::JoinHandle<()>>,
 }
 
 pub fn create_logger(
-    w_pipe: Sender<String>) -> ServerLogger {
+    w_pipe: Sender<String>, r_pipe: Receiver<String>) -> ServerLogger {
         ServerLogger {
             write_pipe: w_pipe,
+            read_pipe: r_pipe,
+            // threads : vec![],
         }
 }
 
@@ -34,8 +39,33 @@ impl ServerLogger {
 
     pub fn disconnect_logger(self) {
         drop(self.write_pipe);
+        /*
+        for thread in self.threads {
+            let _ = thread.join();
+        }
+        */
+    }
+
+    pub fn initiate_logger(mut self, log_file_path: &String, tw_pipe: Sender<String>) {
+        /*
+        self.threads.push(thread::spawn(move || {
+        
+            match log_actions(log_file_path, &self.read_pipe, &tw_pipe) {
+                //Err(e) => tw_pipe.send(String::from("Error: ") + &e.to_string()),
+                //Ok(..) => tw_pipe.send(String::from("Ok")),
+                Err(e) => Err(e),
+                Ok(..) => Ok(())
+            };
+            
+            // server_logger.initiate_logger(&log_file_route, tw_pipe);
+        }));
+        */
+        
+        
     }
 }
+
+// ----------------------------------------------
 
 // loegea y maneja el tipo de paquete connect
 fn handle_received_connect(server: &mut Server, 
@@ -86,18 +116,23 @@ fn main() -> ExitCode {
     let log_file_route = String::from("app/files/log.csv");
     
     // thread handling
-    let mut threads = vec![];
+    // let mut threads = vec![];
     let (write_pipe, read_pipe) = channel::<String>();
     let (tw_pipe, tr_pipe) = channel::<String>();
     
-    let server_logger = create_logger(write_pipe);
-    
+    let server_logger = create_logger(write_pipe, read_pipe);
+    /*
     threads.push(thread::spawn(move || {
+        
         match log_actions(&log_file_route, &read_pipe, &tw_pipe) {
             Err(e) => tw_pipe.send(String::from("Error: ") + &e.to_string()),
             Ok(..) => tw_pipe.send(String::from("Ok")),
         }
+        
+        // server_logger.initiate_logger(&log_file_route, tw_pipe);
     }));
+    */
+    server_logger.initiate_logger(&log_file_route, tw_pipe);
 
     // thread error handling:
     match tr_pipe.recv() {
@@ -160,8 +195,10 @@ fn main() -> ExitCode {
     // termino la conexion con el logger:
     // cierro el read_pipe para que se cierre el logger:
     server_logger.disconnect_logger();
+    /*
     for thread in threads {
         let _ = thread.join();
     }
+    */
     0.into()
 }
