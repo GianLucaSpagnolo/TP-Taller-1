@@ -2,7 +2,10 @@ use std::{io::Error, net::TcpStream};
 
 use crate::{
     config::ClientConfig,
-    control_packets::{mqtt_connack::connack::Connack, mqtt_connect::connect::Connect},
+    control_packets::{
+        mqtt_connect::connect::Connect,
+        mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
+    },
 };
 
 pub struct MqttClient {
@@ -12,15 +15,45 @@ pub struct MqttClient {
 
 impl MqttClient {
     pub fn new(client_id: String, config: ClientConfig) -> Result<Self, Error> {
-        let mut socket = TcpStream::connect(config.get_address())?;
+        let mut stream = TcpStream::connect(config.get_address())?;
 
-        let connection = Connect::new(&client_id, &config.connect_properties)?;
+        let connection = Connect::new(
+            config.connect_properties.clone(),
+            config.connect_payload.clone(),
+        );
 
-        connection.write_to(&mut socket)?;
+        connection.write_to(&mut stream)?;
 
-        let _response = match Connack::read_from(&mut socket) {
-            Ok(p) => p,
+        let fixed_header = match PacketFixedHeader::read_from(&mut stream) {
+            Ok(header_type) => header_type,
             Err(e) => return Err(e),
+        };
+
+        let packet_recived = match fixed_header.get_package_type() {
+            PacketType::ConnackType => match get_packet(
+                &mut stream,
+                fixed_header.get_package_type(),
+                fixed_header.remaining_length,
+            ) {
+                Ok(packet) => packet,
+                Err(e) => return Err(e),
+            },
+            _ => {
+                return Err(Error::new(
+                    std::io::ErrorKind::Other,
+                    "ClientReceive - Tipo de paquete desconocido",
+                ))
+            }
+        };
+
+        let _acklnowledge = match packet_recived {
+            PacketReceived::Connack(ack) => *ack,
+            _ => {
+                return Err(Error::new(
+                    std::io::ErrorKind::Other,
+                    "ClientReceive - Paquete desconocido",
+                ))
+            }
         };
 
         Ok(MqttClient {
