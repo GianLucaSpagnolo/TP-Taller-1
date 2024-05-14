@@ -57,8 +57,6 @@ use crate::control_packets::mqtt_suback::suback_properties::_SubackProperties;
 /// in the SUBSCRIBE packet that is being acknowledged.
 /// The order of the Reason Codes in the SUBACK packet MUST match the order of Topic Filters in the SUBSCRIBE packet.
 ///
-///
-
 pub struct _Suback {
     pub properties: _SubackProperties,
 }
@@ -100,9 +98,10 @@ impl _Suback {
 }
 
 #[cfg(test)]
-
 mod test {
+    use crate::control_packets::mqtt_packet::reason_codes::*;
     use super::*;
+
     #[test]
     fn test_suback() {
         let properties = _SubackProperties {
@@ -110,7 +109,13 @@ mod test {
             reason_string: Some("reason_string".to_string()),
             user_property: Some(("test_key".to_string(), "test_value".to_string())),
 
-            reason_codes: vec![0, 1, 2, 3], // Payload
+            // Payload
+            reason_codes: vec![
+                ReasonMode::_ReceiveMaximumExceeded.get_id(), 
+                ReasonMode::_BadUserNameOrPassword.get_id(), 
+                ReasonMode::_NotAuthorized.get_id(), 
+                ReasonMode::_ServerUnavailable.get_id()
+            ],
         };
 
         let suback = _Suback::_new(properties);
@@ -138,7 +143,7 @@ mod test {
         } else {
             panic!("Error");
         }
-        assert_eq!(suback.properties.reason_codes, vec![0, 1, 2, 3]);
+        assert_eq!(suback.properties.reason_codes, vec![147, 134, 135, 136]);
     }
 
 }

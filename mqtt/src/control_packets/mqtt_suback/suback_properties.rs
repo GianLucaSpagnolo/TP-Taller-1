@@ -44,13 +44,12 @@ impl PacketProperties for _SubackProperties {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u16>();
 
-        let mut payload_size = 0;
+        let mut payload_size = std::mem::size_of::<u16>();
 
-        let reason_codes_len = self.reason_codes.len() as u16;
         for _ in &self.reason_codes {
             payload_size += std::mem::size_of::<u8>();
         }
-        fixed_props_size as u16 + variable_props.bytes_length + reason_codes_len + payload_size as u16 
+        fixed_props_size as u16 + variable_props.bytes_length + payload_size as u16 
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
