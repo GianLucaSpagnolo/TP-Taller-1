@@ -91,3 +91,8 @@ impl Serialization for _Suback {
     }
 }
 
+impl _Suback {
+    pub fn _new(properties: _SubackProperties) -> Self {
+        _Suback { properties }
+    }
+}
