@@ -146,4 +146,32 @@ mod test {
         assert_eq!(suback.properties.reason_codes, vec![147, 134, 135, 136]);
     }
 
+
+    #[test]
+    fn test_suback_with_empty_optional_fields(){
+        let properties = _SubackProperties {
+            packet_identifier: 1,
+            // Payload
+            reason_codes: vec![],
+            ..Default::default()
+        };
+
+        let suback = _Suback::_new(properties);
+
+        // ESCRIBE EL PACKET EN EL BUFFER
+        let mut buffer = Vec::new();
+        suback.write_to(&mut buffer).unwrap();
+
+        // LEE EL PACKET DEL BUFFER
+        let mut buffer = buffer.as_slice();
+        let suback_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        let suback = _Suback::read_from(&mut buffer, suback_fixed_header.remaining_length).unwrap();
+
+        assert_eq!(suback.properties.packet_identifier, 1);
+        assert_eq!(suback.properties.reason_codes, Vec::new());
+        assert_eq!(suback.properties.reason_string, None);
+        assert_eq!(suback.properties.user_property, None);
+
+    }
+
 }
