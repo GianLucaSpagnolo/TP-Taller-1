@@ -5,9 +5,9 @@ use std::io::{Error, Read};
 pub struct SubscriptionType {
     pub topic_filter: String, 
     pub subscription_options: u8,
-
 }
-#[derive(Debug)]/// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
+
+#[derive(Debug, Default)]/// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
 pub struct SubscribeProperties {
     pub packet_identifier: u16,
     pub subscription_identifier: Option<u32>,
@@ -15,17 +15,6 @@ pub struct SubscribeProperties {
 
     pub topic_filters: Vec<SubscriptionType>,
 
-}
-
-impl Default for SubscribeProperties {
-    fn default() -> SubscribeProperties {
-        SubscribeProperties {
-            packet_identifier: 0,
-            subscription_identifier: None,
-            user_property: None,
-            topic_filters: Vec::new(),
-        }
-    }
 }
 
 impl Clone for SubscribeProperties {

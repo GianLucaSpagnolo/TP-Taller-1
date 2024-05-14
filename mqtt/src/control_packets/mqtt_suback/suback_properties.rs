@@ -3,23 +3,13 @@ use crate::common::data_types::data_representation::*;
 
 use std::io::Error;
 
+#[derive(Default)]
 pub struct _SubackProperties {
     pub packet_identifier: u16,
     pub reason_string: Option<String>,
     pub user_property: Option<(String, String)>,
 
     pub reason_codes: Vec<u8>, //Payload
-}
-
-impl Default for _SubackProperties {
-    fn default() -> _SubackProperties {
-        _SubackProperties {
-            packet_identifier: 0,
-            reason_string: None,
-            user_property: None,
-            reason_codes: Vec::new(),
-        }
-    }
 }
 
 impl Clone for _SubackProperties {
