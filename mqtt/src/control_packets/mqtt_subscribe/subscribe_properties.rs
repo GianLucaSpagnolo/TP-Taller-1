@@ -1,20 +1,27 @@
-use crate::{common::data_types::data_representation::*, control_packets::mqtt_packet::{packet_properties::PacketProperties, packet_property::*, variable_header_properties::VariableHeaderProperties}};
+use crate::{
+    common::data_types::data_representation::*,
+    control_packets::mqtt_packet::{
+        packet_properties::PacketProperties, packet_property::*,
+        variable_header_properties::VariableHeaderProperties,
+    },
+};
 use std::io::{Error, Read};
 
-#[derive(Debug,Clone)]/// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
+#[derive(Debug, Clone)]
+/// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
 pub struct SubscriptionType {
-    pub topic_filter: String, 
+    pub topic_filter: String,
     pub subscription_options: u8,
 }
 
-#[derive(Debug, Default)]/// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
+#[derive(Debug, Default)]
+/// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
 pub struct SubscribeProperties {
     pub packet_identifier: u16,
     pub subscription_identifier: Option<u32>,
     pub user_property: Option<(String, String)>,
 
     pub topic_filters: Vec<SubscriptionType>,
-
 }
 
 impl Clone for SubscribeProperties {
@@ -39,18 +46,18 @@ impl PacketProperties for SubscribeProperties {
 
         let mut topic_filters_size = std::mem::size_of::<u16>();
         for topic in &self.topic_filters {
-            topic_filters_size += std::mem::size_of::<u16>() + topic.topic_filter.len() + std::mem::size_of::<u8>();
+            topic_filters_size +=
+                std::mem::size_of::<u16>() + topic.topic_filter.len() + std::mem::size_of::<u8>();
         }
 
         fixed_props_size as u16 + variable_props.bytes_length + topic_filters_size as u16
     }
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
         let mut variable_props = VariableHeaderProperties::new();
-       
 
         if let Some(subscription_identifier) = self.subscription_identifier {
             variable_props.add_u32_property(SUBSCRIPTION_IDENTIFIER, subscription_identifier)?;
-        }  
+        }
 
         if let Some(user_property) = self.user_property.clone() {
             variable_props.add_utf8_pair_string_property(
@@ -65,7 +72,7 @@ impl PacketProperties for SubscribeProperties {
     fn as_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut bytes: Vec<u8> = Vec::new();
         let variable_header_properties = self.as_variable_header_properties()?;
-       
+
         bytes.extend_from_slice(&self.packet_identifier.to_be_bytes());
 
         bytes.extend_from_slice(&variable_header_properties.as_bytes());
@@ -77,7 +84,6 @@ impl PacketProperties for SubscribeProperties {
             bytes.extend_from_slice(&topic_filter_len.to_be_bytes());
             bytes.extend_from_slice(topic.topic_filter.as_bytes());
             bytes.push(topic.subscription_options);
-        
         }
         Ok(bytes)
     }
@@ -89,7 +95,7 @@ impl PacketProperties for SubscribeProperties {
         let mut subscription_identifier = None;
         let mut user_property = None;
 
-        for property in &variable_header_properties.properties{
+        for property in &variable_header_properties.properties {
             match property.id() {
                 SUBSCRIPTION_IDENTIFIER => {
                     subscription_identifier = property.value_u32();
@@ -121,5 +127,5 @@ impl PacketProperties for SubscribeProperties {
             user_property,
             topic_filters,
         })
-    }  
+    }
 }

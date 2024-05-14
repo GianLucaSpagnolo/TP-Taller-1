@@ -60,8 +60,6 @@ mod control_packets {
         pub mod disconnect;
         pub mod disconnect_properties;
     }
-
-    
 }
 
 mod common {

@@ -1,5 +1,8 @@
-use crate::control_packets::mqtt_packet::{packet_properties::PacketProperties, packet_property::*, variable_header_properties::VariableHeaderProperties};
 use crate::common::data_types::data_representation::*;
+use crate::control_packets::mqtt_packet::{
+    packet_properties::PacketProperties, packet_property::*,
+    variable_header_properties::VariableHeaderProperties,
+};
 
 use std::io::Error;
 
@@ -18,18 +21,17 @@ impl Clone for _SubackProperties {
             packet_identifier: self.packet_identifier,
             reason_string: self.reason_string.clone(),
             user_property: self.user_property.clone(),
-            
+
             reason_codes: self.reason_codes.clone(),
         }
     }
 }
 
 impl PacketProperties for _SubackProperties {
-   
     fn variable_props_size(&self) -> u16 {
         let header = self.as_variable_header_properties().unwrap();
         header.properties.len() as u16
-    }    
+    }
     fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u16>();
@@ -39,7 +41,7 @@ impl PacketProperties for _SubackProperties {
         for _ in &self.reason_codes {
             payload_size += std::mem::size_of::<u8>();
         }
-        fixed_props_size as u16 + variable_props.bytes_length + payload_size as u16 
+        fixed_props_size as u16 + variable_props.bytes_length + payload_size as u16
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
@@ -108,6 +110,5 @@ impl PacketProperties for _SubackProperties {
             user_property,
             reason_codes,
         })
-
     }
 }

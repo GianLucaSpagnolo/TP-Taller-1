@@ -66,7 +66,7 @@ impl Serialization for _Suback {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();
-        
+
         let properties = _SubackProperties::read_from(&mut buffer)?;
 
         Ok(_Suback { properties })
@@ -74,12 +74,12 @@ impl Serialization for _Suback {
 
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let remaining_length = self.properties.size_of();
-        
+
         let fixed_header = PacketFixedHeader::new(_SUBACK_PACKET, remaining_length);
         let fixed_header_bytes = fixed_header.as_bytes();
-        
+
         stream.write_all(&fixed_header_bytes)?;
-        
+
         let properties_bytes = self.properties.as_bytes()?;
         stream.write_all(&properties_bytes)?;
 
@@ -99,8 +99,8 @@ impl _Suback {
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::reason_codes::*;
     use super::*;
+    use crate::control_packets::mqtt_packet::reason_codes::*;
 
     #[test]
     fn test_suback() {
@@ -111,10 +111,10 @@ mod test {
 
             // Payload
             reason_codes: vec![
-                ReasonMode::_ReceiveMaximumExceeded.get_id(), 
-                ReasonMode::_BadUserNameOrPassword.get_id(), 
-                ReasonMode::_NotAuthorized.get_id(), 
-                ReasonMode::_ServerUnavailable.get_id()
+                ReasonMode::_ReceiveMaximumExceeded.get_id(),
+                ReasonMode::_BadUserNameOrPassword.get_id(),
+                ReasonMode::_NotAuthorized.get_id(),
+                ReasonMode::_ServerUnavailable.get_id(),
             ],
         };
 
@@ -146,9 +146,8 @@ mod test {
         assert_eq!(suback.properties.reason_codes, vec![147, 134, 135, 136]);
     }
 
-
     #[test]
-    fn test_suback_with_empty_optional_fields(){
+    fn test_suback_with_empty_optional_fields() {
         let properties = _SubackProperties {
             packet_identifier: 1,
             // Payload
@@ -171,7 +170,5 @@ mod test {
         assert_eq!(suback.properties.reason_codes, Vec::new());
         assert_eq!(suback.properties.reason_string, None);
         assert_eq!(suback.properties.user_property, None);
-
     }
-
 }
