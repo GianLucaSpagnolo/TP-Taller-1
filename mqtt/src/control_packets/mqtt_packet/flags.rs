@@ -87,9 +87,9 @@ pub mod flags_handler {
     }
 
     pub fn add_connect_flag_will_qos(mut connect_flags: u8, will_qos: String) -> Result<u8, Error> {
-        let will_qos = match catch_true_false(&will_qos) {
+        let will_qos = match will_qos.parse::<u8>() {
             Ok(p) => p,
-            Err(e) => return Err(e),
+            Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string())),
         };
         connect_flags |= will_qos << 3;
         Ok(connect_flags)
