@@ -1,4 +1,6 @@
-use crate::control_packets::mqtt_packet::{packet_properties::PacketProperties, variable_header_properties::VariableHeaderProperties};
+use crate::control_packets::mqtt_packet::{packet_property::*, packet_properties::PacketProperties, variable_header_properties::VariableHeaderProperties};
+
+use std::io::Error;
 
 pub struct _SubackProperties {
     pub packet_identifier: u16,
@@ -49,10 +51,22 @@ impl PacketProperties for _SubackProperties {
         fixed_props_size as u16 + variable_props.bytes_length + payload_size as u16
     }
 
-    fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, std::io::Error> {
-        todo!()
-    }
+    fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
+        let mut variable_props = VariableHeaderProperties::new();
 
+        if let Some(value) = self.reason_string.clone() {
+            variable_props.add_utf8_string_property(REASON_STRING, value)?;
+        }
+        if let Some(user_property) = self.user_property.clone() {
+            variable_props.add_utf8_pair_string_property(
+                USER_PROPERTY,
+                user_property.0,
+                user_property.1,
+            )?;
+        }
+
+        Ok(variable_props)
+    }
     fn as_bytes(&self) -> Result<Vec<u8>, std::io::Error> {
         todo!()
     }
