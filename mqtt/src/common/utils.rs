@@ -61,7 +61,9 @@ pub fn obtener_parametros_archivo(
         match split.next() {
             None => None,
             Some(param) => {
-                key = String::from(param);
+                let mut aux = String::from(param);
+                aux.pop(); // saco el ':'
+                key = aux;
                 Some(())
             }
         };

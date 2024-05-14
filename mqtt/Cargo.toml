@@ -10,3 +10,7 @@ name = "mqtt"
 path = "src/lib.rs"
 
 [dependencies]
+
+[[bin]]
+name = "broker"
+path = "src/broker.rs"

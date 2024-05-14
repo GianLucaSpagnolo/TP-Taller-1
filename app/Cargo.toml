@@ -11,7 +11,3 @@ mqtt = { path = "../mqtt" }
 [[bin]]
 name = "client"
 path = "src/client_example.rs"
-
-[[bin]]
-name = "server"
-path = "src/server_example.rs"
