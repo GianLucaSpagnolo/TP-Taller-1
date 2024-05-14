@@ -1,3 +1,10 @@
+use std::io::{Error, Read, Write};
+
+use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, _SUBACK_PACKET};
+use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
+use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
+use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
+use crate::control_packets::mqtt_suback::suback_properties::_SubackProperties;
 /// ## Suback packet
 /// 
 /// The SUBACK Packet is sent by the Server to the Client to confirm receipt and processing of a SUBSCRIBE Packet.
@@ -52,6 +59,35 @@
 /// 
 /// 
 
-pub struct Suback {
+pub struct _Suback {
     pub properties: _SubackProperties,
 }
+
+impl Serialization for _Suback {
+    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<_Suback, Error> {
+        let mut aux_buffer = vec![0; remaining_length as usize];
+        stream.read_exact(&mut aux_buffer)?;
+        let mut buffer = aux_buffer.as_slice();
+
+        let properties = _SubackProperties::read_from(&mut buffer)?;
+
+        Ok(_Suback { properties })
+    }
+
+    fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
+        let properties_bytes = self.properties.as_bytes()?;
+        let remaining_length = self.properties.size_of();
+        let fixed_header = PacketFixedHeader::new(_SUBACK_PACKET, remaining_length);
+        let fixed_header_bytes = fixed_header.as_bytes();
+
+        stream.write_all(&fixed_header_bytes)?;
+        stream.write_all(&properties_bytes)?;
+
+        Ok(())
+    }
+
+    fn packed_package(package: Self) -> PacketReceived {
+        PacketReceived::_Suback(Box::new(package))
+    }
+}
+
