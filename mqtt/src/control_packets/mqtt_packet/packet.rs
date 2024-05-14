@@ -42,12 +42,16 @@ pub mod generic_packet {
         fn packed_package(_package: Packet) -> PacketReceived {
             PacketReceived::Unknow
         }
+
+        fn send(&self, stream: &mut TcpStream) -> Result<(), Error> {
+            self.write_to(stream)
+        }
     }
 
     // devolvera el paquete encapsulado en un enum
     // interpretable por el protocolo
     pub fn get_packet(
-        stream: &mut TcpStream,
+        stream: &mut dyn Read,
         package_type: PacketType,
         remaining_length: u16,
     ) -> Result<PacketReceived, Error> {
@@ -69,7 +73,7 @@ pub mod generic_packet {
     // Devuelve los bytes empaquetados en la estructura
     // correspondiente.
     pub fn pack_bytes<T>(
-        stream: &mut TcpStream,
+        stream: &mut dyn Read,
         remaining_length: u16,
     ) -> Result<PacketReceived, Error>
     where
