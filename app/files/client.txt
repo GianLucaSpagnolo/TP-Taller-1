@@ -4,3 +4,5 @@ protocol_name: MQTT
 protocol_version: 5
 keep_alive: 60
 flag_clean_start: true
+flag_will_qos: 2
+session_expiry_interval: 20

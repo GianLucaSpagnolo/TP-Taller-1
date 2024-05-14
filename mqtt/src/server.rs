@@ -1,9 +1,9 @@
 use std::collections::HashMap;
-use std::fmt;
 use std::io::Error;
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 
+use crate::actions::MqttActions;
 use crate::config::{Config, ServerConfig};
 use crate::control_packets::mqtt_connack::connack::*;
 use crate::control_packets::mqtt_connack::connack_properties::ConnackProperties;
@@ -12,67 +12,18 @@ use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
-use crate::thread_pool::ThreadPool;
+use crate::server_pool::ServerPool;
+use crate::session::Session;
 
-pub struct WillMessage {
-    _will_topic: String,
-    _will_payload: String,
-}
-
-impl Clone for WillMessage {
-    fn clone(&self) -> Self {
-        WillMessage {
-            _will_topic: self._will_topic.clone(),
-            _will_payload: self._will_payload.clone(),
-        }
-    }
-}
-
-pub struct SessionState {
-    active: bool,
-    _session_expiry_interval: u32,
-    _subscriptions: Vec<String>,
-    _will_message: Option<WillMessage>,
-}
-
-impl Clone for SessionState {
-    fn clone(&self) -> Self {
-        SessionState {
-            active: self.active,
-            _session_expiry_interval: self._session_expiry_interval,
-            _subscriptions: self._subscriptions.clone(),
-            _will_message: self._will_message.clone(),
-        }
-    }
-}
-
-pub enum ServerActions {
-    ConnectionEstablished,
-    DesconnectClient,
-    TryConnect, // guardara el exit code
-    PackageError,
-}
-
-impl fmt::Display for ServerActions {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ServerActions::ConnectionEstablished => write!(f, "Conexion establecida"),
-            ServerActions::TryConnect => write!(f, "Intentando conectar"),
-            ServerActions::PackageError => write!(f, "Error en el paquete"),
-            ServerActions::DesconnectClient => write!(f, "Desconectando cliente"),
-        }
-    }
-}
-
-pub struct Server {
+pub struct MqttServer {
     pub config: ServerConfig,
-    sessions: HashMap<String, SessionState>,
+    sessions: HashMap<String, Session>,
     _connect_received: bool,
 }
 
-impl Clone for Server {
+impl Clone for MqttServer {
     fn clone(&self) -> Self {
-        Server {
+        MqttServer {
             config: self.config.clone(),
             sessions: self.sessions.clone(),
             _connect_received: self._connect_received,
@@ -80,30 +31,22 @@ impl Clone for Server {
     }
 }
 
-impl Server {
+impl MqttServer {
     pub fn new(config: ServerConfig) -> Self {
-        Server {
+        MqttServer {
             config,
             sessions: HashMap::new(),
             _connect_received: false,
         }
     }
 
-    fn handle_client(
-        server: Arc<Mutex<Server>>,
-        client_stream: TcpStream,
-        pool: &ThreadPool,
-    ) -> Result<ServerActions, Error> {
-        match pool.execute(move || -> Result<ServerActions, Error> {
-            server.lock().unwrap().process_packet(client_stream)
-        }) {
-            Ok(_) => Ok(ServerActions::ConnectionEstablished),
-            Err(e) => Err(e),
-        }
-    }
+    // le devuelve el paquete al servidor
+    // el servidor lo pasa al logger
+    // el logger le pide traduccion al protocolo
+    pub fn start_server(self) -> Result<MqttActions, Error> {
+        let listener = TcpListener::bind(self.config.get_socket_address())?;
 
-    fn run_listener(self, listener: &TcpListener) -> Result<ServerActions, Error> {
-        let pool = ThreadPool::build(self.config.maximum_threads)?;
+        let pool = ServerPool::build(self.config.maximum_threads)?;
 
         let server_ref = Arc::new(Mutex::new(self));
 
@@ -119,24 +62,23 @@ impl Server {
         ))
     }
 
-    // le devuelve el paquete al servidor
-    // el servidor lo pasa al logger
-    // el logger le pide traduccion al protocolo
-    pub fn start_server(self) -> Result<ServerActions, Error> {
-        let listener = match TcpListener::bind(self.config.get_socket_address()) {
-            Ok(l) => l,
-            Err(e) => return Err(e),
-        };
-
-        // corre un listener en un thread pool
-        self.run_listener(&listener)
+    fn handle_client(
+        server: Arc<Mutex<MqttServer>>,
+        client_stream: TcpStream,
+        pool: &ServerPool,
+    ) -> Result<MqttActions, Error> {
+        match pool.execute(move || -> Result<MqttActions, Error> {
+            match server.lock().unwrap().messages_handler(client_stream) {
+                Ok(action) => Ok(action),
+                Err(e) => Err(e),
+            }
+        }) {
+            Ok(_) => Ok(MqttActions::MessageReceived.register_action()),
+            Err(e) => Err(e),
+        }
     }
 
-    // usada por el servidor para recibir los paquetes
-    // del cliente
-    // el protocolo recibe el paquete, lo procesa y traduce el
-    // paquete a una accion que el servidor de la app comprenda.
-    pub fn process_packet(&mut self, mut stream: TcpStream) -> Result<ServerActions, Error> {
+    pub fn messages_handler(&mut self, mut stream: TcpStream) -> Result<MqttActions, Error> {
         // averiguo el tipo de paquete:
         let fixed_header = match PacketFixedHeader::read_from(&mut stream) {
             Ok(header_type) => header_type,
@@ -149,15 +91,10 @@ impl Server {
             fixed_header.remaining_length,
         ) {
             Ok(pack) => match pack {
-                PacketReceived::Connect(pack) => {
-                    let connack_properties: ConnackProperties = self.handle_connection(*pack)?;
-                    let connack_packet: Connack = Connack::new(connack_properties);
-                    match connack_packet.write_to(&mut stream) {
-                        Ok(_) => Ok(ServerActions::ConnectionEstablished),
-                        Err(e) => Err(e),
-                    }
+                PacketReceived::Connect(connect_pack) => self.handle_connect(stream, *connect_pack),
+                PacketReceived::Disconnect(_pack) => {
+                    Ok(MqttActions::DisconnectClient.register_action())
                 }
-                PacketReceived::Disconnect(_pack) => Ok(ServerActions::DesconnectClient),
                 /*
                 PacketReceived::Publish(_pack) => {
                     let topic = pack.topic_name;
@@ -168,7 +105,7 @@ impl Server {
                     });
                     let puback = puback::Puback::new(0);
                     match puback.write_to(&mut stream) {
-                        Ok(_) => Ok(ServerActions::ConnectionEstablished),
+                        Ok(_) => Ok(MqttActions::ConnectionEstablished),
                         Err(e) => Err(e),
                     }
                 }
@@ -187,47 +124,15 @@ impl Server {
         }
     }
 
-    fn create_will_message(
+    fn handle_connect(
         &mut self,
-        will_flag: u8,
-        will_topic: Option<String>,
-        will_payload: Option<String>,
-    ) -> Option<WillMessage> {
-        if will_flag == 1 {
-            if let (Some(topic), Some(payload)) = (will_topic, will_payload) {
-                Some(WillMessage {
-                    _will_topic: topic,
-                    _will_payload: payload,
-                })
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-
-    fn open_new_session(&mut self, connect: Connect) -> u8 {
-        if let Some(session) = self.sessions.get_mut(&connect.payload.client_id) {
-            // Resumes session
-            session.active = true;
-            1
-        } else {
-            // New session
-            let session = SessionState {
-                active: true,
-                _session_expiry_interval: 0,
-                _subscriptions: Vec::new(),
-                _will_message: self.create_will_message(
-                    flags_handler::_get_connect_flag_will_flag(connect.properties.connect_flags),
-                    connect.payload.will_topic,
-                    connect.payload.will_payload,
-                ),
-            };
-
-            self.sessions.insert(connect.payload.client_id, session);
-            0
-        }
+        mut stream: TcpStream,
+        connect: Connect,
+    ) -> Result<MqttActions, Error> {
+        let client = connect.payload.client_id.clone();
+        let connack_properties: ConnackProperties = self.handle_connection(connect)?;
+        Connack::new(connack_properties).send(&mut stream)?;
+        Ok(MqttActions::ServerConnection(client).register_action())
     }
 
     fn handle_connection(&mut self, connect: Connect) -> Result<ConnackProperties, Error> {
@@ -288,6 +193,20 @@ impl Server {
         connack_properties.connect_acknowledge_flags = self.open_new_session(connect);
 
         Ok(connack_properties)
+    }
+
+    fn open_new_session(&mut self, connect: Connect) -> u8 {
+        if let Some(session) = self.sessions.get_mut(&connect.payload.client_id) {
+            // Resumes session
+            session.reconnect();
+            1
+        } else {
+            // New session
+            let session = Session::new(&connect);
+
+            self.sessions.insert(connect.payload.client_id, session);
+            0
+        }
     }
 
     fn determinate_reason_code(&self, connect_packet: &Connect) -> u8 {

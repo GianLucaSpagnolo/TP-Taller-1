@@ -7,8 +7,7 @@ use std::{
 use crate::{
     common::utils::*,
     control_packets::{
-        mqtt_connect::{connect_properties::ConnectProperties, payload::ConnectPayload},
-        mqtt_packet::flags::flags_handler::*,
+        mqtt_connect::connect_properties::ConnectProperties, mqtt_packet::flags::flags_handler::*,
     },
 };
 
@@ -42,7 +41,6 @@ pub struct ClientConfig {
     pub ip: IpAddr,
     pub port: u16,
     pub connect_properties: ConnectProperties,
-    pub connect_payload: ConnectPayload,
 }
 
 impl Config for ClientConfig {
@@ -234,14 +232,10 @@ impl Config for ClientConfig {
         }
 
         if let (Some(ip), Some(port)) = (ip, port) {
-            let connect_payload = ConnectPayload::default();
-            // Faltan agregar los campos del payload desde el archivo de configuracion!
-
             return Ok(ClientConfig {
                 ip,
                 port,
                 connect_properties,
-                connect_payload,
             });
         }
 

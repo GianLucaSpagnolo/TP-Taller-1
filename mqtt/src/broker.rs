@@ -1,6 +1,6 @@
 use mqtt::{
     config::{Config, ServerConfig},
-    server::Server,
+    server::MqttServer,
 };
 
 use std::{env, io::Error};
@@ -19,12 +19,7 @@ fn main() -> Result<(), Error> {
 
     let config = ServerConfig::from_file(String::from(config_path))?;
 
-    let server = Server::new(config);
-
-    match server.start_server() {
-        Ok(_) => println!("Corriendo servidor"),
-        Err(e) => println!("Error en el server: {:?}", e),
-    }
+    MqttServer::new(config).start_server()?;
 
     Ok(())
 }
