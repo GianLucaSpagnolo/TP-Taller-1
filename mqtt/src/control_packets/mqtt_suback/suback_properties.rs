@@ -68,7 +68,16 @@ impl PacketProperties for _SubackProperties {
         Ok(variable_props)
     }
     fn as_bytes(&self) -> Result<Vec<u8>, std::io::Error> {
-        todo!()
+        let mut bytes: Vec<u8> = Vec::new();
+        let variable_header_properties = self.as_variable_header_properties()?;
+
+        bytes.extend_from_slice(&self.packet_identifier.to_be_bytes());
+        bytes.extend_from_slice(&variable_header_properties.as_bytes());
+
+        for reason_code in &self.reason_codes {
+            bytes.push(*reason_code);
+        }
+        Ok(bytes)
     }
 
     fn read_from(stream: &mut dyn std::io::Read) -> Result<Self, std::io::Error> {
