@@ -38,6 +38,16 @@ mod control_packets {
         pub mod puback_properties;
     }
 
+    pub mod mqtt_subscribe {
+        pub mod subscribe;
+        pub mod subscribe_properties;
+    }
+
+    pub mod mqtt_suback {
+        pub mod suback;
+        pub mod suback_properties;
+    }
+
     pub mod mqtt_pingreq {
         pub mod pingreq;
     }
