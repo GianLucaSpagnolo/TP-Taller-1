@@ -40,6 +40,7 @@ mod control_packets {
 
     pub mod mqtt_suback {
         pub mod suback;
+        pub mod suback_properties;
     }
 
     pub mod mqtt_pingreq {
