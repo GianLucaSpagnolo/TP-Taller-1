@@ -1,12 +1,11 @@
-use std::{fmt::Error, net::TcpStream, process::ExitCode, sync::mpsc::{channel, Receiver, Sender}, thread};
+use std::{f64::consts::E, io::Error, net::TcpStream, process::ExitCode, sync::mpsc::{channel, Receiver, SendError, Sender}, thread::{self, JoinHandle}};
 
-use app::{common::protocol::app_protocol::{receive_package, server_bind_address, translate_received_package, ProtocolActions}, logger::{log_actions}};
+use app::{common::protocol::app_protocol::{receive_package, server_bind_address, ProtocolActions}, logger::{log_actions}};
 use mqtt::{config::ServerConfig, server::*};
 
 // logger 
 // ----------------------------------------------
 pub fn write_logger(write_pipe: &Sender<String>, msg: &String, client_id: &usize, separator: &String) {
-    
     let message = if !msg.contains('\n') {
         msg.to_string() + "\n"
     } else {
@@ -14,21 +13,21 @@ pub fn write_logger(write_pipe: &Sender<String>, msg: &String, client_id: &usize
     };
 
     let logger_msg :String = client_id.to_string() + &separator + &message;
-    let _ = write_pipe.send(logger_msg);
+    match write_pipe.send(logger_msg) {
+        Ok(_) => println!("log ok"),
+        Err(_) => println!("log err"),
+    }
 }
 
 pub struct ServerLogger {
     write_pipe: Sender<String>,
-    read_pipe: Receiver<String>,
-    // threads :Vec<std::thread::JoinHandle<()>>,
+    //threads: mut vec<thread::JoinHandle<Result<(), std::sync::mpsc::SendError<String>>>>,
 }
 
 pub fn create_logger(
-    w_pipe: Sender<String>, r_pipe: Receiver<String>) -> ServerLogger {
+    w_pipe: Sender<String>) -> ServerLogger {
         ServerLogger {
             write_pipe: w_pipe,
-            read_pipe: r_pipe,
-            // threads : vec![],
         }
 }
 
@@ -39,29 +38,6 @@ impl ServerLogger {
 
     pub fn disconnect_logger(self) {
         drop(self.write_pipe);
-        /*
-        for thread in self.threads {
-            let _ = thread.join();
-        }
-        */
-    }
-
-    pub fn initiate_logger(mut self, log_file_path: &String, tw_pipe: Sender<String>) {
-        /*
-        self.threads.push(thread::spawn(move || {
-        
-            match log_actions(log_file_path, &self.read_pipe, &tw_pipe) {
-                //Err(e) => tw_pipe.send(String::from("Error: ") + &e.to_string()),
-                //Ok(..) => tw_pipe.send(String::from("Ok")),
-                Err(e) => Err(e),
-                Ok(..) => Ok(())
-            };
-            
-            // server_logger.initiate_logger(&log_file_route, tw_pipe);
-        }));
-        */
-        
-        
     }
 }
 
@@ -71,7 +47,7 @@ impl ServerLogger {
 fn handle_received_connect(server: &mut Server, 
     package_type: &ProtocolActions, client_id: &usize) {
     // pide traduccion de los errores al protocolo
-    let msg = translate_received_package(package_type);
+    // let msg = translate_received_package(package_type);
 
     // consigue el client_ID (harcodeado pero funcional)
     // escribe el mensaje traducido en el logger
@@ -112,27 +88,22 @@ fn main() -> ExitCode {
     const SERVERCONFIGERROR: u8 = 4;
     const LOGFILEERROR: u8 = 5;
 
-    // prepara el logger
-    let log_file_route = String::from("app/files/log.csv");
-    
-    // thread handling
-    // let mut threads = vec![];
+    // thread handling --------------------------------------
+    let mut threads = vec![];
     let (write_pipe, read_pipe) = channel::<String>();
     let (tw_pipe, tr_pipe) = channel::<String>();
     
-    let server_logger = create_logger(write_pipe, read_pipe);
-    /*
+    // prepara el logger
+    let log_file_route = String::from("app/files/log.csv");
+    let server_logger = create_logger(write_pipe);
+    
     threads.push(thread::spawn(move || {
         
-        match log_actions(&log_file_route, &read_pipe, &tw_pipe) {
+        match log_actions(&log_file_route, read_pipe, &tw_pipe) {
             Err(e) => tw_pipe.send(String::from("Error: ") + &e.to_string()),
             Ok(..) => tw_pipe.send(String::from("Ok")),
         }
-        
-        // server_logger.initiate_logger(&log_file_route, tw_pipe);
     }));
-    */
-    server_logger.initiate_logger(&log_file_route, tw_pipe);
 
     // thread error handling:
     match tr_pipe.recv() {
@@ -144,21 +115,22 @@ fn main() -> ExitCode {
         }
         Err(..) => return LOGFILEERROR.into(),
     }
-
+    // -------------------------------------------------------
     // prepara la configuracion
-    let config = match ServerConfig::from_file(String::from("app/files/server.txt")) {
+    let config = match ServerConfig::from_file(String::from("ap/files/server.txt")) {
         Ok(server_config) => {
             //let _ = write_pipe.send(String::from("0;Sucessfull server configuration\n"));
             //write_logger(&write_pipe, &"Sucessfull server configuration".to_string(), &0, &";".to_string());
             server_logger.log(&"Sucessfull server configuration".to_string(), &0, &";".to_string());
             server_config
-        }
+        },
         Err(e) => {
+            println!("falla [{}]", &e.to_string());
             // let _ = write_pipe.send(String::from("0;") + &e.to_string());
             //write_logger(&write_pipe, &(e.to_string() + &"\n".to_string()), &0, &";".to_string());
             server_logger.log(&e.to_string(), &0, &";".to_string());
             return SERVERCONFIGERROR.into();
-        }
+        },
     };
 
     // prepara las conexiones:
@@ -169,7 +141,7 @@ fn main() -> ExitCode {
     match server_bind_address(&addr) {
         Ok(listener) => {
             // crea las conexiones
-            
+            /*
             for client_stream in listener.incoming() {
                 match client_stream {
                     Ok(mut stream) => handle_connection(&mut stream, &mut protocol_server, &client_id),
@@ -182,7 +154,7 @@ fn main() -> ExitCode {
                 };
                 client_id+=1;
             }
-            
+            */
         }
         Err(e) => {
             // let _ = write_pipe.send(String::from("0;") + &e.to_string());
@@ -192,13 +164,12 @@ fn main() -> ExitCode {
         }
     }
 
-    // termino la conexion con el logger:
+    // termino la conexion con el logger: ---------------------
     // cierro el read_pipe para que se cierre el logger:
     server_logger.disconnect_logger();
-    /*
     for thread in threads {
         let _ = thread.join();
     }
-    */
+    // --------------------------------------------------------
     0.into()
 }

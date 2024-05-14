@@ -153,7 +153,7 @@ fn log_events(read_pipe: &Receiver<String>, log_file_path: &String) -> Result<()
 }
 */
 
-pub fn log_actions(log_file_route: &String, read_pipe: &Receiver<String>, write_pipe: &Sender<String>,) -> Result<(), Error> {
+pub fn log_actions(log_file_route: &String, read_pipe: Receiver<String>, write_pipe: &Sender<String>,) -> Result<(), Error> {
     // abrira el archivo, cuando haga una funcion que maneje el thread
     // y devuelva sus errores
     

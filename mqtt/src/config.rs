@@ -340,7 +340,10 @@ impl ServerConfig {
                 Some(())
             }
         });
-
+        
+        if parametros.is_empty() {
+            return Err(Error::new(std::io::ErrorKind::InvalidData, "invalid  path or empty file"));
+        }
         ServerConfig::set_params(&parametros)
     }
 }
