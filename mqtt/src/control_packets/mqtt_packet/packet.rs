@@ -9,6 +9,7 @@ pub mod generic_packet {
         mqtt_disconnect::disconnect::_Disconnect, mqtt_pingreq::pingreq::_PingReq,
         mqtt_pingresp::pingresp::_PingResp, mqtt_puback::puback::_Puback,
         mqtt_publish::publish::_Publish, mqtt_suback::suback::_Suback,
+        mqtt_subscribe::subscribe::_Subscribe,
     };
 
     pub enum PacketType {
@@ -16,6 +17,7 @@ pub mod generic_packet {
         ConnackType,
         _PublishType,
         _PubackType,
+        SubscribeType,
         SubackType,
         _PingReqType,
         _PingRespType,
@@ -28,6 +30,7 @@ pub mod generic_packet {
         Connack(Box<Connack>),
         Publish(Box<_Publish>),
         Puback(Box<_Puback>),
+        Subscribe(Box<_Subscribe>),
         _Suback(Box<_Suback>),
         PingReq(Box<_PingReq>),
         PingResp(Box<_PingResp>),
