@@ -65,6 +65,8 @@ pub mod generic_packet {
             PacketType::ConnackType => pack_bytes::<Connack>(stream, remaining_length),
             PacketType::_PublishType => pack_bytes::<_Publish>(stream, remaining_length),
             PacketType::_PubackType => pack_bytes::<_Puback>(stream, remaining_length),
+            PacketType::SubscribeType => pack_bytes::<_Subscribe>(stream, remaining_length),
+            PacketType::SubackType => pack_bytes::<_Suback>(stream, remaining_length),
             PacketType::_PingReqType => pack_bytes::<_PingReq>(stream, remaining_length),
             PacketType::_PingRespType => pack_bytes::<_PingResp>(stream, remaining_length),
             PacketType::DisconnectType => pack_bytes::<_Disconnect>(stream, remaining_length),
