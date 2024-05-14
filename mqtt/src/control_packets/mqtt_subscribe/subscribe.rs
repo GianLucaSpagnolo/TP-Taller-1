@@ -93,3 +93,43 @@ impl _Subscribe {
         }
     }
 }
+
+#[cfg(test)]
+
+mod test {
+    use crate::control_packets::mqtt_subscribe::subscribe_properties::SubscriptionType;
+    use super::*;
+    
+    #[test]
+    fn test_subscribe_to_one_topic(){
+        let properties = SubscribeProperties {
+            packet_identifier: 1,
+            subscription_identifier: Some(1),
+            user_property: Some(("key".to_string(), "value".to_string())),
+            topic_filters: vec![
+                SubscriptionType {
+                    topic_filter: "topico1".to_string(),
+                    subscription_options: 0,
+                }
+            ]
+        };
+
+        let subscribe = _Subscribe::_new(properties);
+
+        //ESCRIBE EL PACKET EN EL BUFFER
+        let mut bytes = Vec::new();
+        subscribe.write_to(&mut bytes).unwrap();
+
+        //LEE EL PACKET DEL BUFFER
+        let mut buffer = bytes.as_slice();
+        let subscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        let subscribe = _Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
+    
+        assert_eq!(subscribe.properties.packet_identifier, 1);
+        assert_eq!(subscribe.properties.subscription_identifier, Some(1));
+        assert_eq!(subscribe.properties.user_property, Some(("key".to_string(), "value".to_string())));
+        assert_eq!(subscribe.properties.topic_filters.len(), 1);
+        assert_eq!(subscribe.properties.topic_filters[0].topic_filter, "topico1");
+        assert_eq!(subscribe.properties.topic_filters[0].subscription_options, 0);
+    }
+}
