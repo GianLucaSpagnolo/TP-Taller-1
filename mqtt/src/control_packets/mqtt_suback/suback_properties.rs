@@ -1,5 +1,3 @@
-use crate::control_packets::mqtt_connect::payload;
-use crate::control_packets::mqtt_packet::reason_codes;
 use crate::control_packets::mqtt_packet::{packet_properties::PacketProperties, packet_property::*, variable_header_properties::VariableHeaderProperties};
 use crate::common::data_types::data_representation::*;
 
@@ -48,10 +46,11 @@ impl PacketProperties for _SubackProperties {
 
         let mut payload_size = 0;
 
+        let reason_codes_len = self.reason_codes.len() as u16;
         for _ in &self.reason_codes {
             payload_size += std::mem::size_of::<u8>();
         }
-        fixed_props_size as u16 + variable_props.bytes_length + payload_size as u16
+        fixed_props_size as u16 + variable_props.bytes_length + reason_codes_len + payload_size as u16 
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
@@ -77,6 +76,8 @@ impl PacketProperties for _SubackProperties {
         bytes.extend_from_slice(&self.packet_identifier.to_be_bytes());
         bytes.extend_from_slice(&variable_header_properties.as_bytes());
 
+        let reason_codes_len = self.reason_codes.len() as u16;
+        bytes.extend_from_slice(&reason_codes_len.to_be_bytes());
         for reason_code in &self.reason_codes {
             bytes.push(*reason_code);
         }
@@ -102,10 +103,14 @@ impl PacketProperties for _SubackProperties {
                 _ => {}
             }
         }
-        let mut reason_codes = Vec::new();
 
-        while let Some(reason_code) = Some(read_byte(stream)?) {
+        let mut reason_codes = Vec::new();
+        let reason_codes_len = read_two_byte_integer(stream)?;
+        let mut i = 0;
+        while i < reason_codes_len {
+            let reason_code = read_byte(stream)?;
             reason_codes.push(reason_code);
+            i += 1;
         }
 
         Ok(_SubackProperties {
