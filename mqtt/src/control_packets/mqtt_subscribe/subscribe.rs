@@ -177,4 +177,49 @@ mod test {
         assert_eq!(subscribe.properties.topic_filters[2].topic_filter, "topico3");
         assert_eq!(subscribe.properties.topic_filters[2].subscription_options, 2);
     }
+
+    #[test]
+    fn test_subscribe_with_empty_optional_fields(){
+        let properties = SubscribeProperties {
+            packet_identifier: 1,
+            subscription_identifier: None,
+            user_property: None,
+            topic_filters: vec![
+                SubscriptionType {
+                    topic_filter: "topico1".to_string(),
+                    subscription_options: 0,
+                },
+                SubscriptionType {
+                    topic_filter: "topico2".to_string(),
+                    subscription_options: 1,
+                },
+                SubscriptionType {
+                    topic_filter: "topico3".to_string(),
+                    subscription_options: 2,
+                }
+            ]
+        };
+
+        let subscribe = _Subscribe::_new(properties);
+
+        //ESCRIBE EL PACKET EN EL BUFFER
+        let mut bytes = Vec::new();
+        subscribe.write_to(&mut bytes).unwrap();
+
+        //LEE EL PACKET DEL BUFFER
+        let mut buffer = bytes.as_slice();
+        let subscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        let subscribe = _Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
+    
+        assert_eq!(subscribe.properties.packet_identifier, 1);
+        assert_eq!(subscribe.properties.subscription_identifier, None);
+        assert_eq!(subscribe.properties.user_property, None);
+        assert_eq!(subscribe.properties.topic_filters.len(), 3);
+        assert_eq!(subscribe.properties.topic_filters[0].topic_filter, "topico1");
+        assert_eq!(subscribe.properties.topic_filters[0].subscription_options, 0);
+        assert_eq!(subscribe.properties.topic_filters[1].topic_filter, "topico2");
+        assert_eq!(subscribe.properties.topic_filters[1].subscription_options, 1);
+        assert_eq!(subscribe.properties.topic_filters[2].topic_filter, "topico3");
+        assert_eq!(subscribe.properties.topic_filters[2].subscription_options, 2);
+    }
 }
