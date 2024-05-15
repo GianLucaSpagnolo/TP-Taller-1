@@ -1,3 +1,47 @@
+
+/// ## UNSUBACK PACKET
+///
+/// The Unsuback Packet is sent by the Server to the Client to confirm receipt and processing of an UNSUBSCRIBE Packet.
+///
+/// ### Fixed Header
+///
+/// PRIMER BYTE
+/// 4 bits mas significativos: MQTT Control Packet type
+/// 1011: UNSUBACK
+///
+/// 4 bits menos significativos: Flags
+/// 0000: Reserved
+///
+/// SEGUNDO BYTE
+///
+/// Remaining Length
+/// This is the length of Variable Header plus the length of the Payload, encoded as a Variable Byte Integer.
+///
+/// ### Variable Header
+///
+/// The Variable Header of the UNSUBACK packet contains the following fields in the order: Packet Identifier from
+/// the UNSUBSCRIBE packet that is being acknowledged, and Properties.
+///
+/// #### Properties
+///
+/// 1. Property Length
+/// Property Length (Variable Byte Integer)
+///
+/// 2. Reason String
+/// ID: 31 (0x1F)
+/// Reason String (UTF-8 Encoded String)
+///
+/// 3. User Property
+/// ID: 38 (0x26)
+/// User Property (UTF-8 String Pair)
+///
+/// ### Payload
+///
+/// The Payload of the UNSUBACK packet contains a list of Reason Codes. Each Reason Code corresponds to a Topic Filter
+/// in the UNSUBSCRIBE packet that is being acknowledged.
+/// The order of the Reason Codes in the UNSUBACK packet MUST match the order of Topic Filters in the UNSUBSCRIBE packet.
+///
+
 use std::io::{Read, Error};
 use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
 use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
