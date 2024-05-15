@@ -62,6 +62,26 @@ pub mod flags_handler {
         _apply_mask_to_n_bits(flags, 0, 1)
     }
 
+    /// SUBSCRIBE FLAG: MAX QoS
+    pub fn _get_subscribe_max_qos(subscription_options: u8) -> u8 {
+        _apply_mask_to_n_bits(subscription_options, 0, 2)
+    }
+
+    /// SUBSCRIBE FLAG: NO LOCAL Option
+    pub fn _get_subscribe_no_local_option(subscription_options: u8) -> u8 {
+        _apply_mask_to_n_bits(subscription_options, 2, 1)
+    }
+
+    /// SUBSCRIBE FLAG: RETAIN AS PUBLISHED
+    pub fn _get_subscribe_retain_as_published(subscription_options: u8) -> u8 {
+        _apply_mask_to_n_bits(subscription_options, 3, 1)
+    }
+
+    /// SUBSCRIBE FLAG: RETAIN HANDLING
+    pub fn _get_subscribe_retain_handling(subscription_options: u8) -> u8 {
+        _apply_mask_to_n_bits(subscription_options, 4, 2)
+    }
+
     pub fn add_connect_flag_clean_start(
         mut connect_flags: u8,
         clean_start: String,
