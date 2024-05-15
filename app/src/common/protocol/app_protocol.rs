@@ -116,7 +116,6 @@ pub enum ProtocolActions {
     PackageError,
 }
 
-
 pub fn server_bind_address(address: &String) -> Result<TcpListener, Error> {
     if !address.contains(':') {
         return Err(Error::new(

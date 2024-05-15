@@ -1,6 +1,7 @@
 // El logger solo sera usado por el servidor,
 // mover logger a carpeta del server.
 
+use crate::common::file_manager::{open_file, read_file, write_line};
 /// El logger guarda en alto nivel las acciones de todas las aplicaciones,
 /// que pasan por el servidor.
 /// Cuando el servidor recibe una accion de su protocolo, llama al logger
@@ -18,16 +19,16 @@
 ///      * accion parseada
 ///
 /// El log define el archivo, y su formato. (en un principio .csv)
-
 use chrono;
 use chrono::prelude::*;
 use std::{
-    fs::File, io::Error, sync::mpsc::{ Receiver, Sender}
+    fs::File,
+    io::Error,
+    sync::mpsc::{channel, Receiver, Sender},
+    thread::{self, JoinHandle},
 };
-use crate::common::file_manager::{open_file, read_file, write_line};
 
-
-// file manager
+// file manager ------------------------------------------------
 fn file_was_created(file: &File) -> bool {
     match read_file(file) {
         Some(lineas) => !lineas.is_empty(),
@@ -53,110 +54,77 @@ fn open_log_file(route: &String) -> Result<File, Error> {
     }
 }
 
-/*
-pub struct Logger {
-    read_pipe: Receiver<String>,
+// Logger ----------------------------------------------------------
+pub struct LoggerHandler {
     write_pipe: Sender<String>,
-    log_file: File,
+    log_file_path: String,
+    threads: Vec<JoinHandle<Result<(), std::io::Error>>>,
 }
 
-impl Logger {
-    pub fn create_logger(r_pipe: Receiver<String>,
-        w_pipe: Sender<String>, route: &String) -> Result<Logger, Error> {
-            let file = open_log_file(route)?;
-
-            Ok(Logger {
-                read_pipe: r_pipe,
-                write_pipe: w_pipe,
-                log_file: file,
-            })
+impl LoggerHandler {
+    pub fn create_logger_handler(w_pipe: Sender<String>, route: &String) -> LoggerHandler {
+        LoggerHandler {
+            write_pipe: w_pipe,
+            log_file_path: String::from(route),
+            threads: vec![],
         }
-
-    pub fn log(&self, r_pipe: Receiver<String>, file_name: &String) {
-        let mut threads = vec![];
-        let name = file_name.deref().to_string();
-        //let tr_pipe = &self.read_pipe;
-        let (tw_pipe, tr_pipe) = mpsc::channel::<String>();
-        let mut file = &self.log_file;
-
-        threads.push(thread::scope(move |scope| {
-            scope.spawn(move || {
-                // let _ = tw_pipe.send(String::from("t"));
-                let mut received = match tr_pipe.recv() {
-                    Ok(action) => action,
-                        Err(e) => String::from(""),
-                };
-
-                self.translate(&received);
-
-                /*
-                match log_events(tr_pipe, &name) {
-                    Err(e) => Err(e),
-                    Ok(..) => Ok(()),
-                };
-                
-                let mut received;
-                loop {
-                    received = match tr_pipe.recv() {
-                    Ok(action) => action,
-                        Err(..) => {
-                            return Err::<String, std::io::Error>(Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                "Logger recv error",
-                           ))
-                        }
-                    };
-                
-                    // escribe lo recibido en el log
-                    let _ = translate_and_log(&received, &mut &self.log_file);
-                }
-                */
-            });
-        }));
-
-
     }
 
-    fn translate(&self, action :&String) {
+    pub fn initiate_listener(&mut self, reader: Receiver<String>) -> Result<(), Error> {
+        let path = String::from(&self.log_file_path);
+        let (tw, tr) = channel();
 
-    }
-    
-}
+        self.threads
+            .push(thread::spawn(move || log_actions(&path, reader, &tw)));
 
-fn log_events(read_pipe: &Receiver<String>, log_file_path: &String) -> Result<(), Error>{
-
-    let mut received;
-    let mut log_file: File = match open_log_file(log_file_path) {
-        Ok(file) => {
-            file
-        }
-        Err(e) => {
-            return Err(e);
-        }
-    };
-
-    loop {
-        received = match read_pipe.recv() {
-        Ok(action) => action,
-            Err(..) => {
-                return Err(Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    "Logger recv error",
-               ))
+        match tr.recv() {
+            Ok(r) => {
+                if !r.contains("Ok") {
+                    return Err(Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Error at open log file",
+                    ));
+                };
+                Ok(())
             }
-        };
-    
-        // escribe lo recibido en el log
-        let _ = translate_and_log(&received, &mut log_file);
+            Err(..) => Err(Error::new(
+                std::io::ErrorKind::InvalidData,
+                "thread handler recv error",
+            )),
+        }
     }
-    // Ok(())
-}
-*/
 
-pub fn log_actions(log_file_route: &String, read_pipe: Receiver<String>, write_pipe: &Sender<String>,) -> Result<(), Error> {
-    // abrira el archivo, cuando haga una funcion que maneje el thread
-    // y devuelva sus errores
-    
+    pub fn log_event(&self, msg: &String, client_id: &usize, separator: &String) {
+        let message = if !msg.contains('\n') {
+            msg.to_string() + "\n"
+        } else {
+            msg.to_string()
+        };
+
+        let logger_msg: String = client_id.to_string() + &separator + &message;
+        let _ = &self.enqueue_message(&logger_msg);
+    }
+
+    fn enqueue_message(&self, msg: &String) -> Result<(), Error> {
+        match &self.write_pipe.send(msg.to_string()) {
+            Ok(..) => Ok(()),
+            Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string())),
+        }
+    }
+
+    pub fn close_logger(self) {
+        drop(self.write_pipe);
+        for thread in self.threads {
+            let _ = thread.join();
+        }
+    }
+}
+
+pub fn log_actions(
+    log_file_route: &String,
+    read_pipe: Receiver<String>,
+    write_pipe: &Sender<String>,
+) -> Result<(), Error> {
     let mut log_file: File = match open_log_file(log_file_route) {
         Ok(file) => {
             let _ = write_pipe.send(String::from("Ok"));
@@ -167,27 +135,14 @@ pub fn log_actions(log_file_route: &String, read_pipe: Receiver<String>, write_p
             return Err(e);
         }
     };
-    
-    let mut received;
 
-        loop {
-            received = match read_pipe.recv() {
-                Ok(action) => action,
-                Err(..) => {
-                    return Err(Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        "Logger recv error",
-                    ))
-                }
-            };
-    
-            // escribe lo recibido en el log
-            let _ = translate_and_log(&received, &mut log_file);
-        }
-    
-    //Ok(())
+    while let Ok(received) = read_pipe.recv() {
+        let _ = translate_and_log(&received, &mut log_file);
+    }
+    Ok(())
 }
 
+// Logging -------------------------------------------------
 fn translate_and_log(action: &str, log_file: &mut File) -> Result<(), Error> {
     if action.contains(';') {
         return translate_server_message(action, log_file);
@@ -196,6 +151,7 @@ fn translate_and_log(action: &str, log_file: &mut File) -> Result<(), Error> {
     // si no la traduce el protocolo
 
     // se graba:
+
     Ok(())
 }
 
@@ -207,14 +163,16 @@ fn get_actual_timestamp() -> String {
     dt_new.format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
-// El client_id = 0 corresponde al server.
 fn log_action(action: &mut String, file: &mut File, client_id: &usize) -> Result<(), Error> {
     // los junta y formatea como csv
     let mut line = get_actual_timestamp() + "," + &client_id.to_string() + "," + action;
     write_line(&mut line, file)
 }
 
-// translations
+// translations ----------------------------------------------
+
+// El client_id = 0 corresponde al server, se indica que es el server con el separador: ";"
+// para el resto se usa el separador "-"
 fn translate_server_message(action: &str, file: &mut File) -> Result<(), Error> {
     let server_id: usize = match action.split(';').next() {
         Some(part) => match part.parse::<usize>() {
@@ -240,5 +198,3 @@ fn translate_server_message(action: &str, file: &mut File) -> Result<(), Error> 
     };
     log_action(&mut error, file, &server_id)
 }
-
-
