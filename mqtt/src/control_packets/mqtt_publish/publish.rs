@@ -110,6 +110,31 @@ impl Serialization for _Publish {
 }
 
 impl _Publish {
+    /// ### Flags del Fixed Header de Publish:
+    /// 
+    /// 4 bits mas significativos: MQTT Control Packet type
+    /// 
+    /// #### Bit en posicion 3: DUP Flag
+    /// 
+    /// Si el DUP flag es 0, indica que esta es la primera ocasion en la que el Cliente o Servidor intenta enviar
+    /// este paquete PUBLISH. Si el DUP flag es 1, indica que este podria ser un reenvio de un intento anterior
+    /// de enviar el paquete. El DUP flag DEBE ser seteado a 1 por el Cliente o Servidor cuando intenta reenviar
+    /// un paquete PUBLISH. El valor del DUP flag de un paquete PUBLISH entrante no se propaga cuando el paquete 
+    /// PUBLISH es enviado a los suscriptores por el Servidor. El DUP flag en el paquete PUBLISH saliente se 
+    /// establece de forma independiente al paquete PUBLISH entrante, su valor DEBE ser determinado unicamente 
+    /// por si el paquete PUBLISH saliente es una retransmision.
+    /// 
+    /// #### Bits en posicion 2-1: QoS Level
+    /// 
+    /// Estos bits indican el nivel de QoS del mensaje. El nivel de QoS puede ser 0, 1 o 2.
+    /// 
+    /// #### Bit en posicion 0: Retain
+    /// 
+    /// Este bit indica si el mensaje debe ser retenido por el Servidor para su posterior entrega a los suscriptores
+    /// con un Topic Name que coincida. Si el bit Retain es 0, el Servidor NO debe retener el mensaje como un mensaje
+    /// retenido. Si el bit Retain es 1, el Servidor DEBE retener el mensaje como un mensaje retenido y lo debe
+    /// entregar a los suscriptores con un Topic Name que coincida cuando sea posible.
+    /// 
     pub fn _new(dup_flag: u8, qos_level: u8, retain: u8, properties: _PublishProperties) -> Self {
         let mut fixed_header_flags = 0;
         fixed_header_flags |= dup_flag << 3;
