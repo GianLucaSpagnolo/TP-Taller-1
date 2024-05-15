@@ -75,7 +75,6 @@ mod test {
             _Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
 
         assert_eq!(disconnect.properties.disconnect_reason_code, 0);
-        assert_eq!(disconnect.properties.variable_props_size(), 4);
 
         let props = disconnect.properties;
 
@@ -125,7 +124,6 @@ mod test {
             _Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
 
         assert_eq!(disconnect.properties.disconnect_reason_code, 1);
-        assert_eq!(disconnect.properties.variable_props_size(), 0);
 
         assert_eq!(disconnect.properties.session_expiry_interval, None);
         assert_eq!(disconnect.properties.reason_string, None);

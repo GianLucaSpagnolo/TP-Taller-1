@@ -58,10 +58,6 @@ impl Clone for ConnackProperties {
 }
 
 impl PacketProperties for ConnackProperties {
-    fn variable_props_size(&self) -> u16 {
-        let header = self.as_variable_header_properties().unwrap();
-        header.properties.len() as u16
-    }
 
     fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();

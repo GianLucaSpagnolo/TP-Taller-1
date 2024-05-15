@@ -129,6 +129,7 @@ mod test {
         }
 
         assert_eq!(unsuback.properties.reason_codes, vec![135]);
+
     }
 
     #[test]

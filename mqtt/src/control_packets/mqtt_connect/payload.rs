@@ -44,11 +44,6 @@ impl Clone for ConnectPayload {
 }
 
 impl PacketProperties for ConnectPayload {
-    fn variable_props_size(&self) -> u16 {
-        let header = self.as_variable_header_properties().unwrap();
-        header.properties.len() as u16
-    }
-
     fn size_of(&self) -> u16 {
         let payload_props = self.as_variable_header_properties().unwrap();
         let mut payload_fields = std::mem::size_of::<u16>() + self.client_id.len();
