@@ -49,12 +49,11 @@ mod control_packets {
     }
 
     pub mod mqtt_unsubscribe {
-        pub mod unsubscribe;  
-        pub mod unsubscribe_properties;  
+        pub mod unsubscribe;
+        pub mod unsubscribe_properties;
     }
 
-    pub mod mqtt_unsuback
-    {
+    pub mod mqtt_unsuback {
         pub mod unsuback;
         pub mod unsuback_properties;
     }

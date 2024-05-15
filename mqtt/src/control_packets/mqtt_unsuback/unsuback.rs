@@ -1,4 +1,8 @@
-
+use crate::control_packets::mqtt_packet::fixed_header::*;
+use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
+use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
+use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
+use crate::control_packets::mqtt_unsuback::unsuback_properties::_UnsubackProperties;
 /// ## UNSUBACK PACKET
 ///
 /// The Unsuback Packet is sent by the Server to the Client to confirm receipt and processing of an UNSUBSCRIBE Packet.
@@ -41,18 +45,12 @@
 /// in the UNSUBSCRIBE packet that is being acknowledged.
 /// The order of the Reason Codes in the UNSUBACK packet MUST match the order of Topic Filters in the UNSUBSCRIBE packet.
 ///
-
-use std::io::{Read, Error};
-use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
-use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
-use crate::control_packets::mqtt_unsuback::unsuback_properties::_UnsubackProperties;
-use crate::control_packets::mqtt_packet::fixed_header::*;
-use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
-pub struct _Unsuback{
+use std::io::{Error, Read};
+pub struct _Unsuback {
     pub properties: _UnsubackProperties,
 }
 
-impl Serialization for _Unsuback{
+impl Serialization for _Unsuback {
     fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Self, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
@@ -74,7 +72,7 @@ impl Serialization for _Unsuback{
         let properties = self.properties.as_bytes()?;
         stream.write_all(&properties)?;
 
-        Ok(())   
+        Ok(())
     }
 
     fn packed_package(package: Self) -> PacketReceived {
@@ -82,11 +80,9 @@ impl Serialization for _Unsuback{
     }
 }
 
-impl _Unsuback{
-    pub fn _new(properties: _UnsubackProperties) -> Self{
-        _Unsuback{
-            properties
-        }
+impl _Unsuback {
+    pub fn _new(properties: _UnsubackProperties) -> Self {
+        _Unsuback { properties }
     }
 }
 
@@ -97,14 +93,12 @@ mod test {
     use crate::control_packets::mqtt_packet::reason_codes::*;
 
     #[test]
-    fn test_unsuback(){
-        let properties = _UnsubackProperties{
+    fn test_unsuback() {
+        let properties = _UnsubackProperties {
             packet_identifier: 1,
             reason_string: Some("reason_string".to_string()),
             user_property: Some(("test_key".to_string(), "test_value".to_string())),
-            reason_codes: vec![
-                ReasonMode::_NotAuthorized.get_id(),
-            ],
+            reason_codes: vec![ReasonMode::_NotAuthorized.get_id()],
         };
 
         let unsuback = _Unsuback::_new(properties);
@@ -116,7 +110,8 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let unsuback_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
-        let unsuback = _Unsuback::read_from(&mut buffer, unsuback_fixed_header.remaining_length).unwrap();   
+        let unsuback =
+            _Unsuback::read_from(&mut buffer, unsuback_fixed_header.remaining_length).unwrap();
 
         assert_eq!(unsuback.properties.packet_identifier, 1);
 
@@ -153,13 +148,12 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let unsuback_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
-        let unsuback = _Unsuback::read_from(&mut buffer, unsuback_fixed_header.remaining_length).unwrap();
+        let unsuback =
+            _Unsuback::read_from(&mut buffer, unsuback_fixed_header.remaining_length).unwrap();
 
         assert_eq!(unsuback.properties.packet_identifier, 1);
         assert_eq!(unsuback.properties.reason_codes, Vec::new());
         assert_eq!(unsuback.properties.reason_string, None);
         assert_eq!(unsuback.properties.user_property, None);
     }
-
-
 }

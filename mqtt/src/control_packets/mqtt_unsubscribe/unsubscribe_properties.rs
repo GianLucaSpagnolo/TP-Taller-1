@@ -1,12 +1,18 @@
-use crate::{common::data_types::data_representation::*, control_packets::mqtt_packet::{packet_properties::PacketProperties, packet_property::*, variable_header_properties::VariableHeaderProperties}};
+use crate::{
+    common::data_types::data_representation::*,
+    control_packets::mqtt_packet::{
+        packet_properties::PacketProperties, packet_property::*,
+        variable_header_properties::VariableHeaderProperties,
+    },
+};
 use std::io::{Error, Read};
 
 #[derive(Default)]
 pub struct _UnsubscribeProperties {
     pub packet_identifier: u16,
     pub user_property: Option<(String, String)>,
-    
-    pub topic_filters : Vec<String>, // Payload
+
+    pub topic_filters: Vec<String>, // Payload
 }
 
 impl Clone for _UnsubscribeProperties {
@@ -31,8 +37,7 @@ impl PacketProperties for _UnsubscribeProperties {
 
         let mut topic_filters_size = std::mem::size_of::<u16>();
         for topic in &self.topic_filters {
-            topic_filters_size +=
-                std::mem::size_of::<u16>() + topic.len();
+            topic_filters_size += std::mem::size_of::<u16>() + topic.len();
         }
 
         fixed_props_size as u16 + variable_props.bytes_length + topic_filters_size as u16
@@ -54,13 +59,13 @@ impl PacketProperties for _UnsubscribeProperties {
     fn as_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut bytes: Vec<u8> = Vec::new();
         let variable_header_properties = self.as_variable_header_properties()?;
-        
+
         bytes.extend_from_slice(&self.packet_identifier.to_be_bytes());
         bytes.extend_from_slice(&variable_header_properties.as_bytes());
 
         let topic_filters_len = self.topic_filters.len() as u16;
         bytes.extend_from_slice(&topic_filters_len.to_be_bytes());
-        
+
         let mut topic_filter_len;
 
         for topic in &self.topic_filters {

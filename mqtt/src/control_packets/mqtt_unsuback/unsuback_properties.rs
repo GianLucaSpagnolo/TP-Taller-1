@@ -1,6 +1,11 @@
-use crate::{common::data_types::data_representation::*, control_packets::mqtt_packet::{packet_properties::PacketProperties, variable_header_properties::VariableHeaderProperties}};
-use std::io::Error;
 use crate::control_packets::mqtt_packet::packet_property::*;
+use crate::{
+    common::data_types::data_representation::*,
+    control_packets::mqtt_packet::{
+        packet_properties::PacketProperties, variable_header_properties::VariableHeaderProperties,
+    },
+};
+use std::io::Error;
 
 #[derive(Default)]
 pub struct _UnsubackProperties {
@@ -23,7 +28,7 @@ impl Clone for _UnsubackProperties {
     }
 }
 
-impl PacketProperties for _UnsubackProperties{
+impl PacketProperties for _UnsubackProperties {
     fn variable_props_size(&self) -> u16 {
         let header = self.as_variable_header_properties().unwrap();
         header.properties.len() as u16
@@ -107,6 +112,6 @@ impl PacketProperties for _UnsubackProperties{
             reason_string,
             user_property,
             reason_codes,
-        })       
+        })
     }
 }

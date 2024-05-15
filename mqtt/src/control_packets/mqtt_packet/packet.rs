@@ -9,8 +9,8 @@ pub mod generic_packet {
         mqtt_disconnect::disconnect::_Disconnect, mqtt_pingreq::pingreq::_PingReq,
         mqtt_pingresp::pingresp::_PingResp, mqtt_puback::puback::_Puback,
         mqtt_publish::publish::_Publish, mqtt_suback::suback::_Suback,
-        mqtt_subscribe::subscribe::_Subscribe, mqtt_unsubscribe::unsubscribe::_Unsubscribe,
-        mqtt_unsuback::unsuback::_Unsuback,
+        mqtt_subscribe::subscribe::_Subscribe, mqtt_unsuback::unsuback::_Unsuback,
+        mqtt_unsubscribe::unsubscribe::_Unsubscribe,
     };
 
     pub enum PacketType {
