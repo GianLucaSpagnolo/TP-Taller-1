@@ -1,4 +1,8 @@
-use crate::control_packets::mqtt_unsubscribe::unsubscribe_properties::_UnsubcribeProperties;
+use crate::control_packets::{mqtt_packet::{fixed_header::_UNSUBSCRIBE_PACKET, packet::generic_packet::Serialization}, mqtt_unsubscribe::unsubscribe_properties::_UnsubscribeProperties};
+use std::io::{Error, Read};
+use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
+use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
+use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 
 /// ## UNSUBSCRIBE PACKET (Enviado del cliente al servidor)
 /// 
@@ -38,7 +42,45 @@ use crate::control_packets::mqtt_unsubscribe::unsubscribe_properties::_Unsubcrib
 /// no ocurre procesamiento adicional
 /// 
 
-pub struct _Unsubcribe{
-    pub properties: _UnsubcribeProperties,
+pub struct _Unsubscribe{
+    pub properties: _UnsubscribeProperties,
+}
+
+impl Serialization for _Unsubscribe{
+    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Self, Error> {
+        let mut aux_buffer = vec![0; remaining_length as usize];
+        stream.read_exact(&mut aux_buffer)?;
+        let mut buffer = aux_buffer.as_slice();
+
+        let properties = _UnsubscribeProperties::read_from(&mut buffer)?;
+
+        Ok(_Unsubscribe { properties })
+    }
+
+    fn write_to(&self, stream: &mut dyn std::io::prelude::Write) -> Result<(), Error> {
+        let remaining_length = self.properties.size_of();
+
+        let fixed_header = PacketFixedHeader::new(_UNSUBSCRIBE_PACKET, remaining_length);
+        let fixed_header_bytes = fixed_header.as_bytes();
+
+        stream.write_all(&fixed_header_bytes)?;
+
+        let properties = self.properties.as_bytes()?;
+        stream.write_all(&properties)?;
+
+        Ok(())   
+    }
+
+    fn packed_package(package: Self) -> PacketReceived {
+        PacketReceived::_Unsubscribe(Box::new(package))
+    }
+}
+
+impl _Unsubscribe{
+    pub fn _new(properties: _UnsubscribeProperties) -> Self{
+        _Unsubscribe{
+            properties
+        }
+    }
 }
 
