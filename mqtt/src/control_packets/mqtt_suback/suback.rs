@@ -5,6 +5,7 @@ use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
 use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_suback::suback_properties::_SubackProperties;
+
 /// ## Suback packet
 ///
 /// The SUBACK Packet is sent by the Server to the Client to confirm receipt and processing of a SUBSCRIBE Packet.

@@ -1,3 +1,5 @@
+use std::io::{Error, Read, Write};
+
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::fixed_header::_SUBSCRIBE_PACKET;
 use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
@@ -6,9 +8,6 @@ use crate::control_packets::{
     mqtt_packet::packet::generic_packet::Serialization,
     mqtt_subscribe::subscribe_properties::SubscribeProperties,
 };
-use std::io::Error;
-use std::io::Read;
-use std::io::Write;
 
 /// ## SUBSCRIBE PACKET (Enviado por el cliente al servidor)
 ///
@@ -94,22 +93,20 @@ impl _Subscribe {
 }
 
 #[cfg(test)]
-
 mod test {
     use super::*;
-    use crate::control_packets::mqtt_subscribe::subscribe_properties::SubscriptionType;
+    use crate::control_packets::mqtt_packet::flags::flags_handler;
 
     #[test]
     fn test_subscribe_to_one_topic() {
-        let properties = SubscribeProperties {
+        let mut properties = SubscribeProperties {
             packet_identifier: 1,
             subscription_identifier: Some(1),
             user_property: Some(("key".to_string(), "value".to_string())),
-            topic_filters: vec![SubscriptionType {
-                topic_filter: "topico1".to_string(),
-                subscription_options: 0,
-            }],
+            ..Default::default()
         };
+
+        properties._add_topic_filter("topico1".to_string(), 2, true, true, 2);
 
         let subscribe = _Subscribe::_new(properties);
 
@@ -129,38 +126,45 @@ mod test {
             subscribe.properties.user_property,
             Some(("key".to_string(), "value".to_string()))
         );
+
         assert_eq!(subscribe.properties.topic_filters.len(), 1);
+
         assert_eq!(
             subscribe.properties.topic_filters[0].topic_filter,
             "topico1"
         );
+
+        let subscription_options = subscribe.properties.topic_filters[0].subscription_options;
         assert_eq!(
-            subscribe.properties.topic_filters[0].subscription_options,
-            0
+            flags_handler::_get_subscribe_max_qos(subscription_options),
+            2
+        );
+        assert_eq!(
+            flags_handler::_get_subscribe_no_local_option(subscription_options),
+            1
+        );
+        assert_eq!(
+            flags_handler::_get_subscribe_retain_as_published(subscription_options),
+            1
+        );
+        assert_eq!(
+            flags_handler::_get_subscribe_retain_handling(subscription_options),
+            2
         );
     }
 
     #[test]
     fn test_subscribe_to_multiple_topics() {
-        let properties = SubscribeProperties {
+        let mut properties = SubscribeProperties {
             packet_identifier: 1,
             subscription_identifier: Some(1),
             user_property: Some(("key".to_string(), "value".to_string())),
-            topic_filters: vec![
-                SubscriptionType {
-                    topic_filter: "topico1".to_string(),
-                    subscription_options: 0,
-                },
-                SubscriptionType {
-                    topic_filter: "topico2".to_string(),
-                    subscription_options: 1,
-                },
-                SubscriptionType {
-                    topic_filter: "topico3".to_string(),
-                    subscription_options: 2,
-                },
-            ],
+            ..Default::default()
         };
+
+        properties._add_topic_filter("topico1".to_string(), 2, true, false, 1);
+        properties._add_topic_filter("topico2".to_string(), 1, false, true, 0);
+        properties._add_topic_filter("topico3".to_string(), 0, false, false, 2);
 
         let subscribe = _Subscribe::_new(properties);
 
@@ -180,53 +184,88 @@ mod test {
             subscribe.properties.user_property,
             Some(("key".to_string(), "value".to_string()))
         );
+
         assert_eq!(subscribe.properties.topic_filters.len(), 3);
+
         assert_eq!(
             subscribe.properties.topic_filters[0].topic_filter,
             "topico1"
         );
+        let subscription_options = subscribe.properties.topic_filters[0].subscription_options;
         assert_eq!(
-            subscribe.properties.topic_filters[0].subscription_options,
+            flags_handler::_get_subscribe_max_qos(subscription_options),
+            2
+        );
+        assert_eq!(
+            flags_handler::_get_subscribe_no_local_option(subscription_options),
+            1
+        );
+        assert_eq!(
+            flags_handler::_get_subscribe_retain_as_published(subscription_options),
             0
         );
+        assert_eq!(
+            flags_handler::_get_subscribe_retain_handling(subscription_options),
+            1
+        );
+
         assert_eq!(
             subscribe.properties.topic_filters[1].topic_filter,
             "topico2"
         );
+
+        let subscription_options = subscribe.properties.topic_filters[1].subscription_options;
         assert_eq!(
-            subscribe.properties.topic_filters[1].subscription_options,
+            flags_handler::_get_subscribe_max_qos(subscription_options),
             1
         );
+        assert_eq!(
+            flags_handler::_get_subscribe_no_local_option(subscription_options),
+            0
+        );
+        assert_eq!(
+            flags_handler::_get_subscribe_retain_as_published(subscription_options),
+            1
+        );
+        assert_eq!(
+            flags_handler::_get_subscribe_retain_handling(subscription_options),
+            0
+        );
+
         assert_eq!(
             subscribe.properties.topic_filters[2].topic_filter,
             "topico3"
         );
+
+        let subscription_options = subscribe.properties.topic_filters[2].subscription_options;
         assert_eq!(
-            subscribe.properties.topic_filters[2].subscription_options,
+            flags_handler::_get_subscribe_max_qos(subscription_options),
+            0
+        );
+        assert_eq!(
+            flags_handler::_get_subscribe_no_local_option(subscription_options),
+            0
+        );
+        assert_eq!(
+            flags_handler::_get_subscribe_retain_as_published(subscription_options),
+            0
+        );
+        assert_eq!(
+            flags_handler::_get_subscribe_retain_handling(subscription_options),
             2
         );
     }
+
     #[test]
     fn test_subscribe_with_empty_optional_fields() {
-        let properties = SubscribeProperties {
+        let mut properties = SubscribeProperties {
             packet_identifier: 1,
             subscription_identifier: None,
             user_property: None,
-            topic_filters: vec![
-                SubscriptionType {
-                    topic_filter: "topico1".to_string(),
-                    subscription_options: 0,
-                },
-                SubscriptionType {
-                    topic_filter: "topico2".to_string(),
-                    subscription_options: 1,
-                },
-                SubscriptionType {
-                    topic_filter: "topico3".to_string(),
-                    subscription_options: 2,
-                },
-            ],
+            ..Default::default()
         };
+
+        properties._add_topic_filter("topico1".to_string(), 0, false, false, 0);
 
         let subscribe = _Subscribe::_new(properties);
 
@@ -243,30 +282,30 @@ mod test {
         assert_eq!(subscribe.properties.packet_identifier, 1);
         assert_eq!(subscribe.properties.subscription_identifier, None);
         assert_eq!(subscribe.properties.user_property, None);
-        assert_eq!(subscribe.properties.topic_filters.len(), 3);
+
+        assert_eq!(subscribe.properties.topic_filters.len(), 1);
+
         assert_eq!(
             subscribe.properties.topic_filters[0].topic_filter,
             "topico1"
         );
+
+        let subscription_options = subscribe.properties.topic_filters[0].subscription_options;
         assert_eq!(
-            subscribe.properties.topic_filters[0].subscription_options,
+            flags_handler::_get_subscribe_max_qos(subscription_options),
             0
         );
         assert_eq!(
-            subscribe.properties.topic_filters[1].topic_filter,
-            "topico2"
+            flags_handler::_get_subscribe_no_local_option(subscription_options),
+            0
         );
         assert_eq!(
-            subscribe.properties.topic_filters[1].subscription_options,
-            1
+            flags_handler::_get_subscribe_retain_as_published(subscription_options),
+            0
         );
         assert_eq!(
-            subscribe.properties.topic_filters[2].topic_filter,
-            "topico3"
-        );
-        assert_eq!(
-            subscribe.properties.topic_filters[2].subscription_options,
-            2
+            flags_handler::_get_subscribe_retain_handling(subscription_options),
+            0
         );
     }
 }

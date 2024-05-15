@@ -7,21 +7,20 @@ use crate::{
 };
 use std::io::{Error, Read};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 /// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
-pub struct SubscriptionType {
+pub struct TopicFilter {
     pub topic_filter: String,
     pub subscription_options: u8,
 }
 
-#[derive(Debug, Default)]
-/// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
+#[derive(Default)]
 pub struct SubscribeProperties {
     pub packet_identifier: u16,
     pub subscription_identifier: Option<u32>,
     pub user_property: Option<(String, String)>,
 
-    pub topic_filters: Vec<SubscriptionType>,
+    pub topic_filters: Vec<TopicFilter>,
 }
 
 impl Clone for SubscribeProperties {
@@ -114,7 +113,7 @@ impl PacketProperties for SubscribeProperties {
             let topic_filter_len = read_two_byte_integer(stream)?;
             let topic_filter = read_utf8_encoded_string(stream, topic_filter_len)?;
             let subscription_options = read_byte(stream)?;
-            topic_filters.push(SubscriptionType {
+            topic_filters.push(TopicFilter {
                 topic_filter,
                 subscription_options,
             });
@@ -127,5 +126,57 @@ impl PacketProperties for SubscribeProperties {
             user_property,
             topic_filters,
         })
+    }
+}
+
+impl SubscribeProperties {
+    /// ### Agregar topic filters al Subscribe Packet
+    ///
+    /// #### Subscription Option Flags:
+    ///
+    /// Bits 0 y 1 de Subscription Options representan el campo Maximum QoS. Esto da el nivel máximo de QoS al cual
+    /// el Servidor puede enviar Mensajes de Aplicación al Cliente.
+    ///
+    /// Bit 2: No Local Option. Si está activado, el Servidor no enviará Mensajes de Aplicación al Cliente cuyo
+    /// publicador es el mismo Cliente (en base al ClientID).
+    ///
+    /// Bit 3: Retain As Published. Si está activado, el Servidor enviará Mensajes de Aplicación al Cliente con el
+    /// flag RETAIN activado, de modo que queden retenidos.
+    ///
+    /// Bits 4 y 5: Retain Handling. Esta opción especifica el envío de Mensajes de Aplicación retenidos cuando se
+    /// establece la subscripción. Esto no afecta a los Mensajes de Aplicación que se envían después de establecer la
+    /// subscripción. Si no hay Mensajes de Aplicación retenidos que hagan match con el topic_filter, entonces todos
+    /// los bits de Retain Handling son ignorados.
+    ///
+    /// 0 - Enviar Mensajes de Aplicación retenidos en el momento de la subscripción.
+    /// 1 - Enviar Mensajes de Aplicación retenidos en la subscripción solo si la subscripción no existe.
+    /// 2 - No enviar Mensajes de Aplicación retenidos en el momento de la subscripción.
+    /// Es un Protocol Error setear el valor de Retain Handling a 3.
+    ///
+    /// Bits 6 y 7 son reservados. Deben ser 0.
+    ///
+    pub fn _add_topic_filter(
+        &mut self,
+        topic_filter: String,
+        max_qos: u8,
+        no_local_option: bool,
+        retain_as_published: bool,
+        retain_handling: u8,
+    ) {
+        let mut subscription_options = 0;
+
+        subscription_options |= max_qos;
+        if no_local_option {
+            subscription_options |= 1 << 2;
+        }
+        if retain_as_published {
+            subscription_options |= 1 << 3;
+        }
+        subscription_options |= retain_handling << 4;
+
+        self.topic_filters.push(TopicFilter {
+            topic_filter,
+            subscription_options,
+        });
     }
 }
