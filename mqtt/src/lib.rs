@@ -48,6 +48,10 @@ mod control_packets {
         pub mod suback_properties;
     }
 
+    pub mod mqtt_unsubscribe {
+        pub mod unsubscribe;  
+        pub mod unsubscribe_properties;  
+    }
     pub mod mqtt_pingreq {
         pub mod pingreq;
     }
