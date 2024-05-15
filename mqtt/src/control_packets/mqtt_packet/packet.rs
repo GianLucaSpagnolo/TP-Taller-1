@@ -9,7 +9,7 @@ pub mod generic_packet {
         mqtt_disconnect::disconnect::_Disconnect, mqtt_pingreq::pingreq::_PingReq,
         mqtt_pingresp::pingresp::_PingResp, mqtt_puback::puback::_Puback,
         mqtt_publish::publish::_Publish, mqtt_suback::suback::_Suback,
-        mqtt_subscribe::subscribe::_Subscribe,
+        mqtt_subscribe::subscribe::_Subscribe, mqtt_unsubscribe::unsubscribe::_Unsubscribe,
     };
 
     pub enum PacketType {
@@ -19,6 +19,7 @@ pub mod generic_packet {
         _PubackType,
         SubscribeType,
         SubackType,
+        _Unsubscribe,
         _PingReqType,
         _PingRespType,
         DisconnectType,
@@ -32,6 +33,7 @@ pub mod generic_packet {
         Puback(Box<_Puback>),
         Subscribe(Box<_Subscribe>),
         _Suback(Box<_Suback>),
+        _Unsubscribe(Box<_Unsubscribe>),
         PingReq(Box<_PingReq>),
         PingResp(Box<_PingResp>),
         Disconnect(Box<_Disconnect>),
@@ -67,6 +69,7 @@ pub mod generic_packet {
             PacketType::_PubackType => pack_bytes::<_Puback>(stream, remaining_length),
             PacketType::SubscribeType => pack_bytes::<_Subscribe>(stream, remaining_length),
             PacketType::SubackType => pack_bytes::<_Suback>(stream, remaining_length),
+            PacketType::_Unsubscribe => pack_bytes::<_Unsubscribe>(stream, remaining_length),
             PacketType::_PingReqType => pack_bytes::<_PingReq>(stream, remaining_length),
             PacketType::_PingRespType => pack_bytes::<_PingResp>(stream, remaining_length),
             PacketType::DisconnectType => pack_bytes::<_Disconnect>(stream, remaining_length),
