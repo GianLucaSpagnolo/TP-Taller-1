@@ -84,3 +84,33 @@ impl _Unsubscribe{
     }
 }
 
+
+#[cfg(test)]
+
+mod test{
+    use super::*;
+
+    #[test]
+    fn test_unsubscribe_to_one_topic(){
+        let properties = _UnsubscribeProperties{
+            packet_identifier: 1,
+            user_property: None,
+            topic_filters: vec!["topic".to_string()],
+        };
+
+        let unsubscribe = _Unsubscribe::_new(properties);
+
+        //ESCRIBE EL PACKET EN EL BUFFER
+        let mut bytes = Vec::new();
+        unsubscribe.write_to(&mut bytes).unwrap();
+
+        //LEE EL PACKET DEL BUFFER
+        let mut buffer = bytes.as_slice();
+        let unsubscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        let unsubscribe = _Unsubscribe::read_from(&mut buffer, unsubscribe_fixed_header.remaining_length).unwrap();
+
+        assert_eq!(unsubscribe.properties.packet_identifier, 1);
+        assert_eq!(unsubscribe.properties.topic_filters.len(), 1);
+        assert_eq!(unsubscribe.properties.topic_filters[0], "topic");
+    }
+}
