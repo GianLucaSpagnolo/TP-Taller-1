@@ -162,7 +162,7 @@ fn log_action(action: &mut String, file: &mut File) -> Result<(), Error> {
 mod test {
     use super::LoggerHandler;
     use crate::common::file_manager::{open_file, read_file};
-    use std::sync::mpsc::channel;
+    use std::{fs::remove_file, sync::mpsc::channel};
 
     #[test]
     fn the_logger_can_log_2_events() {
@@ -183,7 +183,7 @@ mod test {
             Err(e) => {
                 println!("Logger fails to initiate");
                 assert!(false)
-            }
+            },
             Ok(..) => (),
         };
 
@@ -196,6 +196,7 @@ mod test {
             Ok(f) => f,
             Err(e) => {
                 println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
+                let _ = remove_file(&log_file_path);
                 return assert!(false);
             }
         };
@@ -207,8 +208,118 @@ mod test {
                 continue;
             };
             println!("{}", line);
+            let _ = remove_file(&log_file_path);
             assert!(false);
         }
+        let _ = remove_file(&log_file_path);
         assert!(true)
+    }
+
+    #[test]
+    fn the_logger_can_append_events_at_crash_and_not_re_write_the_fields() {
+        let log_file_path = String::from("log2.tmp");
+        let header = "Time,Client_ID,Action".to_string();
+        let str1 = "Initiating logger ...".to_string();
+        let str2 = "Closing logger ...".to_string();
+        let str3 = "Appened event".to_string();
+        let mut line_counter = 0;
+
+        let mut writed_lines = vec![];
+        writed_lines.push(header.to_string());
+        writed_lines.push(str1.to_string());
+        writed_lines.push(str2.to_string());
+
+        let (tw, tr) = channel();
+        let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
+
+        let _ = match logger_handler.initiate_listener(tr) {
+            Err(..) => {
+                println!("Logger fails to initiate");
+                assert!(false)
+            }
+            Ok(..) => (),
+        };
+
+        logger_handler.log_event(&str1, &0, &",".to_string());
+        line_counter+=1;
+        logger_handler.log_event(&str2, &0, &",".to_string());
+        line_counter+=1;
+        logger_handler.close_logger();
+
+        // testing
+        let mut file = match open_file(&log_file_path) {
+            Ok(f) => f,
+            Err(e) => {
+                println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
+                return assert!(false);
+            }
+        };
+
+        let mut readed_lines = read_file(&mut file).unwrap();
+
+        for line in &readed_lines {
+            if line.contains(&header)
+                || line.contains(&str1)
+                || line.contains(&str2)
+            {
+                continue;
+            };
+
+            println!("Unknow line: [{}]", line);
+            let _ = remove_file(&log_file_path);
+            assert!(false);
+        }
+
+        // reseting logger:
+        let (twc, trc) = channel();
+        logger_handler = LoggerHandler::create_logger_handler(twc, &log_file_path);
+        writed_lines.push(str3.to_string());
+
+        let _ = match logger_handler.initiate_listener(trc) {
+            Err(..) => {
+                println!("Logger fails to initiate");
+                assert!(false)
+            }
+            Ok(..) => (),
+        };
+
+        logger_handler.log_event(&str1, &0, &",".to_string());
+        line_counter+=1;
+        logger_handler.log_event(&str3, &0, &",".to_string());
+        line_counter+=1;
+        logger_handler.log_event(&str2, &0, &",".to_string());
+        line_counter+=1;
+        logger_handler.close_logger();
+
+        file = match open_file(&log_file_path) {
+            Ok(f) => f,
+            Err(e) => {
+                println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
+                let _ = remove_file(&log_file_path);
+                return assert!(false);
+            }
+        };
+
+        readed_lines = read_file(&mut file).unwrap();
+        
+
+        for line in &readed_lines {
+            if line.contains(&header)
+                || line.contains(&str1)
+                || line.contains(&str2)
+                || line.contains(&str3)
+            {
+                continue;
+            };
+
+            println!("Unknow line: [{}]", line);
+            let _ = remove_file(&log_file_path);
+            assert!(false);
+        };
+
+        // deleting the file:
+        let _ = remove_file(&log_file_path);
+        // plus 1 for the unique header
+        assert_eq!(line_counter + 1, readed_lines.len());
     }
 }
