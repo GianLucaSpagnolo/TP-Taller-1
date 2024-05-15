@@ -96,14 +96,13 @@ fn main() -> ExitCode {
             logger_handler.log_event(
                 &"Sucessfull server configuration".to_string(),
                 &0,
-                &";".to_string(),
+                &",".to_string(),
             );
             server_config
         }
         Err(e) => {
-            //testeando ...
-            println!("falla [{}]", &e.to_string());
-            logger_handler.log_event(&e.to_string(), &0, &";".to_string());
+            logger_handler.log_event(&(e.to_string()), &0, &",".to_string());
+            logger_handler.close_logger();
             return SERVERCONFIGERROR.into();
         }
     };
@@ -132,12 +131,13 @@ fn main() -> ExitCode {
             */
         }
         Err(e) => {
-            logger_handler.log_event(&e.to_string(), &0, &";".to_string());
+            logger_handler.log_event(&e.to_string(), &0, &",".to_string());
+            logger_handler.close_logger();
             return BINDERROR.into();
         }
     }
 
-    logger_handler.log_event(&"Closing logger ...".to_string(), &0, &";".to_string());
+    logger_handler.log_event(&"Closing logger ...".to_string(), &0, &",".to_string());
     // termino la conexion con el logger: ---------------------
     // cierro el read_pipe para que se cierre el logger:
     logger_handler.close_logger();

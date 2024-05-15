@@ -344,7 +344,7 @@ impl ServerConfig {
         if parametros.is_empty() {
             return Err(Error::new(
                 std::io::ErrorKind::InvalidData,
-                "invalid  path or empty file",
+                "invalid path or empty config file",
             ));
         }
         ServerConfig::set_params(&parametros)

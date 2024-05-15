@@ -1,6 +1,3 @@
-// El logger solo sera usado por el servidor,
-// mover logger a carpeta del server.
-
 use crate::common::file_manager::{open_file, read_file, write_line};
 /// El logger guarda en alto nivel las acciones de todas las aplicaciones,
 /// que pasan por el servidor.
@@ -37,9 +34,10 @@ fn file_was_created(file: &File) -> bool {
 }
 
 fn open_log_file(route: &String) -> Result<File, Error> {
+    let header = "Time,Client_ID,Action\n".to_string();
     match open_file(route) {
         Ok(mut file) => {
-            let mut fields = String::from("Time,Client_ID,Action\n");
+            let mut fields = String::from(header);
 
             if file_was_created(&file) {
                 return Ok(file);
@@ -94,6 +92,8 @@ impl LoggerHandler {
         }
     }
 
+    // parsea el mensaje en el formato definido.
+    // separator = ',' --> .csv
     pub fn log_event(&self, msg: &String, client_id: &usize, separator: &String) {
         let message = if !msg.contains('\n') {
             msg.to_string() + "\n"
@@ -101,7 +101,8 @@ impl LoggerHandler {
             msg.to_string()
         };
 
-        let logger_msg: String = client_id.to_string() + &separator + &message;
+        let logger_msg: String =
+            separator.to_string() + &client_id.to_string() + &separator + &message;
         let _ = &self.enqueue_message(&logger_msg);
     }
 
@@ -120,6 +121,7 @@ impl LoggerHandler {
     }
 }
 
+// se recibe el evento parseado, es decir, ya viene traducido
 pub fn log_actions(
     log_file_route: &String,
     read_pipe: Receiver<String>,
@@ -137,24 +139,12 @@ pub fn log_actions(
     };
 
     while let Ok(received) = read_pipe.recv() {
-        let _ = translate_and_log(&received, &mut log_file);
+        let _ = log_action(&mut received.to_string(), &mut log_file);
     }
     Ok(())
 }
 
 // Logging -------------------------------------------------
-fn translate_and_log(action: &str, log_file: &mut File) -> Result<(), Error> {
-    if action.contains(';') {
-        return translate_server_message(action, log_file);
-    }
-
-    // si no la traduce el protocolo
-
-    // se graba:
-
-    Ok(())
-}
-
 fn get_actual_timestamp() -> String {
     let dt = Local::now();
     let naive_utc = dt.naive_utc();
@@ -163,38 +153,62 @@ fn get_actual_timestamp() -> String {
     dt_new.format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
-fn log_action(action: &mut String, file: &mut File, client_id: &usize) -> Result<(), Error> {
-    // los junta y formatea como csv
-    let mut line = get_actual_timestamp() + "," + &client_id.to_string() + "," + action;
+fn log_action(action: &mut String, file: &mut File) -> Result<(), Error> {
+    let mut line = get_actual_timestamp() + action;
     write_line(&mut line, file)
 }
 
-// translations ----------------------------------------------
+#[cfg(test)]
+mod test {
+    use super::LoggerHandler;
+    use crate::common::file_manager::{open_file, read_file};
+    use std::sync::mpsc::channel;
 
-// El client_id = 0 corresponde al server, se indica que es el server con el separador: ";"
-// para el resto se usa el separador "-"
-fn translate_server_message(action: &str, file: &mut File) -> Result<(), Error> {
-    let server_id: usize = match action.split(';').next() {
-        Some(part) => match part.parse::<usize>() {
-            Ok(val) => val,
-            Err(..) => {
-                return Err(Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    "Logger translate server id error",
-                ))
+    #[test]
+    fn the_logger_can_log_2_events() {
+        let log_file_path = String::from("log1.tmp");
+        let header = "Time,Client_ID,Action".to_string();
+        let str1 = "Initiate logger ...".to_string();
+        let str2 = "Closing logger ...".to_string();
+
+        let mut writed_lines = vec![];
+        writed_lines.push(header.to_string());
+        writed_lines.push(str1.to_string());
+        writed_lines.push(str2.to_string());
+
+        let (tw, tr) = channel();
+        let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
+
+        let _ = match logger_handler.initiate_listener(tr) {
+            Err(e) => {
+                println!("Logger fails to initiate");
+                assert!(false)
             }
-        },
-        None => 0,
-    };
+            Ok(..) => (),
+        };
 
-    let mut error: String = match action.split(';').last() {
-        Some(action) => action.to_string(),
-        None => {
-            return Err(Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Logger translate server error message error",
-            ))
+        logger_handler.log_event(&str1, &0, &",".to_string());
+        logger_handler.log_event(&str2, &0, &",".to_string());
+        logger_handler.close_logger();
+
+        // testing
+        let mut file = match open_file(&log_file_path) {
+            Ok(f) => f,
+            Err(e) => {
+                println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
+                return assert!(false);
+            }
+        };
+
+        let readed_lines = read_file(&mut file).unwrap();
+
+        for line in readed_lines {
+            if line.contains(&header) || line.contains(&str1) || line.contains(&str2) {
+                continue;
+            };
+            println!("{}", line);
+            assert!(false);
         }
-    };
-    log_action(&mut error, file, &server_id)
+        assert!(true)
+    }
 }
