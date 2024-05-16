@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use std::io::Error;
 use std::net::{TcpListener, TcpStream};
+use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
+
+use app::logger::LoggerHandler;
 
 use crate::actions::MqttActions;
 use crate::config::{Config, ServerConfig};
@@ -40,13 +43,62 @@ impl MqttServer {
         }
     }
 
-    // le devuelve el paquete al servidor
-    // el servidor lo pasa al logger
-    // el logger le pide traduccion al protocolo
     pub fn start_server(self) -> Result<MqttActions, Error> {
-        let listener = TcpListener::bind(self.config.get_socket_address())?;
+        // logger -------------------------------------------------
+        let log_file_path = String::from("app/files/log.csv");
+        let (tw, tr) = channel();
+        let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
 
-        let pool = ServerPool::build(self.config.maximum_threads)?;
+        let _ = match logger_handler.initiate_listener(tr) {
+            Err(e) => Err(Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Logger fails to initiate by error: ".to_string() + &e.to_string(),
+            )),
+            Ok(..) => Ok(()),
+        };
+        // logger -------------------------------------------------
+
+        // let listener = TcpListener::bind(self.config.get_socket_address())?;
+        let listener = match TcpListener::bind(self.config.get_socket_address()) {
+            Ok(skt) => {
+                logger_handler.log_event(
+                    &"Server socket binded ok".to_string(),
+                    &0,
+                    &",".to_string(),
+                );
+                skt
+            }
+            Err(e) => {
+                logger_handler.log_event(
+                    &("Server socket initialization error: ".to_string() + &e.to_string()),
+                    &0,
+                    &",".to_string(),
+                );
+                logger_handler.close_logger();
+                return Err(e);
+            }
+        };
+
+        // let pool = ServerPool::build(self.config.maximum_threads)?;
+        let pool = match ServerPool::build(self.config.maximum_threads) {
+            Ok(s_pool) => {
+                logger_handler.log_event(
+                    &"Server pool created ok".to_string(),
+                    &0,
+                    &",".to_string(),
+                );
+                s_pool
+            }
+            Err(e) => {
+                logger_handler.log_event(
+                    &("Server pool initialization error: ".to_string() + &e.to_string()),
+                    &0,
+                    &",".to_string(),
+                );
+                logger_handler.close_logger();
+                return Err(e);
+            }
+        };
 
         let server_ref = Arc::new(Mutex::new(self));
 
@@ -55,6 +107,9 @@ impl MqttServer {
 
             Self::handle_client(shared_server, client_stream?, &pool)?;
         }
+
+        // close logger
+        logger_handler.close_logger();
 
         Err(Error::new(
             std::io::ErrorKind::Other,

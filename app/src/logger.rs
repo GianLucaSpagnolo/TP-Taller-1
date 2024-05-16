@@ -68,6 +68,7 @@ impl LoggerHandler {
         }
     }
 
+    // must be called once
     pub fn initiate_listener(&mut self, reader: Receiver<String>) -> Result<(), Error> {
         let path = String::from(&self.log_file_path);
         let (tw, tr) = channel();
@@ -113,6 +114,7 @@ impl LoggerHandler {
         }
     }
 
+    // must be called once
     pub fn close_logger(self) {
         drop(self.write_pipe);
         for thread in self.threads {
@@ -150,7 +152,7 @@ fn get_actual_timestamp() -> String {
     let naive_utc = dt.naive_utc();
     let offset = dt.offset();
     let dt_new = DateTime::<Local>::from_naive_utc_and_offset(naive_utc, *offset);
-    dt_new.format("%Y-%m-%d %H:%M:%S:%ms").to_string()
+    dt_new.format("%Y-%m-%d %H:%M:%S:%3f").to_string()
 }
 
 fn log_action(action: &mut String, file: &mut File) -> Result<(), Error> {
@@ -183,7 +185,7 @@ mod test {
             Err(..) => {
                 println!("Logger fails to initiate");
                 assert!(false)
-            },
+            }
             Ok(..) => (),
         };
 
@@ -241,9 +243,9 @@ mod test {
         };
 
         logger_handler.log_event(&str1, &0, &",".to_string());
-        line_counter+=1;
+        line_counter += 1;
         logger_handler.log_event(&str2, &0, &",".to_string());
-        line_counter+=1;
+        line_counter += 1;
         logger_handler.close_logger();
 
         // testing
@@ -258,10 +260,7 @@ mod test {
         let mut readed_lines = read_file(&mut file).unwrap();
 
         for line in &readed_lines {
-            if line.contains(&header)
-                || line.contains(&str1)
-                || line.contains(&str2)
-            {
+            if line.contains(&header) || line.contains(&str1) || line.contains(&str2) {
                 continue;
             };
 
@@ -284,11 +283,11 @@ mod test {
         };
 
         logger_handler.log_event(&str1, &0, &",".to_string());
-        line_counter+=1;
+        line_counter += 1;
         logger_handler.log_event(&str3, &0, &",".to_string());
-        line_counter+=1;
+        line_counter += 1;
         logger_handler.log_event(&str2, &0, &",".to_string());
-        line_counter+=1;
+        line_counter += 1;
         logger_handler.close_logger();
 
         file = match open_file(&log_file_path) {
@@ -301,7 +300,6 @@ mod test {
         };
 
         readed_lines = read_file(&mut file).unwrap();
-        
 
         for line in &readed_lines {
             if line.contains(&header)
@@ -315,7 +313,7 @@ mod test {
             println!("Unknow line: [{}]", line);
             let _ = remove_file(&log_file_path);
             assert!(false);
-        };
+        }
 
         // deleting the file:
         let _ = remove_file(&log_file_path);
