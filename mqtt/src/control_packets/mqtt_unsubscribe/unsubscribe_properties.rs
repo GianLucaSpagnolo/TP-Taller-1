@@ -1,3 +1,5 @@
+use std::io::{Error, Read};
+
 use crate::{
     common::data_types::data_representation::*,
     control_packets::mqtt_packet::{
@@ -5,7 +7,6 @@ use crate::{
         variable_header_properties::VariableHeaderProperties,
     },
 };
-use std::io::{Error, Read};
 
 #[derive(Default)]
 pub struct _UnsubscribeProperties {

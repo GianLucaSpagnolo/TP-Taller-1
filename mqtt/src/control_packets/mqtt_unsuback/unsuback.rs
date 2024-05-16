@@ -100,7 +100,13 @@ mod test {
             packet_identifier: 1,
             reason_string: Some("reason_string".to_string()),
             user_property: Some(("test_key".to_string(), "test_value".to_string())),
-            reason_codes: vec![ReasonMode::_NotAuthorized.get_id()],
+
+            // Payload
+            reason_codes: vec![
+                ReasonMode::_BadUserNameOrPassword.get_id(),
+                ReasonMode::_Banned.get_id(),
+                ReasonMode::_NotAuthorized.get_id(),
+            ],
         };
 
         let unsuback = _Unsuback::_new(properties);
@@ -130,14 +136,13 @@ mod test {
             panic!("Error");
         }
 
-        assert_eq!(unsuback.properties.reason_codes, vec![135]);
+        assert_eq!(unsuback.properties.reason_codes, vec![134, 138, 135]);
     }
 
     #[test]
     fn test_unsuback_with_empty_optional_fields() {
         let properties = _UnsubackProperties {
             packet_identifier: 1,
-            reason_codes: vec![],
             ..Default::default()
         };
 

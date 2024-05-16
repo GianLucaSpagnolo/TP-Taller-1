@@ -1,3 +1,5 @@
+use std::io::Error;
+
 use crate::control_packets::mqtt_packet::packet_property::*;
 use crate::{
     common::data_types::data_representation::*,
@@ -5,7 +7,6 @@ use crate::{
         packet_properties::PacketProperties, variable_header_properties::VariableHeaderProperties,
     },
 };
-use std::io::Error;
 
 #[derive(Default)]
 pub struct _UnsubackProperties {
