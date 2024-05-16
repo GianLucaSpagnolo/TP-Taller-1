@@ -10,9 +10,8 @@ use crate::{
         mqtt_packet::packet::generic_packet::*,
     },
 };
-
 pub struct MqttClient {
-    id: String,
+    id: String, 
     config: ClientConfig,
     stream: TcpStream,
 }
@@ -48,12 +47,18 @@ impl MqttClient {
 
         let connack = handle_connack_packet(&mut stream)?;
 
+        /*
+        // el servidor loggea, no el cliente
         MqttActions::ClientConnection(
             config.get_socket_address().to_string(),
             connack.properties.connect_reason_code,
         )
         .register_action();
-
+        */
+        MqttActions::ClientConnection(
+            config.get_socket_address().to_string(),
+            connack.properties.connect_reason_code,
+        );
         Ok(MqttClient { id, config, stream })
     }
 
@@ -100,9 +105,12 @@ impl MqttClient {
         )?;
 
         match packet_recived {
-            PacketReceived::Publish(publish) => {
+            PacketReceived::Publish(_publish) => {
+                /* 
+                // para logear, el cliente debe pasar el mensaje al servidor
                 MqttActions::ClientReceive(self.id.clone(), publish.properties.topic_name.clone())
                     .register_action();
+                */
             }
             _ => return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido")),
         }

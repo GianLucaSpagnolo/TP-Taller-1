@@ -19,6 +19,7 @@ fn main() -> Result<(), Error> {
 
     let config = ServerConfig::from_file(String::from(config_path))?;
 
+    // manejar errores en main con exitcodes
     MqttServer::new(config).start_server()?;
 
     Ok(())

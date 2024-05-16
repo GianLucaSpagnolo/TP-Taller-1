@@ -95,15 +95,14 @@ impl LoggerHandler {
 
     // parsea el mensaje en el formato definido.
     // separator = ',' --> .csv
-    pub fn log_event(&self, msg: &String, client_id: &usize, separator: &String) {
+    pub fn log_event(&self, msg: &String, client_id: &String, separator: &String) {
         let message = if !msg.contains('\n') {
             msg.to_string() + "\n"
         } else {
             msg.to_string()
         };
 
-        let logger_msg: String =
-            separator.to_string() + &client_id.to_string() + &separator + &message;
+        let logger_msg: String = separator.to_string() + &client_id + &separator + &message;
         let _ = &self.enqueue_message(&logger_msg);
     }
 
@@ -189,8 +188,8 @@ mod test {
             Ok(..) => (),
         };
 
-        logger_handler.log_event(&str1, &0, &",".to_string());
-        logger_handler.log_event(&str2, &0, &",".to_string());
+        logger_handler.log_event(&str1, &0.to_string(), &",".to_string());
+        logger_handler.log_event(&str2, &0.to_string(), &",".to_string());
         logger_handler.close_logger();
 
         // testing
@@ -242,9 +241,9 @@ mod test {
             Ok(..) => (),
         };
 
-        logger_handler.log_event(&str1, &0, &",".to_string());
+        logger_handler.log_event(&str1, &0.to_string(), &",".to_string());
         line_counter += 1;
-        logger_handler.log_event(&str2, &0, &",".to_string());
+        logger_handler.log_event(&str2, &0.to_string(), &",".to_string());
         line_counter += 1;
         logger_handler.close_logger();
 
@@ -282,11 +281,11 @@ mod test {
             Ok(..) => (),
         };
 
-        logger_handler.log_event(&str1, &0, &",".to_string());
+        logger_handler.log_event(&str1, &0.to_string(), &",".to_string());
         line_counter += 1;
-        logger_handler.log_event(&str3, &0, &",".to_string());
+        logger_handler.log_event(&str3, &0.to_string(), &",".to_string());
         line_counter += 1;
-        logger_handler.log_event(&str2, &0, &",".to_string());
+        logger_handler.log_event(&str2, &0.to_string(), &",".to_string());
         line_counter += 1;
         logger_handler.close_logger();
 

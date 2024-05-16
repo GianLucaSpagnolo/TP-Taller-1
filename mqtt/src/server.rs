@@ -63,7 +63,7 @@ impl MqttServer {
             Ok(skt) => {
                 logger_handler.log_event(
                     &"Server socket binded ok".to_string(),
-                    &0,
+                    &0.to_string(),
                     &",".to_string(),
                 );
                 skt
@@ -71,7 +71,7 @@ impl MqttServer {
             Err(e) => {
                 logger_handler.log_event(
                     &("Server socket initialization error: ".to_string() + &e.to_string()),
-                    &0,
+                    &0.to_string(),
                     &",".to_string(),
                 );
                 logger_handler.close_logger();
@@ -84,7 +84,7 @@ impl MqttServer {
             Ok(s_pool) => {
                 logger_handler.log_event(
                     &"Server pool created ok".to_string(),
-                    &0,
+                    &0.to_string(),
                     &",".to_string(),
                 );
                 s_pool
@@ -92,7 +92,7 @@ impl MqttServer {
             Err(e) => {
                 logger_handler.log_event(
                     &("Server pool initialization error: ".to_string() + &e.to_string()),
-                    &0,
+                    &0.to_string(),
                     &",".to_string(),
                 );
                 logger_handler.close_logger();
@@ -102,10 +102,12 @@ impl MqttServer {
 
         let server_ref = Arc::new(Mutex::new(self));
 
+        // implementar client_id aca?
+        // los clientes no se van a desconectar
         for client_stream in listener.incoming() {
             let shared_server = server_ref.clone();
 
-            Self::handle_client(shared_server, client_stream?, &pool)?;
+            Self::handle_client(shared_server, client_stream?, &pool, &logger_handler)?;
         }
 
         // close logger
@@ -121,6 +123,7 @@ impl MqttServer {
         server: Arc<Mutex<MqttServer>>,
         client_stream: TcpStream,
         pool: &ServerPool,
+        logger_handler: &LoggerHandler,
     ) -> Result<MqttActions, Error> {
         match pool.execute(move || -> Result<MqttActions, Error> {
             match server.lock().unwrap().messages_handler(client_stream) {
@@ -128,7 +131,7 @@ impl MqttServer {
                 Err(e) => Err(e),
             }
         }) {
-            Ok(_) => Ok(MqttActions::MessageReceived.register_action()),
+            Ok(_) => Ok(MqttActions::MessageReceived.register_action(logger_handler)),
             Err(e) => Err(e),
         }
     }
@@ -148,7 +151,8 @@ impl MqttServer {
             Ok(pack) => match pack {
                 PacketReceived::Connect(connect_pack) => self.handle_connect(stream, *connect_pack),
                 PacketReceived::Disconnect(_pack) => {
-                    Ok(MqttActions::DisconnectClient.register_action())
+                    //Ok(MqttActions::DisconnectClient.register_action())
+                    Ok(MqttActions::DisconnectClient)
                 }
                 /*
                 PacketReceived::Publish(_pack) => {
@@ -187,7 +191,8 @@ impl MqttServer {
         let client = connect.payload.client_id.clone();
         let connack_properties: ConnackProperties = self.handle_connection(connect)?;
         Connack::new(connack_properties).send(&mut stream)?;
-        Ok(MqttActions::ServerConnection(client).register_action())
+        //Ok(MqttActions::ServerConnection(client).register_action())
+        Ok(MqttActions::ServerConnection(client))
     }
 
     fn handle_connection(&mut self, connect: Connect) -> Result<ConnackProperties, Error> {

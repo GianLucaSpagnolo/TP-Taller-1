@@ -1,5 +1,7 @@
 use std::fmt;
 
+use app::logger::LoggerHandler;
+
 pub enum MqttActions {
     ServerConnection(String),
     ClientConnection(String, u8),
@@ -12,8 +14,19 @@ pub enum MqttActions {
 }
 
 impl MqttActions {
-    pub fn register_action(self) -> Self {
-        println!("{}", self);
+    pub fn register_action(self, logger: &LoggerHandler) -> Self {
+        match &self {
+            MqttActions::ServerConnection(id) => {
+                logger.log_event(&"Connection successful".to_string(), id, &",".to_string())
+            },
+            MqttActions::ClientConnection(_, _) => todo!(),
+            MqttActions::ClientReceive(_, _) => todo!(),
+            MqttActions::DisconnectClient => todo!(),
+            MqttActions::MessageReceived => todo!(),
+            MqttActions::MessageSended => todo!(),
+            MqttActions::TryConnect => todo!(),
+            MqttActions::PackageError => todo!(),
+        }
         self
     }
 }

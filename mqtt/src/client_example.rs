@@ -11,7 +11,7 @@ fn main() -> Result<(), Error> {
     if args.len() != 3 {
         return Err(Error::new(
             std::io::ErrorKind::Other,
-            "Cantidad de argumentos incorrecta - debe pasarse el archivo de configuracion del servidor",
+            "Cantidad de argumentos incorrecta - debe pasarse el archivo de configuracion del cliente y su client_id",
         ));
     }
 
