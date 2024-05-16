@@ -1,16 +1,25 @@
-use std::io::Error;
+use std::{env, io::Error};
 
-use mqtt::{client::MqttClient, config::ClientConfig};
+use mqtt::{
+    client::MqttClient,
+    config::{ClientConfig, Config},
+};
 
 fn main() -> Result<(), Error> {
-    let config = ClientConfig::from_file(String::from("app/files/client.txt"))?;
+    let args: Vec<String> = env::args().collect();
 
-    let addr = config.get_address();
-
-    match MqttClient::new(String::from("client123"), config) {
-        Ok(_) => println!("Corriendo servidor en {:?}", addr),
-        Err(e) => println!("Error en el server: {:?}", e),
+    if args.len() != 3 {
+        return Err(Error::new(
+            std::io::ErrorKind::Other,
+            "Cantidad de argumentos incorrecta - debe pasarse el archivo de configuracion del servidor",
+        ));
     }
+
+    let (config_path, client_id) = (&args[1], &args[2]);
+
+    let config = ClientConfig::from_file(String::from(config_path))?;
+
+    MqttClient::init(String::from(client_id), config)?.run_listener()?;
 
     Ok(())
 }

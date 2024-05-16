@@ -2,43 +2,25 @@ use std::io::Error;
 use std::io::Read;
 
 use crate::common::data_types::data_representation::*;
+use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_packet::packet_property::*;
 use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
+#[derive(Default)]
 pub struct ConnectProperties {
     pub protocol_name: String,
     pub protocol_version: u8,
-    pub connect_flags: u8,
+    pub connect_flags: u8, // Nombre de los bits: User Name Flag, Password Flag, Will Retain, Will QoS (2 bytes), Will Flag, Clean Start, Reserved
     pub keep_alive: u16,
     pub session_expiry_interval: Option<u32>,
     pub authentication_method: Option<String>,
-    pub authentication_data: Option<u16>,
+    pub authentication_data: Option<String>,
     pub request_problem_information: Option<u8>,
     pub request_response_information: Option<u8>,
     pub receive_maximum: Option<u16>,
     pub topic_alias_maximum: Option<u16>,
     pub user_property: Option<(String, String)>,
     pub maximum_packet_size: Option<u32>,
-}
-
-impl Default for ConnectProperties {
-    fn default() -> Self {
-        ConnectProperties {
-            protocol_name: "MQTT".to_string(),
-            protocol_version: 5,
-            connect_flags: 0,
-            keep_alive: 0,
-            session_expiry_interval: None,
-            authentication_method: None,
-            authentication_data: None,
-            request_problem_information: None,
-            request_response_information: None,
-            receive_maximum: None,
-            topic_alias_maximum: None,
-            user_property: None,
-            maximum_packet_size: None,
-        }
-    }
 }
 
 impl Clone for ConnectProperties {
@@ -50,7 +32,7 @@ impl Clone for ConnectProperties {
             keep_alive: self.keep_alive,
             session_expiry_interval: self.session_expiry_interval,
             authentication_method: self.authentication_method.clone(),
-            authentication_data: self.authentication_data,
+            authentication_data: self.authentication_data.clone(),
             request_problem_information: self.request_problem_information,
             request_response_information: self.request_response_information,
             receive_maximum: self.receive_maximum,
@@ -61,13 +43,13 @@ impl Clone for ConnectProperties {
     }
 }
 
-impl ConnectProperties {
-    pub fn variable_props_size(&self) -> u16 {
+impl PacketProperties for ConnectProperties {
+    fn variable_props_size(&self) -> u16 {
         let header = self.as_variable_header_properties().unwrap();
         header.properties.len() as u16
     }
 
-    pub fn size_of(&self) -> u16 {
+    fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u16>()
             + self.protocol_name.len()
@@ -77,15 +59,15 @@ impl ConnectProperties {
         fixed_props_size as u16 + variable_props.bytes_length
     }
 
-    pub fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
+    fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
         let mut variable_props = VariableHeaderProperties::new();
 
         if let Some(session_expiry_interval) = self.session_expiry_interval {
             variable_props.add_u32_property(SESSION_EXPIRY_INTERVAL, session_expiry_interval)?;
         };
 
-        if let Some(auth_data) = self.authentication_data {
-            variable_props.add_u16_property(AUTHENTICATION_DATA, auth_data)?;
+        if let Some(auth_data) = self.authentication_data.clone() {
+            variable_props.add_utf8_string_property(AUTHENTICATION_DATA, auth_data)?;
         };
         if let Some(auth_method) = self.authentication_method.clone() {
             variable_props.add_utf8_string_property(AUTHENTICATION_METHOD, auth_method)?;
@@ -121,7 +103,7 @@ impl ConnectProperties {
         Ok(variable_props)
     }
 
-    pub fn as_bytes(&self) -> Result<Vec<u8>, Error> {
+    fn as_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut bytes: Vec<u8> = Vec::new();
         let variable_header_properties = self.as_variable_header_properties()?;
 
@@ -136,7 +118,8 @@ impl ConnectProperties {
 
         Ok(bytes)
     }
-    pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+
+    fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let protocol_name_length = read_two_byte_integer(stream)?;
         let protocol_name = read_utf8_encoded_string(stream, protocol_name_length)?;
         let protocol_version = read_byte(stream)?;
@@ -163,7 +146,7 @@ impl ConnectProperties {
                     authentication_method = property.value_string();
                 }
                 AUTHENTICATION_DATA => {
-                    authentication_data = property.value_u16();
+                    authentication_data = property.value_string();
                 }
                 REQUEST_PROBLEM_INFORMATION => {
                     request_problem_information = property.value_u8();

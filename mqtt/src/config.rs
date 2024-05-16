@@ -1,55 +1,66 @@
-use std::{fs::File, io::Error};
+use std::{
+    fs::File,
+    io::Error,
+    net::{IpAddr, SocketAddr},
+};
 
 use crate::{
     common::utils::*,
     control_packets::{
-        mqtt_connack::connack::ConnackProperties,
-        mqtt_connect::{connect::PayloadFields, connect_properties::ConnectProperties},
-        mqtt_packet::flags::flags_handler::*,
+        mqtt_connect::connect_properties::ConnectProperties, mqtt_packet::flags::flags_handler::*,
     },
 };
 
-pub struct ClientConfig {
-    pub port: u16,
-    pub ip: String,
-    pub connect_properties: ConnectProperties,
-    pub connect_payload: PayloadFields,
+pub trait Config<Config = Self> {
+    fn set_params(params: &[(String, String)]) -> Result<Self, Error>
+    where
+        Self: Sized;
+
+    fn from_file(file_path: String) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
+        let archivo_abierto: Option<File> = abrir_archivo(&file_path);
+        let mut parametros = Vec::new();
+
+        archivo_abierto.map(|archivo| match leer_archivo(&archivo) {
+            None => None,
+            Some(lineas_leidas) => {
+                parametros = obtener_parametros_archivo(lineas_leidas, 2);
+                Some(())
+            }
+        });
+
+        Self::set_params(&parametros)
+    }
+
+    fn get_socket_address(&self) -> SocketAddr;
 }
 
-impl ClientConfig {
-    pub fn get_address(&self) -> String {
-        let adress = format!("{}:{}", self.ip, self.port);
-        adress
+pub struct ClientConfig {
+    pub ip: IpAddr,
+    pub port: u16,
+    pub connect_properties: ConnectProperties,
+}
+
+impl Config for ClientConfig {
+    fn get_socket_address(&self) -> SocketAddr {
+        SocketAddr::new(self.ip, self.port)
     }
 
     fn set_params(params: &[(String, String)]) -> Result<Self, Error> {
         // seteo los parametros del cliente:
-        let mut port = 0;
-        let mut ip = String::new();
+        let mut ip = None;
+        let mut port = None;
 
         // Corroborar que le pasen los campos obligatorios
-
-        let mut connect_properties = ConnectProperties {
-            protocol_name: String::new(),
-            protocol_version: 0,
-            connect_flags: 0,
-            keep_alive: 0,
-            session_expiry_interval: None,
-            receive_maximum: None,
-            maximum_packet_size: None,
-            topic_alias_maximum: None,
-            request_response_information: None,
-            request_problem_information: None,
-            authentication_method: None,
-            authentication_data: None,
-            user_property: None,
-        };
+        let mut connect_properties = ConnectProperties::default();
 
         for param in params.iter() {
             match param.0.as_str() {
-                "port" => {
-                    port = match param.1.parse::<u16>() {
-                        Ok(p) => p,
+                "ip" => {
+                    ip = match param.1.parse::<IpAddr>() {
+                        Ok(p) => Some(p),
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
@@ -58,7 +69,17 @@ impl ClientConfig {
                         }
                     }
                 }
-                "ip" => ip = param.1.clone(),
+                "port" => {
+                    port = match param.1.parse::<u16>() {
+                        Ok(p) => Some(p),
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter: Port",
+                            ))
+                        }
+                    }
+                }
                 "protocol_name" => connect_properties.protocol_name = param.1.clone(),
                 "protocol_version" => {
                     connect_properties.protocol_version = match param.1.parse::<u8>() {
@@ -66,7 +87,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Protocol Version",
                             ))
                         }
                     }
@@ -131,7 +152,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Keep Alive",
                             ))
                         }
                     }
@@ -142,7 +163,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Session Expiry Interval",
                             ))
                         }
                     }
@@ -153,7 +174,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Receive Maximum",
                             ))
                         }
                     }
@@ -164,7 +185,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter:  Maximum Packet Size",
                             ))
                         }
                     }
@@ -175,7 +196,7 @@ impl ClientConfig {
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid parameter: Topic Alias Maximum",
                             ))
                         }
                     }
@@ -198,120 +219,96 @@ impl ClientConfig {
                     connect_properties.authentication_method = Some(param.1.clone())
                 }
                 "authentication_data" => {
-                    connect_properties.authentication_data = match param.1.parse::<u16>() {
-                        Ok(p) => Some(p),
-                        Err(_) => {
-                            return Err(Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
-                            ))
-                        }
-                    }
+                    connect_properties.authentication_data = Some(param.1.clone())
                 }
+
                 _ => {
                     return Err(Error::new(
                         std::io::ErrorKind::InvalidData,
-                        "Invalid parameter",
+                        "Invalid parameter: Parameter not found",
                     ))
                 }
             }
         }
 
-        let connect_payload = PayloadFields {
-            will_delay_interval: None,
-            payload_format_indicator: None,
-            message_expiry_interval: None,
-            content_type: None,
-            response_topic: None,
-            correlation_data: None,
-            user_property_key: None,
-            user_property_value: None,
-            will_topic: None,
-            will_payload: None,
-            username: None,
-            password: None,
-        };
+        if let (Some(ip), Some(port)) = (ip, port) {
+            return Ok(ClientConfig {
+                ip,
+                port,
+                connect_properties,
+            });
+        }
 
-        Ok(ClientConfig {
-            port,
-            ip,
-            connect_properties,
-            connect_payload,
-        })
-    }
-
-    pub fn from_file(file_path: String) -> Result<Self, Error> {
-        let archivo_abierto: Option<File> = abrir_archivo(&file_path);
-        let mut parametros = Vec::new();
-
-        archivo_abierto.map(|archivo| match leer_archivo(&archivo) {
-            None => None,
-            Some(lineas_leidas) => {
-                parametros = obtener_parametros_archivo(lineas_leidas, 2);
-                Some(())
-            }
-        });
-
-        ClientConfig::set_params(&parametros)
+        Err(Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Invalid parameter: Ip",
+        ))
     }
 }
 
 pub struct ServerConfig {
+    pub ip: IpAddr,
     pub port: u16,
-    pub ip: String,
-    pub connack_properties: ConnackProperties,
+    pub maximum_threads: usize,
 }
 
-impl ServerConfig {
-    pub fn get_address(&self) -> String {
-        let adress = format!("{}:{}", self.ip, self.port);
-        adress
+impl Clone for ServerConfig {
+    fn clone(&self) -> Self {
+        ServerConfig {
+            ip: self.ip,
+            port: self.port,
+            maximum_threads: self.maximum_threads,
+        }
+    }
+}
+
+impl Config for ServerConfig {
+    fn get_socket_address(&self) -> SocketAddr {
+        SocketAddr::new(self.ip, self.port)
     }
 
     fn set_params(params: &[(String, String)]) -> Result<Self, Error> {
-        // seteo los parametros del cliente:
-        let mut port = 0;
-        let mut ip = String::new();
-
-        //chequear que tipo de parametros se le pasan
-
-        let connack_properties = ConnackProperties {
-            connect_acknowledge_flags: 0,
-            connect_reason_code: 0,
-            session_expiry_interval: None,
-            assigned_client_identifier: Some(String::new()),
-            server_keep_alive: None,
-            authentication_method: Some(String::new()),
-            authentication_data: None,
-            response_information: Some(String::new()),
-            server_reference: Some(String::new()),
-            reason_string: Some(String::new()),
-            receive_maximum: None,
-            topic_alias_maximum: None,
-            maximum_qos: None,
-            retain_available: None,
-            wildcard_subscription_available: None,
-            subscription_identifiers_available: None,
-            shared_subscription_available: None,
-            user_property_key: Some(String::new()),
-            user_property_value: Some(String::new()),
-            maximum_packet_size: None,
-        };
+        // seteo los parametros obligatorios del servidor:
+        let mut ip = None;
+        let mut port = None;
+        let mut maximum_threads = None;
 
         for param in params.iter() {
             match param.0.as_str() {
-                "port" => {
-                    port = match param.1.parse::<u16>() {
-                        Ok(p) => p,
+                "ip" => {
+                    ip = match param.1.parse::<IpAddr>() {
+                        Ok(p) => Some(p),
                         Err(_) => {
                             return Err(Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
+                                "Invalid ip parameter",
                             ))
                         }
                     }
                 }
-                "ip" => ip = param.1.clone(),
+                "port" => {
+                    port = match param.1.parse::<u16>() {
+                        Ok(p) => Some(p),
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid port parameter",
+                            ))
+                        }
+                    }
+                }
+
+                "maximum_threads" => {
+                    maximum_threads = match param.1.parse::<usize>() {
+                        Ok(p) => Some(p),
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid maximum threads parameter",
+                            ))
+                        }
+                    };
+                }
 
                 _ => {
                     return Err(Error::new(
@@ -322,31 +319,16 @@ impl ServerConfig {
             }
         }
 
-        Ok(ServerConfig {
-            port,
-            ip,
-            connack_properties,
-        })
-    }
-
-    pub fn from_file(file_path: String) -> Result<Self, Error> {
-        let archivo_abierto: Option<File> = abrir_archivo(&file_path);
-        let mut parametros = Vec::new();
-
-        archivo_abierto.map(|archivo| match leer_archivo(&archivo) {
-            None => None,
-            Some(lineas_leidas) => {
-                parametros = obtener_parametros_archivo(lineas_leidas, 2);
-                Some(())
-            }
-        });
-
-        if parametros.is_empty() {
-            return Err(Error::new(
-                std::io::ErrorKind::InvalidData,
-                "invalid path or empty config file",
-            ));
+        if let (Some(port), Some(ip), Some(maximum_threads)) = (port, ip, maximum_threads) {
+            return Ok(ServerConfig {
+                port,
+                ip,
+                maximum_threads,
+            });
         }
-        ServerConfig::set_params(&parametros)
+        Err(Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Config fields are missing",
+        ))
     }
 }

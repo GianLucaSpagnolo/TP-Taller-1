@@ -1,65 +1,132 @@
-use std::{io::Error, net::TcpStream};
+use std::{io::Error, net::TcpStream, thread};
 
 use crate::{
-    config::ClientConfig,
+    actions::MqttActions,
+    config::{ClientConfig, Config},
     control_packets::{
-        mqtt_connect::connect::Connect,
-        mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
+        mqtt_connack::connack::Connack,
+        mqtt_connect::{connect::Connect, payload},
+        mqtt_packet::fixed_header::PacketFixedHeader,
+        mqtt_packet::packet::generic_packet::*,
     },
 };
 
 pub struct MqttClient {
-    _id: String,
-    _config: ClientConfig,
+    id: String,
+    config: ClientConfig,
+    stream: TcpStream,
+}
+
+fn handle_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
+    let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
+
+    let packet_recived = get_packet(
+        stream,
+        fixed_header.get_package_type(),
+        fixed_header.remaining_length,
+    )?;
+
+    match packet_recived {
+        PacketReceived::Connack(ack) => Ok(*ack),
+        _ => Err(Error::new(
+            std::io::ErrorKind::Other,
+            "ClientReceive - Paquete desconocido",
+        )),
+    }
 }
 
 impl MqttClient {
-    pub fn new(client_id: String, config: ClientConfig) -> Result<Self, Error> {
-        let mut stream = TcpStream::connect(config.get_address())?;
+    pub fn init(id: String, config: ClientConfig) -> Result<Self, Error> {
+        let mut stream = TcpStream::connect(config.get_socket_address())?;
 
-        let connection = Connect::new(
-            &client_id,
-            config.connect_properties.clone(),
-            &config.connect_payload,
+        let payload = payload::ConnectPayload {
+            client_id: id.clone(),
+            ..Default::default()
+        };
+
+        Connect::new(config.connect_properties.clone(), payload).send(&mut stream)?;
+
+        let connack = handle_connack_packet(&mut stream)?;
+
+        MqttActions::ClientConnection(
+            config.get_socket_address().to_string(),
+            connack.properties.connect_reason_code,
+        )
+        .register_action();
+
+        Ok(MqttClient { id, config, stream })
+    }
+
+    pub fn run_listener(self) -> Result<(), Error> {
+        let mut stream_cpy = self.stream.try_clone()?;
+        let mut counter = 0;
+
+        loop {
+            match PacketFixedHeader::read_from(&mut stream_cpy) {
+                Ok(header) => {
+                    self.messages_handler(&mut stream_cpy, header)?;
+                    counter = 0;
+                }
+                Err(_) => {
+                    thread::sleep(std::time::Duration::from_secs(10));
+                    counter += 10;
+                    if let Some(expiry_interval) =
+                        self.config.connect_properties.session_expiry_interval
+                    {
+                        if expiry_interval == 0 {
+                            continue;
+                        }
+                        if counter > expiry_interval {
+                            break;
+                        }
+                    }
+                    continue;
+                }
+            };
+        }
+
+        Err(Error::new(std::io::ErrorKind::Other, "Session expired"))
+    }
+
+    pub fn messages_handler(
+        &self,
+        mut stream: &mut TcpStream,
+        fixed_header: PacketFixedHeader,
+    ) -> Result<(), Error> {
+        let packet_recived = get_packet(
+            &mut stream,
+            fixed_header.get_package_type(),
+            fixed_header.remaining_length,
         )?;
 
-        connection.write_to(&mut stream)?;
-
-        let fixed_header = match PacketFixedHeader::read_from(&mut stream) {
-            Ok(header_type) => header_type,
-            Err(e) => return Err(e),
-        };
-
-        let packet_recived = match fixed_header.get_package_type() {
-            PacketType::ConnackType => match get_client_packet(
-                &mut stream,
-                fixed_header.get_package_type(),
-                fixed_header.remaining_length,
-            ) {
-                Ok(packet) => packet,
-                Err(e) => return Err(e),
-            },
-            _ => {
-                return Err(Error::new(
-                    std::io::ErrorKind::Other,
-                    "ClientReceive - Tipo de paquete desconocido",
-                ))
+        match packet_recived {
+            PacketReceived::Publish(publish) => {
+                MqttActions::ClientReceive(self.id.clone(), publish.properties.topic_name.clone())
+                    .register_action();
             }
-        };
+            _ => return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido")),
+        }
 
-        let _acklnowledge = match packet_recived {
-            ClientPacketRecived::ConnackPacket(ack) => *ack,
-            _ => {
-                return Err(Error::new(
-                    std::io::ErrorKind::Other,
-                    "ClientReceive - Paquete desconocido",
-                ))
-            }
-        };
+        Ok(())
+    }
 
-        Ok(MqttClient {
-            _id: client_id,
-            _config: config,
-        })
+    pub fn publish() {
+        todo!()
+    }
+
+    pub fn subscribe() {
+        todo!()
+    }
+
+    pub fn unsubscribe() {
+        todo!()
+    }
+
+    pub fn disconnect() {
+        todo!()
+    }
+
+    pub fn pin_request() {
+        todo!()
     }
 }
