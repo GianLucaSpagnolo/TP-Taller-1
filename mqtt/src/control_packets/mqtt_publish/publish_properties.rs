@@ -20,7 +20,7 @@ pub struct _PublishProperties {
     pub subscription_identifier: Option<u32>,
     pub content_type: Option<String>,
 
-    pub application_message: Option<String>, // Payload
+    pub application_message: String, // Payload
 }
 
 impl Clone for _PublishProperties {
@@ -48,10 +48,7 @@ impl PacketProperties for _PublishProperties {
         let fixed_props_size =
             std::mem::size_of::<u16>() + self.topic_name.len() + std::mem::size_of::<u16>();
 
-        let mut payload_size = 0;
-        if let Some(application_message) = &self.application_message {
-            payload_size += std::mem::size_of::<u16>() + application_message.len();
-        }
+        let payload_size = std::mem::size_of::<u16>() + self.application_message.len();
 
         fixed_props_size as u16 + variable_props.bytes_length + payload_size as u16
     }
@@ -104,15 +101,14 @@ impl PacketProperties for _PublishProperties {
 
         let topic_name_len = self.topic_name.len() as u16;
         bytes.extend_from_slice(&topic_name_len.to_be_bytes());
-
         bytes.extend_from_slice(self.topic_name.as_bytes());
+
         bytes.extend_from_slice(&self.packet_identifier.to_be_bytes());
         bytes.extend_from_slice(&variable_header_properties.as_bytes());
 
-        if let Some(application_message) = self.application_message.clone() {
-            bytes.extend_from_slice(&(application_message.len() as u16).to_be_bytes());
-            bytes.extend_from_slice(application_message.as_bytes());
-        }
+        let application_message_len = self.application_message.len() as u16;
+        bytes.extend_from_slice(&application_message_len.to_be_bytes());
+        bytes.extend_from_slice(self.application_message.as_bytes());
 
         Ok(bytes)
     }
@@ -162,12 +158,8 @@ impl PacketProperties for _PublishProperties {
             }
         }
 
-        let mut application_message = None;
         let application_message_len = read_two_byte_integer(stream).unwrap_or(0);
-        if application_message_len > 0 {
-            application_message =
-                Some(read_utf8_encoded_string(stream, application_message_len).unwrap());
-        }
+        let application_message = read_utf8_encoded_string(stream, application_message_len)?;
 
         Ok(_PublishProperties {
             topic_name,
