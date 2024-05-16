@@ -80,7 +80,7 @@ impl Config for ClientConfig {
                         }
                     }
                 }
-                "protocol_name" => connect_properties.protocol_name = param.1.clone(),
+                "protocol_name" => connect_properties.protocol_name.clone_from(&param.1),
                 "protocol_version" => {
                     connect_properties.protocol_version = match param.1.parse::<u8>() {
                         Ok(p) => p,

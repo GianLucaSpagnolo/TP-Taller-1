@@ -59,8 +59,20 @@ impl PacketFixedHeader {
         match self.get_packet_type() {
             CONNECT_PACKET => PacketType::ConnectType,
             CONNACK_PACKET => PacketType::ConnackType,
+            _PUBLISH_PACKET => PacketType::_PublishType,
+            _PUBACK_PACKET => PacketType::_PubackType,
+            _SUBSCRIBE_PACKET => PacketType::SubscribeType,
+            _SUBACK_PACKET => PacketType::SubackType,
+            _UNSUBSCRIBE_PACKET => PacketType::_Unsubscribe,
+            _UNSUBACK_PACKET => PacketType::_Unsuback,
+            _PINGREQ_PACKET => PacketType::_PingReqType,
+            _PINGRESP_PACKET => PacketType::_PingRespType,
             _DISCONNECT_PACKET => PacketType::DisconnectType,
             _ => PacketType::Unknow,
         }
+    }
+
+    pub fn _verify_reserved_bits_for_subscribe_packets(&self) -> bool {
+        self.packet_type & 2 == 2
     }
 }

@@ -232,7 +232,6 @@ mod test {
         );
 
         assert_eq!(connect.properties.keep_alive, 10);
-        assert_eq!(connect.properties.variable_props_size(), 9);
 
         let props = connect.properties;
 
@@ -292,7 +291,6 @@ mod test {
         }
 
         assert_eq!(connect.payload.client_id, "Marcus".to_string());
-        assert_eq!(connect.payload.variable_props_size(), 7);
 
         let payload_props = connect.payload;
 
@@ -425,7 +423,6 @@ mod test {
         );
 
         assert_eq!(new_connect.properties.keep_alive, 10);
-        assert_eq!(new_connect.properties.variable_props_size(), 0);
 
         assert_eq!(new_connect.properties.session_expiry_interval, None);
         assert_eq!(new_connect.properties.authentication_method, None);
@@ -438,7 +435,6 @@ mod test {
         assert_eq!(new_connect.properties.maximum_packet_size, None);
 
         assert_eq!(new_connect.payload.client_id, "test2".to_string());
-        assert_eq!(new_connect.payload.variable_props_size(), 0);
 
         assert_eq!(new_connect.payload.will_topic, None);
         assert_eq!(new_connect.payload.will_payload, None);

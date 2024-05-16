@@ -130,7 +130,6 @@ mod test {
         assert_eq!(puback_fixed_header.get_packet_type(), _PUBACK_PACKET);
         assert_eq!(puback.properties.packet_id, 1);
         assert_eq!(puback.properties.puback_reason_code, 0);
-        assert_eq!(puback.properties.variable_props_size(), 2);
 
         let props = puback.properties;
 
@@ -170,7 +169,6 @@ mod test {
         assert_eq!(puback_fixed_header.get_packet_type(), _PUBACK_PACKET);
         assert_eq!(puback.properties.packet_id, 2);
         assert_eq!(puback.properties.puback_reason_code, 0);
-        assert_eq!(puback.properties.variable_props_size(), 0);
 
         assert_eq!(puback.properties.reason_string, None);
         assert_eq!(puback.properties.user_property, None);

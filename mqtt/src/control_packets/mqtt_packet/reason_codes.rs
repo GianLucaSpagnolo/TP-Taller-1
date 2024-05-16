@@ -54,6 +54,7 @@ pub enum ReasonMode {
     _NormalDisconnection,
     _DisconnectWithWillMessage,
     _NoMatchingSubscribers,
+    _NoSubscriptionExisted,
     _UnspecifiedError,
     _MalformedPacket,
     _ProtocolError,
@@ -97,6 +98,7 @@ impl ReasonMode {
             ReasonMode::_NormalDisconnection => 0, // DISCONNECT
             ReasonMode::_DisconnectWithWillMessage => 4, // DISCONNECT
             ReasonMode::_NoMatchingSubscribers => 16, // PUBACK
+            ReasonMode::_NoSubscriptionExisted => 17, // UNSUBACK
             ReasonMode::_UnspecifiedError => 128,  // CONNACK - PUBACK - DISCONNECT
             ReasonMode::_MalformedPacket => 129,   // DISCONNECT
             ReasonMode::_ProtocolError => 130,     // DISCONNECT

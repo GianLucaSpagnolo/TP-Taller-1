@@ -168,7 +168,7 @@ mod test {
             user_property: Some(("test_key".to_string(), "test_value".to_string())),
             subscription_identifier: Some(0),
             content_type: Some("type".to_string()),
-            application_message: Some("message".to_string()),
+            application_message: "message".to_string(),
         };
 
         let publish = _Publish::_new(1, 2, 1, properties);
@@ -251,11 +251,7 @@ mod test {
             panic!("Error");
         }
 
-        if let Some(value) = props.application_message {
-            assert_eq!(value, "message");
-        } else {
-            panic!("Error");
-        }
+        assert_eq!(props.application_message, "message".to_string());
     }
 
     #[test]
@@ -304,6 +300,6 @@ mod test {
         assert_eq!(publish.properties.subscription_identifier, None);
         assert_eq!(publish.properties.content_type, None);
 
-        assert_eq!(publish.properties.application_message, None);
+        assert_eq!(publish.properties.application_message, "".to_string());
     }
 }
