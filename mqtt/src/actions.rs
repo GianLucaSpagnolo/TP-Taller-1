@@ -2,12 +2,13 @@ use std::fmt;
 
 use app::logger::LoggerHandler;
 
+// implementar el encapsulamiento de client_id en cada uno
 pub enum MqttActions {
     ServerConnection(String),
     ClientConnection(String, u8),
     ClientReceive(String, String),
     DisconnectClient,
-    MessageReceived,
+    MessageReceived, 
     MessageSended,
     TryConnect, // guardara el exit code
     PackageError,
@@ -22,7 +23,7 @@ impl MqttActions {
             MqttActions::ClientConnection(_, _) => todo!(),
             MqttActions::ClientReceive(_, _) => todo!(),
             MqttActions::DisconnectClient => todo!(),
-            MqttActions::MessageReceived => todo!(),
+            MqttActions::MessageReceived => logger.log_event(&"Message received".to_string(), &"?".to_string(), &",".to_string()),
             MqttActions::MessageSended => todo!(),
             MqttActions::TryConnect => todo!(),
             MqttActions::PackageError => todo!(),

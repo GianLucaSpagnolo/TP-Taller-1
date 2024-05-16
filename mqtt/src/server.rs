@@ -54,7 +54,15 @@ impl MqttServer {
                 std::io::ErrorKind::InvalidData,
                 "Logger fails to initiate by error: ".to_string() + &e.to_string(),
             )),
-            Ok(..) => Ok(()),
+            Ok(..) => {
+                logger_handler.log_event(
+                    &"The logger initialized correctly".to_string(),
+                    &0.to_string(),
+                    &",".to_string(),
+                    );
+                    Ok(())
+            }
+            
         };
         // logger -------------------------------------------------
 
