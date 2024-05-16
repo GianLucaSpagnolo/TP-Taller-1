@@ -87,7 +87,7 @@ impl LoggerHandler {
             }
             Err(..) => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
-                "thread handler recv error",
+                "Thread handler recv error",
             )),
         }
     }
@@ -150,7 +150,7 @@ fn get_actual_timestamp() -> String {
     let naive_utc = dt.naive_utc();
     let offset = dt.offset();
     let dt_new = DateTime::<Local>::from_naive_utc_and_offset(naive_utc, *offset);
-    dt_new.format("%Y-%m-%d %H:%M:%S").to_string()
+    dt_new.format("%Y-%m-%d %H:%M:%S:%ms").to_string()
 }
 
 fn log_action(action: &mut String, file: &mut File) -> Result<(), Error> {
