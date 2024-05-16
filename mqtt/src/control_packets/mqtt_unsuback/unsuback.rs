@@ -89,7 +89,6 @@ impl _Unsuback {
 }
 
 #[cfg(test)]
-
 mod test {
     use super::*;
     use crate::control_packets::mqtt_packet::reason_codes::*;
@@ -118,6 +117,8 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let unsuback_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        assert!(!unsuback_fixed_header._verify_reserved_bits_for_subscribe_packets());
+
         let unsuback =
             _Unsuback::read_from(&mut buffer, unsuback_fixed_header.remaining_length).unwrap();
 
@@ -155,6 +156,8 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let unsuback_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        assert!(!unsuback_fixed_header._verify_reserved_bits_for_subscribe_packets());
+
         let unsuback =
             _Unsuback::read_from(&mut buffer, unsuback_fixed_header.remaining_length).unwrap();
 

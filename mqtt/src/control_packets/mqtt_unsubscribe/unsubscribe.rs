@@ -107,6 +107,8 @@ mod test {
         //LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let unsubscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        assert!(unsubscribe_fixed_header._verify_reserved_bits_for_subscribe_packets());
+
         let unsubscribe =
             _Unsubscribe::read_from(&mut buffer, unsubscribe_fixed_header.remaining_length)
                 .unwrap();
@@ -137,6 +139,8 @@ mod test {
         //LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let unsubscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        assert!(unsubscribe_fixed_header._verify_reserved_bits_for_subscribe_packets());
+
         let unsubscribe =
             _Unsubscribe::read_from(&mut buffer, unsubscribe_fixed_header.remaining_length)
                 .unwrap();
