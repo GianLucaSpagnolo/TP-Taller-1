@@ -1,7 +1,4 @@
 // protocolo de la app, usado por todos los clientes y el servidor
-use mqtt::server::*;
-use std::io::Error;
-use std::net::{TcpListener, TcpStream};
 
 /// El protocolo traduce los paquetes de mqtt a comandos
 /// entendibles por la app
@@ -115,7 +112,7 @@ pub enum ProtocolActions {
     TryConnect, // guardara el exit code
     PackageError,
 }
-
+/*
 pub fn server_bind_address(address: &String) -> Result<TcpListener, Error> {
     if !address.contains(':') {
         return Err(Error::new(
@@ -123,9 +120,9 @@ pub fn server_bind_address(address: &String) -> Result<TcpListener, Error> {
             "Invalid ip - port format, must be: ip:port",
         ));
     }
-    mqtt::server::server_run_bind(address)
+    //mqtt::server::server_run_bind(address)
 }
-
+/
 // usada por el servidor para recibir los paquetes
 // del cliente
 // el protocolo recibe el paquete, lo procesa y traduce el
@@ -136,7 +133,7 @@ pub fn receive_package(stream: &mut TcpStream, server: &mut Server) -> ProtocolA
         Err(_) => todo!(),
     }
 }
-
+*/
 // translations
 // segun el tipo de paquete, lo traduce a un mensaje
 // entendible por el logger

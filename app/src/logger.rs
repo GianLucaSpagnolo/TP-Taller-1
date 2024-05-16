@@ -37,7 +37,7 @@ fn open_log_file(route: &String) -> Result<File, Error> {
     let header = "Time,Client_ID,Action\n".to_string();
     match open_file(route) {
         Ok(mut file) => {
-            let mut fields = String::from(header);
+            let mut fields = header;
 
             if file_was_created(&file) {
                 return Ok(file);
@@ -180,7 +180,7 @@ mod test {
         let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
 
         let _ = match logger_handler.initiate_listener(tr) {
-            Err(e) => {
+            Err(..) => {
                 println!("Logger fails to initiate");
                 assert!(false)
             },
