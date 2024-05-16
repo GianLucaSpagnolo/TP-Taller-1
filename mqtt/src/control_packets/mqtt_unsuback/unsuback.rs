@@ -1,8 +1,11 @@
+use std::io::{Error, Read, Write};
+
 use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
 use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_unsuback::unsuback_properties::_UnsubackProperties;
+
 /// ## UNSUBACK PACKET
 ///
 /// The Unsuback Packet is sent by the Server to the Client to confirm receipt and processing of an UNSUBSCRIBE Packet.
@@ -45,7 +48,6 @@ use crate::control_packets::mqtt_unsuback::unsuback_properties::_UnsubackPropert
 /// in the UNSUBSCRIBE packet that is being acknowledged.
 /// The order of the Reason Codes in the UNSUBACK packet MUST match the order of Topic Filters in the UNSUBSCRIBE packet.
 ///
-use std::io::{Error, Read};
 pub struct _Unsuback {
     pub properties: _UnsubackProperties,
 }
@@ -61,7 +63,7 @@ impl Serialization for _Unsuback {
         Ok(_Unsuback { properties })
     }
 
-    fn write_to(&self, stream: &mut dyn std::io::prelude::Write) -> Result<(), Error> {
+    fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let remaining_length = self.properties.size_of();
 
         let fixed_header = PacketFixedHeader::new(_UNSUBACK_PACKET, remaining_length);
@@ -129,7 +131,6 @@ mod test {
         }
 
         assert_eq!(unsuback.properties.reason_codes, vec![135]);
-
     }
 
     #[test]

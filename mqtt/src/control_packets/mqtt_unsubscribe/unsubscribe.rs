@@ -1,3 +1,5 @@
+use std::io::{Error, Read, Write};
+
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
@@ -5,7 +7,6 @@ use crate::control_packets::{
     mqtt_packet::{fixed_header::_UNSUBSCRIBE_PACKET, packet::generic_packet::Serialization},
     mqtt_unsubscribe::unsubscribe_properties::_UnsubscribeProperties,
 };
-use std::io::{Error, Read};
 
 /// ## UNSUBSCRIBE PACKET (Enviado del cliente al servidor)
 ///
@@ -44,7 +45,6 @@ use std::io::{Error, Read};
 /// contenga, entonces esa subscripción DEBE ser eliminada. Caso contrario,
 /// no ocurre procesamiento adicional
 ///
-
 pub struct _Unsubscribe {
     pub properties: _UnsubscribeProperties,
 }
@@ -60,7 +60,7 @@ impl Serialization for _Unsubscribe {
         Ok(_Unsubscribe { properties })
     }
 
-    fn write_to(&self, stream: &mut dyn std::io::prelude::Write) -> Result<(), Error> {
+    fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let remaining_length = self.properties.size_of();
 
         let fixed_header = PacketFixedHeader::new(_UNSUBSCRIBE_PACKET, remaining_length);
