@@ -128,6 +128,8 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let suback_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        assert!(!suback_fixed_header._verify_reserved_bits_for_subscribe_packets());
+
         let suback = _Suback::read_from(&mut buffer, suback_fixed_header.remaining_length).unwrap();
 
         assert_eq!(suback.properties.packet_identifier, 1);
@@ -151,8 +153,6 @@ mod test {
     fn test_suback_with_empty_optional_fields() {
         let properties = _SubackProperties {
             packet_identifier: 1,
-            // Payload
-            reason_codes: vec![],
             ..Default::default()
         };
 
@@ -165,6 +165,8 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let suback_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        assert!(!suback_fixed_header._verify_reserved_bits_for_subscribe_packets());
+
         let suback = _Suback::read_from(&mut buffer, suback_fixed_header.remaining_length).unwrap();
 
         assert_eq!(suback.properties.packet_identifier, 1);

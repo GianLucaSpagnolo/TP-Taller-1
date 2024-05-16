@@ -175,6 +175,8 @@ mod test {
         //LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let subscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        assert!(subscribe_fixed_header._verify_reserved_bits_for_subscribe_packets());
+
         let subscribe =
             _Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
 
@@ -276,6 +278,8 @@ mod test {
         //LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let subscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        assert!(subscribe_fixed_header._verify_reserved_bits_for_subscribe_packets());
+
         let subscribe =
             _Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
 

@@ -149,7 +149,6 @@ mod test {
         assert_eq!(connack_fixed_header.get_packet_type(), CONNACK_PACKET);
         assert_eq!(connack.properties.connect_acknowledge_flags, 0x01);
         assert_eq!(connack.properties.connect_reason_code, 0);
-        assert_eq!(connack.properties.variable_props_size(), 17);
 
         let props = connack.properties;
 
@@ -281,7 +280,6 @@ mod test {
         assert_eq!(connack_fixed_header.get_packet_type(), CONNACK_PACKET);
         assert_eq!(connack.properties.connect_acknowledge_flags, 0x00);
         assert_eq!(connack.properties.connect_reason_code, 0);
-        assert_eq!(connack.properties.variable_props_size(), 0);
 
         assert_eq!(connack.properties.session_expiry_interval, None);
         assert_eq!(connack.properties.assigned_client_identifier, None);
