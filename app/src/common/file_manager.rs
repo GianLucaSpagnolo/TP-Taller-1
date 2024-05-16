@@ -17,7 +17,6 @@ pub fn open_file(route: &String) -> Result<File, Error> {
     match open_result {
         Ok(file) => Ok(file),
         Err(..) => {
-            // eprintln!("\nCould not find file: '{}' at the given path", route);
             // crea el archivo
             match OpenOptions::new()
                 .create_new(true)

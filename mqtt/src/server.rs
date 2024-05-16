@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::io::Error;
 use std::net::{TcpListener, TcpStream};
@@ -59,10 +60,9 @@ impl MqttServer {
                     &"The logger initialized correctly".to_string(),
                     &0.to_string(),
                     &",".to_string(),
-                    );
-                    Ok(())
+                );
+                Ok(())
             }
-            
         };
         // logger -------------------------------------------------
 
@@ -115,7 +115,14 @@ impl MqttServer {
         for client_stream in listener.incoming() {
             let shared_server = server_ref.clone();
 
-            Self::handle_client(shared_server, client_stream?, &pool, &logger_handler)?;
+            match Self::handle_client(shared_server, client_stream?, &pool, &logger_handler) {
+                Ok(_) => continue,
+                Err(e) => logger_handler.log_event(
+                    &("Handle client error: ".to_string() + &e.to_string()),
+                    &"?".to_string(),
+                    &",".to_string(),
+                ),
+            };
         }
 
         // close logger
@@ -133,18 +140,40 @@ impl MqttServer {
         pool: &ServerPool,
         logger_handler: &LoggerHandler,
     ) -> Result<MqttActions, Error> {
-        match pool.execute(move || -> Result<MqttActions, Error> {
-            match server.lock().unwrap().messages_handler(client_stream) {
+        let logger_copy = logger_handler;
+        
+        // probar mover logger mediante mutex:
+        
+        match pool.execute(|| -> Result<MqttActions, Error> {
+            let r = match server
+                .lock()
+                .unwrap()
+                .messages_handler(client_stream)
+            {
                 Ok(action) => Ok(action),
                 Err(e) => Err(e),
-            }
+            };
+            drop(server); // unlock(?)
+            r
         }) {
             Ok(_) => Ok(MqttActions::MessageReceived.register_action(logger_handler)),
-            Err(e) => Err(e),
+            Err(e) => {
+                logger_handler.log_event(
+                    &("Message handler error: ".to_string() + &e.to_string()),
+                    &"?".to_string(),
+                    &",".to_string(),
+                );
+                Err(e)
+            }
         }
+        
     }
 
-    pub fn messages_handler(&mut self, mut stream: TcpStream) -> Result<MqttActions, Error> {
+    pub fn messages_handler(
+        &mut self,
+        mut stream: TcpStream,
+        //logger_handler: &LoggerHandler,
+    ) -> Result<MqttActions, Error> {
         // averiguo el tipo de paquete:
         let fixed_header = match PacketFixedHeader::read_from(&mut stream) {
             Ok(header_type) => header_type,
@@ -157,7 +186,10 @@ impl MqttServer {
             fixed_header.remaining_length,
         ) {
             Ok(pack) => match pack {
-                PacketReceived::Connect(connect_pack) => self.handle_connect(stream, *connect_pack),
+                PacketReceived::Connect(connect_pack) => {
+                    println!("Client try to connect");
+                    self.handle_connect(stream, *connect_pack)
+                }
                 PacketReceived::Disconnect(_pack) => {
                     //Ok(MqttActions::DisconnectClient.register_action())
                     Ok(MqttActions::DisconnectClient)

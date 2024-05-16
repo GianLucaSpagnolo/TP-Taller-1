@@ -8,7 +8,7 @@ pub enum MqttActions {
     ClientConnection(String, u8),
     ClientReceive(String, String),
     DisconnectClient,
-    MessageReceived, 
+    MessageReceived,
     MessageSended,
     TryConnect, // guardara el exit code
     PackageError,
@@ -19,11 +19,15 @@ impl MqttActions {
         match &self {
             MqttActions::ServerConnection(id) => {
                 logger.log_event(&"Connection successful".to_string(), id, &",".to_string())
-            },
+            }
             MqttActions::ClientConnection(_, _) => todo!(),
             MqttActions::ClientReceive(_, _) => todo!(),
             MqttActions::DisconnectClient => todo!(),
-            MqttActions::MessageReceived => logger.log_event(&"Message received".to_string(), &"?".to_string(), &",".to_string()),
+            MqttActions::MessageReceived => logger.log_event(
+                &"Message received".to_string(),
+                &"?".to_string(),
+                &",".to_string(),
+            ),
             MqttActions::MessageSended => todo!(),
             MqttActions::TryConnect => todo!(),
             MqttActions::PackageError => todo!(),

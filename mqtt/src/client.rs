@@ -1,4 +1,9 @@
-use std::{io::Error, net::TcpStream, thread};
+use std::{
+    io::{Error, Read},
+    net::TcpStream,
+    sync::{RwLock, RwLockReadGuard},
+    thread,
+};
 
 use crate::{
     actions::MqttActions,
@@ -11,7 +16,7 @@ use crate::{
     },
 };
 pub struct MqttClient {
-    id: String, 
+    id: String,
     config: ClientConfig,
     stream: TcpStream,
 }
@@ -43,9 +48,25 @@ impl MqttClient {
             ..Default::default()
         };
 
-        Connect::new(config.connect_properties.clone(), payload).send(&mut stream)?;
+        let connection = Connect::new(config.connect_properties.clone(), payload);
+        match connection.send(&mut stream) {
+            Ok(_) => println!("Client connection successful"),
+            Err(e) => {
+                eprintln!("Client connection failure");
+                return Err(e);
+            }
+        };
 
-        let connack = handle_connack_packet(&mut stream)?;
+        let connack = match handle_connack_packet(&mut stream) {
+            Ok(r) => {
+                println!("Connack handler finish");
+                r
+            }
+            Err(e) => {
+                eprintln!("Connack packet handler fails");
+                return Err(e);
+            }
+        };
 
         /*
         // el servidor loggea, no el cliente
@@ -55,42 +76,73 @@ impl MqttClient {
         )
         .register_action();
         */
-        MqttActions::ClientConnection(
-            config.get_socket_address().to_string(),
-            connack.properties.connect_reason_code,
-        );
         Ok(MqttClient { id, config, stream })
     }
 
-    pub fn run_listener(self) -> Result<(), Error> {
-        let mut stream_cpy = self.stream.try_clone()?;
-        let mut counter = 0;
+    pub fn run_listener(&self) -> Result<(), Error> {
+        //let mut stream_cpy = self.stream.try_clone()?;
+        //let mut counter = 0;
 
+        let mut stream_cpy = match self.stream.try_clone() {
+            Ok(client_stream) => client_stream,
+            Err(e) => {
+                eprintln!("{}", e);
+                return Err(e);
+            }
+        };
+
+        println!("Listener initialized");
+        /*
+        // falta un listener de paquetes, que use la construccion del header ...
+        while let Ok(header) = PacketFixedHeader::read_from(&mut &self.stream) {
+            println!("listening packages");
+            match &self.messages_handler(&mut stream_cpy, header) {
+                Ok(_) => continue,
+                Err(e) => {
+                    eprintln!("{}", e);
+                    continue
+                },
+            }
+            //counter = 0;
+        };
+        */
+        let mut counter = 0;
+        let l_file = RwLock::new(&self.stream);
+        // let mut l_read_file ;
         loop {
-            match PacketFixedHeader::read_from(&mut stream_cpy) {
-                Ok(header) => {
-                    self.messages_handler(&mut stream_cpy, header)?;
-                    counter = 0;
-                }
-                Err(_) => {
-                    thread::sleep(std::time::Duration::from_secs(10));
-                    counter += 10;
-                    if let Some(expiry_interval) =
-                        self.config.connect_properties.session_expiry_interval
-                    {
-                        if expiry_interval == 0 {
+            // lockeo de lectura:
+            match l_file.read() {
+                Ok(lread_file) => {
+                    match PacketFixedHeader::read_from(&mut lread_file.clone()) {
+                        Ok(header) => {
+                            println!("listening packages");
+                            self.messages_handler(&mut stream_cpy, header)?;
+                            counter = 0;
+                        }
+                        Err(e) => {
+                            eprintln!("listening package error: {}", e);
+                            thread::sleep(std::time::Duration::from_secs(10));
+                            counter += 10;
+                            if let Some(expiry_interval) =
+                                self.config.connect_properties.session_expiry_interval
+                            {
+                                if expiry_interval == 0 {
+                                    continue;
+                                }
+                                if counter > expiry_interval {
+                                    break;
+                                }
+                            }
                             continue;
                         }
-                        if counter > expiry_interval {
-                            break;
-                        }
-                    }
-                    continue;
+                    };
                 }
-            };
+                Err(_) => todo!(),
+            }
         }
 
-        Err(Error::new(std::io::ErrorKind::Other, "Session expired"))
+        //Err(Error::new(std::io::ErrorKind::Other, "Session expired"))
+        Ok(())
     }
 
     pub fn messages_handler(
@@ -98,19 +150,28 @@ impl MqttClient {
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
     ) -> Result<(), Error> {
-        let packet_recived = get_packet(
+        println!("Package incoming 1");
+        let packet_recived = match get_packet(
             &mut stream,
             fixed_header.get_package_type(),
             fixed_header.remaining_length,
-        )?;
+        ) {
+            Ok(received) => received,
+            Err(e) => {
+                eprintln!("Error at reading package");
+                return Err(e);
+            }
+        };
 
+        println!("Package incoming 2");
         match packet_recived {
             PacketReceived::Publish(_publish) => {
-                /* 
+                /*
                 // para logear, el cliente debe pasar el mensaje al servidor
                 MqttActions::ClientReceive(self.id.clone(), publish.properties.topic_name.clone())
                     .register_action();
                 */
+                println!("Package received")
             }
             _ => return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido")),
         }
