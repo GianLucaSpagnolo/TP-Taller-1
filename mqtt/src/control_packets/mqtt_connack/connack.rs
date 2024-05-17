@@ -68,6 +68,14 @@ pub struct Connack {
     pub properties: ConnackProperties,
 }
 
+impl Default for Connack {
+    fn default() -> Connack {
+        Connack {
+            properties: ConnackProperties::default(),
+        }
+    }
+}
+
 impl Serialization for Connack {
     fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Connack, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
