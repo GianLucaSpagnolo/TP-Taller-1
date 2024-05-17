@@ -15,6 +15,7 @@ pub const _UNSUBACK_PACKET: u8 = 0xB0;
 pub const _PINGREQ_PACKET: u8 = 0xC0;
 pub const _PINGRESP_PACKET: u8 = 0xD0;
 pub const _DISCONNECT_PACKET: u8 = 0xE0;
+pub const AUTH_PACKET: u8 = 0xF0;
 
 pub struct PacketFixedHeader {
     pub packet_type: u8,
@@ -68,6 +69,7 @@ impl PacketFixedHeader {
             _PINGREQ_PACKET => PacketType::_PingReqType,
             _PINGRESP_PACKET => PacketType::_PingRespType,
             _DISCONNECT_PACKET => PacketType::DisconnectType,
+            AUTH_PACKET => PacketType::AuthType,
             _ => PacketType::Unknow,
         }
     }

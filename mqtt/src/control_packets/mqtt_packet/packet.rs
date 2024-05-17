@@ -5,7 +5,7 @@ pub mod generic_packet {
     };
 
     use crate::control_packets::{
-        mqtt_connack::connack::Connack, mqtt_connect::connect::Connect,
+        mqtt_auth::auth::Auth, mqtt_connack::connack::Connack, mqtt_connect::connect::Connect,
         mqtt_disconnect::disconnect::_Disconnect, mqtt_pingreq::pingreq::_PingReq,
         mqtt_pingresp::pingresp::_PingResp, mqtt_puback::puback::_Puback,
         mqtt_publish::publish::_Publish, mqtt_suback::suback::_Suback,
@@ -25,6 +25,7 @@ pub mod generic_packet {
         _PingReqType,
         _PingRespType,
         DisconnectType,
+        AuthType,
         Unknow, // errores o paquetes no implementados
     }
 
@@ -40,6 +41,7 @@ pub mod generic_packet {
         PingReq(Box<_PingReq>),
         PingResp(Box<_PingResp>),
         Disconnect(Box<_Disconnect>),
+        Auth(Box<Auth>),
         Unknow,
     }
 
@@ -77,6 +79,7 @@ pub mod generic_packet {
             PacketType::_PingReqType => pack_bytes::<_PingReq>(stream, remaining_length),
             PacketType::_PingRespType => pack_bytes::<_PingResp>(stream, remaining_length),
             PacketType::DisconnectType => pack_bytes::<_Disconnect>(stream, remaining_length),
+            PacketType::AuthType => pack_bytes::<Auth>(stream, remaining_length),
             _ => Err(Error::new(
                 std::io::ErrorKind::Other,
                 "Server processing - Paquete no implementado",
