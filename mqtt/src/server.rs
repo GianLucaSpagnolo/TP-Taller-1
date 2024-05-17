@@ -229,13 +229,20 @@ impl MqttServer {
         connect: Connect,
     ) -> Result<MqttActions, Error> {
         let client = connect.payload.client_id.clone();
-        let connack_properties: ConnackProperties = self.handle_connection(connect)?;
-        Connack::new(connack_properties).send(&mut stream)?;
+        let connack_properties: ConnackProperties = self.handle_connection(connect);
+        match Connack::new(connack_properties).send(&mut stream) {
+            Ok(_) => println!("Connack enviado"),
+            Err(e) => {
+                eprintln!("Connack send error: {}", e);
+                return Err(e);
+            },
+        };
         //Ok(MqttActions::ServerConnection(client).register_action())
         Ok(MqttActions::ServerConnection(client))
     }
 
-    fn handle_connection(&mut self, connect: Connect) -> Result<ConnackProperties, Error> {
+    //fn handle_connection(&mut self, connect: Connect) -> Result<ConnackProperties, Error> {
+        fn handle_connection(&mut self, connect: Connect) -> ConnackProperties {
         // Si no recibe ninguna conexión en cierta cantidad de tiempo debe cortar la conexión (timer!)
 
         // Connect Flags:
@@ -292,7 +299,8 @@ impl MqttServer {
         // con el mismo client identifier. Tambien debe ser borrado de la session state en caso de que ya haya sido publicado
         connack_properties.connect_acknowledge_flags = self.open_new_session(connect);
 
-        Ok(connack_properties)
+        //Ok(connack_properties)
+        connack_properties
     }
 
     fn open_new_session(&mut self, connect: Connect) -> u8 {

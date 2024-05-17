@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::{io::Error, net::TcpStream};
 
 use crate::{
     common::data_types::data_representation::*,
@@ -69,7 +69,8 @@ impl PacketProperties for _PubackProperties {
         Ok(bytes)
     }
 
-    fn read_from(stream: &mut dyn std::io::prelude::Read) -> Result<Self, Error> {
+    //fn read_from(stream: &mut dyn std::io::prelude::Read) -> Result<Self, Error> {
+    fn read_from(stream: &mut TcpStream) -> Result<Self, Error> {
         let packet_id = read_two_byte_integer(stream)?;
         let puback_reason_code = read_byte(stream)?;
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;

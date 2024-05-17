@@ -96,6 +96,10 @@ use super::payload::ConnectPayload;
 /// Username (Connect Flag - Username = 1)
 /// Password (Connect Flag - Password = 1)
 ///
+/// 
+
+use crate::control_packets::mqtt_connect::connect_properties::*;
+
 pub struct Connect {
     pub properties: ConnectProperties,
     pub payload: ConnectPayload,
@@ -106,11 +110,11 @@ impl Serialization for Connect {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();
-
+        /*
         let properties = ConnectProperties::read_from(&mut buffer)?;
-
         let payload = ConnectPayload::read_from(&mut buffer)?;
-
+        */
+        let properties = read_from_header(&mut buffer)?;
         Ok(Connect {
             properties,
             payload,

@@ -1,5 +1,6 @@
 use std::io::Error;
 use std::io::Read;
+use std::net::TcpStream;
 
 use crate::common::data_types::data_representation::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
@@ -119,7 +120,8 @@ impl PacketProperties for ConnectProperties {
         Ok(bytes)
     }
 
-    fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+    //fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+    fn read_from(stream: &mut TcpStream) -> Result<Self, Error> {
         let protocol_name_length = read_two_byte_integer(stream)?;
         let protocol_name = read_utf8_encoded_string(stream, protocol_name_length)?;
         let protocol_version = read_byte(stream)?;
@@ -185,5 +187,137 @@ impl PacketProperties for ConnectProperties {
             user_property,
             maximum_packet_size,
         })
+    }
+}
+
+fn read_from_header(stream: &mut [u8]) -> Result<ConnectProperties, Error> {
+    let protocol_name_length = read_two_byte_integer(stream)?;
+    let protocol_name = read_utf8_encoded_string(stream, protocol_name_length)?;
+    let protocol_version = read_byte(stream)?;
+    let connect_flags = read_byte(stream)?;
+    let keep_alive = read_two_byte_integer(stream)?;
+    let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
+
+    let mut session_expiry_interval = None;
+    let mut authentication_method = None;
+    let mut authentication_data = None;
+    let mut request_problem_information = None;
+    let mut request_response_information = None;
+    let mut receive_maximum = None;
+    let mut topic_alias_maximum = None;
+    let mut user_property = None;
+    let mut maximum_packet_size = None;
+
+    for property in &variable_header_properties.properties {
+        match property.id() {
+            SESSION_EXPIRY_INTERVAL => {
+                session_expiry_interval = property.value_u32();
+            }
+            AUTHENTICATION_METHOD => {
+                authentication_method = property.value_string();
+            }
+            AUTHENTICATION_DATA => {
+                authentication_data = property.value_string();
+            }
+            REQUEST_PROBLEM_INFORMATION => {
+                request_problem_information = property.value_u8();
+            }
+            REQUEST_RESPONSE_INFORMATION => {
+                request_response_information = property.value_u8();
+            }
+            RECEIVE_MAXIMUM => {
+                receive_maximum = property.value_u16();
+            }
+            TOPIC_ALIAS_MAXIMUM => {
+                topic_alias_maximum = property.value_u16();
+            }
+            USER_PROPERTY => {
+                user_property = property.value_string_pair();
+            }
+            MAXIMUM_PACKET_SIZE => {
+                maximum_packet_size = property.value_u32();
+            }
+            _ => {}
+        }
+    }
+
+    Ok(ConnectProperties {
+        protocol_name,
+        protocol_version,
+        connect_flags,
+        keep_alive,
+        session_expiry_interval,
+        authentication_method,
+        authentication_data,
+        request_problem_information,
+        request_response_information,
+        receive_maximum,
+        topic_alias_maximum,
+        user_property,
+        maximum_packet_size,
+    })
+}
+
+fn read_two_byte_integer_header(stream: &mut [u8]) {
+    let mut properties_len_1 = match stream.get(0) {
+        Some(r) => r,
+        None => {
+            eprintln!("Error al crear varaible header properties desde un header");
+            return Err(Error::new(std::io::ErrorKind::InvalidData, "Error al crear varaible header properties desde un header (vh properties"));
+        },
+    };
+
+    let mut properties_len_2 = match stream.get(1) {
+        Some(r) => r,
+        None => {
+            eprintln!("Error al crear varaible header properties desde un header");
+            return Err(Error::new(std::io::ErrorKind::InvalidData, "Error al crear varaible header properties desde un header (vh properties"));
+        },
+    };
+    const SIZEOFU16 :u16 = 2;
+    let mut properties_len :u16 = (0xFFFF & ((properties_len_1 << 8) & properties_len_2)).into();
+}
+
+fn read_from_variable_header(stream: &mut [u8]) -> Result<VariableHeaderProperties, Error> {
+    // let mut properties_len = read_two_byte_integer(stream)?;
+    let mut properties_len_1 = match stream.get(0) {
+        Some(r) => r,
+        None => {
+            eprintln!("Error al crear varaible header properties desde un header");
+            return Err(Error::new(std::io::ErrorKind::InvalidData, "Error al crear varaible header properties desde un header (vh properties"));
+        },
+    };
+
+    let mut properties_len_2 = match stream.get(1) {
+        Some(r) => r,
+        None => {
+            eprintln!("Error al crear varaible header properties desde un header");
+            return Err(Error::new(std::io::ErrorKind::InvalidData, "Error al crear varaible header properties desde un header (vh properties"));
+        },
+    };
+    const SIZEOFU16 :u16 = 2;
+    let mut properties_len :u16 = (0xFFFF & ((properties_len_1 << 8) & properties_len_2)).into();
+    properties_len -= SIZEOFU16 as u16;
+
+    let mut properties_buff = vec![0u8; properties_len as usize];
+    let mut propertie_byte;
+    
+    // stream.read_exact(&mut properties_buff)?;
+    // leo los bytes que faltan:
+    for i in 2..properties_len {
+        propertie_byte = match stream.get(1) {
+            Some(r) => r,
+            None => {
+                eprintln!("Error al leer resto de varaible header properties desde header");
+                return Err(Error::new(std::io::ErrorKind::InvalidData, "Error al crear varaible header properties desde un header (vh properties"));
+            },
+        };
+        properties_buff.push(*propertie_byte);
+    }
+
+    // diferencia entre Connect properties y variable properties???
+    match VariableHeaderProperties::from_be_bytes(&properties_buff) {
+        Ok(properties) => Ok(properties),
+        Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e)),
     }
 }

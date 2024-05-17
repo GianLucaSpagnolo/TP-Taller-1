@@ -1,4 +1,4 @@
-use std::io::{Error, Read};
+use std::{io::{Error, Read}, net::TcpStream};
 
 use crate::{
     common::data_types::data_representation::read_byte,
@@ -78,7 +78,8 @@ impl PacketProperties for _DisconnectProperties {
         Ok(bytes)
     }
 
-    fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+    //fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+    fn read_from(stream: &mut TcpStream) -> Result<Self, Error> {
         let disconnect_reason_code = read_byte(stream)?;
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
 

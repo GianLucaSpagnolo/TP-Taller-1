@@ -1,4 +1,4 @@
-use std::io::{Error, Read};
+use std::{io::{Error, Read}, net::TcpStream};
 
 use crate::common::data_types::data_representation::{read_byte, read_two_byte_integer};
 
@@ -43,9 +43,28 @@ impl PacketFixedHeader {
         bytes
     }
 
-    pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let packet_type = read_byte(stream)?;
-        let remaining_length = read_two_byte_integer(stream)?;
+    pub fn read_from(mut stream: &TcpStream) -> Result<Self, Error> {
+        let packet_type = match read_byte(&mut stream) {
+            Ok(r) => {
+                println!("header 1 bytes leido ok");
+                r
+            },
+            Err(e) => {
+                eprintln!("read_byte error: {}", e);
+                return Err(e);
+            },
+        };
+
+        let remaining_length = match read_two_byte_integer(&mut stream) {
+            Ok(re) => {
+                println!("header 2 bytes leidos ok");
+                re
+            },
+            Err(e) => {
+                eprintln!("read_two_byte error: {}", e);
+                return Err(e);
+            },
+        };
 
         Ok(PacketFixedHeader::new(packet_type, remaining_length))
     }

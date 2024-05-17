@@ -1,5 +1,6 @@
 use std::io::Error;
 use std::io::Read;
+use std::net::TcpStream;
 
 use crate::common::data_types::data_representation::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
@@ -138,7 +139,8 @@ impl PacketProperties for ConnectPayload {
         Ok(bytes)
     }
 
-    fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+    //fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+    fn read_from(stream: &mut TcpStream) -> Result<Self, Error> {
         let client_id_len = read_two_byte_integer(stream)?;
         let client_id = read_utf8_encoded_string(stream, client_id_len)?;
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;

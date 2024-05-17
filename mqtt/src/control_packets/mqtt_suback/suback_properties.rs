@@ -5,6 +5,7 @@ use crate::control_packets::mqtt_packet::{
 };
 
 use std::io::Error;
+use std::net::TcpStream;
 
 #[derive(Default)]
 pub struct _SubackProperties {
@@ -75,7 +76,8 @@ impl PacketProperties for _SubackProperties {
         Ok(bytes)
     }
 
-    fn read_from(stream: &mut dyn std::io::Read) -> Result<Self, Error> {
+    //fn read_from(stream: &mut dyn std::io::Read) -> Result<Self, Error> {
+        fn read_from(stream: &mut TcpStream) -> Result<Self, Error> {
         let packet_identifier = read_two_byte_integer(stream)?;
 
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;

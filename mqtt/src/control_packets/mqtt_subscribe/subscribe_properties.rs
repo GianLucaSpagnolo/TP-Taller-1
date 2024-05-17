@@ -5,7 +5,7 @@ use crate::{
         variable_header_properties::VariableHeaderProperties,
     },
 };
-use std::io::{Error, Read};
+use std::{io::{Error, Read}, net::TcpStream};
 
 #[derive(Clone)]
 /// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
@@ -87,7 +87,8 @@ impl PacketProperties for SubscribeProperties {
         Ok(bytes)
     }
 
-    fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+    //fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+    fn read_from(stream: &mut TcpStream) -> Result<Self, Error> {
         let packet_identifier = read_two_byte_integer(stream)?;
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
 

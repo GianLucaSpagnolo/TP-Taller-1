@@ -113,7 +113,8 @@ impl MqttClient {
             // lockeo de lectura:
             match l_file.read() {
                 Ok(lread_file) => {
-                    match PacketFixedHeader::read_from(&mut lread_file.clone()) {
+                    //match PacketFixedHeader::read_from(lread_file.clone()) {
+                        match PacketFixedHeader::read_from(&lread_file) {
                         Ok(header) => {
                             println!("listening packages");
                             self.messages_handler(&mut stream_cpy, header)?;
