@@ -47,7 +47,7 @@ pub mod generic_packet {
 
     // trait implementado por todos los mensajes:
     pub trait Serialization<Packet = Self> {
-        fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Packet, Error>;
+        fn read_from(stream: &mut dyn Read, remaining_length: u32) -> Result<Packet, Error>;
 
         fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error>;
 
@@ -65,7 +65,7 @@ pub mod generic_packet {
     pub fn get_packet(
         stream: &mut dyn Read,
         package_type: PacketType,
-        remaining_length: u16,
+        remaining_length: u32,
     ) -> Result<PacketReceived, Error> {
         match package_type {
             PacketType::ConnectType => pack_bytes::<Connect>(stream, remaining_length),
@@ -91,7 +91,7 @@ pub mod generic_packet {
     // correspondiente.
     pub fn pack_bytes<T>(
         stream: &mut dyn Read,
-        remaining_length: u16,
+        remaining_length: u32,
     ) -> Result<PacketReceived, Error>
     where
         T: Serialization,

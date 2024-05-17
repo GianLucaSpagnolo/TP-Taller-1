@@ -9,7 +9,7 @@ use crate::control_packets::mqtt_packet::{
 pub struct PingReq {}
 
 impl Serialization for PingReq {
-    fn read_from(_stream: &mut dyn Read, remaining_length: u16) -> Result<Self, Error> {
+    fn read_from(_stream: &mut dyn Read, remaining_length: u32) -> Result<Self, Error> {
         if remaining_length != 0 {
             return Err(Error::new(
                 std::io::ErrorKind::InvalidData,

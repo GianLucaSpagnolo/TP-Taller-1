@@ -17,7 +17,7 @@ pub mod data_representation {
         Ok(u16::from_be_bytes(read_buff))
     }
 
-    pub fn _read_four_byte_integer(stream: &mut dyn Read) -> Result<u32, Error> {
+    pub fn read_four_byte_integer(stream: &mut dyn Read) -> Result<u32, Error> {
         let mut read_buff = [0u8; 4];
         stream.read_exact(&mut read_buff)?;
         Ok(u32::from_be_bytes(read_buff))
@@ -62,5 +62,15 @@ pub mod data_representation {
         local_buff.copy_from_slice(&buff[*buff_size..*buff_size + length as usize]);
         *buff_size += length as usize;
         String::from_utf8(local_buff)
+    }
+
+    #[allow(dead_code)]
+    pub fn variable_byte_integer_encode() {
+        // TODO
+    }
+
+    #[allow(dead_code)]
+    pub fn variable_byte_integer_decode() {
+        // TODO
     }
 }

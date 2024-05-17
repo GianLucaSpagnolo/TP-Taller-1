@@ -74,7 +74,7 @@ pub struct Publish {
 }
 
 impl Serialization for Publish {
-    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Publish, Error> {
+    fn read_from(stream: &mut dyn Read, remaining_length: u32) -> Result<Publish, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();

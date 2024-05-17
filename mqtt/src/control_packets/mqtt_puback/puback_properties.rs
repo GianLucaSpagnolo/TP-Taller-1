@@ -30,11 +30,11 @@ impl Clone for PubackProperties {
 }
 
 impl PacketProperties for PubackProperties {
-    fn size_of(&self) -> u16 {
+    fn size_of(&self) -> u32 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u16>() + std::mem::size_of::<u8>();
 
-        fixed_props_size as u16 + variable_props.bytes_length
+        fixed_props_size as u32 + variable_props.bytes_length as u32
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {

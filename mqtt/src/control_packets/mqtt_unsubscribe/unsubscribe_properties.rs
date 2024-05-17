@@ -28,7 +28,7 @@ impl Clone for UnsubscribeProperties {
 }
 
 impl PacketProperties for UnsubscribeProperties {
-    fn size_of(&self) -> u16 {
+    fn size_of(&self) -> u32 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u16>();
 
@@ -37,7 +37,7 @@ impl PacketProperties for UnsubscribeProperties {
             topic_filters_size += std::mem::size_of::<u16>() + topic.len();
         }
 
-        fixed_props_size as u16 + variable_props.bytes_length + topic_filters_size as u16
+        fixed_props_size as u32 + variable_props.bytes_length as u32 + topic_filters_size as u32
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {

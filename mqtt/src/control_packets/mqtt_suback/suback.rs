@@ -64,7 +64,7 @@ pub struct Suback {
 }
 
 impl Serialization for Suback {
-    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Suback, Error> {
+    fn read_from(stream: &mut dyn Read, remaining_length: u32) -> Result<Suback, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();

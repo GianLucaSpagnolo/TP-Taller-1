@@ -43,14 +43,14 @@ impl Clone for PublishProperties {
 }
 
 impl PacketProperties for PublishProperties {
-    fn size_of(&self) -> u16 {
+    fn size_of(&self) -> u32 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size =
             std::mem::size_of::<u16>() + self.topic_name.len() + std::mem::size_of::<u16>();
 
         let payload_size = std::mem::size_of::<u16>() + self.application_message.len();
 
-        fixed_props_size as u16 + variable_props.bytes_length + payload_size as u16
+        fixed_props_size as u32 + variable_props.bytes_length as u32 + payload_size as u32
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {

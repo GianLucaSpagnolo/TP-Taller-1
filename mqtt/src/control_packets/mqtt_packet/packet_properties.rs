@@ -4,7 +4,7 @@ use super::variable_header_properties::VariableHeaderProperties;
 
 pub trait PacketProperties<Properties = Self> {
     /// Devuelve la cantidad de bytes que ocupa el paquete
-    fn size_of(&self) -> u16;
+    fn size_of(&self) -> u32;
 
     /// Devuelve las propiedades del paquete como un objeto VariableHeaderProperties
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error>;

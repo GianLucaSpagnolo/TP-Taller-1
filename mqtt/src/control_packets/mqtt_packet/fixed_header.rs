@@ -1,6 +1,6 @@
 use std::io::{Error, Read};
 
-use crate::common::data_types::data_representation::{read_byte, read_two_byte_integer};
+use crate::common::data_types::data_representation::{read_byte, read_four_byte_integer};
 
 use super::packet::generic_packet::PacketType;
 
@@ -19,11 +19,11 @@ pub const AUTH_PACKET: u8 = 0xF0;
 
 pub struct PacketFixedHeader {
     pub packet_type: u8,
-    pub remaining_length: u16, // This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
+    pub remaining_length: u32, // This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 }
 
 impl PacketFixedHeader {
-    pub fn new(packet_type_header: u8, remaining_length: u16) -> Self {
+    pub fn new(packet_type_header: u8, remaining_length: u32) -> Self {
         let mut packet_type = packet_type_header;
         if packet_type == UNSUBSCRIBE_PACKET || packet_type == SUBSCRIBE_PACKET {
             packet_type |= 1 << 1;
@@ -46,7 +46,7 @@ impl PacketFixedHeader {
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let packet_type = read_byte(stream)?;
-        let remaining_length = read_two_byte_integer(stream)?;
+        let remaining_length = read_four_byte_integer(stream)?;
 
         Ok(PacketFixedHeader::new(packet_type, remaining_length))
     }
