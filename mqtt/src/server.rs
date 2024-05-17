@@ -18,7 +18,7 @@ use crate::session::Session;
 pub struct MqttServer {
     pub config: ServerConfig,
     sessions: HashMap<String, Session>,
-    _connect_received: bool,
+    connect_received: bool,
 }
 
 impl Clone for MqttServer {
@@ -26,7 +26,7 @@ impl Clone for MqttServer {
         MqttServer {
             config: self.config.clone(),
             sessions: self.sessions.clone(),
-            _connect_received: self._connect_received,
+            connect_received: self.connect_received,
         }
     }
 }
@@ -36,7 +36,7 @@ impl MqttServer {
         MqttServer {
             config,
             sessions: HashMap::new(),
-            _connect_received: false,
+            connect_received: false,
         }
     }
 
@@ -211,7 +211,7 @@ impl MqttServer {
 
     fn determinate_reason_code(&self, connect_packet: &Connect) -> u8 {
         // Si ya se recibió un CONNECT packet, se debe procesar como un Protocol Error (reason code 130) y cerrar la conexion.
-        if self._connect_received {
+        if self.connect_received {
             return ReasonMode::ProtocolError.get_id();
         }
 

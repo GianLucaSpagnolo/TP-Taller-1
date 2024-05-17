@@ -1,8 +1,8 @@
 use crate::control_packets::{mqtt_connect::connect::Connect, mqtt_packet::flags::flags_handler};
 
 pub struct WillMessage {
-    pub _will_topic: String,
-    pub _will_payload: String,
+    pub will_topic: String,
+    pub will_payload: String,
 }
 
 impl WillMessage {
@@ -16,8 +16,8 @@ impl WillMessage {
         }
         if let (Some(topic), Some(payload)) = (will_topic, will_payload) {
             Some(WillMessage {
-                _will_topic: topic.clone(),
-                _will_payload: payload.clone(),
+                will_topic: topic.clone(),
+                will_payload: payload.clone(),
             })
         } else {
             None
@@ -28,26 +28,26 @@ impl WillMessage {
 impl Clone for WillMessage {
     fn clone(&self) -> Self {
         WillMessage {
-            _will_topic: self._will_topic.clone(),
-            _will_payload: self._will_payload.clone(),
+            will_topic: self.will_topic.clone(),
+            will_payload: self.will_payload.clone(),
         }
     }
 }
 
 pub struct Session {
     active: bool,
-    _session_expiry_interval: u32,
-    _subscriptions: Vec<String>,
-    _will_message: Option<WillMessage>,
+    session_expiry_interval: u32,
+    subscriptions: Vec<String>,
+    will_message: Option<WillMessage>,
 }
 
 impl Session {
     pub fn new(connection: &Connect) -> Self {
         Session {
             active: true,
-            _session_expiry_interval: 0,
-            _subscriptions: Vec::new(),
-            _will_message: WillMessage::new(
+            session_expiry_interval: 0,
+            subscriptions: Vec::new(),
+            will_message: WillMessage::new(
                 flags_handler::get_connect_flag_will_flag(connection.properties.connect_flags),
                 connection.payload.will_topic.as_ref(),
                 connection.payload.will_payload.as_ref(),
@@ -64,9 +64,9 @@ impl Clone for Session {
     fn clone(&self) -> Self {
         Session {
             active: self.active,
-            _session_expiry_interval: self._session_expiry_interval,
-            _subscriptions: self._subscriptions.clone(),
-            _will_message: self._will_message.clone(),
+            session_expiry_interval: self.session_expiry_interval,
+            subscriptions: self.subscriptions.clone(),
+            will_message: self.will_message.clone(),
         }
     }
 }
