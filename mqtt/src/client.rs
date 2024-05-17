@@ -1,4 +1,4 @@
-use std::{io::Error, net::TcpStream, thread};
+use std::{io::Error, net::TcpStream, sync::mpsc::{self, Receiver, Sender}, thread};
 
 use crate::{
     actions::MqttActions,
@@ -57,42 +57,46 @@ impl MqttClient {
         Ok(MqttClient { id, config, stream })
     }
 
-    pub fn run_listener(self) -> Result<(), Error> {
-        let mut stream_cpy = self.stream.try_clone()?;
+    pub fn run_listener(self) -> Result<Receiver<Vec<u8>>, Error> {
         let mut counter = 0;
+        let (sender, receiver) = mpsc::channel();
 
-        loop {
-            match PacketFixedHeader::read_from(&mut stream_cpy) {
-                Ok(header) => {
-                    self.messages_handler(&mut stream_cpy, header)?;
-                    counter = 0;
-                }
-                Err(_) => {
-                    thread::sleep(std::time::Duration::from_secs(10));
-                    counter += 10;
-                    if let Some(expiry_interval) =
-                        self.config.connect_properties.session_expiry_interval
-                    {
-                        if expiry_interval == 0 {
-                            continue;
-                        }
-                        if counter > expiry_interval {
-                            break;
-                        }
+        thread::spawn( move || -> Result<(), Error> {
+            loop {
+                self.listener(self.stream.try_clone()?, sender.clone(), &mut counter)?;
+            }
+        }).join().unwrap()?;
+
+        Ok(receiver)
+    }
+
+    pub fn listener(&self, mut stream: TcpStream, sender: Sender<Vec<u8>>,counter: &mut u32) -> Result<(), Error> {
+        match PacketFixedHeader::read_from(&mut stream) {
+            Ok(header) => {
+                let data = self.messages_handler(&mut stream, header)?;
+                sender.send(data).unwrap();
+                *counter = 0;
+            }
+            Err(_) => {
+                thread::sleep(std::time::Duration::from_secs(10));
+                *counter += 10;
+                if let Some(expiry_interval) =
+                    self.config.connect_properties.session_expiry_interval
+                {
+                    if  expiry_interval != 0 && *counter > expiry_interval {
+                        return Err(Error::new(std::io::ErrorKind::Other, "Session expired"))
                     }
-                    continue;
                 }
-            };
+            }
         }
-
-        Err(Error::new(std::io::ErrorKind::Other, "Session expired"))
+        Ok(())
     }
 
     pub fn messages_handler(
         &self,
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
-    ) -> Result<(), Error> {
+    ) -> Result<Vec<u8>, Error> {
         let packet_recived = get_packet(
             &mut stream,
             fixed_header.get_package_type(),
@@ -106,8 +110,8 @@ impl MqttClient {
             }
             _ => return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido")),
         }
-
-        Ok(())
+        let data = "data";
+        Ok(data.as_bytes().to_vec())
     }
 
     pub fn publish() {
