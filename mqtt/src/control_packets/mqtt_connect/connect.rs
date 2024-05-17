@@ -1,6 +1,4 @@
-use std::io::Error;
-use std::io::Read;
-use std::io::Write;
+use std::io::{Error, Read, Write};
 
 use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;

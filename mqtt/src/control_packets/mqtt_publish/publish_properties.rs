@@ -1,5 +1,4 @@
-use std::io::Error;
-use std::io::Read;
+use std::io::{Error, Read};
 
 use crate::common::data_types::data_representation::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
