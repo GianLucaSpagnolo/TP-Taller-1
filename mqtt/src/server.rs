@@ -130,12 +130,12 @@ impl MqttServer {
         connect: Connect,
     ) -> Result<MqttActions, Error> {
         let client = connect.payload.client_id.clone();
-        let connack_properties: ConnackProperties = self.handle_connection(connect)?;
+        let connack_properties: ConnackProperties = self.handle_connection(connect, stream.try_clone()?)?;
         Connack::new(connack_properties).send(&mut stream)?;
         Ok(MqttActions::ServerConnection(client).register_action())
     }
 
-    fn handle_connection(&mut self, connect: Connect) -> Result<ConnackProperties, Error> {
+    fn handle_connection(&mut self, connect: Connect, stream_connection: TcpStream) -> Result<ConnackProperties, Error> {
         // Si no recibe ninguna conexión en cierta cantidad de tiempo debe cortar la conexión (timer!)
 
         // Connect Flags:
@@ -155,27 +155,7 @@ impl MqttServer {
 
         // let connack_properties = self.determinate_connack_properties(&connect);
 
-        let mut connack_properties = ConnackProperties {
-            connect_acknowledge_flags: 0,
-            connect_reason_code: ReasonMode::Success.get_id(),
-            assigned_client_identifier: None,
-            server_keep_alive: None,
-            reason_string: None,
-            session_expiry_interval: None,
-            receive_maximum: None,
-            maximum_packet_size: None,
-            topic_alias_maximum: None,
-            user_property: None,
-            authentication_method: None,
-            authentication_data: None,
-            response_information: None,
-            server_reference: None,
-            maximum_qos: None,
-            retain_available: None,
-            wildcard_subscription_available: None,
-            subscription_identifiers_available: None,
-            shared_subscription_available: None,
-        };
+        let mut connack_properties = ConnackProperties::default();
 
         connack_properties.connect_reason_code = self.determinate_reason_code(&connect);
 
@@ -190,19 +170,19 @@ impl MqttServer {
         // El will message debe ser publicado despues de que una network connection se cierra y la sesion expira, o el willdelay interval haya pasado
         // El will message debe ser borrado en caso de que el servidor reciba un DISCONNECT packet con reason code 0x00, o una nueva Network Connection con Clean Start = 1
         // con el mismo client identifier. Tambien debe ser borrado de la session state en caso de que ya haya sido publicado
-        connack_properties.connect_acknowledge_flags = self.open_new_session(connect);
+        connack_properties.connect_acknowledge_flags = self.open_new_session(connect, stream_connection);
 
         Ok(connack_properties)
     }
 
-    fn open_new_session(&mut self, connect: Connect) -> u8 {
+    fn open_new_session(&mut self, connect: Connect, stream_connection: TcpStream) -> u8 {
         if let Some(session) = self.sessions.get_mut(&connect.payload.client_id) {
             // Resumes session
             session.reconnect();
             1
         } else {
             // New session
-            let session = Session::new(&connect);
+            let session = Session::new(&connect, stream_connection);
 
             self.sessions.insert(connect.payload.client_id, session);
             0
@@ -256,3 +236,12 @@ for client_stream in listener.incoming() {
     }
 }
 */
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn test_handle_connect() {
+    
+    }
+}

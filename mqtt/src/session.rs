@@ -1,3 +1,5 @@
+use std::net::TcpStream;
+
 use crate::control_packets::{mqtt_connect::connect::Connect, mqtt_packet::flags::flags_handler};
 
 pub struct WillMessage {
@@ -36,15 +38,17 @@ impl Clone for WillMessage {
 
 pub struct Session {
     active: bool,
+    stream_connection: TcpStream,
     _session_expiry_interval: u32,
     _subscriptions: Vec<String>,
     _will_message: Option<WillMessage>,
 }
 
 impl Session {
-    pub fn new(connection: &Connect) -> Self {
+    pub fn new(connection: &Connect, stream_connection: TcpStream) -> Self {
         Session {
             active: true,
+            stream_connection: stream_connection,
             _session_expiry_interval: 0,
             _subscriptions: Vec::new(),
             _will_message: WillMessage::new(
@@ -64,6 +68,7 @@ impl Clone for Session {
     fn clone(&self) -> Self {
         Session {
             active: self.active,
+            stream_connection: self.stream_connection.try_clone().unwrap(),
             _session_expiry_interval: self._session_expiry_interval,
             _subscriptions: self._subscriptions.clone(),
             _will_message: self._will_message.clone(),
