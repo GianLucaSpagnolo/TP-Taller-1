@@ -6,12 +6,6 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_packet::packet_property::*;
 use crate::control_packets::mqtt_packet::variable_header_properties::VariableHeaderProperties;
 
-/// El primer byte del Variable Header del paquete AUTH es el Authenticate Reason Code.
-/// El reason code debe ser uno de los siguientes:
-/// - 0x00: Success
-/// - 0x18: Continue Authentication
-/// - 0x19: Re-authenticate
-///
 #[derive(Default)]
 #[allow(dead_code)]
 pub struct AuthProperties {

@@ -1,3 +1,5 @@
+use std::io::{Error, Read};
+
 use crate::{
     common::data_types::data_representation::*,
     control_packets::mqtt_packet::{
@@ -5,7 +7,6 @@ use crate::{
         variable_header_properties::VariableHeaderProperties,
     },
 };
-use std::io::{Error, Read};
 
 #[derive(Clone)]
 /// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
@@ -15,6 +16,7 @@ pub struct TopicFilter {
 }
 
 #[derive(Default)]
+#[allow(dead_code)]
 pub struct SubscribeProperties {
     pub packet_identifier: u16,
     pub subscription_identifier: Option<u32>,
@@ -151,7 +153,8 @@ impl SubscribeProperties {
     ///
     /// Bits 6 y 7 son reservados. Deben ser 0.
     ///
-    pub fn _add_topic_filter(
+    #[allow(dead_code)]
+    pub fn add_topic_filter(
         &mut self,
         topic_filter: String,
         max_qos: u8,

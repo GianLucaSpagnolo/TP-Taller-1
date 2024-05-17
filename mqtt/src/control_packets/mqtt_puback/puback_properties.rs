@@ -10,16 +10,17 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct _PubackProperties {
+#[allow(dead_code)]
+pub struct PubackProperties {
     pub packet_id: u16,
     pub puback_reason_code: u8,
     pub reason_string: Option<String>,
     pub user_property: Option<(String, String)>,
 }
 
-impl Clone for _PubackProperties {
+impl Clone for PubackProperties {
     fn clone(&self) -> Self {
-        _PubackProperties {
+        PubackProperties {
             packet_id: self.packet_id,
             puback_reason_code: self.puback_reason_code,
             reason_string: self.reason_string.clone(),
@@ -28,7 +29,7 @@ impl Clone for _PubackProperties {
     }
 }
 
-impl PacketProperties for _PubackProperties {
+impl PacketProperties for PubackProperties {
     fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u16>() + std::mem::size_of::<u8>();
@@ -84,7 +85,7 @@ impl PacketProperties for _PubackProperties {
             }
         }
 
-        Ok(_PubackProperties {
+        Ok(PubackProperties {
             packet_id,
             puback_reason_code,
             reason_string,

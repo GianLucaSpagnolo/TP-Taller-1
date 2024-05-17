@@ -6,15 +6,15 @@ use super::packet::generic_packet::PacketType;
 
 pub const CONNECT_PACKET: u8 = 0x10;
 pub const CONNACK_PACKET: u8 = 0x20;
-pub const _PUBLISH_PACKET: u8 = 0x30;
-pub const _PUBACK_PACKET: u8 = 0x40;
-pub const _SUBSCRIBE_PACKET: u8 = 0x80;
-pub const _SUBACK_PACKET: u8 = 0x90;
-pub const _UNSUBSCRIBE_PACKET: u8 = 0xA0;
-pub const _UNSUBACK_PACKET: u8 = 0xB0;
-pub const _PINGREQ_PACKET: u8 = 0xC0;
-pub const _PINGRESP_PACKET: u8 = 0xD0;
-pub const _DISCONNECT_PACKET: u8 = 0xE0;
+pub const PUBLISH_PACKET: u8 = 0x30;
+pub const PUBACK_PACKET: u8 = 0x40;
+pub const SUBSCRIBE_PACKET: u8 = 0x80;
+pub const SUBACK_PACKET: u8 = 0x90;
+pub const UNSUBSCRIBE_PACKET: u8 = 0xA0;
+pub const UNSUBACK_PACKET: u8 = 0xB0;
+pub const PINGREQ_PACKET: u8 = 0xC0;
+pub const PINGRESP_PACKET: u8 = 0xD0;
+pub const DISCONNECT_PACKET: u8 = 0xE0;
 pub const AUTH_PACKET: u8 = 0xF0;
 
 pub struct PacketFixedHeader {
@@ -25,7 +25,7 @@ pub struct PacketFixedHeader {
 impl PacketFixedHeader {
     pub fn new(packet_type_header: u8, remaining_length: u16) -> Self {
         let mut packet_type = packet_type_header;
-        if packet_type == _UNSUBSCRIBE_PACKET || packet_type == _SUBSCRIBE_PACKET {
+        if packet_type == UNSUBSCRIBE_PACKET || packet_type == SUBSCRIBE_PACKET {
             packet_type |= 1 << 1;
         }
 
@@ -60,21 +60,21 @@ impl PacketFixedHeader {
         match self.get_packet_type() {
             CONNECT_PACKET => PacketType::ConnectType,
             CONNACK_PACKET => PacketType::ConnackType,
-            _PUBLISH_PACKET => PacketType::_PublishType,
-            _PUBACK_PACKET => PacketType::_PubackType,
-            _SUBSCRIBE_PACKET => PacketType::SubscribeType,
-            _SUBACK_PACKET => PacketType::SubackType,
-            _UNSUBSCRIBE_PACKET => PacketType::_Unsubscribe,
-            _UNSUBACK_PACKET => PacketType::_Unsuback,
-            _PINGREQ_PACKET => PacketType::_PingReqType,
-            _PINGRESP_PACKET => PacketType::_PingRespType,
-            _DISCONNECT_PACKET => PacketType::DisconnectType,
+            PUBLISH_PACKET => PacketType::PublishType,
+            PUBACK_PACKET => PacketType::PubackType,
+            SUBSCRIBE_PACKET => PacketType::SubscribeType,
+            SUBACK_PACKET => PacketType::SubackType,
+            UNSUBSCRIBE_PACKET => PacketType::Unsubscribe,
+            UNSUBACK_PACKET => PacketType::Unsuback,
+            PINGREQ_PACKET => PacketType::PingReqType,
+            PINGRESP_PACKET => PacketType::PingRespType,
+            DISCONNECT_PACKET => PacketType::DisconnectType,
             AUTH_PACKET => PacketType::AuthType,
             _ => PacketType::Unknow,
         }
     }
 
-    pub fn _verify_reserved_bits_for_subscribe_packets(&self) -> bool {
+    pub fn verify_reserved_bits_for_subscribe_packets(&self) -> bool {
         self.packet_type & 2 == 2
     }
 }

@@ -48,7 +48,7 @@ impl Session {
             _session_expiry_interval: 0,
             _subscriptions: Vec::new(),
             _will_message: WillMessage::new(
-                flags_handler::_get_connect_flag_will_flag(connection.properties.connect_flags),
+                flags_handler::get_connect_flag_will_flag(connection.properties.connect_flags),
                 connection.payload.will_topic.as_ref(),
                 connection.payload.will_payload.as_ref(),
             ),

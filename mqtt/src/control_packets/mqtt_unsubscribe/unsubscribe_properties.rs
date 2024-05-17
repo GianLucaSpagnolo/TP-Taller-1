@@ -9,16 +9,17 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct _UnsubscribeProperties {
+#[allow(dead_code)]
+pub struct UnsubscribeProperties {
     pub packet_identifier: u16,
     pub user_property: Option<(String, String)>,
 
     pub topic_filters: Vec<String>, // Payload
 }
 
-impl Clone for _UnsubscribeProperties {
+impl Clone for UnsubscribeProperties {
     fn clone(&self) -> Self {
-        _UnsubscribeProperties {
+        UnsubscribeProperties {
             packet_identifier: self.packet_identifier,
             user_property: self.user_property.clone(),
             topic_filters: self.topic_filters.clone(),
@@ -26,7 +27,7 @@ impl Clone for _UnsubscribeProperties {
     }
 }
 
-impl PacketProperties for _UnsubscribeProperties {
+impl PacketProperties for UnsubscribeProperties {
     fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u16>();
@@ -92,7 +93,7 @@ impl PacketProperties for _UnsubscribeProperties {
             topic_filters.push(topic_filter);
         }
 
-        Ok(_UnsubscribeProperties {
+        Ok(UnsubscribeProperties {
             packet_identifier,
             user_property,
             topic_filters,

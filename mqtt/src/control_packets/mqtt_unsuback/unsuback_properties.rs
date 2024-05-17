@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::io::{Error, Read};
 
 use crate::control_packets::mqtt_packet::packet_property::*;
 use crate::{
@@ -9,7 +9,8 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct _UnsubackProperties {
+#[allow(dead_code)]
+pub struct UnsubackProperties {
     pub packet_identifier: u16,
     pub reason_string: Option<String>,
     pub user_property: Option<(String, String)>,
@@ -17,9 +18,9 @@ pub struct _UnsubackProperties {
     pub reason_codes: Vec<u8>, //Payload
 }
 
-impl Clone for _UnsubackProperties {
+impl Clone for UnsubackProperties {
     fn clone(&self) -> Self {
-        _UnsubackProperties {
+        UnsubackProperties {
             packet_identifier: self.packet_identifier,
             reason_string: self.reason_string.clone(),
             user_property: self.user_property.clone(),
@@ -29,7 +30,7 @@ impl Clone for _UnsubackProperties {
     }
 }
 
-impl PacketProperties for _UnsubackProperties {
+impl PacketProperties for UnsubackProperties {
     fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u16>();
@@ -74,7 +75,7 @@ impl PacketProperties for _UnsubackProperties {
         Ok(bytes)
     }
 
-    fn read_from(stream: &mut dyn std::io::prelude::Read) -> Result<Self, Error> {
+    fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let packet_identifier = read_two_byte_integer(stream)?;
 
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
@@ -103,7 +104,7 @@ impl PacketProperties for _UnsubackProperties {
             i += 1;
         }
 
-        Ok(_UnsubackProperties {
+        Ok(UnsubackProperties {
             packet_identifier,
             reason_string,
             user_property,

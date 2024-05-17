@@ -12,7 +12,8 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct _DisconnectProperties {
+#[allow(dead_code)]
+pub struct DisconnectProperties {
     pub disconnect_reason_code: u8,
     pub session_expiry_interval: Option<u32>,
     pub reason_string: Option<String>,
@@ -20,9 +21,9 @@ pub struct _DisconnectProperties {
     pub server_reference: Option<String>,
 }
 
-impl Clone for _DisconnectProperties {
+impl Clone for DisconnectProperties {
     fn clone(&self) -> Self {
-        _DisconnectProperties {
+        DisconnectProperties {
             disconnect_reason_code: self.disconnect_reason_code,
             session_expiry_interval: self.session_expiry_interval,
             reason_string: self.reason_string.clone(),
@@ -32,7 +33,7 @@ impl Clone for _DisconnectProperties {
     }
 }
 
-impl PacketProperties for _DisconnectProperties {
+impl PacketProperties for DisconnectProperties {
     fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u8>();
@@ -100,7 +101,7 @@ impl PacketProperties for _DisconnectProperties {
             }
         }
 
-        Ok(_DisconnectProperties {
+        Ok(DisconnectProperties {
             disconnect_reason_code,
             session_expiry_interval,
             reason_string,

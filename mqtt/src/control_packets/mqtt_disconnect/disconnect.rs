@@ -3,25 +3,26 @@ use std::io::{Error, Read, Write};
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 
-use super::disconnect_properties::_DisconnectProperties;
+use super::disconnect_properties::DisconnectProperties;
 use crate::control_packets::mqtt_packet::{
-    fixed_header::{PacketFixedHeader, _DISCONNECT_PACKET},
+    fixed_header::{PacketFixedHeader, DISCONNECT_PACKET},
     packet::generic_packet::Serialization,
 };
 
-pub struct _Disconnect {
-    pub properties: _DisconnectProperties,
+#[allow(dead_code)]
+pub struct Disconnect {
+    pub properties: DisconnectProperties,
 }
 
-impl Serialization for _Disconnect {
+impl Serialization for Disconnect {
     fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Self, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();
 
-        let properties = _DisconnectProperties::read_from(&mut buffer)?;
+        let properties = DisconnectProperties::read_from(&mut buffer)?;
 
-        let disconnect = _Disconnect { properties };
+        let disconnect = Disconnect { properties };
 
         Ok(disconnect)
     }
@@ -30,7 +31,7 @@ impl Serialization for _Disconnect {
         let properties = self.properties.as_bytes()?;
 
         let remaining_length = self.properties.size_of();
-        let fixed_header = PacketFixedHeader::new(_DISCONNECT_PACKET, remaining_length);
+        let fixed_header = PacketFixedHeader::new(DISCONNECT_PACKET, remaining_length);
         let fixed_header_bytes = fixed_header.as_bytes();
 
         stream.write_all(&fixed_header_bytes)?;
@@ -39,14 +40,15 @@ impl Serialization for _Disconnect {
         Ok(())
     }
 
-    fn packed_package(package: _Disconnect) -> PacketReceived {
+    fn packed_package(package: Disconnect) -> PacketReceived {
         PacketReceived::Disconnect(Box::new(package))
     }
 }
 
-impl _Disconnect {
-    pub fn _new(properties: _DisconnectProperties) -> Self {
-        _Disconnect { properties }
+impl Disconnect {
+    #[allow(dead_code)]
+    pub fn new(properties: DisconnectProperties) -> Self {
+        Disconnect { properties }
     }
 }
 
@@ -56,7 +58,7 @@ mod test {
 
     #[test]
     fn test_disconnect() {
-        let disconnect = _Disconnect::_new(_DisconnectProperties {
+        let disconnect = Disconnect::new(DisconnectProperties {
             disconnect_reason_code: 0,
             session_expiry_interval: Some(10),
             reason_string: Some("reason".to_string()),
@@ -72,7 +74,7 @@ mod test {
         let mut buffer = buffer.as_slice();
         let disconnect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
         let disconnect =
-            _Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
+            Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
 
         assert_eq!(disconnect.properties.disconnect_reason_code, 0);
 
@@ -106,12 +108,12 @@ mod test {
 
     #[test]
     fn test_disconnect_empty_properties() {
-        let properties = _DisconnectProperties {
+        let properties = DisconnectProperties {
             disconnect_reason_code: 1,
             ..Default::default()
         };
 
-        let disconnect = _Disconnect::_new(properties);
+        let disconnect = Disconnect::new(properties);
 
         // ESCRIBE EL PACKET EN EL BUFFER
         let mut buffer: Vec<u8> = Vec::new();
@@ -121,7 +123,7 @@ mod test {
         let mut buffer = buffer.as_slice();
         let disconnect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
         let disconnect =
-            _Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
+            Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
 
         assert_eq!(disconnect.properties.disconnect_reason_code, 1);
 

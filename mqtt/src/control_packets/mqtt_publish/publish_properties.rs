@@ -8,7 +8,8 @@ use crate::control_packets::mqtt_packet::{
 };
 
 #[derive(Default)]
-pub struct _PublishProperties {
+#[allow(dead_code)]
+pub struct PublishProperties {
     pub topic_name: String,
     pub packet_identifier: u16,
     pub payload_format_indicator: Option<u8>,
@@ -23,9 +24,9 @@ pub struct _PublishProperties {
     pub application_message: String, // Payload
 }
 
-impl Clone for _PublishProperties {
+impl Clone for PublishProperties {
     fn clone(&self) -> Self {
-        _PublishProperties {
+        PublishProperties {
             topic_name: self.topic_name.clone(),
             packet_identifier: self.packet_identifier,
             payload_format_indicator: self.payload_format_indicator,
@@ -42,7 +43,7 @@ impl Clone for _PublishProperties {
     }
 }
 
-impl PacketProperties for _PublishProperties {
+impl PacketProperties for PublishProperties {
     fn size_of(&self) -> u16 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size =
@@ -161,7 +162,7 @@ impl PacketProperties for _PublishProperties {
         let application_message_len = read_two_byte_integer(stream).unwrap_or(0);
         let application_message = read_utf8_encoded_string(stream, application_message_len)?;
 
-        Ok(_PublishProperties {
+        Ok(PublishProperties {
             topic_name,
             packet_identifier,
             payload_format_indicator,

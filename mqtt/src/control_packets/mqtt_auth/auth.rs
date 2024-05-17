@@ -43,6 +43,14 @@ impl Serialization for Auth {
 }
 
 impl Auth {
+    /// ## AUTH PACKET
+    ///
+    /// El primer byte del Variable Header del paquete AUTH es el Authenticate Reason Code.
+    /// El reason code debe ser uno de los siguientes:
+    /// - 0x00: Success
+    /// - 0x18: Continue Authentication
+    /// - 0x19: Re-authenticate
+    ///
     #[allow(dead_code)]
     pub fn new(properties: AuthProperties) -> Auth {
         Auth { properties }
