@@ -249,11 +249,13 @@ impl Config for ClientConfig {
                 "publish_qos" => {
                     publish_qos = match param.1.parse::<u8>() {
                         Ok(p) => p,
-                        Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string())),
+                        Err(e) => {
+                            return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
+                        }
                     };
                 }
                 "publish_retain" => {
-                    publish_retain =  match catch_true_false(&param.1) {
+                    publish_retain = match catch_true_false(&param.1) {
                         Ok(p) => p,
                         Err(e) => return Err(e),
                     };

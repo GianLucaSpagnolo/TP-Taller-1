@@ -1,6 +1,8 @@
 use std::fmt;
 
-use crate::control_packets::{mqtt_packet::reason_codes::ReasonCode, mqtt_subscribe::subscribe_properties::TopicFilter};
+use crate::control_packets::{
+    mqtt_packet::reason_codes::ReasonCode, mqtt_subscribe::subscribe_properties::TopicFilter,
+};
 
 pub enum MqttActions {
     ServerConnection(String),

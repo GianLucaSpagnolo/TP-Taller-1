@@ -1,5 +1,8 @@
 use std::{
-    io::Error, net::TcpStream, sync::mpsc::{self, Receiver, Sender}, thread::{self, JoinHandle}
+    io::Error,
+    net::TcpStream,
+    sync::mpsc::{self, Receiver, Sender},
+    thread::{self, JoinHandle},
 };
 
 use crate::{
@@ -9,7 +12,8 @@ use crate::{
         mqtt_connack::connack::Connack,
         mqtt_connect::{connect::Connect, payload},
         mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
-        mqtt_publish::{publish::_Publish, publish_properties}, mqtt_subscribe::{subscribe::_Subscribe, subscribe_properties}
+        mqtt_publish::{publish::Publish, publish_properties},
+        mqtt_subscribe::{subscribe::Subscribe, subscribe_properties},
     },
 };
 
@@ -59,10 +63,17 @@ impl MqttClient {
 
         let current_packet_id = 0;
 
-        Ok(MqttClient { id, config, stream , current_packet_id })
+        Ok(MqttClient {
+            id,
+            config,
+            stream,
+            current_packet_id,
+        })
     }
 
-    pub fn run_listener(&mut self) -> Result<(Receiver<Vec<u8>>, JoinHandle<Result<(), Error>>), Error> {
+    pub fn run_listener(
+        &mut self,
+    ) -> Result<(Receiver<Vec<u8>>, JoinHandle<Result<(), Error>>), Error> {
         let mut counter = 0;
         let client = self.clone();
         let (sender, receiver) = mpsc::channel();
@@ -125,40 +136,47 @@ impl MqttClient {
         Ok(data.as_bytes().to_vec())
     }
 
-    pub fn publish(&mut self, message: String, topic: String) -> Result<(), Error>{
+    pub fn publish(&mut self, message: String, topic: String) -> Result<(), Error> {
         self.current_packet_id += 1;
-        let properties = publish_properties::_PublishProperties {
+        let properties = publish_properties::PublishProperties {
             topic_name: topic.clone(),
             packet_identifier: self.current_packet_id,
             payload_format_indicator: Some(1),
-            application_message: Some(message.clone()),
+            application_message: message.clone(),
             ..Default::default()
         };
 
-       
-        match _Publish::_new(
+        match Publish::new(
             self.config.publish_dup_flag,
             self.config.publish_qos,
-            self.config.publish_retain, 
-            properties)
-        .send(&mut self.stream) {
+            self.config.publish_retain,
+            properties,
+        )
+        .send(&mut self.stream)
+        {
             Ok(_) => {
                 MqttActions::ClientSendPublish(self.id.clone(), message, topic).register_action();
                 Ok(())
-            },
+            }
             Err(e) => Err(e),
         }
     }
 
-    pub fn subscribe(&mut self, topics: Vec<&str>, max_qos: u8, no_local_option: bool, retain_as_published: bool, retain_handling: u8)-> Result<(), Error>{
-
+    pub fn subscribe(
+        &mut self,
+        topics: Vec<&str>,
+        max_qos: u8,
+        no_local_option: bool,
+        retain_as_published: bool,
+        retain_handling: u8,
+    ) -> Result<(), Error> {
         let mut properties = subscribe_properties::SubscribeProperties {
             packet_identifier: 0,
             ..Default::default()
-        };  
+        };
 
         topics.iter().for_each(|topic| {
-            properties._add_topic_filter(
+            properties.add_topic_filter(
                 topic.to_string(),
                 max_qos,
                 no_local_option,
@@ -166,14 +184,14 @@ impl MqttClient {
                 retain_handling,
             );
         });
-        
+
         let prop_topics = properties.topic_filters.clone();
 
-        match _Subscribe::_new(properties).send(&mut self.stream){
+        match Subscribe::new(properties).send(&mut self.stream) {
             Ok(_) => {
                 MqttActions::ClientSendSubscribe(self.id.clone(), prop_topics).register_action();
                 Ok(())
-            },
+            }
             Err(e) => Err(e),
         }
     }
@@ -200,4 +218,4 @@ impl Clone for MqttClient {
             current_packet_id: self.current_packet_id,
         }
     }
-} 
+}

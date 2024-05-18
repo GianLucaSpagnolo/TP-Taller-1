@@ -1,4 +1,8 @@
-use std::{env, io::Error, thread::{self, JoinHandle}};
+use std::{
+    env,
+    io::Error,
+    thread::{self, JoinHandle},
+};
 
 use mqtt::{
     client::MqttClient,
@@ -6,14 +10,13 @@ use mqtt::{
 };
 
 fn recive_message(client: &mut MqttClient) -> Result<JoinHandle<Result<(), Error>>, Error> {
-    
     let (receiver, handler) = client.run_listener()?;
 
     thread::spawn(move || {
         let _message_received = receiver.recv().unwrap();
         // leer el mensaje recibido y cambiar estados según corresponda
     });
-    
+
     Ok(handler)
 }
 
