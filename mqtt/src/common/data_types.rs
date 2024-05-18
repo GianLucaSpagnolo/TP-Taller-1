@@ -101,7 +101,6 @@ pub mod data_representation {
                     "Malformed Variable Byte Integer",
                 ));
             }
-            println!("byte: {}, value: {}, multiplier: {}", byte, value, multiplier);
 
             if byte & 0x80 == 0 {
                 break;

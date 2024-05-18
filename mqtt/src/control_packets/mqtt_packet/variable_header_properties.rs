@@ -10,7 +10,7 @@ use super::packet_property::*;
 
 #[derive(Debug)]
 pub struct VariableHeaderProperties {
-    pub bytes_length: u16,
+    pub bytes_length: u32, // Variable Byte Integer
     pub properties: Vec<PacketProperty>,
 }
 
@@ -32,11 +32,11 @@ impl VariableHeaderProperties {
         first_str: String,
         second_str: String,
     ) -> Result<(), Error> {
-        self.bytes_length += size_of_val(&id) as u16
-            + size_of::<u16>() as u16
-            + size_of::<u16>() as u16
-            + first_str.len() as u16
-            + second_str.len() as u16;
+        self.bytes_length += size_of_val(&id) as u32
+            + size_of::<u16>() as u32
+            + size_of::<u16>() as u32
+            + first_str.len() as u32
+            + second_str.len() as u32;
 
         let prop_result = PacketProperty::new_property_utf8_pair_string(id, first_str, second_str)?;
 
@@ -46,7 +46,7 @@ impl VariableHeaderProperties {
     }
 
     pub fn add_utf8_string_property(&mut self, id: u8, str: String) -> Result<(), Error> {
-        self.bytes_length += size_of_val(&id) as u16 + size_of::<u16>() as u16 + str.len() as u16;
+        self.bytes_length += size_of_val(&id) as u32 + size_of::<u32>() as u32 + str.len() as u32;
 
         let prop_result = PacketProperty::new_property_utf8_string(id, str)?;
 
@@ -56,7 +56,7 @@ impl VariableHeaderProperties {
     }
 
     pub fn add_u32_property(&mut self, id: u8, value: u32) -> Result<(), Error> {
-        self.bytes_length += size_of_val(&id) as u16 + size_of_val(&value) as u16;
+        self.bytes_length += size_of_val(&id) as u32 + size_of_val(&value) as u32;
 
         let prop_result = PacketProperty::new_property_u32(id, value)?;
 
@@ -65,7 +65,7 @@ impl VariableHeaderProperties {
     }
 
     pub fn add_u16_property(&mut self, id: u8, value: u16) -> Result<(), Error> {
-        self.bytes_length += size_of_val(&id) as u16 + size_of_val(&value) as u16;
+        self.bytes_length += size_of_val(&id) as u32 + size_of_val(&value) as u32;
 
         let prop_result = PacketProperty::new_property_u16(id, value)?;
 
@@ -74,7 +74,7 @@ impl VariableHeaderProperties {
     }
 
     pub fn add_u8_property(&mut self, id: u8, value: u8) -> Result<(), Error> {
-        self.bytes_length += size_of_val(&id) as u16 + size_of_val(&value) as u16;
+        self.bytes_length += size_of_val(&id) as u32 + size_of_val(&value) as u32;
 
         let prop_result = PacketProperty::new_property_u8(id, value)?;
 
@@ -84,7 +84,7 @@ impl VariableHeaderProperties {
 
     pub fn new() -> Self {
         VariableHeaderProperties {
-            bytes_length: std::mem::size_of::<u16>() as u16,
+            bytes_length: std::mem::size_of::<u16>() as u32,
             properties: vec![],
         }
     }
@@ -119,7 +119,7 @@ impl VariableHeaderProperties {
         }
 
         Ok(VariableHeaderProperties {
-            bytes_length: properties.len() as u16,
+            bytes_length: properties.len() as u32,
             properties: properties_vec,
         })
     }

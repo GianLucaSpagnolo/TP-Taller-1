@@ -37,7 +37,7 @@ impl PacketProperties for DisconnectProperties {
     fn size_of(&self) -> u32 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u8>();
-        fixed_props_size as u32 + variable_props.bytes_length as u32
+        fixed_props_size as u32 + variable_props.bytes_length
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {

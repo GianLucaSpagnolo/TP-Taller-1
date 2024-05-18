@@ -38,7 +38,7 @@ impl PacketProperties for SubackProperties {
         for _ in &self.reason_codes {
             payload_size += std::mem::size_of::<u8>();
         }
-        fixed_props_size as u32 + variable_props.bytes_length as u32 + payload_size as u32
+        fixed_props_size as u32 + variable_props.bytes_length + payload_size as u32
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
