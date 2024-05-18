@@ -1,6 +1,8 @@
 use std::io::{Error, Read};
 
-use crate::common::data_types::data_representation::{read_byte, read_four_byte_integer};
+use crate::common::data_types::data_representation::{
+    read_byte, variable_byte_integer_decode, variable_byte_integer_encode,
+};
 
 use super::packet::generic_packet::PacketType;
 
@@ -39,14 +41,14 @@ impl PacketFixedHeader {
         let mut bytes: Vec<u8> = Vec::new();
 
         bytes.push(self.packet_type);
-        bytes.extend_from_slice(&self.remaining_length.to_be_bytes());
+        variable_byte_integer_encode(&mut bytes, self.remaining_length);
 
         bytes
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let packet_type = read_byte(stream)?;
-        let remaining_length = read_four_byte_integer(stream)?;
+        let remaining_length = variable_byte_integer_decode(stream)?;
 
         Ok(PacketFixedHeader::new(packet_type, remaining_length))
     }

@@ -17,6 +17,7 @@ pub mod data_representation {
         Ok(u16::from_be_bytes(read_buff))
     }
 
+    #[allow(dead_code)]
     pub fn read_four_byte_integer(stream: &mut dyn Read) -> Result<u32, Error> {
         let mut read_buff = [0u8; 4];
         stream.read_exact(&mut read_buff)?;
@@ -65,12 +66,49 @@ pub mod data_representation {
     }
 
     #[allow(dead_code)]
-    pub fn variable_byte_integer_encode() {
-        // TODO
+    pub fn variable_byte_integer_encode(bytes: &mut Vec<u8>, value: u32) {
+        let mut value = value;
+
+        while value > 0 {
+            let mut byte = (value % 128) as u8;
+            value /= 128;
+
+            // if there are more data to encode, set the top bit of this byte
+            if value > 0 {
+                byte |= 0x80;
+            }
+            bytes.push(byte);
+        }
     }
 
     #[allow(dead_code)]
-    pub fn variable_byte_integer_decode() {
-        // TODO
+    pub fn variable_byte_integer_decode(stream: &mut dyn Read) -> Result<u32, Error> {
+        let mut multiplier = 1;
+        let mut value = 0;
+
+        loop {
+            let byte_read = read_byte(stream);
+
+            let byte = match byte_read {
+                Ok(byte) => byte,
+                Err(_) => break,
+            };
+
+            value += (byte & 0x7F) as u32 * multiplier;
+            if multiplier > 128 * 128 * 128 {
+                return Err(Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Malformed Variable Byte Integer",
+                ));
+            }
+            println!("byte: {}, value: {}, multiplier: {}", byte, value, multiplier);
+
+            if byte & 0x80 == 0 {
+                break;
+            }
+            multiplier *= 128;
+        }
+
+        Ok(value)
     }
 }
