@@ -309,3 +309,7 @@ impl PacketProperties for ConnectPayload {
         todo!()
     }
 }
+
+fn read_from_buffer_static(stream: &[u8]) -> Result<VariableHeaderProperties, Error> {
+    todo!()
+}

@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::f64::consts::E;
 use std::io::Error;
 use std::net::{TcpListener, TcpStream};
 use std::sync::mpsc::channel;
@@ -143,19 +144,20 @@ impl MqttServer {
         let logger_copy = logger_handler;
         
         // probar mover logger mediante mutex:
-        
-        match pool.execute(|| -> Result<MqttActions, Error> {
-            let r = match server
+        let ser_cpy = server.clone();
+        match pool.execute(move || -> Result<MqttActions, Error> {
+            match ser_cpy
                 .lock()
                 .unwrap()
                 .messages_handler(client_stream)
             {
                 Ok(action) => Ok(action),
                 Err(e) => Err(e),
-            };
-            drop(server); // unlock(?)
-            r
+            }
+            //drop(server); // unlock(?)
+            //r
         }) {
+            // escalar el ok con un match por MqttActions ...
             Ok(_) => Ok(MqttActions::MessageReceived.register_action(logger_handler)),
             Err(e) => {
                 logger_handler.log_event(
@@ -175,16 +177,28 @@ impl MqttServer {
         //logger_handler: &LoggerHandler,
     ) -> Result<MqttActions, Error> {
         // averiguo el tipo de paquete:
-        let fixed_header = match PacketFixedHeader::read_from(&mut stream) {
-            Ok(header_type) => header_type,
+        //let fixed_header = match PacketFixedHeader::read_from(&mut stream) {
+        let fixed_header = match PacketFixedHeader::read_from_stream(&mut stream) {
+            Ok(header_type) => {
+                println!("message handler fix header leido ok");
+                header_type
+            },
             Err(e) => return Err(e),
         };
 
+        match get_connect_packet(&mut stream, fixed_header.get_package_type(), fixed_header.remaining_length){
+            Ok(r) => {
+                println!("Obteniendo connect pack");
+                self.handle_connect(stream, r)
+            },
+            Err(e) => todo!(),
+        }
+        /*
         match get_packet(
             &mut stream,
             fixed_header.get_package_type(),
             fixed_header.remaining_length,
-        ) {
+        ) 
             Ok(pack) => match pack {
                 PacketReceived::Connect(connect_pack) => {
                     println!("Client try to connect");
@@ -221,6 +235,7 @@ impl MqttServer {
             },
             Err(e) => Err(e),
         }
+        */
     }
 
     fn handle_connect(

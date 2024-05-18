@@ -5,6 +5,7 @@ use mqtt::{
 
 use std::{env, io::Error};
 
+// manejar errores de main ...
 fn main() -> Result<(), Error> {
     let args: Vec<String> = env::args().collect();
 

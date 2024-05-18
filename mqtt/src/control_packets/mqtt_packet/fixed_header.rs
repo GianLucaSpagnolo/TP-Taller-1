@@ -47,22 +47,22 @@ impl PacketFixedHeader {
         //let packet_type = read_byte(&mut stream)?;
         let packet_type = match read_byte(&mut stream) {
             Ok(r) => {
-                println!("header 1 bytes leido ok");
+                println!("fixheader 1 byte leido ok");
                 r
             },
             Err(e) => {
-                eprintln!("read_byte error: {}", e);
+                eprintln!("fixheader read_byte error: {}", e);
                 return Err(e);
             },
         };
 
         let remaining_length = match read_two_byte_integer(&mut stream) {
             Ok(re) => {
-                println!("header 2 bytes leidos ok");
+                println!("fixheader 2 bytes leidos ok");
                 re
             },
             Err(e) => {
-                eprintln!("read_two_byte error: {}", e);
+                eprintln!("fixheader read_two_byte error: {}", e);
                 return Err(e);
             },
         };
@@ -85,25 +85,26 @@ impl PacketFixedHeader {
     }
 
     // ----------------
+    // pasar a operacion bloqueante:
     pub fn read_from_stream(mut stream: &TcpStream) -> Result<Self, Error> {
         let packet_type = match read_byte(&mut stream) {
             Ok(r) => {
-                println!("header 1 bytes leido ok");
+                println!("fix header (stream) 1 bytes leido ok");
                 r
             },
             Err(e) => {
-                eprintln!("read_byte error: {}", e);
+                eprintln!("fix header (stream) read_byte error: {}", e);
                 return Err(e);
             },
         };
 
         let remaining_length = match read_two_byte_integer(&mut stream) {
             Ok(re) => {
-                println!("header 2 bytes leidos ok");
+                println!("fix header (stream)2 bytes leidos ok");
                 re
             },
             Err(e) => {
-                eprintln!("read_two_byte error: {}", e);
+                eprintln!("fix header (stream) read_two_byte error: {}", e);
                 return Err(e);
             },
         };

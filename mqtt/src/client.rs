@@ -31,7 +31,10 @@ fn handle_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
     )?;
 
     match packet_recived {
-        PacketReceived::Connack(ack) => Ok(*ack),
+        PacketReceived::Connack(ack) => {
+            println!("Connack received");
+            Ok(*ack)
+        },
         _ => Err(Error::new(
             std::io::ErrorKind::Other,
             "ClientReceive - Paquete desconocido",
@@ -50,7 +53,7 @@ impl MqttClient {
 
         let connection = Connect::new(config.connect_properties.clone(), payload);
         match connection.send(&mut stream) {
-            Ok(_) => println!("Client connection successful"),
+            Ok(_) => println!("Client initial connection config successfully"),
             Err(e) => {
                 eprintln!("Client connection failure");
                 return Err(e);
@@ -92,9 +95,9 @@ impl MqttClient {
         };
 
         println!("Listener initialized");
-        /*
+        
         // falta un listener de paquetes, que use la construccion del header ...
-        while let Ok(header) = PacketFixedHeader::read_from(&mut &self.stream) {
+        while let Ok(header) = PacketFixedHeader::read_from_stream(&mut &self.stream) {
             println!("listening packages");
             match &self.messages_handler(&mut stream_cpy, header) {
                 Ok(_) => continue,
@@ -105,7 +108,8 @@ impl MqttClient {
             }
             //counter = 0;
         };
-        */
+        
+
         let mut counter = 0;
         let l_file = RwLock::new(&self.stream);
         // let mut l_read_file ;
