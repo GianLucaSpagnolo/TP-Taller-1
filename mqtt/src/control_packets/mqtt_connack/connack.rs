@@ -64,16 +64,10 @@ use crate::control_packets::mqtt_packet::{
 /// 38 - 0x26 - User Property - UTF-8 String Pair
 /// 39 - 0x27 - Maximum Packet Size - Four Byte Integer (u32)
 ///
+
+#[derive(Default)]
 pub struct Connack {
     pub properties: ConnackProperties,
-}
-
-impl Default for Connack {
-    fn default() -> Connack {
-        Connack {
-            properties: ConnackProperties::default(),
-        }
-    }
 }
 
 impl Serialization for Connack {

@@ -155,9 +155,10 @@ impl MqttServer {
 
         // let connack_properties = self.determinate_connack_properties(&connect);
 
-        let mut connack_properties = ConnackProperties::default();
-
-        connack_properties.connect_reason_code = self.determinate_reason_code(&connect);
+        let mut connack_properties = ConnackProperties{
+            connect_reason_code: self.determinate_reason_code(&connect),
+            ..Default::default()
+        };
 
         // Clean start: si es 1, el cliente y servidor deben descartar cualquier session state asociado con el Client Identifier. Session Present flag in connack = 0
         // Clean Start: si es 0, el cliente y servidor deben mantener el session state asociado con el Client Identifier.

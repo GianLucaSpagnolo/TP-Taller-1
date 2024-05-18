@@ -48,7 +48,7 @@ impl Session {
     pub fn new(connection: &Connect, stream_connection: TcpStream) -> Self {
         Session {
             active: true,
-            stream_connection: stream_connection,
+            stream_connection,
             _session_expiry_interval: 0,
             _subscriptions: Vec::new(),
             _will_message: WillMessage::new(
