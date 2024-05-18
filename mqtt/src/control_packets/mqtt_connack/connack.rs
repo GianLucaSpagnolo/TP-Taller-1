@@ -75,6 +75,7 @@ impl Serialization for Connack {
         let mut buffer = aux_buffer.as_slice();
 
         let properties = ConnackProperties::read_from(&mut buffer)?;
+        //let properties = ConnackProperties::read_from_buffer(&mut buffer)?;
 
         Ok(Connack { properties })
     }
@@ -142,6 +143,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let connack_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let connack_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
 
         let connack =
             Connack::read_from(&mut buffer, connack_fixed_header.remaining_length).unwrap();
@@ -274,6 +276,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let connack_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let connack_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
 
         let connack =
             Connack::read_from(&mut buffer, connack_fixed_header.remaining_length).unwrap();

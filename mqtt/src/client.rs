@@ -114,7 +114,7 @@ impl MqttClient {
             match l_file.read() {
                 Ok(lread_file) => {
                     //match PacketFixedHeader::read_from(lread_file.clone()) {
-                        match PacketFixedHeader::read_from(&lread_file) {
+                        match PacketFixedHeader::read_from_stream(&lread_file) {
                         Ok(header) => {
                             println!("listening packages");
                             self.messages_handler(&mut stream_cpy, header)?;

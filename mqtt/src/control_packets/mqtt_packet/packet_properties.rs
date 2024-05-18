@@ -15,9 +15,17 @@ pub trait PacketProperties<Properties = Self> {
     /// Devuelve las propiedades del paquete como un vector de bytes
     fn as_bytes(&self) -> Result<Vec<u8>, Error>;
 
+    fn read_from(stream: &mut dyn Read) -> Result<Self, Error>
+    where
+        Self: Sized;
+
+    // -----------------------------------
     /// Lee las propiedades del paquete desde un stream
-    // fn read_from(stream: &mut dyn Read) -> Result<Self, Error>
-    fn read_from(stream: &mut TcpStream) -> Result<Self, Error>
+    fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error>
+    where
+        Self: Sized;
+        
+    fn read_from_buffer(stream: &mut [u8]) -> Result<Self, Error>
     where
         Self: Sized;
 }

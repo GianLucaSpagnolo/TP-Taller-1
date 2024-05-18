@@ -20,7 +20,7 @@ impl Serialization for _Disconnect {
         let mut buffer = aux_buffer.as_slice();
 
         let properties = _DisconnectProperties::read_from(&mut buffer)?;
-
+        //let properties = _DisconnectProperties::read_from_buffer(&mut buffer)?;
         let disconnect = _Disconnect { properties };
 
         Ok(disconnect)
@@ -71,6 +71,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let disconnect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let disconnect_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let disconnect =
             _Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
 
@@ -121,6 +122,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let disconnect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let disconnect_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let disconnect =
             _Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
 

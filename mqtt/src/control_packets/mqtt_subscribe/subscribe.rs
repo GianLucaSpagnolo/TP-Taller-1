@@ -60,10 +60,11 @@ impl Serialization for _Subscribe {
     fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Self, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
-        let mut buffer = aux_buffer.as_slice();
+        
+        //let mut buffer = aux_buffer.as_slice();
+        //let properties = SubscribeProperties::read_from(&mut buffer)?;
 
-        let properties = SubscribeProperties::read_from(&mut buffer)?;
-
+        let properties = SubscribeProperties::read_from_buffer(&mut aux_buffer)?;
         Ok(_Subscribe { properties })
     }
 
@@ -115,8 +116,12 @@ mod test {
         subscribe.write_to(&mut bytes).unwrap();
 
         //LEE EL PACKET DEL BUFFER
-        let mut buffer = bytes.as_slice();
+        let mut buffer: &[u8] = bytes.as_slice();
+     
         let subscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+
+        //let subscribe_fixed_header = PacketFixedHeader::read_from_buffer(&mut bytes).unwrap();
+
         let subscribe =
             _Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
 
@@ -175,6 +180,7 @@ mod test {
         //LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let subscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let subscribe_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let subscribe =
             _Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
 
@@ -275,7 +281,9 @@ mod test {
 
         //LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
+
         let subscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let subscribe_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let subscribe =
             _Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
 

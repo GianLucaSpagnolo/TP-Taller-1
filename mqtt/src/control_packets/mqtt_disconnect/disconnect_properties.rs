@@ -78,8 +78,45 @@ impl PacketProperties for _DisconnectProperties {
         Ok(bytes)
     }
 
+    fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+        //fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
+            let disconnect_reason_code = read_byte(stream)?;
+            let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
+    
+            let mut session_expiry_interval = None;
+            let mut reason_string = None;
+            let mut user_property = None;
+            let mut server_reference = None;
+    
+            for property in &variable_header_properties.properties {
+                match property.id() {
+                    SESSION_EXPIRY_INTERVAL => {
+                        session_expiry_interval = property.value_u32();
+                    }
+                    REASON_STRING => {
+                        reason_string = property.value_string();
+                    }
+                    USER_PROPERTY => {
+                        user_property = property.value_string_pair();
+                    }
+                    SERVER_REFERENCE => {
+                        server_reference = property.value_string();
+                    }
+                    _ => {}
+                }
+            }
+    
+            Ok(_DisconnectProperties {
+                disconnect_reason_code,
+                session_expiry_interval,
+                reason_string,
+                user_property,
+                server_reference,
+            })
+        }
+
     //fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-    fn read_from(stream: &mut TcpStream) -> Result<Self, Error> {
+    fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
         let disconnect_reason_code = read_byte(stream)?;
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
 
@@ -113,5 +150,9 @@ impl PacketProperties for _DisconnectProperties {
             user_property,
             server_reference,
         })
+    }
+
+    fn read_from_buffer(stream: &mut [u8]) -> Result<Self, Error> {
+        todo!()
     }
 }

@@ -43,7 +43,8 @@ impl PacketFixedHeader {
         bytes
     }
 
-    pub fn read_from(mut stream: &TcpStream) -> Result<Self, Error> {
+    pub fn read_from(mut stream: &mut dyn Read) -> Result<Self, Error> {
+        //let packet_type = read_byte(&mut stream)?;
         let packet_type = match read_byte(&mut stream) {
             Ok(r) => {
                 println!("header 1 bytes leido ok");
@@ -81,5 +82,36 @@ impl PacketFixedHeader {
             _DISCONNECT_PACKET => PacketType::DisconnectType,
             _ => PacketType::Unknow,
         }
+    }
+
+    // ----------------
+    pub fn read_from_stream(mut stream: &TcpStream) -> Result<Self, Error> {
+        let packet_type = match read_byte(&mut stream) {
+            Ok(r) => {
+                println!("header 1 bytes leido ok");
+                r
+            },
+            Err(e) => {
+                eprintln!("read_byte error: {}", e);
+                return Err(e);
+            },
+        };
+
+        let remaining_length = match read_two_byte_integer(&mut stream) {
+            Ok(re) => {
+                println!("header 2 bytes leidos ok");
+                re
+            },
+            Err(e) => {
+                eprintln!("read_two_byte error: {}", e);
+                return Err(e);
+            },
+        };
+
+        Ok(PacketFixedHeader::new(packet_type, remaining_length))
+    }
+
+    pub fn read_from_buffer(buffer: &mut [u8]) -> Result<Self, Error> {
+        todo!()
     }
 }

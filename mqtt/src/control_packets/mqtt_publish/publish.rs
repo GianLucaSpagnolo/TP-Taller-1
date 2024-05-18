@@ -80,6 +80,7 @@ impl Serialization for _Publish {
         let mut buffer = aux_buffer.as_slice();
 
         let properties = _PublishProperties::read_from(&mut buffer)?;
+        //let properties = _PublishProperties::read_from_buffer(&mut buffer)?;
 
         Ok(_Publish {
             fixed_header_flags: 0,
@@ -180,6 +181,8 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let publish_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let publish_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
+
         let publish =
             _Publish::read_from(&mut buffer, publish_fixed_header.remaining_length).unwrap();
 
@@ -275,6 +278,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let publish_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let publish_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let publish =
             _Publish::read_from(&mut buffer, publish_fixed_header.remaining_length).unwrap();
 

@@ -110,11 +110,12 @@ impl Serialization for Connect {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();
-        /*
+        
         let properties = ConnectProperties::read_from(&mut buffer)?;
         let payload = ConnectPayload::read_from(&mut buffer)?;
-        */
-        let properties = read_from_header(&mut buffer)?;
+        
+        //let properties = ConnectProperties::read_from_buffer(&mut buffer)?;
+        //let payload = ConnectPayload::read_from_buffer(&mut buffer)?;
         Ok(Connect {
             properties,
             payload,
@@ -199,6 +200,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let connect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let connect_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let connect =
             Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 
@@ -392,6 +394,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let connect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let connect_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let new_connect =
             Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 

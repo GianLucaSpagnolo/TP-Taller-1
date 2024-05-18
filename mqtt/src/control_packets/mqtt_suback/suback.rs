@@ -69,6 +69,7 @@ impl Serialization for _Suback {
         let mut buffer = aux_buffer.as_slice();
 
         let properties = _SubackProperties::read_from(&mut buffer)?;
+        //let properties = _SubackProperties::read_from_buffer(&mut buffer)?;
 
         Ok(_Suback { properties })
     }
@@ -128,6 +129,8 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let suback_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let suback_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
+
         let suback = _Suback::read_from(&mut buffer, suback_fixed_header.remaining_length).unwrap();
 
         assert_eq!(suback.properties.packet_identifier, 1);
@@ -165,6 +168,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let suback_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let suback_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let suback = _Suback::read_from(&mut buffer, suback_fixed_header.remaining_length).unwrap();
 
         assert_eq!(suback.properties.packet_identifier, 1);
