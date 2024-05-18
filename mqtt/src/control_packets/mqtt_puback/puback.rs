@@ -1,7 +1,7 @@
 use std::io::{Error, Read, Write};
 
-use super::puback_properties::_PubackProperties;
-use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, _PUBACK_PACKET};
+use super::puback_properties::PubackProperties;
+use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, PUBACK_PACKET};
 use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
 use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
@@ -65,25 +65,26 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 /// BYTE n: User Property (UTF-8 string pair)
 /// ...
 ///
-pub struct _Puback {
-    pub properties: _PubackProperties,
+#[allow(dead_code)]
+pub struct Puback {
+    pub properties: PubackProperties,
 }
 
-impl Serialization for _Puback {
-    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Self, std::io::Error> {
+impl Serialization for Puback {
+    fn read_from(stream: &mut dyn Read, remaining_length: u32) -> Result<Self, std::io::Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();
 
-        let properties = _PubackProperties::read_from(&mut buffer)?;
+        let properties = PubackProperties::read_from(&mut buffer)?;
 
-        Ok(_Puback { properties })
+        Ok(Puback { properties })
     }
 
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let properties_bytes = self.properties.as_bytes()?;
         let remaining_length = self.properties.size_of();
-        let fixed_header = PacketFixedHeader::new(_PUBACK_PACKET, remaining_length);
+        let fixed_header = PacketFixedHeader::new(PUBACK_PACKET, remaining_length);
         let fixed_header_bytes = fixed_header.as_bytes();
 
         stream.write_all(&fixed_header_bytes)?;
@@ -92,14 +93,15 @@ impl Serialization for _Puback {
         Ok(())
     }
 
-    fn packed_package(package: _Puback) -> PacketReceived {
+    fn packed_package(package: Puback) -> PacketReceived {
         PacketReceived::Puback(Box::new(package))
     }
 }
 
-impl _Puback {
-    pub fn _new(properties: _PubackProperties) -> Self {
-        _Puback { properties }
+impl Puback {
+    #[allow(dead_code)]
+    pub fn new(properties: PubackProperties) -> Self {
+        Puback { properties }
     }
 }
 
@@ -109,13 +111,13 @@ mod test {
 
     #[test]
     fn test_puback() {
-        let properties = _PubackProperties {
+        let properties = PubackProperties {
             packet_id: 1,
             puback_reason_code: 0,
             reason_string: Some("reason".to_string()),
             user_property: Some(("name".to_string(), "value".to_string())),
         };
-        let puback = _Puback::_new(properties);
+        let puback = Puback::new(properties);
 
         // ESCRIBE EL PACKET EN EL BUFFER
         let mut buf = Vec::new();
@@ -125,12 +127,11 @@ mod test {
         let mut buf = buf.as_slice();
         let puback_fixed_header = PacketFixedHeader::read_from(&mut buf).unwrap();
 
-        let puback = _Puback::read_from(&mut buf, puback_fixed_header.remaining_length).unwrap();
+        let puback = Puback::read_from(&mut buf, puback_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(puback_fixed_header.get_packet_type(), _PUBACK_PACKET);
+        assert_eq!(puback_fixed_header.get_packet_type(), PUBACK_PACKET);
         assert_eq!(puback.properties.packet_id, 1);
         assert_eq!(puback.properties.puback_reason_code, 0);
-        assert_eq!(puback.properties.variable_props_size(), 2);
 
         let props = puback.properties;
 
@@ -150,12 +151,12 @@ mod test {
 
     #[test]
     fn test_puback_no_properties() {
-        let properties = _PubackProperties {
+        let properties = PubackProperties {
             packet_id: 2,
             ..Default::default()
         };
 
-        let puback = _Puback::_new(properties);
+        let puback = Puback::new(properties);
 
         // ESCRIBE EL PACKET EN EL BUFFER
         let mut buf = Vec::new();
@@ -165,12 +166,11 @@ mod test {
         let mut buf = buf.as_slice();
         let puback_fixed_header = PacketFixedHeader::read_from(&mut buf).unwrap();
 
-        let puback = _Puback::read_from(&mut buf, puback_fixed_header.remaining_length).unwrap();
+        let puback = Puback::read_from(&mut buf, puback_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(puback_fixed_header.get_packet_type(), _PUBACK_PACKET);
+        assert_eq!(puback_fixed_header.get_packet_type(), PUBACK_PACKET);
         assert_eq!(puback.properties.packet_id, 2);
         assert_eq!(puback.properties.puback_reason_code, 0);
-        assert_eq!(puback.properties.variable_props_size(), 0);
 
         assert_eq!(puback.properties.reason_string, None);
         assert_eq!(puback.properties.user_property, None);

@@ -71,7 +71,7 @@ pub struct Connack {
 }
 
 impl Serialization for Connack {
-    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Connack, Error> {
+    fn read_from(stream: &mut dyn Read, remaining_length: u32) -> Result<Connack, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();
@@ -151,7 +151,6 @@ mod test {
         assert_eq!(connack_fixed_header.get_packet_type(), CONNACK_PACKET);
         assert_eq!(connack.properties.connect_acknowledge_flags, 0x01);
         assert_eq!(connack.properties.connect_reason_code, 0);
-        assert_eq!(connack.properties.variable_props_size(), 17);
 
         let props = connack.properties;
 
@@ -283,7 +282,6 @@ mod test {
         assert_eq!(connack_fixed_header.get_packet_type(), CONNACK_PACKET);
         assert_eq!(connack.properties.connect_acknowledge_flags, 0x00);
         assert_eq!(connack.properties.connect_reason_code, 0);
-        assert_eq!(connack.properties.variable_props_size(), 0);
 
         assert_eq!(connack.properties.session_expiry_interval, None);
         assert_eq!(connack.properties.assigned_client_identifier, None);

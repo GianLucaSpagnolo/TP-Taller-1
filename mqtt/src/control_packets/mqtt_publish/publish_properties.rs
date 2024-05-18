@@ -1,5 +1,4 @@
-use std::io::Error;
-use std::io::Read;
+use std::io::{Error, Read};
 
 use crate::common::data_types::data_representation::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
@@ -8,7 +7,8 @@ use crate::control_packets::mqtt_packet::{
 };
 
 #[derive(Default)]
-pub struct _PublishProperties {
+#[allow(dead_code)]
+pub struct PublishProperties {
     pub topic_name: String,
     pub packet_identifier: u16,
     pub payload_format_indicator: Option<u8>,
@@ -20,12 +20,12 @@ pub struct _PublishProperties {
     pub subscription_identifier: Option<u32>,
     pub content_type: Option<String>,
 
-    pub application_message: Option<String>, // Payload
+    pub application_message: String, // Payload
 }
 
-impl Clone for _PublishProperties {
+impl Clone for PublishProperties {
     fn clone(&self) -> Self {
-        _PublishProperties {
+        PublishProperties {
             topic_name: self.topic_name.clone(),
             packet_identifier: self.packet_identifier,
             payload_format_indicator: self.payload_format_indicator,
@@ -42,23 +42,15 @@ impl Clone for _PublishProperties {
     }
 }
 
-impl PacketProperties for _PublishProperties {
-    fn variable_props_size(&self) -> u16 {
-        let header = self.as_variable_header_properties().unwrap();
-        header.properties.len() as u16
-    }
-
-    fn size_of(&self) -> u16 {
+impl PacketProperties for PublishProperties {
+    fn size_of(&self) -> u32 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size =
             std::mem::size_of::<u16>() + self.topic_name.len() + std::mem::size_of::<u16>();
 
-        let mut payload_size = 0;
-        if let Some(application_message) = &self.application_message {
-            payload_size += std::mem::size_of::<u16>() + application_message.len();
-        }
+        let payload_size = std::mem::size_of::<u16>() + self.application_message.len();
 
-        fixed_props_size as u16 + variable_props.bytes_length + payload_size as u16
+        fixed_props_size as u32 + variable_props.size_of() + payload_size as u32
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
@@ -93,7 +85,10 @@ impl PacketProperties for _PublishProperties {
         }
 
         if let Some(subscription_identifier) = self.subscription_identifier {
-            variable_props.add_u32_property(SUBSCRIPTION_IDENTIFIER, subscription_identifier)?;
+            variable_props.add_variable_byte_integer_property(
+                SUBSCRIPTION_IDENTIFIER,
+                subscription_identifier,
+            )?;
         }
 
         if let Some(content_type) = &self.content_type {
@@ -109,15 +104,14 @@ impl PacketProperties for _PublishProperties {
 
         let topic_name_len = self.topic_name.len() as u16;
         bytes.extend_from_slice(&topic_name_len.to_be_bytes());
-
         bytes.extend_from_slice(self.topic_name.as_bytes());
+
         bytes.extend_from_slice(&self.packet_identifier.to_be_bytes());
         bytes.extend_from_slice(&variable_header_properties.as_bytes());
 
-        if let Some(application_message) = self.application_message.clone() {
-            bytes.extend_from_slice(&(application_message.len() as u16).to_be_bytes());
-            bytes.extend_from_slice(application_message.as_bytes());
-        }
+        let application_message_len = self.application_message.len() as u16;
+        bytes.extend_from_slice(&application_message_len.to_be_bytes());
+        bytes.extend_from_slice(self.application_message.as_bytes());
 
         Ok(bytes)
     }
@@ -158,7 +152,7 @@ impl PacketProperties for _PublishProperties {
                     user_property = property.value_string_pair();
                 }
                 SUBSCRIPTION_IDENTIFIER => {
-                    subscription_identifier = property.value_u32();
+                    subscription_identifier = property.value_variable_byte_integer();
                 }
                 CONTENT_TYPE => {
                     content_type = property.value_string();
@@ -167,14 +161,10 @@ impl PacketProperties for _PublishProperties {
             }
         }
 
-        let mut application_message = None;
         let application_message_len = read_two_byte_integer(stream).unwrap_or(0);
-        if application_message_len > 0 {
-            application_message =
-                Some(read_utf8_encoded_string(stream, application_message_len).unwrap());
-        }
+        let application_message = read_utf8_encoded_string(stream, application_message_len)?;
 
-        Ok(_PublishProperties {
+        Ok(PublishProperties {
             topic_name,
             packet_identifier,
             payload_format_indicator,

@@ -18,7 +18,7 @@ use crate::session::Session;
 pub struct MqttServer {
     pub config: ServerConfig,
     sessions: HashMap<String, Session>,
-    _connect_received: bool,
+    connect_received: bool,
 }
 
 impl Clone for MqttServer {
@@ -26,7 +26,7 @@ impl Clone for MqttServer {
         MqttServer {
             config: self.config.clone(),
             sessions: self.sessions.clone(),
-            _connect_received: self._connect_received,
+            connect_received: self.connect_received,
         }
     }
 }
@@ -36,7 +36,7 @@ impl MqttServer {
         MqttServer {
             config,
             sessions: HashMap::new(),
-            _connect_received: false,
+            connect_received: false,
         }
     }
 
@@ -168,7 +168,7 @@ impl MqttServer {
         // Clean start: si es 1, el cliente y servidor deben descartar cualquier session state asociado con el Client Identifier. Session Present flag in connack = 0
         // Clean Start: si es 0, el cliente y servidor deben mantener el session state asociado con el Client Identifier.
         // En caso de que no exista dicha sesion, hay que crearla
-        if flags_handler::_get_connect_flag_clean_start(connect.properties.connect_flags) == 1 {
+        if flags_handler::get_connect_flag_clean_start(connect.properties.connect_flags) == 1 {
             self.sessions.remove(&connect.payload.client_id);
         }
         // - Will Flag: si es 1, un Will Message debe ser almacenado en el servidor y asociado a la sesion.
@@ -198,8 +198,8 @@ impl MqttServer {
 
     fn determinate_reason_code(&self, connect_packet: &Connect) -> u8 {
         // Si ya se recibió un CONNECT packet, se debe procesar como un Protocol Error (reason code 130) y cerrar la conexion.
-        if self._connect_received {
-            return ReasonCode::_ProtocolError.get_id();
+        if self.connect_received {
+            return ReasonCode::ProtocolError.get_id();
         }
 
         // Protocol Name: "MQTT" - En caso de ser diferente, debe procesarlo como  Unsupported Protocol Version (reason code 132) y cerrar la conexion.
@@ -207,17 +207,17 @@ impl MqttServer {
         if connect_packet.properties.protocol_name != *"MQTT"
             || connect_packet.properties.protocol_version != 5
         {
-            return ReasonCode::_UnsupportedProtocolVersion.get_id();
+            return ReasonCode::UnsupportedProtocolVersion.get_id();
         }
 
         // Reserved: 0. En caso de recibir 1 debe devolver Malformed Packet (reason code 129) y cerrar la conexion
-        if flags_handler::_get_connect_flag_reserved(connect_packet.properties.connect_flags) != 0 {
-            return ReasonCode::_MalformedPacket.get_id();
+        if flags_handler::get_connect_flag_reserved(connect_packet.properties.connect_flags) != 0 {
+            return ReasonCode::MalformedPacket.get_id();
         }
 
         // - Will QoS: 1. En caso de recibir 3 debe devolver QoS Not Supported (reason code 155) y cerrar la conexion
-        if flags_handler::_get_connect_flag_will_qos(connect_packet.properties.connect_flags) <= 1 {
-            return ReasonCode::_QoSNotSupported.get_id();
+        if flags_handler::get_connect_flag_will_qos(connect_packet.properties.connect_flags) <= 1 {
+            return ReasonCode::QoSNotSupported.get_id();
         }
 
         if !connect_packet
@@ -226,7 +226,7 @@ impl MqttServer {
             .chars()
             .all(|c| c.is_ascii_alphanumeric())
         {
-            return ReasonCode::_ClientIdentifierNotValid.get_id();
+            return ReasonCode::ClientIdentifierNotValid.get_id();
         }
         ReasonCode::Success.get_id()
     }

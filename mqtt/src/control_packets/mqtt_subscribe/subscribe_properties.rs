@@ -5,10 +5,12 @@ use crate::{
         variable_header_properties::VariableHeaderProperties,
     },
 };
-use std::{fmt::{Display, Formatter}, io::{Error, Read}};
+use std::{
+    fmt::{Display, Formatter},
+    io::{Error, Read},
+};
 
-#[derive(Clone)]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 /// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
 pub struct TopicFilter {
     pub topic_filter: String,
@@ -26,6 +28,7 @@ impl Display for TopicFilter {
 }
 
 #[derive(Default)]
+#[allow(dead_code)]
 pub struct SubscribeProperties {
     pub packet_identifier: u16,
     pub subscription_identifier: Option<u32>,
@@ -46,11 +49,7 @@ impl Clone for SubscribeProperties {
 }
 
 impl PacketProperties for SubscribeProperties {
-    fn variable_props_size(&self) -> u16 {
-        let header = self.as_variable_header_properties().unwrap();
-        header.properties.len() as u16
-    }
-    fn size_of(&self) -> u16 {
+    fn size_of(&self) -> u32 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u16>();
 
@@ -60,13 +59,16 @@ impl PacketProperties for SubscribeProperties {
                 std::mem::size_of::<u16>() + topic.topic_filter.len() + std::mem::size_of::<u8>();
         }
 
-        fixed_props_size as u16 + variable_props.bytes_length + topic_filters_size as u16
+        fixed_props_size as u32 + variable_props.size_of() + topic_filters_size as u32
     }
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
         let mut variable_props = VariableHeaderProperties::new();
 
         if let Some(subscription_identifier) = self.subscription_identifier {
-            variable_props.add_u32_property(SUBSCRIPTION_IDENTIFIER, subscription_identifier)?;
+            variable_props.add_variable_byte_integer_property(
+                SUBSCRIPTION_IDENTIFIER,
+                subscription_identifier,
+            )?;
         }
 
         if let Some(user_property) = self.user_property.clone() {
@@ -108,7 +110,7 @@ impl PacketProperties for SubscribeProperties {
         for property in &variable_header_properties.properties {
             match property.id() {
                 SUBSCRIPTION_IDENTIFIER => {
-                    subscription_identifier = property.value_u32();
+                    subscription_identifier = property.value_variable_byte_integer();
                 }
                 USER_PROPERTY => {
                     user_property = property.value_string_pair();
@@ -166,7 +168,8 @@ impl SubscribeProperties {
     ///
     /// Bits 6 y 7 son reservados. Deben ser 0.
     ///
-    pub fn _add_topic_filter(
+    #[allow(dead_code)]
+    pub fn add_topic_filter(
         &mut self,
         topic_filter: String,
         max_qos: u8,

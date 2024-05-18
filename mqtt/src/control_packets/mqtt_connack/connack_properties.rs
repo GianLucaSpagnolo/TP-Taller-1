@@ -58,15 +58,10 @@ impl Clone for ConnackProperties {
 }
 
 impl PacketProperties for ConnackProperties {
-    fn variable_props_size(&self) -> u16 {
-        let header = self.as_variable_header_properties().unwrap();
-        header.properties.len() as u16
-    }
-
-    fn size_of(&self) -> u16 {
+    fn size_of(&self) -> u32 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u8>() + std::mem::size_of::<u8>();
-        fixed_props_size as u16 + variable_props.bytes_length
+        fixed_props_size as u32 + variable_props.size_of()
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
