@@ -1,13 +1,14 @@
+use std::io::{Error, Read};
+
 use crate::common::data_types::data_representation::*;
 use crate::control_packets::mqtt_packet::{
     packet_properties::PacketProperties, packet_property::*,
     variable_header_properties::VariableHeaderProperties,
 };
 
-use std::io::Error;
-
 #[derive(Default)]
-pub struct _SubackProperties {
+#[allow(dead_code)]
+pub struct SubackProperties {
     pub packet_identifier: u16,
     pub reason_string: Option<String>,
     pub user_property: Option<(String, String)>,
@@ -15,9 +16,9 @@ pub struct _SubackProperties {
     pub reason_codes: Vec<u8>, //Payload
 }
 
-impl Clone for _SubackProperties {
+impl Clone for SubackProperties {
     fn clone(&self) -> Self {
-        _SubackProperties {
+        SubackProperties {
             packet_identifier: self.packet_identifier,
             reason_string: self.reason_string.clone(),
             user_property: self.user_property.clone(),
@@ -27,8 +28,8 @@ impl Clone for _SubackProperties {
     }
 }
 
-impl PacketProperties for _SubackProperties {
-    fn size_of(&self) -> u16 {
+impl PacketProperties for SubackProperties {
+    fn size_of(&self) -> u32 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u16>();
 
@@ -37,7 +38,7 @@ impl PacketProperties for _SubackProperties {
         for _ in &self.reason_codes {
             payload_size += std::mem::size_of::<u8>();
         }
-        fixed_props_size as u16 + variable_props.bytes_length + payload_size as u16
+        fixed_props_size as u32 + variable_props.size_of() + payload_size as u32
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
@@ -56,7 +57,7 @@ impl PacketProperties for _SubackProperties {
 
         Ok(variable_props)
     }
-    fn as_bytes(&self) -> Result<Vec<u8>, std::io::Error> {
+    fn as_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut bytes: Vec<u8> = Vec::new();
         let variable_header_properties = self.as_variable_header_properties()?;
 
@@ -71,7 +72,7 @@ impl PacketProperties for _SubackProperties {
         Ok(bytes)
     }
 
-    fn read_from(stream: &mut dyn std::io::Read) -> Result<Self, Error> {
+    fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let packet_identifier = read_two_byte_integer(stream)?;
 
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
@@ -100,7 +101,7 @@ impl PacketProperties for _SubackProperties {
             i += 1;
         }
 
-        Ok(_SubackProperties {
+        Ok(SubackProperties {
             packet_identifier,
             reason_string,
             user_property,

@@ -1,5 +1,4 @@
-use std::io::Error;
-use std::io::Read;
+use std::io::{Error, Read};
 
 use crate::common::data_types::data_representation::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
@@ -8,7 +7,8 @@ use crate::control_packets::mqtt_packet::{
 };
 
 #[derive(Default)]
-pub struct _PublishProperties {
+#[allow(dead_code)]
+pub struct PublishProperties {
     pub topic_name: String,
     pub packet_identifier: u16,
     pub payload_format_indicator: Option<u8>,
@@ -23,9 +23,9 @@ pub struct _PublishProperties {
     pub application_message: String, // Payload
 }
 
-impl Clone for _PublishProperties {
+impl Clone for PublishProperties {
     fn clone(&self) -> Self {
-        _PublishProperties {
+        PublishProperties {
             topic_name: self.topic_name.clone(),
             packet_identifier: self.packet_identifier,
             payload_format_indicator: self.payload_format_indicator,
@@ -42,15 +42,15 @@ impl Clone for _PublishProperties {
     }
 }
 
-impl PacketProperties for _PublishProperties {
-    fn size_of(&self) -> u16 {
+impl PacketProperties for PublishProperties {
+    fn size_of(&self) -> u32 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size =
             std::mem::size_of::<u16>() + self.topic_name.len() + std::mem::size_of::<u16>();
 
         let payload_size = std::mem::size_of::<u16>() + self.application_message.len();
 
-        fixed_props_size as u16 + variable_props.bytes_length + payload_size as u16
+        fixed_props_size as u32 + variable_props.size_of() + payload_size as u32
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
@@ -85,7 +85,10 @@ impl PacketProperties for _PublishProperties {
         }
 
         if let Some(subscription_identifier) = self.subscription_identifier {
-            variable_props.add_u32_property(SUBSCRIPTION_IDENTIFIER, subscription_identifier)?;
+            variable_props.add_variable_byte_integer_property(
+                SUBSCRIPTION_IDENTIFIER,
+                subscription_identifier,
+            )?;
         }
 
         if let Some(content_type) = &self.content_type {
@@ -149,7 +152,7 @@ impl PacketProperties for _PublishProperties {
                     user_property = property.value_string_pair();
                 }
                 SUBSCRIPTION_IDENTIFIER => {
-                    subscription_identifier = property.value_u32();
+                    subscription_identifier = property.value_variable_byte_integer();
                 }
                 CONTENT_TYPE => {
                     content_type = property.value_string();
@@ -161,7 +164,7 @@ impl PacketProperties for _PublishProperties {
         let application_message_len = read_two_byte_integer(stream).unwrap_or(0);
         let application_message = read_utf8_encoded_string(stream, application_message_len)?;
 
-        Ok(_PublishProperties {
+        Ok(PublishProperties {
             topic_name,
             packet_identifier,
             payload_format_indicator,

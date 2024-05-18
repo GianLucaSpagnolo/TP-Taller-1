@@ -4,7 +4,7 @@ use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
 use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
-use crate::control_packets::mqtt_unsuback::unsuback_properties::_UnsubackProperties;
+use crate::control_packets::mqtt_unsuback::unsuback_properties::UnsubackProperties;
 
 /// ## UNSUBACK PACKET
 ///
@@ -48,25 +48,26 @@ use crate::control_packets::mqtt_unsuback::unsuback_properties::_UnsubackPropert
 /// in the UNSUBSCRIBE packet that is being acknowledged.
 /// The order of the Reason Codes in the UNSUBACK packet MUST match the order of Topic Filters in the UNSUBSCRIBE packet.
 ///
-pub struct _Unsuback {
-    pub properties: _UnsubackProperties,
+#[allow(dead_code)]
+pub struct Unsuback {
+    pub properties: UnsubackProperties,
 }
 
-impl Serialization for _Unsuback {
-    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Self, Error> {
+impl Serialization for Unsuback {
+    fn read_from(stream: &mut dyn Read, remaining_length: u32) -> Result<Self, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();
 
-        let properties = _UnsubackProperties::read_from(&mut buffer)?;
+        let properties = UnsubackProperties::read_from(&mut buffer)?;
 
-        Ok(_Unsuback { properties })
+        Ok(Unsuback { properties })
     }
 
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let remaining_length = self.properties.size_of();
 
-        let fixed_header = PacketFixedHeader::new(_UNSUBACK_PACKET, remaining_length);
+        let fixed_header = PacketFixedHeader::new(UNSUBACK_PACKET, remaining_length);
         let fixed_header_bytes = fixed_header.as_bytes();
 
         stream.write_all(&fixed_header_bytes)?;
@@ -78,13 +79,14 @@ impl Serialization for _Unsuback {
     }
 
     fn packed_package(package: Self) -> PacketReceived {
-        PacketReceived::_Unsuback(Box::new(package))
+        PacketReceived::Unsuback(Box::new(package))
     }
 }
 
-impl _Unsuback {
-    pub fn _new(properties: _UnsubackProperties) -> Self {
-        _Unsuback { properties }
+impl Unsuback {
+    #[allow(dead_code)]
+    pub fn new(properties: UnsubackProperties) -> Self {
+        Unsuback { properties }
     }
 }
 
@@ -95,20 +97,20 @@ mod test {
 
     #[test]
     fn test_unsuback() {
-        let properties = _UnsubackProperties {
+        let properties = UnsubackProperties {
             packet_identifier: 1,
             reason_string: Some("reason_string".to_string()),
             user_property: Some(("test_key".to_string(), "test_value".to_string())),
 
             // Payload
             reason_codes: vec![
-                ReasonMode::_BadUserNameOrPassword.get_id(),
-                ReasonMode::_Banned.get_id(),
-                ReasonMode::_NotAuthorized.get_id(),
+                ReasonMode::BadUserNameOrPassword.get_id(),
+                ReasonMode::Banned.get_id(),
+                ReasonMode::NotAuthorized.get_id(),
             ],
         };
 
-        let unsuback = _Unsuback::_new(properties);
+        let unsuback = Unsuback::new(properties);
 
         // ESCRIBE EL PACKET EN EL BUFFER
         let mut buffer = Vec::new();
@@ -117,10 +119,10 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let unsuback_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
-        assert!(!unsuback_fixed_header._verify_reserved_bits_for_subscribe_packets());
+        assert!(!unsuback_fixed_header.verify_reserved_bits_for_subscribe_packets());
 
         let unsuback =
-            _Unsuback::read_from(&mut buffer, unsuback_fixed_header.remaining_length).unwrap();
+            Unsuback::read_from(&mut buffer, unsuback_fixed_header.remaining_length).unwrap();
 
         assert_eq!(unsuback.properties.packet_identifier, 1);
 
@@ -142,12 +144,12 @@ mod test {
 
     #[test]
     fn test_unsuback_with_empty_optional_fields() {
-        let properties = _UnsubackProperties {
+        let properties = UnsubackProperties {
             packet_identifier: 1,
             ..Default::default()
         };
 
-        let unsuback = _Unsuback::_new(properties);
+        let unsuback = Unsuback::new(properties);
 
         // ESCRIBE EL PACKET EN EL BUFFER
         let mut buffer = Vec::new();
@@ -156,10 +158,10 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let unsuback_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
-        assert!(!unsuback_fixed_header._verify_reserved_bits_for_subscribe_packets());
+        assert!(!unsuback_fixed_header.verify_reserved_bits_for_subscribe_packets());
 
         let unsuback =
-            _Unsuback::read_from(&mut buffer, unsuback_fixed_header.remaining_length).unwrap();
+            Unsuback::read_from(&mut buffer, unsuback_fixed_header.remaining_length).unwrap();
 
         assert_eq!(unsuback.properties.packet_identifier, 1);
         assert_eq!(unsuback.properties.reason_codes, Vec::new());

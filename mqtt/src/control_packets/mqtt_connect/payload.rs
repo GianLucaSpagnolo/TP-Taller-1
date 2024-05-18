@@ -1,5 +1,4 @@
-use std::io::Error;
-use std::io::Read;
+use std::io::{Error, Read};
 
 use crate::common::data_types::data_representation::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
@@ -44,7 +43,7 @@ impl Clone for ConnectPayload {
 }
 
 impl PacketProperties for ConnectPayload {
-    fn size_of(&self) -> u16 {
+    fn size_of(&self) -> u32 {
         let payload_props = self.as_variable_header_properties().unwrap();
         let mut payload_fields = std::mem::size_of::<u16>() + self.client_id.len();
 
@@ -61,7 +60,7 @@ impl PacketProperties for ConnectPayload {
             payload_fields += std::mem::size_of::<u16>() + password.len();
         }
 
-        payload_fields as u16 + payload_props.bytes_length
+        payload_fields as u32 + payload_props.size_of()
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {

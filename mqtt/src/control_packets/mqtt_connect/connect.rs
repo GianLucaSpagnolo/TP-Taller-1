@@ -1,6 +1,4 @@
-use std::io::Error;
-use std::io::Read;
-use std::io::Write;
+use std::io::{Error, Read, Write};
 
 use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
@@ -102,7 +100,7 @@ pub struct Connect {
 }
 
 impl Serialization for Connect {
-    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Connect, Error> {
+    fn read_from(stream: &mut dyn Read, remaining_length: u32) -> Result<Connect, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();
@@ -203,31 +201,31 @@ mod test {
         assert_eq!(connect.properties.protocol_version, 5);
 
         assert_eq!(
-            flags_handler::_get_connect_flag_username(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_username(connect.properties.connect_flags),
             1
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_password(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_password(connect.properties.connect_flags),
             1
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_will_retain(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_will_retain(connect.properties.connect_flags),
             0
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_will_qos(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_will_qos(connect.properties.connect_flags),
             2
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_will_flag(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_will_flag(connect.properties.connect_flags),
             1
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_clean_start(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_clean_start(connect.properties.connect_flags),
             1
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_reserved(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_reserved(connect.properties.connect_flags),
             0
         );
 
@@ -394,31 +392,31 @@ mod test {
         assert_eq!(new_connect.properties.protocol_version, 5);
 
         assert_eq!(
-            flags_handler::_get_connect_flag_username(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_username(connect.properties.connect_flags),
             0
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_password(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_password(connect.properties.connect_flags),
             0
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_will_retain(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_will_retain(connect.properties.connect_flags),
             0
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_will_qos(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_will_qos(connect.properties.connect_flags),
             2
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_will_flag(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_will_flag(connect.properties.connect_flags),
             0
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_clean_start(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_clean_start(connect.properties.connect_flags),
             0
         );
         assert_eq!(
-            flags_handler::_get_connect_flag_reserved(connect.properties.connect_flags),
+            flags_handler::get_connect_flag_reserved(connect.properties.connect_flags),
             0
         );
 

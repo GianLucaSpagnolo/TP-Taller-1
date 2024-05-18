@@ -4,8 +4,8 @@ use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::{
-    mqtt_packet::{fixed_header::_UNSUBSCRIBE_PACKET, packet::generic_packet::Serialization},
-    mqtt_unsubscribe::unsubscribe_properties::_UnsubscribeProperties,
+    mqtt_packet::{fixed_header::UNSUBSCRIBE_PACKET, packet::generic_packet::Serialization},
+    mqtt_unsubscribe::unsubscribe_properties::UnsubscribeProperties,
 };
 
 /// ## UNSUBSCRIBE PACKET (Enviado del cliente al servidor)
@@ -45,25 +45,26 @@ use crate::control_packets::{
 /// contenga, entonces esa subscripción DEBE ser eliminada. Caso contrario,
 /// no ocurre procesamiento adicional
 ///
-pub struct _Unsubscribe {
-    pub properties: _UnsubscribeProperties,
+#[allow(dead_code)]
+pub struct Unsubscribe {
+    pub properties: UnsubscribeProperties,
 }
 
-impl Serialization for _Unsubscribe {
-    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Self, Error> {
+impl Serialization for Unsubscribe {
+    fn read_from(stream: &mut dyn Read, remaining_length: u32) -> Result<Self, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();
 
-        let properties = _UnsubscribeProperties::read_from(&mut buffer)?;
+        let properties = UnsubscribeProperties::read_from(&mut buffer)?;
 
-        Ok(_Unsubscribe { properties })
+        Ok(Unsubscribe { properties })
     }
 
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let remaining_length = self.properties.size_of();
 
-        let fixed_header = PacketFixedHeader::new(_UNSUBSCRIBE_PACKET, remaining_length);
+        let fixed_header = PacketFixedHeader::new(UNSUBSCRIBE_PACKET, remaining_length);
         let fixed_header_bytes = fixed_header.as_bytes();
 
         stream.write_all(&fixed_header_bytes)?;
@@ -75,13 +76,14 @@ impl Serialization for _Unsubscribe {
     }
 
     fn packed_package(package: Self) -> PacketReceived {
-        PacketReceived::_Unsubscribe(Box::new(package))
+        PacketReceived::Unsubscribe(Box::new(package))
     }
 }
 
-impl _Unsubscribe {
-    pub fn _new(properties: _UnsubscribeProperties) -> Self {
-        _Unsubscribe { properties }
+impl Unsubscribe {
+    #[allow(dead_code)]
+    pub fn new(properties: UnsubscribeProperties) -> Self {
+        Unsubscribe { properties }
     }
 }
 
@@ -92,13 +94,13 @@ mod test {
 
     #[test]
     fn test_unsubscribe_to_one_topic() {
-        let properties = _UnsubscribeProperties {
+        let properties = UnsubscribeProperties {
             packet_identifier: 1,
             user_property: None,
             topic_filters: vec!["topic".to_string()],
         };
 
-        let unsubscribe = _Unsubscribe::_new(properties);
+        let unsubscribe = Unsubscribe::new(properties);
 
         //ESCRIBE EL PACKET EN EL BUFFER
         let mut bytes = Vec::new();
@@ -107,11 +109,10 @@ mod test {
         //LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let unsubscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
-        assert!(unsubscribe_fixed_header._verify_reserved_bits_for_subscribe_packets());
+        assert!(unsubscribe_fixed_header.verify_reserved_bits_for_subscribe_packets());
 
         let unsubscribe =
-            _Unsubscribe::read_from(&mut buffer, unsubscribe_fixed_header.remaining_length)
-                .unwrap();
+            Unsubscribe::read_from(&mut buffer, unsubscribe_fixed_header.remaining_length).unwrap();
 
         assert_eq!(unsubscribe.properties.packet_identifier, 1);
         assert_eq!(unsubscribe.properties.topic_filters.len(), 1);
@@ -120,7 +121,7 @@ mod test {
 
     #[test]
     fn test_unsubscribe_to_multiple_topics() {
-        let properties = _UnsubscribeProperties {
+        let properties = UnsubscribeProperties {
             packet_identifier: 1,
             user_property: None,
             topic_filters: vec![
@@ -130,7 +131,7 @@ mod test {
             ],
         };
 
-        let unsubscribe = _Unsubscribe::_new(properties);
+        let unsubscribe = Unsubscribe::new(properties);
 
         //ESCRIBE EL PACKET EN EL BUFFER
         let mut bytes = Vec::new();
@@ -139,16 +140,40 @@ mod test {
         //LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let unsubscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
-        assert!(unsubscribe_fixed_header._verify_reserved_bits_for_subscribe_packets());
+        assert!(unsubscribe_fixed_header.verify_reserved_bits_for_subscribe_packets());
 
         let unsubscribe =
-            _Unsubscribe::read_from(&mut buffer, unsubscribe_fixed_header.remaining_length)
-                .unwrap();
+            Unsubscribe::read_from(&mut buffer, unsubscribe_fixed_header.remaining_length).unwrap();
 
         assert_eq!(unsubscribe.properties.packet_identifier, 1);
         assert_eq!(unsubscribe.properties.topic_filters.len(), 3);
         assert_eq!(unsubscribe.properties.topic_filters[0], "topic1");
         assert_eq!(unsubscribe.properties.topic_filters[1], "topic2");
         assert_eq!(unsubscribe.properties.topic_filters[2], "topic3");
+    }
+
+    #[test]
+    fn test_unsubscribe_with_empty_optional_fields() {
+        let properties = UnsubscribeProperties {
+            packet_identifier: 100,
+            ..Default::default()
+        };
+
+        let unsubscribe = Unsubscribe::new(properties);
+
+        //ESCRIBE EL PACKET EN EL BUFFER
+        let mut bytes = Vec::new();
+        unsubscribe.write_to(&mut bytes).unwrap();
+
+        //LEE EL PACKET DEL BUFFER
+        let mut buffer = bytes.as_slice();
+        let unsubscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        assert!(unsubscribe_fixed_header.verify_reserved_bits_for_subscribe_packets());
+
+        let unsubscribe =
+            Unsubscribe::read_from(&mut buffer, unsubscribe_fixed_header.remaining_length).unwrap();
+
+        assert_eq!(unsubscribe.properties.packet_identifier, 100);
+        assert_eq!(unsubscribe.properties.topic_filters.len(), 0);
     }
 }

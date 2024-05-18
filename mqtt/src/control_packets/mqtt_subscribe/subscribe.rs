@@ -1,7 +1,7 @@
 use std::io::{Error, Read, Write};
 
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
-use crate::control_packets::mqtt_packet::fixed_header::_SUBSCRIBE_PACKET;
+use crate::control_packets::mqtt_packet::fixed_header::SUBSCRIBE_PACKET;
 use crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::{
@@ -52,25 +52,26 @@ use crate::control_packets::{
 /// Cuando el servidor recibe un SUBSCRIBE PACKET, debe responder con un SUBACK PACKET con el mismo packet identifier
 /// El servidor puede enviar PUBLISH PACKETS a los clientes antes de enviar el SUBACK PACKET
 ///
-pub struct _Subscribe {
+#[allow(dead_code)]
+pub struct Subscribe {
     pub properties: SubscribeProperties,
 }
 
-impl Serialization for _Subscribe {
-    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<Self, Error> {
+impl Serialization for Subscribe {
+    fn read_from(stream: &mut dyn Read, remaining_length: u32) -> Result<Self, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();
 
         let properties = SubscribeProperties::read_from(&mut buffer)?;
 
-        Ok(_Subscribe { properties })
+        Ok(Subscribe { properties })
     }
 
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let remaining_length = self.properties.size_of();
 
-        let fixed_header = PacketFixedHeader::new(_SUBSCRIBE_PACKET, remaining_length);
+        let fixed_header = PacketFixedHeader::new(SUBSCRIBE_PACKET, remaining_length);
         let fixed_header_bytes = fixed_header.as_bytes();
 
         stream.write_all(&fixed_header_bytes)?;
@@ -86,9 +87,10 @@ impl Serialization for _Subscribe {
     }
 }
 
-impl _Subscribe {
-    pub fn _new(properties: SubscribeProperties) -> _Subscribe {
-        _Subscribe { properties }
+impl Subscribe {
+    #[allow(dead_code)]
+    pub fn new(properties: SubscribeProperties) -> Subscribe {
+        Subscribe { properties }
     }
 }
 
@@ -106,9 +108,9 @@ mod test {
             ..Default::default()
         };
 
-        properties._add_topic_filter("topico1".to_string(), 2, true, true, 2);
+        properties.add_topic_filter("topico1".to_string(), 2, true, true, 2);
 
-        let subscribe = _Subscribe::_new(properties);
+        let subscribe = Subscribe::new(properties);
 
         //ESCRIBE EL PACKET EN EL BUFFER
         let mut bytes = Vec::new();
@@ -118,7 +120,7 @@ mod test {
         let mut buffer = bytes.as_slice();
         let subscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
         let subscribe =
-            _Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
+            Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
 
         assert_eq!(subscribe.properties.packet_identifier, 1);
         assert_eq!(subscribe.properties.subscription_identifier, Some(1));
@@ -136,19 +138,19 @@ mod test {
 
         let subscription_options = subscribe.properties.topic_filters[0].subscription_options;
         assert_eq!(
-            flags_handler::_get_subscribe_max_qos(subscription_options),
+            flags_handler::get_subscribe_max_qos(subscription_options),
             2
         );
         assert_eq!(
-            flags_handler::_get_subscribe_no_local_option(subscription_options),
+            flags_handler::get_subscribe_no_local_option(subscription_options),
             1
         );
         assert_eq!(
-            flags_handler::_get_subscribe_retain_as_published(subscription_options),
+            flags_handler::get_subscribe_retain_as_published(subscription_options),
             1
         );
         assert_eq!(
-            flags_handler::_get_subscribe_retain_handling(subscription_options),
+            flags_handler::get_subscribe_retain_handling(subscription_options),
             2
         );
     }
@@ -162,11 +164,11 @@ mod test {
             ..Default::default()
         };
 
-        properties._add_topic_filter("topico1".to_string(), 2, true, false, 1);
-        properties._add_topic_filter("topico2".to_string(), 1, false, true, 0);
-        properties._add_topic_filter("topico3".to_string(), 0, false, false, 2);
+        properties.add_topic_filter("topico1".to_string(), 2, true, false, 1);
+        properties.add_topic_filter("topico2".to_string(), 1, false, true, 0);
+        properties.add_topic_filter("topico3".to_string(), 0, false, false, 2);
 
-        let subscribe = _Subscribe::_new(properties);
+        let subscribe = Subscribe::new(properties);
 
         //ESCRIBE EL PACKET EN EL BUFFER
         let mut bytes = Vec::new();
@@ -175,10 +177,10 @@ mod test {
         //LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let subscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
-        assert!(subscribe_fixed_header._verify_reserved_bits_for_subscribe_packets());
+        assert!(subscribe_fixed_header.verify_reserved_bits_for_subscribe_packets());
 
         let subscribe =
-            _Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
+            Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
 
         assert_eq!(subscribe.properties.packet_identifier, 1);
         assert_eq!(subscribe.properties.subscription_identifier, Some(1));
@@ -195,19 +197,19 @@ mod test {
         );
         let subscription_options = subscribe.properties.topic_filters[0].subscription_options;
         assert_eq!(
-            flags_handler::_get_subscribe_max_qos(subscription_options),
+            flags_handler::get_subscribe_max_qos(subscription_options),
             2
         );
         assert_eq!(
-            flags_handler::_get_subscribe_no_local_option(subscription_options),
+            flags_handler::get_subscribe_no_local_option(subscription_options),
             1
         );
         assert_eq!(
-            flags_handler::_get_subscribe_retain_as_published(subscription_options),
+            flags_handler::get_subscribe_retain_as_published(subscription_options),
             0
         );
         assert_eq!(
-            flags_handler::_get_subscribe_retain_handling(subscription_options),
+            flags_handler::get_subscribe_retain_handling(subscription_options),
             1
         );
 
@@ -218,19 +220,19 @@ mod test {
 
         let subscription_options = subscribe.properties.topic_filters[1].subscription_options;
         assert_eq!(
-            flags_handler::_get_subscribe_max_qos(subscription_options),
+            flags_handler::get_subscribe_max_qos(subscription_options),
             1
         );
         assert_eq!(
-            flags_handler::_get_subscribe_no_local_option(subscription_options),
+            flags_handler::get_subscribe_no_local_option(subscription_options),
             0
         );
         assert_eq!(
-            flags_handler::_get_subscribe_retain_as_published(subscription_options),
+            flags_handler::get_subscribe_retain_as_published(subscription_options),
             1
         );
         assert_eq!(
-            flags_handler::_get_subscribe_retain_handling(subscription_options),
+            flags_handler::get_subscribe_retain_handling(subscription_options),
             0
         );
 
@@ -241,19 +243,19 @@ mod test {
 
         let subscription_options = subscribe.properties.topic_filters[2].subscription_options;
         assert_eq!(
-            flags_handler::_get_subscribe_max_qos(subscription_options),
+            flags_handler::get_subscribe_max_qos(subscription_options),
             0
         );
         assert_eq!(
-            flags_handler::_get_subscribe_no_local_option(subscription_options),
+            flags_handler::get_subscribe_no_local_option(subscription_options),
             0
         );
         assert_eq!(
-            flags_handler::_get_subscribe_retain_as_published(subscription_options),
+            flags_handler::get_subscribe_retain_as_published(subscription_options),
             0
         );
         assert_eq!(
-            flags_handler::_get_subscribe_retain_handling(subscription_options),
+            flags_handler::get_subscribe_retain_handling(subscription_options),
             2
         );
     }
@@ -267,9 +269,9 @@ mod test {
             ..Default::default()
         };
 
-        properties._add_topic_filter("topico1".to_string(), 0, false, false, 0);
+        properties.add_topic_filter("topico1".to_string(), 0, false, false, 0);
 
-        let subscribe = _Subscribe::_new(properties);
+        let subscribe = Subscribe::new(properties);
 
         //ESCRIBE EL PACKET EN EL BUFFER
         let mut bytes = Vec::new();
@@ -278,10 +280,10 @@ mod test {
         //LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let subscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
-        assert!(subscribe_fixed_header._verify_reserved_bits_for_subscribe_packets());
+        assert!(subscribe_fixed_header.verify_reserved_bits_for_subscribe_packets());
 
         let subscribe =
-            _Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
+            Subscribe::read_from(&mut buffer, subscribe_fixed_header.remaining_length).unwrap();
 
         assert_eq!(subscribe.properties.packet_identifier, 1);
         assert_eq!(subscribe.properties.subscription_identifier, None);
@@ -296,19 +298,19 @@ mod test {
 
         let subscription_options = subscribe.properties.topic_filters[0].subscription_options;
         assert_eq!(
-            flags_handler::_get_subscribe_max_qos(subscription_options),
+            flags_handler::get_subscribe_max_qos(subscription_options),
             0
         );
         assert_eq!(
-            flags_handler::_get_subscribe_no_local_option(subscription_options),
+            flags_handler::get_subscribe_no_local_option(subscription_options),
             0
         );
         assert_eq!(
-            flags_handler::_get_subscribe_retain_as_published(subscription_options),
+            flags_handler::get_subscribe_retain_as_published(subscription_options),
             0
         );
         assert_eq!(
-            flags_handler::_get_subscribe_retain_handling(subscription_options),
+            flags_handler::get_subscribe_retain_handling(subscription_options),
             0
         );
     }

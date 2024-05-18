@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::io::{Error, Read};
 
 use crate::{
     common::data_types::data_representation::*,
@@ -10,16 +10,17 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct _PubackProperties {
+#[allow(dead_code)]
+pub struct PubackProperties {
     pub packet_id: u16,
     pub puback_reason_code: u8,
     pub reason_string: Option<String>,
     pub user_property: Option<(String, String)>,
 }
 
-impl Clone for _PubackProperties {
+impl Clone for PubackProperties {
     fn clone(&self) -> Self {
-        _PubackProperties {
+        PubackProperties {
             packet_id: self.packet_id,
             puback_reason_code: self.puback_reason_code,
             reason_string: self.reason_string.clone(),
@@ -28,12 +29,12 @@ impl Clone for _PubackProperties {
     }
 }
 
-impl PacketProperties for _PubackProperties {
-    fn size_of(&self) -> u16 {
+impl PacketProperties for PubackProperties {
+    fn size_of(&self) -> u32 {
         let variable_props = self.as_variable_header_properties().unwrap();
         let fixed_props_size = std::mem::size_of::<u16>() + std::mem::size_of::<u8>();
 
-        fixed_props_size as u16 + variable_props.bytes_length
+        fixed_props_size as u32 + variable_props.size_of()
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
@@ -64,7 +65,7 @@ impl PacketProperties for _PubackProperties {
         Ok(bytes)
     }
 
-    fn read_from(stream: &mut dyn std::io::prelude::Read) -> Result<Self, Error> {
+    fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         let packet_id = read_two_byte_integer(stream)?;
         let puback_reason_code = read_byte(stream)?;
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
@@ -84,7 +85,7 @@ impl PacketProperties for _PubackProperties {
             }
         }
 
-        Ok(_PubackProperties {
+        Ok(PubackProperties {
             packet_id,
             puback_reason_code,
             reason_string,
