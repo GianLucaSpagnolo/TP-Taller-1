@@ -41,6 +41,7 @@ pub struct ClientConfig {
     pub ip: IpAddr,
     pub port: u16,
     pub connect_properties: ConnectProperties,
+    pub publish_flags: u8,
 }
 
 impl Config for ClientConfig {
@@ -55,6 +56,7 @@ impl Config for ClientConfig {
 
         // Corroborar que le pasen los campos obligatorios
         let mut connect_properties = ConnectProperties::default();
+        let mut publish_flags = 0;
 
         for param in params.iter() {
             match param.0.as_str() {
@@ -221,6 +223,24 @@ impl Config for ClientConfig {
                 "authentication_data" => {
                     connect_properties.authentication_data = Some(param.1.clone())
                 }
+                "publish_dup" => {
+                    publish_flags = match add_publish_dup_flag(publish_flags, param.1.clone()) {
+                        Ok(p) => p,
+                        Err(e) => return Err(e),
+                    }
+                }
+                "publish_qos" => {
+                    publish_flags = match add_publish_qos_level(publish_flags, param.1.clone()) {
+                        Ok(p) => p,
+                        Err(e) => return Err(e),
+                    }
+                }
+                "publish_retain" => {
+                    publish_flags = match add_publish_retain(publish_flags, param.1.clone()) {
+                        Ok(p) => p,
+                        Err(e) => return Err(e),
+                    }
+                }
 
                 _ => {
                     return Err(Error::new(
@@ -236,6 +256,7 @@ impl Config for ClientConfig {
                 ip,
                 port,
                 connect_properties,
+                publish_flags,
             });
         }
 

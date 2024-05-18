@@ -6,6 +6,7 @@ pub enum MqttActions {
     ServerConnection(String),
     ClientConnection(String, u8),
     ClientReceive(String, String),
+    ClientSend(String, String, String),
     DisconnectClient,
     MessageReceived,
     MessageSended,
@@ -33,6 +34,9 @@ impl fmt::Display for MqttActions {
                 )
             }
             MqttActions::ClientReceive(id, msg) => write!(f, "Cliente '{}' recibio: {}", id, msg),
+            MqttActions::ClientSend(id, msg, topic) => {
+                write!(f, "Cliente '{}' envio: '{}' al topico '{}'", id, msg, topic)
+            }
             MqttActions::TryConnect => write!(f, "Intentando conectar"),
             MqttActions::DisconnectClient => write!(f, "Desconectando cliente"),
             MqttActions::MessageReceived => write!(f, "Mensaje recibido"),

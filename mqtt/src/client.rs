@@ -11,8 +11,8 @@ use crate::{
     control_packets::{
         mqtt_connack::connack::Connack,
         mqtt_connect::{connect::Connect, payload},
-        mqtt_packet::fixed_header::PacketFixedHeader,
-        mqtt_packet::packet::generic_packet::*,
+        mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
+        mqtt_publish::{publish::_Publish, publish_properties}
     },
 };
 
@@ -20,6 +20,7 @@ pub struct MqttClient {
     id: String,
     config: ClientConfig,
     stream: TcpStream,
+    current_packet_id: u16,
 }
 
 fn handle_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
@@ -59,7 +60,9 @@ impl MqttClient {
         )
         .register_action();
 
-        Ok(MqttClient { id, config, stream })
+        let current_packet_id = 0;
+
+        Ok(MqttClient { id, config, stream , current_packet_id })
     }
 
     pub fn run_listener(self) -> Result<Receiver<Vec<u8>>, Error> {
@@ -126,8 +129,28 @@ impl MqttClient {
         Ok(data.as_bytes().to_vec())
     }
 
-    pub fn publish() {
-        todo!()
+    pub fn publish(&mut self, message: String, topic: String) -> Result<(), Error>{
+        self.current_packet_id += 1;
+        let properties = publish_properties::_PublishProperties {
+            topic_name: topic.clone(),
+            packet_identifier: self.current_packet_id,
+            payload_format_indicator: Some(1),
+            application_message: Some(message.clone()),
+            ..Default::default()
+        };
+
+        let send_publish = _Publish{
+            fixed_header_flags: self.config.publish_flags,
+            properties,
+        }.send(&mut self.stream);
+
+        match send_publish {
+            Ok(_) => {
+                MqttActions::ClientSend(self.id.clone(), message, topic).register_action();
+                Ok(())
+            },
+            Err(e) => Err(e),
+        }
     }
 
     pub fn subscribe() {
