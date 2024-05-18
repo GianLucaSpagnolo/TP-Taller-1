@@ -43,7 +43,7 @@ impl MqttServer {
     // le devuelve el paquete al servidor
     // el servidor lo pasa al logger
     // el logger le pide traduccion al protocolo
-    pub fn start_server(self) -> Result<MqttActions, Error> {
+    pub fn start_server(self) -> Result<(), Error> {
         let listener = TcpListener::bind(self.config.get_socket_address())?;
 
         let pool = ServerPool::build(self.config.maximum_threads)?;
@@ -66,16 +66,16 @@ impl MqttServer {
         server: Arc<Mutex<MqttServer>>,
         client_stream: TcpStream,
         pool: &ServerPool,
-    ) -> Result<MqttActions, Error> {
-        match pool.execute(move || -> Result<MqttActions, Error> {
+    ) -> Result<(), Error> {
+        pool.execute(move || {
             match server.lock().unwrap().messages_handler(client_stream) {
-                Ok(action) => Ok(action),
+                Ok(action) => {
+                    action.register_action();
+                    Ok(())
+                }
                 Err(e) => Err(e),
             }
-        }) {
-            Ok(_) => Ok(MqttActions::MessageReceived.register_action()),
-            Err(e) => Err(e),
-        }
+        })
     }
 
     pub fn messages_handler(&mut self, mut stream: TcpStream) -> Result<MqttActions, Error> {
@@ -85,6 +85,8 @@ impl MqttServer {
             Err(e) => return Err(e),
         };
 
+        println!("Paquete recibido: {}", fixed_header.packet_type);
+
         match get_packet(
             &mut stream,
             fixed_header.get_package_type(),
@@ -93,23 +95,21 @@ impl MqttServer {
             Ok(pack) => match pack {
                 PacketReceived::Connect(connect_pack) => self.handle_connect(stream, *connect_pack),
                 PacketReceived::Disconnect(_pack) => {
-                    Ok(MqttActions::DisconnectClient.register_action())
+                    Ok(MqttActions::DisconnectClient)
                 }
-                /*
-                PacketReceived::Publish(_pack) => {
-                    let topic = pack.topic_name;
-                    self.sessions.into_iter().map(|(id, session)| if session.active {
-                        if session._subscriptions.contains(&topic) {
-                            self.publish(session.client, pack);
+                PacketReceived::Publish(pub_packet) => {
+                    let topic = pub_packet.properties.topic_name.clone();
+                    let data = pub_packet.properties.application_message.clone();
+
+                    <HashMap<String, Session> as Clone>::clone(&self.sessions).into_iter().for_each(
+                        |(_, s)|
+                        if s.active {
+                            let _ = pub_packet.send(&mut s.stream_connection.try_clone().unwrap());
                         }
-                    });
-                    let puback = puback::Puback::new(0);
-                    match puback.write_to(&mut stream) {
-                        Ok(_) => Ok(MqttActions::ConnectionEstablished),
-                        Err(e) => Err(e),
-                    }
+                    );
+                    // send puback to stream
+                    Ok(MqttActions::ServerPublishReceive(topic, data))
                 }
-                */
                 _ => Err(Error::new(
                     std::io::ErrorKind::Other,
                     "Server - Paquete desconocido",
@@ -133,7 +133,7 @@ impl MqttServer {
         let connack_properties: ConnackProperties =
             self.handle_connection(connect, stream.try_clone()?)?;
         Connack::new(connack_properties).send(&mut stream)?;
-        Ok(MqttActions::ServerConnection(client).register_action())
+        Ok(MqttActions::ServerConnection(client))
     }
 
     fn handle_connection(

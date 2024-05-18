@@ -24,6 +24,11 @@ pub struct MqttClient {
     current_packet_id: u16,
 }
 
+pub struct Message {
+    pub topic: String,
+    pub data: Vec<u8>,
+}
+
 fn handle_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
     let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
 
@@ -73,7 +78,7 @@ impl MqttClient {
 
     pub fn run_listener(
         &mut self,
-    ) -> Result<(Receiver<Vec<u8>>, JoinHandle<Result<(), Error>>), Error> {
+    ) -> Result<(Receiver<Message>, JoinHandle<Result<(), Error>>), Error> {
         let mut counter = 0;
         let client = self.clone();
         let (sender, receiver) = mpsc::channel();
@@ -90,7 +95,7 @@ impl MqttClient {
     pub fn listener(
         &self,
         mut stream: TcpStream,
-        sender: Sender<Vec<u8>>,
+        sender: Sender<Message>,
         counter: &mut u32,
     ) -> Result<(), Error> {
         match PacketFixedHeader::read_from(&mut stream) {
@@ -118,22 +123,26 @@ impl MqttClient {
         &self,
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
-    ) -> Result<Vec<u8>, Error> {
+    ) -> Result<Message, Error> {
         let packet_recived = get_packet(
             &mut stream,
             fixed_header.get_package_type(),
             fixed_header.remaining_length,
         )?;
 
+        let data ;
+        let topic;
         match packet_recived {
             PacketReceived::Publish(publish) => {
+                data = publish.properties.application_message.clone();
+                topic = publish.properties.topic_name.clone();
                 MqttActions::ClientReceive(self.id.clone(), publish.properties.topic_name.clone())
                     .register_action();
             }
             _ => return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido")),
         }
-        let data = "data";
-        Ok(data.as_bytes().to_vec())
+
+        Ok(Message { topic, data: data.as_bytes().to_vec() })
     }
 
     pub fn publish(&mut self, message: String, topic: String) -> Result<(), Error> {

@@ -14,6 +14,15 @@ fn recive_message(client: &mut MqttClient) -> Result<JoinHandle<Result<(), Error
 
     thread::spawn(move || {
         let _message_received = receiver.recv().unwrap();
+        match _message_received.topic.as_str() {
+            "topic1" => {
+                // cambiar estado
+            }
+            "topic2" => {
+                // cambiar estado
+            }
+            _ => {}
+        }
         // leer el mensaje recibido y cambiar estados según corresponda
     });
 
@@ -40,5 +49,7 @@ fn main() -> Result<(), Error> {
 
     client.subscribe(vec!["topic1", "topic2"], 1, false, false, 0)?;
 
-    Ok(messages_handler.join().unwrap()?)
+    client.publish("mensaje del cliente".to_string(), "topic1".to_string())?;
+
+    messages_handler.join().unwrap()
 }

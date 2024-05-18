@@ -37,11 +37,11 @@ impl Clone for WillMessage {
 }
 
 pub struct Session {
-    active: bool,
-    stream_connection: TcpStream,
-    session_expiry_interval: u32,
-    subscriptions: Vec<String>,
-    will_message: Option<WillMessage>,
+    pub active: bool,
+    pub stream_connection: TcpStream,
+    pub session_expiry_interval: u32,
+    pub subscriptions: Vec<String>,
+    pub will_message: Option<WillMessage>,
 }
 
 impl Session {
