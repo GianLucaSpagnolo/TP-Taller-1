@@ -46,6 +46,19 @@ pub struct ClientConfig {
     pub publish_retain: u8,
 }
 
+impl Clone for ClientConfig {
+    fn clone(&self) -> Self {
+        ClientConfig {
+            ip: self.ip,
+            port: self.port,
+            connect_properties: self.connect_properties.clone(),
+            publish_dup_flag: self.publish_dup_flag,
+            publish_qos: self.publish_qos,
+            publish_retain: self.publish_retain,
+        }
+    }
+}
+
 impl Config for ClientConfig {
     fn get_socket_address(&self) -> SocketAddr {
         SocketAddr::new(self.ip, self.port)

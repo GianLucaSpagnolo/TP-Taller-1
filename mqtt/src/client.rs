@@ -1,8 +1,5 @@
 use std::{
-    io::Error,
-    net::TcpStream,
-    sync::mpsc::{self, Receiver, Sender},
-    thread,
+    io::Error, net::TcpStream, sync::mpsc::{self, Receiver, Sender}, thread::{self, JoinHandle}
 };
 
 use crate::{
@@ -12,7 +9,7 @@ use crate::{
         mqtt_connack::connack::Connack,
         mqtt_connect::{connect::Connect, payload},
         mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
-        mqtt_publish::{publish::_Publish, publish_properties}
+        mqtt_publish::{publish::_Publish, publish_properties}, mqtt_subscribe::{subscribe::_Subscribe, subscribe_properties}
     },
 };
 
@@ -65,19 +62,18 @@ impl MqttClient {
         Ok(MqttClient { id, config, stream , current_packet_id })
     }
 
-    pub fn run_listener(self) -> Result<Receiver<Vec<u8>>, Error> {
+    pub fn run_listener(&mut self) -> Result<(Receiver<Vec<u8>>, JoinHandle<Result<(), Error>>), Error> {
         let mut counter = 0;
+        let client = self.clone();
         let (sender, receiver) = mpsc::channel();
 
-        thread::spawn(move || -> Result<(), Error> {
+        let handler = thread::spawn(move || -> Result<(), Error> {
             loop {
-                self.listener(self.stream.try_clone()?, sender.clone(), &mut counter)?;
+                client.listener(client.stream.try_clone()?, sender.clone(), &mut counter)?;
             }
-        })
-        .join()
-        .unwrap()?;
+        });
 
-        Ok(receiver)
+        Ok((receiver, handler))
     }
 
     pub fn listener(
@@ -141,21 +137,45 @@ impl MqttClient {
 
        
         match _Publish::_new(
-            self.config.publish_dup_flag.clone(),
-            self.config.publish_qos.clone(),
-            self.config.publish_retain.clone(), 
+            self.config.publish_dup_flag,
+            self.config.publish_qos,
+            self.config.publish_retain, 
             properties)
         .send(&mut self.stream) {
             Ok(_) => {
-                MqttActions::ClientSend(self.id.clone(), message, topic).register_action();
+                MqttActions::ClientSendPublish(self.id.clone(), message, topic).register_action();
                 Ok(())
             },
             Err(e) => Err(e),
         }
     }
 
-    pub fn subscribe() {
-        todo!()
+    pub fn subscribe(&mut self, topics: Vec<&str>, max_qos: u8, no_local_option: bool, retain_as_published: bool, retain_handling: u8)-> Result<(), Error>{
+
+        let mut properties = subscribe_properties::SubscribeProperties {
+            packet_identifier: 0,
+            ..Default::default()
+        };  
+
+        topics.iter().for_each(|topic| {
+            properties._add_topic_filter(
+                topic.to_string(),
+                max_qos,
+                no_local_option,
+                retain_as_published,
+                retain_handling,
+            );
+        });
+        
+        let prop_topics = properties.topic_filters.clone();
+
+        match _Subscribe::_new(properties).send(&mut self.stream){
+            Ok(_) => {
+                MqttActions::ClientSendSubscribe(self.id.clone(), prop_topics).register_action();
+                Ok(())
+            },
+            Err(e) => Err(e),
+        }
     }
 
     pub fn unsubscribe() {
@@ -170,3 +190,14 @@ impl MqttClient {
         todo!()
     }
 }
+
+impl Clone for MqttClient {
+    fn clone(&self) -> Self {
+        MqttClient {
+            id: self.id.clone(),
+            config: self.config.clone(),
+            stream: self.stream.try_clone().unwrap(),
+            current_packet_id: self.current_packet_id,
+        }
+    }
+} 

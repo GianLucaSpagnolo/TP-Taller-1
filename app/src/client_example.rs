@@ -1,15 +1,20 @@
-use std::{env, io::Error, sync::mpsc::Receiver, thread};
+use std::{env, io::Error, thread::{self, JoinHandle}};
 
 use mqtt::{
     client::MqttClient,
     config::{ClientConfig, Config},
 };
 
-fn recive_message(reciver: Receiver<Vec<u8>>) {
+fn recive_message(client: &mut MqttClient) -> Result<JoinHandle<Result<(), Error>>, Error> {
+    
+    let (receiver, handler) = client.run_listener()?;
+
     thread::spawn(move || {
-        let _message_received = reciver.recv().unwrap();
+        let _message_received = receiver.recv().unwrap();
         // leer el mensaje recibido y cambiar estados según corresponda
     });
+    
+    Ok(handler)
 }
 
 fn main() -> Result<(), Error> {
@@ -26,9 +31,11 @@ fn main() -> Result<(), Error> {
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
-    let reciver = MqttClient::init(String::from(client_id), config)?.run_listener()?;
+    let mut client = MqttClient::init(String::from(client_id), config)?;
 
-    recive_message(reciver);
+    let messages_handler = recive_message(&mut client)?;
 
-    Ok(())
+    client.subscribe(vec!["topic1", "topic2"], 1, false, false, 0)?;
+
+    Ok(messages_handler.join().unwrap()?)
 }
