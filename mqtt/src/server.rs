@@ -11,7 +11,7 @@ use crate::control_packets::mqtt_connect::connect::*;
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
-use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
+use crate::control_packets::mqtt_packet::reason_codes::ReasonCode;
 use crate::server_pool::ServerPool;
 use crate::session::Session;
 
@@ -192,7 +192,7 @@ impl MqttServer {
     fn determinate_reason_code(&self, connect_packet: &Connect) -> u8 {
         // Si ya se recibió un CONNECT packet, se debe procesar como un Protocol Error (reason code 130) y cerrar la conexion.
         if self._connect_received {
-            return ReasonMode::_ProtocolError.get_id();
+            return ReasonCode::_ProtocolError.get_id();
         }
 
         // Protocol Name: "MQTT" - En caso de ser diferente, debe procesarlo como  Unsupported Protocol Version (reason code 132) y cerrar la conexion.
@@ -200,17 +200,17 @@ impl MqttServer {
         if connect_packet.properties.protocol_name != *"MQTT"
             || connect_packet.properties.protocol_version != 5
         {
-            return ReasonMode::_UnsupportedProtocolVersion.get_id();
+            return ReasonCode::_UnsupportedProtocolVersion.get_id();
         }
 
         // Reserved: 0. En caso de recibir 1 debe devolver Malformed Packet (reason code 129) y cerrar la conexion
         if flags_handler::_get_connect_flag_reserved(connect_packet.properties.connect_flags) != 0 {
-            return ReasonMode::_MalformedPacket.get_id();
+            return ReasonCode::_MalformedPacket.get_id();
         }
 
         // - Will QoS: 1. En caso de recibir 3 debe devolver QoS Not Supported (reason code 155) y cerrar la conexion
         if flags_handler::_get_connect_flag_will_qos(connect_packet.properties.connect_flags) <= 1 {
-            return ReasonMode::_QoSNotSupported.get_id();
+            return ReasonCode::_QoSNotSupported.get_id();
         }
 
         if !connect_packet
@@ -219,9 +219,9 @@ impl MqttServer {
             .chars()
             .all(|c| c.is_ascii_alphanumeric())
         {
-            return ReasonMode::_ClientIdentifierNotValid.get_id();
+            return ReasonCode::_ClientIdentifierNotValid.get_id();
         }
-        ReasonMode::Success.get_id()
+        ReasonCode::Success.get_id()
     }
 }
 

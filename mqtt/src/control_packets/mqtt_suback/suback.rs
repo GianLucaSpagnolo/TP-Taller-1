@@ -112,10 +112,10 @@ mod test {
 
             // Payload
             reason_codes: vec![
-                ReasonMode::_ReceiveMaximumExceeded.get_id(),
-                ReasonMode::_BadUserNameOrPassword.get_id(),
-                ReasonMode::_NotAuthorized.get_id(),
-                ReasonMode::_ServerUnavailable.get_id(),
+                ReasonCode::_ReceiveMaximumExceeded.get_id(),
+                ReasonCode::_BadUserNameOrPassword.get_id(),
+                ReasonCode::_NotAuthorized.get_id(),
+                ReasonCode::_ServerUnavailable.get_id(),
             ],
         };
 

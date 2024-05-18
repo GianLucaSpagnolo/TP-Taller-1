@@ -115,13 +115,13 @@ mod test {
 
     use super::*;
     use crate::control_packets::mqtt_connack::connack_properties::ConnackProperties;
-    use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
+    use crate::control_packets::mqtt_packet::reason_codes::ReasonCode;
 
     #[test]
     fn test_connack() {
         let properties = ConnackProperties {
             connect_acknowledge_flags: 0x01,
-            connect_reason_code: ReasonMode::Success.get_id(),
+            connect_reason_code: ReasonCode::Success.get_id(),
             session_expiry_interval: Some(0),
             assigned_client_identifier: Some("client".to_string()),
             server_keep_alive: Some(0),
@@ -269,7 +269,7 @@ mod test {
     fn test_connack_empty_properties() {
         let properties = ConnackProperties {
             connect_acknowledge_flags: 0x00,
-            connect_reason_code: ReasonMode::Success.get_id(),
+            connect_reason_code: ReasonCode::Success.get_id(),
             ..Default::default()
         };
 

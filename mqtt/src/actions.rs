@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
+use crate::control_packets::mqtt_packet::reason_codes::ReasonCode;
 
 pub enum MqttActions {
     ServerConnection(String),
@@ -25,7 +25,7 @@ impl fmt::Display for MqttActions {
         match self {
             MqttActions::ServerConnection(id) => write!(f, "Conexion establecida con {}", id),
             MqttActions::ClientConnection(addrs, code) => {
-                let reason_code = ReasonMode::new(*code);
+                let reason_code = ReasonCode::new(*code);
                 write!(
                 f,
                 "Conexion establecida con {} y reason code: {}",
