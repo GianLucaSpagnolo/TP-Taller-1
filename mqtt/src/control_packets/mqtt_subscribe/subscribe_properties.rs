@@ -47,7 +47,7 @@ impl PacketProperties for SubscribeProperties {
                 std::mem::size_of::<u16>() + topic.topic_filter.len() + std::mem::size_of::<u8>();
         }
 
-        fixed_props_size as u32 + variable_props.bytes_length + topic_filters_size as u32
+        fixed_props_size as u32 + variable_props.size_of() + topic_filters_size as u32
     }
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
         let mut variable_props = VariableHeaderProperties::new();

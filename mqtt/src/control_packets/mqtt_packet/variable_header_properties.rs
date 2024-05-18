@@ -4,13 +4,15 @@ use std::{
     string::FromUtf8Error,
 };
 
-use crate::common::data_types::data_representation::read_two_byte_integer;
+use crate::common::data_types::data_representation::{
+    variable_byte_integer_decode, variable_byte_integer_encode, variable_byte_integer_length,
+};
 
 use super::packet_property::*;
 
 #[derive(Debug)]
 pub struct VariableHeaderProperties {
-    pub bytes_length: u32, // Variable Byte Integer
+    bytes_length: u32, // Variable Byte Integer
     pub properties: Vec<PacketProperty>,
 }
 
@@ -46,7 +48,7 @@ impl VariableHeaderProperties {
     }
 
     pub fn add_utf8_string_property(&mut self, id: u8, str: String) -> Result<(), Error> {
-        self.bytes_length += size_of_val(&id) as u32 + size_of::<u32>() as u32 + str.len() as u32;
+        self.bytes_length += size_of_val(&id) as u32 + size_of::<u16>() as u32 + str.len() as u32;
 
         let prop_result = PacketProperty::new_property_utf8_string(id, str)?;
 
@@ -84,21 +86,22 @@ impl VariableHeaderProperties {
 
     pub fn new() -> Self {
         VariableHeaderProperties {
-            bytes_length: std::mem::size_of::<u16>() as u32,
+            bytes_length: 0,
             properties: vec![],
         }
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = Vec::new();
-        bytes.extend_from_slice(&self.bytes_length.to_be_bytes());
+        variable_byte_integer_encode(&mut bytes, self.bytes_length);
+
         for property in &self.properties {
             property.write_as_bytes(&mut bytes);
         }
         bytes
     }
 
-    pub fn from_be_bytes(properties: &[u8]) -> Result<Self, FromUtf8Error> {
+    fn from_be_bytes(properties: &[u8]) -> Result<Self, FromUtf8Error> {
         let mut properties_vec: Vec<PacketProperty> = Vec::new();
         let mut i = 0;
 
@@ -125,8 +128,7 @@ impl VariableHeaderProperties {
     }
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        let mut properties_len = read_two_byte_integer(stream)?;
-        properties_len -= size_of::<u16>() as u16;
+        let properties_len = variable_byte_integer_decode(stream)?;
 
         let mut properties_buff = vec![0u8; properties_len as usize];
         stream.read_exact(&mut properties_buff)?;
@@ -135,5 +137,9 @@ impl VariableHeaderProperties {
             Ok(properties) => Ok(properties),
             Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e)),
         }
+    }
+
+    pub fn size_of(&self) -> u32 {
+        self.bytes_length + variable_byte_integer_length(self.bytes_length)
     }
 }

@@ -50,7 +50,7 @@ impl PacketProperties for ConnectProperties {
             + std::mem::size_of::<u8>()
             + std::mem::size_of::<u8>()
             + std::mem::size_of::<u16>();
-        fixed_props_size as u32 + variable_props.bytes_length
+        fixed_props_size as u32 + variable_props.size_of()
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {

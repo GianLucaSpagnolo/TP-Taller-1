@@ -65,8 +65,12 @@ pub mod data_representation {
         String::from_utf8(local_buff)
     }
 
-    #[allow(dead_code)]
     pub fn variable_byte_integer_encode(bytes: &mut Vec<u8>, value: u32) {
+        if value == 0 {
+            bytes.push(0);
+            return;
+        }
+
         let mut value = value;
 
         while value > 0 {
@@ -81,18 +85,12 @@ pub mod data_representation {
         }
     }
 
-    #[allow(dead_code)]
     pub fn variable_byte_integer_decode(stream: &mut dyn Read) -> Result<u32, Error> {
         let mut multiplier = 1;
         let mut value = 0;
 
         loop {
-            let byte_read = read_byte(stream);
-
-            let byte = match byte_read {
-                Ok(byte) => byte,
-                Err(_) => break,
-            };
+            let byte = read_byte(stream)?;
 
             value += (byte & 0x7F) as u32 * multiplier;
             if multiplier > 128 * 128 * 128 {
@@ -109,5 +107,21 @@ pub mod data_representation {
         }
 
         Ok(value)
+    }
+
+    pub fn variable_byte_integer_length(value: u32) -> u32 {
+        if value == 0 {
+            return 1;
+        }
+
+        let mut value = value;
+        let mut len = 0;
+
+        while value > 0 {
+            value /= 128;
+            len += 1;
+        }
+
+        len
     }
 }

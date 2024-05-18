@@ -60,7 +60,7 @@ impl PacketProperties for ConnectPayload {
             payload_fields += std::mem::size_of::<u16>() + password.len();
         }
 
-        payload_fields as u32 + payload_props.bytes_length
+        payload_fields as u32 + payload_props.size_of()
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
