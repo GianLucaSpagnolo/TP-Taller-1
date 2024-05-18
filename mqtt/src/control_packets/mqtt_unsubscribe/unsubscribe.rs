@@ -151,4 +151,29 @@ mod test {
         assert_eq!(unsubscribe.properties.topic_filters[1], "topic2");
         assert_eq!(unsubscribe.properties.topic_filters[2], "topic3");
     }
+
+    #[test]
+    fn test_unsubscribe_with_empty_optional_fields() {
+        let properties = UnsubscribeProperties {
+            packet_identifier: 100,
+            ..Default::default()
+        };
+
+        let unsubscribe = Unsubscribe::new(properties);
+
+        //ESCRIBE EL PACKET EN EL BUFFER
+        let mut bytes = Vec::new();
+        unsubscribe.write_to(&mut bytes).unwrap();
+
+        //LEE EL PACKET DEL BUFFER
+        let mut buffer = bytes.as_slice();
+        let unsubscribe_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        assert!(unsubscribe_fixed_header.verify_reserved_bits_for_subscribe_packets());
+
+        let unsubscribe =
+            Unsubscribe::read_from(&mut buffer, unsubscribe_fixed_header.remaining_length).unwrap();
+
+        assert_eq!(unsubscribe.properties.packet_identifier, 100);
+        assert_eq!(unsubscribe.properties.topic_filters.len(), 0);
+    }
 }
