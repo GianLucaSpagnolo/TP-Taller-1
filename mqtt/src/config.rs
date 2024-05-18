@@ -41,7 +41,9 @@ pub struct ClientConfig {
     pub ip: IpAddr,
     pub port: u16,
     pub connect_properties: ConnectProperties,
-    pub publish_flags: u8,
+    pub publish_dup_flag: u8,
+    pub publish_qos: u8,
+    pub publish_retain: u8,
 }
 
 impl Config for ClientConfig {
@@ -56,7 +58,9 @@ impl Config for ClientConfig {
 
         // Corroborar que le pasen los campos obligatorios
         let mut connect_properties = ConnectProperties::default();
-        let mut publish_flags = 0;
+        let mut publish_dup_flag = 0;
+        let mut publish_qos = 0;
+        let mut publish_retain = 0;
 
         for param in params.iter() {
             match param.0.as_str() {
@@ -224,22 +228,22 @@ impl Config for ClientConfig {
                     connect_properties.authentication_data = Some(param.1.clone())
                 }
                 "publish_dup" => {
-                    publish_flags = match add_publish_dup_flag(publish_flags, param.1.clone()) {
+                    publish_dup_flag = match catch_true_false(&param.1) {
                         Ok(p) => p,
                         Err(e) => return Err(e),
-                    }
+                    };
                 }
                 "publish_qos" => {
-                    publish_flags = match add_publish_qos_level(publish_flags, param.1.clone()) {
+                    publish_qos = match param.1.parse::<u8>() {
                         Ok(p) => p,
-                        Err(e) => return Err(e),
-                    }
+                        Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string())),
+                    };
                 }
                 "publish_retain" => {
-                    publish_flags = match add_publish_retain(publish_flags, param.1.clone()) {
+                    publish_retain =  match catch_true_false(&param.1) {
                         Ok(p) => p,
                         Err(e) => return Err(e),
-                    }
+                    };
                 }
 
                 _ => {
@@ -256,7 +260,9 @@ impl Config for ClientConfig {
                 ip,
                 port,
                 connect_properties,
-                publish_flags,
+                publish_dup_flag,
+                publish_qos,
+                publish_retain,
             });
         }
 

@@ -69,7 +69,7 @@ use crate::control_packets::mqtt_publish::publish_properties::*;
 /// Pero un PUBLISH PACKET enviado desde un cliente a un servidor no debe contener ese Subscription Identifier
 ///
 pub struct _Publish {
-    pub fixed_header_flags: u8, // Fixed Header Flags
+    fixed_header_flags: u8, // Fixed Header Flags
     pub properties: _PublishProperties,
 }
 

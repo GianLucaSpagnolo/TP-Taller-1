@@ -158,30 +158,4 @@ pub mod flags_handler {
         ))
     }
 
-    pub fn add_publish_dup_flag(mut publish_flags: u8, dup: String) -> Result<u8, Error> {
-        let dup = match catch_true_false(&dup) {
-            Ok(p) => p,
-            Err(e) => return Err(e),
-        };
-        publish_flags |= dup << 3;
-        Ok(publish_flags)
-    }
-
-    pub fn add_publish_qos_level(mut publish_flags: u8, qos: String) -> Result<u8, Error> {
-        let qos = match qos.parse::<u8>() {
-            Ok(p) => p,
-            Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string())),
-        };
-        publish_flags |= qos << 1;
-        Ok(publish_flags)
-    }
-
-    pub fn add_publish_retain(mut publish_flags: u8, retain: String) -> Result<u8, Error> {
-        let retain = match catch_true_false(&retain) {
-            Ok(p) => p,
-            Err(e) => return Err(e),
-        };
-        publish_flags |= retain;
-        Ok(publish_flags)
-    }
 }

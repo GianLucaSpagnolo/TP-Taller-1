@@ -139,12 +139,13 @@ impl MqttClient {
             ..Default::default()
         };
 
-        let send_publish = _Publish{
-            fixed_header_flags: self.config.publish_flags,
-            properties,
-        }.send(&mut self.stream);
-
-        match send_publish {
+       
+        match _Publish::_new(
+            self.config.publish_dup_flag.clone(),
+            self.config.publish_qos.clone(),
+            self.config.publish_retain.clone(), 
+            properties)
+        .send(&mut self.stream) {
             Ok(_) => {
                 MqttActions::ClientSend(self.id.clone(), message, topic).register_action();
                 Ok(())
