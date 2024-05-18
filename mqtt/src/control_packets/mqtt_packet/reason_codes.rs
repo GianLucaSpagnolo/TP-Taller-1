@@ -1,3 +1,7 @@
+use std::fmt::Display;
+
+
+
 /// Connect Reason Code
 /// Byte 2 in the Variable Header is the Connect Reason Code.
 /// 0 - 0x00 - Success
@@ -131,6 +135,94 @@ impl ReasonMode {
             ReasonMode::_MaximumConnectTime => 160, // DISCONNECT
             ReasonMode::_SubscriptionIdentifiersNotSupported => 161, // DISCONNECT
             ReasonMode::_WildcardSubscriptionsNotSupported => 162, // DISCONNECT
+        }
+    }
+
+    pub fn new (id: u8) -> Self {
+        match id {
+            0 => ReasonMode::Success,
+            4 => ReasonMode::_DisconnectWithWillMessage,
+            16 => ReasonMode::_NoMatchingSubscribers,
+            128 => ReasonMode::_UnspecifiedError,
+            129 => ReasonMode::_MalformedPacket,
+            130 => ReasonMode::_ProtocolError,
+            131 => ReasonMode::_ImplementationSpecificError,
+            132 => ReasonMode::_UnsupportedProtocolVersion,
+            133 => ReasonMode::_ClientIdentifierNotValid,
+            134 => ReasonMode::_BadUserNameOrPassword,
+            135 => ReasonMode::_NotAuthorized,
+            136 => ReasonMode::_ServerUnavailable,
+            137 => ReasonMode::_ServerBusy,
+            138 => ReasonMode::_Banned,
+            139 => ReasonMode::_ServerShuttingDown,
+            140 => ReasonMode::_BadAuthenticationMethod,
+            141 => ReasonMode::_KeepAliveTimeout,
+            142 => ReasonMode::_SessionTakenOver,
+            143 => ReasonMode::_TopicFilterInvalid,
+            144 => ReasonMode::_TopicNameInvalid,
+            145 => ReasonMode::_PacketIdentifierInUse,
+            147 => ReasonMode::_ReceiveMaximumExceeded,
+            148 => ReasonMode::_TopicAliasInvalid,
+            149 => ReasonMode::_PacketTooLarge,
+            150 => ReasonMode::_MessageRateTooHigh,
+            151 => ReasonMode::_QuotaExceeded,
+            152 => ReasonMode::_AdministrativeAction,
+            153 => ReasonMode::_PayloadFormatInvalid,
+            154 => ReasonMode::_RetainNotSupported,
+            155 => ReasonMode::_QoSNotSupported,
+            156 => ReasonMode::_UseAnotherServer,
+            157 => ReasonMode::_ServerMoved,
+            158 => ReasonMode::_SharedSubscriptionsNotSupported,
+            159 => ReasonMode::_ConnectionRateExceeded,
+            160 => ReasonMode::_MaximumConnectTime,
+            161 => ReasonMode::_SubscriptionIdentifiersNotSupported,
+            162 => ReasonMode::_WildcardSubscriptionsNotSupported,
+            _ => ReasonMode::_UnspecifiedError,
+        }
+    }
+}
+
+impl Display for ReasonMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            ReasonMode::Success => write!(f, "{} - Success", self.get_id()),
+            ReasonMode::_NormalDisconnection => write!(f, "{} - Normal Disconnection", self.get_id()),
+            ReasonMode::_DisconnectWithWillMessage => write!(f, "{} - Disconnect With Will Message", self.get_id()),
+            ReasonMode::_NoMatchingSubscribers => write!(f, "{} - No Matching Subscribers", self.get_id()),
+            ReasonMode::_UnspecifiedError => write!(f, "{} - Unspecified Error", self.get_id()),
+            ReasonMode::_MalformedPacket => write!(f, "{} - Malformed Packet", self.get_id()),
+            ReasonMode::_ProtocolError => write!(f, "{} - Protocol Error", self.get_id()),
+            ReasonMode::_ImplementationSpecificError => write!(f, "{} - Implementation Specific Error", self.get_id()),
+            ReasonMode::_UnsupportedProtocolVersion => write!(f, "{} - Unsupported Protocol Version", self.get_id()),
+            ReasonMode::_ClientIdentifierNotValid => write!(f, "{} - Client Identifier not valid", self.get_id()),
+            ReasonMode::_BadUserNameOrPassword => write!(f, "{} - Bad User Name or Password", self.get_id()),
+            ReasonMode::_NotAuthorized => write!(f, "{} - Not authorized", self.get_id()),
+            ReasonMode::_ServerUnavailable => write!(f, "{} - Server unavailable", self.get_id()),
+            ReasonMode::_ServerBusy => write!(f, "{} - Server busy", self.get_id()),
+            ReasonMode::_Banned => write!(f, "{} - Banned", self.get_id()),
+            ReasonMode::_ServerShuttingDown => write!(f, "{} - Server shutting down", self.get_id()),
+            ReasonMode::_BadAuthenticationMethod => write!(f, "{} - Bad authentication method", self.get_id()),
+            ReasonMode::_KeepAliveTimeout => write!(f, "{} - Keep alive timeout", self.get_id()),
+            ReasonMode::_SessionTakenOver => write!(f, "{} - Session taken over", self.get_id()),
+            ReasonMode::_TopicFilterInvalid => write!(f, "{} - Topic filter invalid", self.get_id()),
+            ReasonMode::_TopicNameInvalid => write!(f, "{} - Topic name invalid", self.get_id()),
+            ReasonMode::_PacketIdentifierInUse => write!(f, "{} - Packet identifier in use", self.get_id()),
+            ReasonMode::_ReceiveMaximumExceeded => write!(f, "{} - Receive maximum exceeded", self.get_id()),
+            ReasonMode::_TopicAliasInvalid => write!(f, "{} - Topic alias invalid", self.get_id()),
+            ReasonMode::_PacketTooLarge => write!(f, "{} - Packet too large", self.get_id()),
+            ReasonMode::_MessageRateTooHigh => write!(f, "{} - Message rate too high", self.get_id()),
+            ReasonMode::_QuotaExceeded => write!(f, "{} - Quota exceeded", self.get_id()),
+            ReasonMode::_AdministrativeAction => write!(f, "{} - Administrative action", self.get_id()),
+            ReasonMode::_PayloadFormatInvalid => write!(f, "{} - Payload format invalid", self.get_id()),
+            ReasonMode::_RetainNotSupported => write!(f, "{} - Retain not supported", self.get_id()),
+            ReasonMode::_QoSNotSupported => write!(f, "{} - QoS not supported", self.get_id()),
+            ReasonMode::_UseAnotherServer => write!(f, "{} - Use another server", self.get_id()),
+            ReasonMode::_ServerMoved => write!(f, "{} - Server moved", self.get_id()),
+            ReasonMode::_SharedSubscriptionsNotSupported => write!(f, "{} - Shared subscriptions not supported", self.get_id()),
+            ReasonMode::_ConnectionRateExceeded => write!(f, "{} - Connection rate exceeded", self.get_id()),
+            ReasonMode::_MaximumConnectTime => write!(f, "{} - Maximum connect time", self.get_id()),
+            ReasonMode::_SubscriptionIdentifiersNotSupported => write!(f, "{} - Subscription identifiers not supported", self.get_id()),
+            ReasonMode::_WildcardSubscriptionsNotSupported => write!(f, "{} - Wildcard subscriptions not supported", self.get_id()),
         }
     }
 }
