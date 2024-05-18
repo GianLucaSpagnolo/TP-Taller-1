@@ -27,11 +27,11 @@ impl fmt::Display for MqttActions {
             MqttActions::ClientConnection(addrs, code) => {
                 let reason_code = ReasonCode::new(*code);
                 write!(
-                f,
-                "Conexion establecida con {} y reason code: {}",
-                addrs, reason_code
+                    f,
+                    "Conexion establecida con {} y reason code: {}",
+                    addrs, reason_code
                 )
-            },
+            }
             MqttActions::ClientReceive(id, msg) => write!(f, "Cliente '{}' recibio: {}", id, msg),
             MqttActions::TryConnect => write!(f, "Intentando conectar"),
             MqttActions::DisconnectClient => write!(f, "Desconectando cliente"),

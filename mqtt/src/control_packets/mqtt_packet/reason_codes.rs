@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-
-
 /// Connect Reason Code
 /// Byte 2 in the Variable Header is the Connect Reason Code.
 /// 0 - 0x00 - Success
@@ -138,7 +136,7 @@ impl ReasonCode {
         }
     }
 
-    pub fn new (id: u8) -> Self {
+    pub fn new(id: u8) -> Self {
         match id {
             0 => ReasonCode::Success,
             4 => ReasonCode::_DisconnectWithWillMessage,
@@ -186,43 +184,89 @@ impl Display for ReasonCode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             ReasonCode::Success => write!(f, "{} - Success", self.get_id()),
-            ReasonCode::_NormalDisconnection => write!(f, "{} - Normal Disconnection", self.get_id()),
-            ReasonCode::_DisconnectWithWillMessage => write!(f, "{} - Disconnect With Will Message", self.get_id()),
-            ReasonCode::_NoMatchingSubscribers => write!(f, "{} - No Matching Subscribers", self.get_id()),
+            ReasonCode::_NormalDisconnection => {
+                write!(f, "{} - Normal Disconnection", self.get_id())
+            }
+            ReasonCode::_DisconnectWithWillMessage => {
+                write!(f, "{} - Disconnect With Will Message", self.get_id())
+            }
+            ReasonCode::_NoMatchingSubscribers => {
+                write!(f, "{} - No Matching Subscribers", self.get_id())
+            }
             ReasonCode::_UnspecifiedError => write!(f, "{} - Unspecified Error", self.get_id()),
             ReasonCode::_MalformedPacket => write!(f, "{} - Malformed Packet", self.get_id()),
             ReasonCode::_ProtocolError => write!(f, "{} - Protocol Error", self.get_id()),
-            ReasonCode::_ImplementationSpecificError => write!(f, "{} - Implementation Specific Error", self.get_id()),
-            ReasonCode::_UnsupportedProtocolVersion => write!(f, "{} - Unsupported Protocol Version", self.get_id()),
-            ReasonCode::_ClientIdentifierNotValid => write!(f, "{} - Client Identifier not valid", self.get_id()),
-            ReasonCode::_BadUserNameOrPassword => write!(f, "{} - Bad User Name or Password", self.get_id()),
+            ReasonCode::_ImplementationSpecificError => {
+                write!(f, "{} - Implementation Specific Error", self.get_id())
+            }
+            ReasonCode::_UnsupportedProtocolVersion => {
+                write!(f, "{} - Unsupported Protocol Version", self.get_id())
+            }
+            ReasonCode::_ClientIdentifierNotValid => {
+                write!(f, "{} - Client Identifier not valid", self.get_id())
+            }
+            ReasonCode::_BadUserNameOrPassword => {
+                write!(f, "{} - Bad User Name or Password", self.get_id())
+            }
             ReasonCode::_NotAuthorized => write!(f, "{} - Not authorized", self.get_id()),
             ReasonCode::_ServerUnavailable => write!(f, "{} - Server unavailable", self.get_id()),
             ReasonCode::_ServerBusy => write!(f, "{} - Server busy", self.get_id()),
             ReasonCode::_Banned => write!(f, "{} - Banned", self.get_id()),
-            ReasonCode::_ServerShuttingDown => write!(f, "{} - Server shutting down", self.get_id()),
-            ReasonCode::_BadAuthenticationMethod => write!(f, "{} - Bad authentication method", self.get_id()),
+            ReasonCode::_ServerShuttingDown => {
+                write!(f, "{} - Server shutting down", self.get_id())
+            }
+            ReasonCode::_BadAuthenticationMethod => {
+                write!(f, "{} - Bad authentication method", self.get_id())
+            }
             ReasonCode::_KeepAliveTimeout => write!(f, "{} - Keep alive timeout", self.get_id()),
             ReasonCode::_SessionTakenOver => write!(f, "{} - Session taken over", self.get_id()),
-            ReasonCode::_TopicFilterInvalid => write!(f, "{} - Topic filter invalid", self.get_id()),
+            ReasonCode::_TopicFilterInvalid => {
+                write!(f, "{} - Topic filter invalid", self.get_id())
+            }
             ReasonCode::_TopicNameInvalid => write!(f, "{} - Topic name invalid", self.get_id()),
-            ReasonCode::_PacketIdentifierInUse => write!(f, "{} - Packet identifier in use", self.get_id()),
-            ReasonCode::_ReceiveMaximumExceeded => write!(f, "{} - Receive maximum exceeded", self.get_id()),
+            ReasonCode::_PacketIdentifierInUse => {
+                write!(f, "{} - Packet identifier in use", self.get_id())
+            }
+            ReasonCode::_ReceiveMaximumExceeded => {
+                write!(f, "{} - Receive maximum exceeded", self.get_id())
+            }
             ReasonCode::_TopicAliasInvalid => write!(f, "{} - Topic alias invalid", self.get_id()),
             ReasonCode::_PacketTooLarge => write!(f, "{} - Packet too large", self.get_id()),
-            ReasonCode::_MessageRateTooHigh => write!(f, "{} - Message rate too high", self.get_id()),
+            ReasonCode::_MessageRateTooHigh => {
+                write!(f, "{} - Message rate too high", self.get_id())
+            }
             ReasonCode::_QuotaExceeded => write!(f, "{} - Quota exceeded", self.get_id()),
-            ReasonCode::_AdministrativeAction => write!(f, "{} - Administrative action", self.get_id()),
-            ReasonCode::_PayloadFormatInvalid => write!(f, "{} - Payload format invalid", self.get_id()),
-            ReasonCode::_RetainNotSupported => write!(f, "{} - Retain not supported", self.get_id()),
+            ReasonCode::_AdministrativeAction => {
+                write!(f, "{} - Administrative action", self.get_id())
+            }
+            ReasonCode::_PayloadFormatInvalid => {
+                write!(f, "{} - Payload format invalid", self.get_id())
+            }
+            ReasonCode::_RetainNotSupported => {
+                write!(f, "{} - Retain not supported", self.get_id())
+            }
             ReasonCode::_QoSNotSupported => write!(f, "{} - QoS not supported", self.get_id()),
             ReasonCode::_UseAnotherServer => write!(f, "{} - Use another server", self.get_id()),
             ReasonCode::_ServerMoved => write!(f, "{} - Server moved", self.get_id()),
-            ReasonCode::_SharedSubscriptionsNotSupported => write!(f, "{} - Shared subscriptions not supported", self.get_id()),
-            ReasonCode::_ConnectionRateExceeded => write!(f, "{} - Connection rate exceeded", self.get_id()),
-            ReasonCode::_MaximumConnectTime => write!(f, "{} - Maximum connect time", self.get_id()),
-            ReasonCode::_SubscriptionIdentifiersNotSupported => write!(f, "{} - Subscription identifiers not supported", self.get_id()),
-            ReasonCode::_WildcardSubscriptionsNotSupported => write!(f, "{} - Wildcard subscriptions not supported", self.get_id()),
+            ReasonCode::_SharedSubscriptionsNotSupported => {
+                write!(f, "{} - Shared subscriptions not supported", self.get_id())
+            }
+            ReasonCode::_ConnectionRateExceeded => {
+                write!(f, "{} - Connection rate exceeded", self.get_id())
+            }
+            ReasonCode::_MaximumConnectTime => {
+                write!(f, "{} - Maximum connect time", self.get_id())
+            }
+            ReasonCode::_SubscriptionIdentifiersNotSupported => write!(
+                f,
+                "{} - Subscription identifiers not supported",
+                self.get_id()
+            ),
+            ReasonCode::_WildcardSubscriptionsNotSupported => write!(
+                f,
+                "{} - Wildcard subscriptions not supported",
+                self.get_id()
+            ),
         }
     }
 }

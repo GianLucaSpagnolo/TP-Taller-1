@@ -29,7 +29,6 @@ fn main() -> Result<(), Error> {
     let reciver = MqttClient::init(String::from(client_id), config)?.run_listener()?;
 
     recive_message(reciver);
-    
 
     Ok(())
 }

@@ -1,4 +1,9 @@
-use std::{io::Error, net::TcpStream, sync::mpsc::{self, Receiver, Sender}, thread};
+use std::{
+    io::Error,
+    net::TcpStream,
+    sync::mpsc::{self, Receiver, Sender},
+    thread,
+};
 
 use crate::{
     actions::MqttActions,
@@ -61,16 +66,23 @@ impl MqttClient {
         let mut counter = 0;
         let (sender, receiver) = mpsc::channel();
 
-        thread::spawn( move || -> Result<(), Error> {
+        thread::spawn(move || -> Result<(), Error> {
             loop {
                 self.listener(self.stream.try_clone()?, sender.clone(), &mut counter)?;
             }
-        }).join().unwrap()?;
+        })
+        .join()
+        .unwrap()?;
 
         Ok(receiver)
     }
 
-    pub fn listener(&self, mut stream: TcpStream, sender: Sender<Vec<u8>>,counter: &mut u32) -> Result<(), Error> {
+    pub fn listener(
+        &self,
+        mut stream: TcpStream,
+        sender: Sender<Vec<u8>>,
+        counter: &mut u32,
+    ) -> Result<(), Error> {
         match PacketFixedHeader::read_from(&mut stream) {
             Ok(header) => {
                 let data = self.messages_handler(&mut stream, header)?;
@@ -83,8 +95,8 @@ impl MqttClient {
                 if let Some(expiry_interval) =
                     self.config.connect_properties.session_expiry_interval
                 {
-                    if  expiry_interval != 0 && *counter > expiry_interval {
-                        return Err(Error::new(std::io::ErrorKind::Other, "Session expired"))
+                    if expiry_interval != 0 && *counter > expiry_interval {
+                        return Err(Error::new(std::io::ErrorKind::Other, "Session expired"));
                     }
                 }
             }
