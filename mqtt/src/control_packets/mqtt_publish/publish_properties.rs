@@ -85,7 +85,10 @@ impl PacketProperties for PublishProperties {
         }
 
         if let Some(subscription_identifier) = self.subscription_identifier {
-            variable_props.add_u32_property(SUBSCRIPTION_IDENTIFIER, subscription_identifier)?;
+            variable_props.add_variable_byte_integer_property(
+                SUBSCRIPTION_IDENTIFIER,
+                subscription_identifier,
+            )?;
         }
 
         if let Some(content_type) = &self.content_type {
@@ -149,7 +152,7 @@ impl PacketProperties for PublishProperties {
                     user_property = property.value_string_pair();
                 }
                 SUBSCRIPTION_IDENTIFIER => {
-                    subscription_identifier = property.value_u32();
+                    subscription_identifier = property.value_variable_byte_integer();
                 }
                 CONTENT_TYPE => {
                     content_type = property.value_string();

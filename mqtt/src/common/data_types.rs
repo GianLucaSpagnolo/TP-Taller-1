@@ -34,6 +34,28 @@ pub mod data_representation {
         }
     }
 
+    pub fn variable_byte_integer_from_be_bytes(buff: &[u8], buff_size: &mut usize) -> u32 {
+        let mut multiplier = 1;
+        let mut value = 0;
+
+        loop {
+            let byte = buff[*buff_size];
+            *buff_size += 1;
+
+            value += (byte & 0x7F) as u32 * multiplier;
+            if multiplier > 128 * 128 * 128 {
+                break;
+            }
+
+            if byte & 0x80 == 0 {
+                break;
+            }
+            multiplier *= 128;
+        }
+
+        value
+    }
+
     pub fn four_byte_integer_from_be_bytes(buff: &[u8], buff_size: &mut usize) -> u32 {
         let mut local_buff: [u8; 4] = [0; 4];
         local_buff.copy_from_slice(&buff[*buff_size..*buff_size + 4]);

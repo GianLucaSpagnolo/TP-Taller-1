@@ -53,7 +53,10 @@ impl PacketProperties for SubscribeProperties {
         let mut variable_props = VariableHeaderProperties::new();
 
         if let Some(subscription_identifier) = self.subscription_identifier {
-            variable_props.add_u32_property(SUBSCRIPTION_IDENTIFIER, subscription_identifier)?;
+            variable_props.add_variable_byte_integer_property(
+                SUBSCRIPTION_IDENTIFIER,
+                subscription_identifier,
+            )?;
         }
 
         if let Some(user_property) = self.user_property.clone() {
@@ -95,7 +98,7 @@ impl PacketProperties for SubscribeProperties {
         for property in &variable_header_properties.properties {
             match property.id() {
                 SUBSCRIPTION_IDENTIFIER => {
-                    subscription_identifier = property.value_u32();
+                    subscription_identifier = property.value_variable_byte_integer();
                 }
                 USER_PROPERTY => {
                     user_property = property.value_string_pair();
