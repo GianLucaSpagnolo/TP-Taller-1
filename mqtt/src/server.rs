@@ -104,6 +104,27 @@ impl MqttServer {
         }
     }
 
+    fn resend_publish_to_subscribers(&self, _stream_connection: TcpStream, pub_packet: Publish) -> Result<MqttActions, Error> {
+        let topic = pub_packet.properties.topic_name.clone();
+        let data = pub_packet.properties.application_message.clone();
+        let mut receivers = Vec::new();
+
+        MqttActions::ServerPublishReceive(topic.clone(), data.clone()).register_action();
+
+        <HashMap<String, Session> as Clone>::clone(&self.sessions).into_iter().for_each(
+            |(id, s)|
+            if s.active {
+                if s.subscriptions.iter().any(|t| t.topic_filter == topic) {
+                    let _ = pub_packet.send(&mut s.stream_connection.try_clone().unwrap());
+                    receivers.push(id.clone());
+                }
+            }
+        );
+        // send puback to stream
+        Ok(MqttActions::ServerSendPublish(topic.clone(), data.clone(), receivers))
+    
+    }  
+
     fn get_sub_id_and_topics(topics: &mut Vec<TopicFilter>) -> Result<String, Error>{
         let mut client_id= None;
 
@@ -134,33 +155,12 @@ impl MqttServer {
         }
     }
 
-    fn resend_publish_to_subscribers(&self, _stream_connection: TcpStream, pub_packet: Publish) -> Result<MqttActions, Error> {
-        let topic = pub_packet.properties.topic_name.clone();
-        let data = pub_packet.properties.application_message.clone();
-        let mut receivers = Vec::new();
-
-        MqttActions::ServerPublishReceive(topic.clone(), data.clone()).register_action();
-
-        <HashMap<String, Session> as Clone>::clone(&self.sessions).into_iter().for_each(
-            |(id, s)|
-            if s.active {
-                if s.subscriptions.iter().any(|t| t.topic_filter == topic) {
-                    let _ = pub_packet.send(&mut s.stream_connection.try_clone().unwrap());
-                    receivers.push(id.clone());
-                }
-            }
-        );
-        // send puback to stream
-        Ok(MqttActions::ServerSendPublish(topic.clone(), data.clone(), receivers))
-    
-    }
-
     fn add_subscriptions(&mut self, _stream_connection: TcpStream, mut sub_packet: Subscribe) -> Result<MqttActions, Error> {
 
         let client_id = MqttServer::get_sub_id_and_topics(&mut sub_packet.properties.topic_filters)?;
 
         if let Some(session) = self.sessions.get_mut(&client_id) {
-            session.subscriptions.append(&mut sub_packet.properties.topic_filters);
+            session.subscriptions.append(&mut sub_packet.properties.topic_filters.clone());
         }else{
             return Err(Error::new(
                 std::io::ErrorKind::Other,
