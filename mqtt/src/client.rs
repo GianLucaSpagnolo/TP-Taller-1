@@ -1,19 +1,13 @@
-use std::{
-    io::{Error, Read},
-    net::TcpStream,
-    sync::{RwLock, RwLockReadGuard},
-    thread,
-};
+use std::{io::Error, net::TcpStream, sync::RwLock, thread};
+
+use app::logger::LoggerHandler;
 
 use crate::{
-    actions::MqttActions,
-    config::{ClientConfig, Config},
-    control_packets::{
+    actions::MqttActions, common::utils::create_logger, config::{ClientConfig, Config}, control_packets::{
         mqtt_connack::connack::Connack,
         mqtt_connect::{connect::Connect, payload},
-        mqtt_packet::fixed_header::PacketFixedHeader,
-        mqtt_packet::packet::generic_packet::*,
-    },
+        mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
+    }
 };
 pub struct MqttClient {
     id: String,
@@ -32,9 +26,9 @@ fn handle_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
 
     match packet_recived {
         PacketReceived::Connack(ack) => {
-            println!("Connack received");
+            //println!("Connack received");
             Ok(*ack)
-        },
+        }
         _ => Err(Error::new(
             std::io::ErrorKind::Other,
             "ClientReceive - Paquete desconocido",
@@ -43,19 +37,49 @@ fn handle_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
 }
 
 impl MqttClient {
-    pub fn init(id: String, config: ClientConfig) -> Result<Self, Error> {
-        let mut stream = TcpStream::connect(config.get_socket_address())?;
+    pub fn init(
+        id: String,
+        config: ClientConfig,
+        log_file_path: &String
+    ) -> Result<Self, Error> {
+        let logger_handler = match create_logger(log_file_path) {
+            Ok(logger) => logger,
+            Err(e) => return Err(e),
+        };
+
+        let mut stream = match TcpStream::connect(config.get_socket_address()) {
+            Ok(file) => file,
+            Err(e) => {
+                logger_handler.log_event(&("Mqtt client init fails by: ".to_string() + &e.to_string()), &id, &",".to_string());
+                logger_handler.close_logger();
+                return Err(e);
+            },
+        };
 
         let payload = payload::ConnectPayload {
             client_id: id.clone(),
             ..Default::default()
         };
-
+        
         let connection = Connect::new(config.connect_properties.clone(), payload);
         match connection.send(&mut stream) {
-            Ok(_) => println!("Client initial connection config successfully"),
+            Ok(_) => {
+                println!("Client initial connection config successfully");
+                logger_handler.log_event(
+                    &"Client initial connection config successfully".to_string(),
+                    &id,
+                    &",".to_string(),
+                );
+                
+            }
             Err(e) => {
                 eprintln!("Client connection failure");
+                logger_handler.log_event(
+                    &("Client connection config failure by: ".to_string() + &e.to_string()),
+                    &id,
+                    &",".to_string(),
+                );
+                logger_handler.close_logger();
                 return Err(e);
             }
         };
@@ -66,66 +90,70 @@ impl MqttClient {
                 r
             }
             Err(e) => {
-                eprintln!("Connack packet handler fails");
+                //eprintln!("Connack packet handler fails");
+                logger_handler.log_event(
+                    &("Connack packet handler fails by: ".to_string() + &e.to_string()),
+                    &id,
+                    &",".to_string(),
+                );
+                logger_handler.close_logger();
                 return Err(e);
             }
         };
-
-        /*
-        // el servidor loggea, no el cliente
-        MqttActions::ClientConnection(
-            config.get_socket_address().to_string(),
-            connack.properties.connect_reason_code,
-        )
-        .register_action();
-        */
+        
+        MqttActions::ClientConnection(id.to_string(), connack.properties.connect_reason_code)
+            .register_action(&logger_handler);
+        logger_handler.close_logger();
         Ok(MqttClient { id, config, stream })
     }
 
-    pub fn run_listener(&self) -> Result<(), Error> {
-        //let mut stream_cpy = self.stream.try_clone()?;
-        //let mut counter = 0;
-
-        let mut stream_cpy = match self.stream.try_clone() {
-            Ok(client_stream) => client_stream,
-            Err(e) => {
-                eprintln!("{}", e);
-                return Err(e);
-            }
-        };
-
-        println!("Listener initialized");
-        
-        // falta un listener de paquetes, que use la construccion del header ...
-        while let Ok(header) = PacketFixedHeader::read_from_stream(&mut &self.stream) {
-            println!("listening packages");
-            match &self.messages_handler(&mut stream_cpy, header) {
-                Ok(_) => continue,
-                Err(e) => {
-                    eprintln!("{}", e);
-                    continue
-                },
-            }
-            //counter = 0;
-        };
-        
-
+    pub fn run_listener(self, logger_handler: &LoggerHandler) -> Result<(), Error> {
+        let mut stream_cpy = self.stream.try_clone()?;
         let mut counter = 0;
+ 
+        logger_handler.log_event(
+            &"Initializing client listener ...".to_string(),
+            &self.id,
+            &",".to_string(),
+        );
+        println!("Listener initialized");
+
+        // probando:
+        /*
+        let mut buf = [0u8;200];
+        let _ = self.stream.set_read_timeout(Some(Duration::new(5,500000000)));
+
+        while let Ok(readed) = self.stream.read(&mut buf) {
+            //println!("esperando algo ... leido: {}", readed);
+
+        };
+        */
+        //self.stream.shutdown(std::net::Shutdown::Both)?;
+        //println!("Listener closed");
+
+        // desconectado del server, arreglar:
+
         let l_file = RwLock::new(&self.stream);
         // let mut l_read_file ;
         loop {
             // lockeo de lectura:
             match l_file.read() {
                 Ok(lread_file) => {
-                    //match PacketFixedHeader::read_from(lread_file.clone()) {
-                        match PacketFixedHeader::read_from_stream(&lread_file) {
+                    match PacketFixedHeader::read_from(&mut lread_file.clone()) {
+                        //match PacketFixedHeader::read_from_stream(&lread_file) {
                         Ok(header) => {
                             println!("listening packages");
-                            self.messages_handler(&mut stream_cpy, header)?;
+                            self.messages_handler(&mut stream_cpy, header, logger_handler)?;
                             counter = 0;
                         }
                         Err(e) => {
                             eprintln!("listening package error: {}", e);
+                            logger_handler.log_event(
+                                &("Client listener package error by: ".to_string()
+                                    + &e.to_string()),
+                                &self.id,
+                                &",".to_string(),
+                            );
                             thread::sleep(std::time::Duration::from_secs(10));
                             counter += 10;
                             if let Some(expiry_interval) =
@@ -142,11 +170,24 @@ impl MqttClient {
                         }
                     };
                 }
-                Err(_) => todo!(),
+                Err(e) => {
+                    let err = &("Error at lock comunication stream: ".to_string() + &e.to_string())
+                        .to_string();
+                    logger_handler.log_event(&err, &self.id, &",".to_string());
+                    eprintln!("{}", err);
+
+                    return Err(Error::new(std::io::ErrorKind::InvalidData, err.to_string()));
+                }
             }
         }
 
         //Err(Error::new(std::io::ErrorKind::Other, "Session expired"))
+        logger_handler.log_event(
+            &"Closing client listener".to_string(),
+            &self.id,
+            &",".to_string(),
+        );
+        println!("Listener closed");
         Ok(())
     }
 
@@ -154,8 +195,8 @@ impl MqttClient {
         &self,
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
+        logger_handler: &LoggerHandler
     ) -> Result<(), Error> {
-        println!("Package incoming 1");
         let packet_recived = match get_packet(
             &mut stream,
             fixed_header.get_package_type(),
@@ -163,20 +204,19 @@ impl MqttClient {
         ) {
             Ok(received) => received,
             Err(e) => {
-                eprintln!("Error at reading package");
+                //eprintln!("Error at reading package");
+                logger_handler.log_event(&("Error at reading package".to_string() + &e.to_string()), &self.id, &",".to_string());
                 return Err(e);
             }
         };
 
-        println!("Package incoming 2");
         match packet_recived {
             PacketReceived::Publish(_publish) => {
                 /*
-                // para logear, el cliente debe pasar el mensaje al servidor
                 MqttActions::ClientReceive(self.id.clone(), publish.properties.topic_name.clone())
-                    .register_action();
+                    .register_action(logger_handler);
                 */
-                println!("Package received")
+                //println!("Package received")
             }
             _ => return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido")),
         }

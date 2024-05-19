@@ -4,8 +4,14 @@ pub mod generic_packet {
         net::TcpStream,
     };
 
+    use app::logger::{self, LoggerHandler};
+
     use crate::control_packets::{
-        mqtt_connack::connack::Connack, mqtt_connect::connect::{pack_stream_connect_bytes, Connect}, mqtt_disconnect::disconnect::_Disconnect, mqtt_packet::packet_properties::PacketProperties, mqtt_pingreq::pingreq::_PingReq, mqtt_pingresp::pingresp::_PingResp, mqtt_puback::puback::_Puback, mqtt_publish::publish::_Publish, mqtt_suback::suback::_Suback, mqtt_subscribe::subscribe::_Subscribe
+        mqtt_connack::connack::Connack, mqtt_connect::connect::Connect,
+        mqtt_disconnect::disconnect::_Disconnect, mqtt_pingreq::pingreq::_PingReq,
+        mqtt_pingresp::pingresp::_PingResp, mqtt_puback::puback::_Puback,
+        mqtt_publish::publish::_Publish, mqtt_suback::suback::_Suback,
+        mqtt_subscribe::subscribe::_Subscribe,
     };
 
     pub enum PacketType {

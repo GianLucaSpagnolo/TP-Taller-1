@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, sync::{Arc, Mutex}};
 
 use app::logger::LoggerHandler;
 
@@ -15,12 +15,17 @@ pub enum MqttActions {
 }
 
 impl MqttActions {
-    pub fn register_action(self, logger: &LoggerHandler) -> Self {
+    pub fn register_action(&self,  logger: &LoggerHandler) {
         match &self {
             MqttActions::ServerConnection(id) => {
                 logger.log_event(&"Connection successful".to_string(), id, &",".to_string())
             }
-            MqttActions::ClientConnection(_, _) => todo!(),
+            //connack.properties.connect_reason_code,
+            MqttActions::ClientConnection(id, code) => {
+                // se puede implementar traductor aca:
+                let msg = "Client connection connack exit code: ".to_string() + &code.to_string();
+                logger.log_event(&msg, id, &",".to_string());
+            }
             MqttActions::ClientReceive(_, _) => todo!(),
             MqttActions::DisconnectClient => todo!(),
             MqttActions::MessageReceived => logger.log_event(
@@ -32,7 +37,7 @@ impl MqttActions {
             MqttActions::TryConnect => todo!(),
             MqttActions::PackageError => todo!(),
         }
-        self
+        
     }
 }
 

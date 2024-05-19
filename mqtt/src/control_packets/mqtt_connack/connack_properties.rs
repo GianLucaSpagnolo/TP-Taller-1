@@ -1,4 +1,7 @@
-use std::{io::{Error, Read}, net::TcpStream};
+use std::{
+    io::{Error, Read},
+    net::TcpStream,
+};
 
 use crate::{
     common::data_types::data_representation::read_byte,
@@ -146,109 +149,109 @@ impl PacketProperties for ConnackProperties {
 
     fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         //fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
-            let connect_acknowledge_flags = read_byte(stream)?;
-            let connect_reason_code = read_byte(stream)?;
-            let variable_header_properties: VariableHeaderProperties =
-                VariableHeaderProperties::read_from(stream)?;
-    
-            let mut session_expiry_interval = None;
-            let mut assigned_client_identifier = None;
-            let mut server_keep_alive = None;
-            let mut authentication_method = None;
-            let mut authentication_data = None;
-            let mut response_information = None;
-            let mut server_reference = None;
-            let mut reason_string = None;
-            let mut receive_maximum = None;
-            let mut topic_alias_maximum = None;
-            let mut maximum_qos = None;
-            let mut retain_available = None;
-            let mut wildcard_subscription_available = None;
-            let mut subscription_identifiers_available = None;
-            let mut shared_subscription_available = None;
-            let mut user_property = None;
-            let mut maximum_packet_size = None;
-    
-            for property in &variable_header_properties.properties {
-                match property.id() {
-                    SESSION_EXPIRY_INTERVAL => {
-                        session_expiry_interval = property.value_u32();
-                    }
-                    ASSIGNED_CLIENT_IDENTIFIER => {
-                        assigned_client_identifier = property.value_string();
-                    }
-                    SERVER_KEEP_ALIVE => {
-                        server_keep_alive = property.value_u16();
-                    }
-                    AUTHENTICATION_METHOD => {
-                        authentication_method = property.value_string();
-                    }
-                    AUTHENTICATION_DATA => {
-                        authentication_data = property.value_string();
-                    }
-                    RESPONSE_INFORMATION => {
-                        response_information = property.value_string();
-                    }
-                    SERVER_REFERENCE => {
-                        server_reference = property.value_string();
-                    }
-                    REASON_STRING => {
-                        reason_string = property.value_string();
-                    }
-                    RECEIVE_MAXIMUM => {
-                        receive_maximum = property.value_u16();
-                    }
-                    TOPIC_ALIAS_MAXIMUM => {
-                        topic_alias_maximum = property.value_u16();
-                    }
-                    MAXIMUM_QOS => {
-                        maximum_qos = property.value_u8();
-                    }
-                    RETAIN_AVAILABLE => {
-                        retain_available = property.value_u8();
-                    }
-                    WILDCARD_SUBSCRIPTION_AVAILABLE => {
-                        wildcard_subscription_available = property.value_u8();
-                    }
-                    SUBSCRIPTION_IDENTIFIERS_AVAILABLE => {
-                        subscription_identifiers_available = property.value_u8();
-                    }
-                    SHARED_SUBSCRIPTION_AVAILABLE => {
-                        shared_subscription_available = property.value_u8();
-                    }
-                    USER_PROPERTY => {
-                        user_property = property.value_string_pair();
-                    }
-                    MAXIMUM_PACKET_SIZE => {
-                        maximum_packet_size = property.value_u32();
-                    }
-                    _ => {}
+        let connect_acknowledge_flags = read_byte(stream)?;
+        let connect_reason_code = read_byte(stream)?;
+        let variable_header_properties: VariableHeaderProperties =
+            VariableHeaderProperties::read_from(stream)?;
+
+        let mut session_expiry_interval = None;
+        let mut assigned_client_identifier = None;
+        let mut server_keep_alive = None;
+        let mut authentication_method = None;
+        let mut authentication_data = None;
+        let mut response_information = None;
+        let mut server_reference = None;
+        let mut reason_string = None;
+        let mut receive_maximum = None;
+        let mut topic_alias_maximum = None;
+        let mut maximum_qos = None;
+        let mut retain_available = None;
+        let mut wildcard_subscription_available = None;
+        let mut subscription_identifiers_available = None;
+        let mut shared_subscription_available = None;
+        let mut user_property = None;
+        let mut maximum_packet_size = None;
+
+        for property in &variable_header_properties.properties {
+            match property.id() {
+                SESSION_EXPIRY_INTERVAL => {
+                    session_expiry_interval = property.value_u32();
                 }
+                ASSIGNED_CLIENT_IDENTIFIER => {
+                    assigned_client_identifier = property.value_string();
+                }
+                SERVER_KEEP_ALIVE => {
+                    server_keep_alive = property.value_u16();
+                }
+                AUTHENTICATION_METHOD => {
+                    authentication_method = property.value_string();
+                }
+                AUTHENTICATION_DATA => {
+                    authentication_data = property.value_string();
+                }
+                RESPONSE_INFORMATION => {
+                    response_information = property.value_string();
+                }
+                SERVER_REFERENCE => {
+                    server_reference = property.value_string();
+                }
+                REASON_STRING => {
+                    reason_string = property.value_string();
+                }
+                RECEIVE_MAXIMUM => {
+                    receive_maximum = property.value_u16();
+                }
+                TOPIC_ALIAS_MAXIMUM => {
+                    topic_alias_maximum = property.value_u16();
+                }
+                MAXIMUM_QOS => {
+                    maximum_qos = property.value_u8();
+                }
+                RETAIN_AVAILABLE => {
+                    retain_available = property.value_u8();
+                }
+                WILDCARD_SUBSCRIPTION_AVAILABLE => {
+                    wildcard_subscription_available = property.value_u8();
+                }
+                SUBSCRIPTION_IDENTIFIERS_AVAILABLE => {
+                    subscription_identifiers_available = property.value_u8();
+                }
+                SHARED_SUBSCRIPTION_AVAILABLE => {
+                    shared_subscription_available = property.value_u8();
+                }
+                USER_PROPERTY => {
+                    user_property = property.value_string_pair();
+                }
+                MAXIMUM_PACKET_SIZE => {
+                    maximum_packet_size = property.value_u32();
+                }
+                _ => {}
             }
-    
-            Ok(ConnackProperties {
-                connect_acknowledge_flags,
-                connect_reason_code,
-                session_expiry_interval,
-                assigned_client_identifier,
-                server_keep_alive,
-                authentication_method,
-                authentication_data,
-                response_information,
-                server_reference,
-                reason_string,
-                receive_maximum,
-                topic_alias_maximum,
-                maximum_qos,
-                retain_available,
-                wildcard_subscription_available,
-                subscription_identifiers_available,
-                shared_subscription_available,
-                user_property,
-                maximum_packet_size,
-            })
         }
 
+        Ok(ConnackProperties {
+            connect_acknowledge_flags,
+            connect_reason_code,
+            session_expiry_interval,
+            assigned_client_identifier,
+            server_keep_alive,
+            authentication_method,
+            authentication_data,
+            response_information,
+            server_reference,
+            reason_string,
+            receive_maximum,
+            topic_alias_maximum,
+            maximum_qos,
+            retain_available,
+            wildcard_subscription_available,
+            subscription_identifiers_available,
+            shared_subscription_available,
+            user_property,
+            maximum_packet_size,
+        })
+    }
+    /*
     //fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
     fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
         let connect_acknowledge_flags = read_byte(stream)?;
@@ -353,8 +356,11 @@ impl PacketProperties for ConnackProperties {
             maximum_packet_size,
         })
     }
+    */
 
+    /*
     fn read_from_buffer(stream: &mut [u8]) -> Result<Self, Error> {
         todo!()
     }
+    */
 }

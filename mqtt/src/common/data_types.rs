@@ -11,21 +11,12 @@ pub mod data_representation {
         Ok(u8::from_be_bytes(read_buff))
     }
 
-    pub fn read_byte_buffer(buffer: &mut [u8]) -> Result<u8, Error> {
-        let mut read_buff = [0u8; 1];
-
-        //stream.read_exact(&mut read_buff)?;
-        let mut handle = buffer.take(1);
-        handle.read(&mut read_buff)?;
-        Ok(u8::from_be_bytes(read_buff))
-    }
-
     pub fn read_two_byte_integer(stream: &mut dyn Read) -> Result<u16, Error> {
         let mut read_buff = [0u8; 2];
-        
-        //stream.read_exact(&mut read_buff)?;
-        let mut handle = stream.take(2);
-        handle.read(&mut read_buff)?;
+
+        stream.read_exact(&mut read_buff)?;
+        //let mut handle = stream.take(2);
+        //handle.read(&mut read_buff)?;
         Ok(u16::from_be_bytes(read_buff))
     }
 
@@ -77,6 +68,16 @@ pub mod data_representation {
     }
 
     // ---------------------------
+    /*
+    pub fn read_byte_buffer(buffer: &mut [u8]) -> Result<u8, Error> {
+        let mut read_buff = [0u8; 1];
+
+        //stream.read_exact(&mut read_buff)?;
+        let mut handle = buffer.take(1);
+        handle.read(&mut read_buff)?;
+        Ok(u8::from_be_bytes(read_buff))
+    }
+
     pub fn read_two_byte_integer_buffer(buffer: &mut [u8]) -> Result<u16, Error> {
         let mut properties_len_1 = match buffer.get(0) {
             Some(r) => r,
@@ -101,14 +102,15 @@ pub mod data_representation {
 
     pub fn read_utf8_encoded_string_buffer(stream: &mut [u8], length: u16) -> Result<String, Error> {
         let mut read_buff = vec![0u8; length as usize];
-        
+
         //stream.read_exact(&mut read_buff)?;
         let mut handle = stream.take(1);
         handle.read(&mut read_buff)?;
-        
+
         match String::from_utf8(read_buff) {
             Ok(utf8_string) => Ok(utf8_string),
             Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e)),
         }
     }
+    */
 }

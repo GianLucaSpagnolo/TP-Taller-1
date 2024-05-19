@@ -1,4 +1,7 @@
-use std::{io::{Error, Read}, net::TcpStream};
+use std::{
+    io::{Error, Read},
+    net::TcpStream,
+};
 
 use super::variable_header_properties::VariableHeaderProperties;
 
@@ -20,12 +23,15 @@ pub trait PacketProperties<Properties = Self> {
         Self: Sized;
 
     // -----------------------------------
+    /*
     /// Lee las propiedades del paquete desde un stream
     fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error>
     where
         Self: Sized;
-        
+    */
+    /*
     fn read_from_buffer(stream: &mut [u8]) -> Result<Self, Error>
     where
         Self: Sized;
+    */
 }

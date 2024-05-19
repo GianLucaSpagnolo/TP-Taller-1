@@ -1,14 +1,12 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
-use std::f64::consts::E;
 use std::io::Error;
 use std::net::{TcpListener, TcpStream};
-use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 
-use app::logger::LoggerHandler;
+use app::logger::{self, LoggerHandler};
 
 use crate::actions::MqttActions;
+use crate::common::utils::create_logger;
 use crate::config::{Config, ServerConfig};
 use crate::control_packets::mqtt_connack::connack::*;
 use crate::control_packets::mqtt_connack::connack_properties::ConnackProperties;
@@ -47,23 +45,17 @@ impl MqttServer {
 
     pub fn start_server(self) -> Result<MqttActions, Error> {
         // logger -------------------------------------------------
-        let log_file_path = String::from("app/files/log.csv");
-        let (tw, tr) = channel();
-        let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
-
-        let _ = match logger_handler.initiate_listener(tr) {
-            Err(e) => Err(Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Logger fails to initiate by error: ".to_string() + &e.to_string(),
-            )),
-            Ok(..) => {
-                logger_handler.log_event(
+        let log_file_path = String::from("app/files/logs/log.csv");
+        let logger_handler = match create_logger(&log_file_path) {
+            Ok(logger) => {
+                logger.log_event(
                     &"The logger initialized correctly".to_string(),
                     &0.to_string(),
                     &",".to_string(),
                 );
-                Ok(())
-            }
+                logger
+            },
+            Err(e) => return Err(e),
         };
         // logger -------------------------------------------------
 
@@ -112,12 +104,16 @@ impl MqttServer {
         let server_ref = Arc::new(Mutex::new(self));
 
         // implementar client_id aca?
-        // los clientes no se van a desconectar
         for client_stream in listener.incoming() {
             let shared_server = server_ref.clone();
 
-            match Self::handle_client(shared_server, client_stream?, &pool, &logger_handler) {
-                Ok(_) => continue,
+            // como el servidor mueve el archivo del cliente, solo se le puede enviar un mensaje,
+            // y no puede cerrarse la conexion ... revisar.
+            match Self::handle_client(shared_server, client_stream?, &pool, log_file_path.to_string()) {
+                Ok(action) => {
+                    action.register_action(&logger_handler);
+                    continue;
+                }
                 Err(e) => logger_handler.log_event(
                     &("Handle client error: ".to_string() + &e.to_string()),
                     &"?".to_string(),
@@ -139,53 +135,72 @@ impl MqttServer {
         server: Arc<Mutex<MqttServer>>,
         client_stream: TcpStream,
         pool: &ServerPool,
-        logger_handler: &LoggerHandler,
+        log_file_path: String
     ) -> Result<MqttActions, Error> {
-        let logger_copy = logger_handler;
-        
-        // probar mover logger mediante mutex:
+        // se tiene que ejecutar en un thread bloqueante que escuche las respuestas
+        // del cliente
         let ser_cpy = server.clone();
+        let logger = match create_logger(&log_file_path) {
+            Ok(l) => l,
+            Err(e) => return Err(e),
+        };
         match pool.execute(move || -> Result<MqttActions, Error> {
-            match ser_cpy
-                .lock()
-                .unwrap()
-                .messages_handler(client_stream)
-            {
-                Ok(action) => Ok(action),
+            let s = String::from(log_file_path);
+            match ser_cpy.lock().unwrap().messages_handler(client_stream, &s) {
+                Ok(action) => {
+                    let logger_handler = match create_logger(&s) {
+                        Ok(log) => log,
+                        Err(e) => return Err(e),
+                    };
+                    action.register_action(&logger_handler);
+                    logger_handler.close_logger();
+                    Ok(action)
+                },
                 Err(e) => Err(e),
             }
-            //drop(server); // unlock(?)
-            //r
         }) {
-            // escalar el ok con un match por MqttActions ...
-            Ok(_) => Ok(MqttActions::MessageReceived.register_action(logger_handler)),
+            Ok(_) => {
+                MqttActions::MessageReceived.register_action(&logger);
+                logger.close_logger();
+                Ok(MqttActions::MessageReceived)
+            },
             Err(e) => {
-                logger_handler.log_event(
+                logger.log_event(
                     &("Message handler error: ".to_string() + &e.to_string()),
                     &"?".to_string(),
                     &",".to_string(),
                 );
+                logger.close_logger();
                 Err(e)
             }
         }
-        
     }
 
     pub fn messages_handler(
         &mut self,
         mut stream: TcpStream,
-        //logger_handler: &LoggerHandler,
+        log_file_path: &String
     ) -> Result<MqttActions, Error> {
-        // averiguo el tipo de paquete:
-        //let fixed_header = match PacketFixedHeader::read_from(&mut stream) {
-        let fixed_header = match PacketFixedHeader::read_from_stream(&mut stream) {
-            Ok(header_type) => {
-                println!("message handler fix header leido ok");
-                header_type
-            },
+        let logger_handler = match create_logger(&log_file_path) {
+            Ok(log) => log,
             Err(e) => return Err(e),
         };
 
+        // averiguo el tipo de paquete:
+        let fixed_header = match PacketFixedHeader::read_from(&mut stream) {
+            //let fixed_header = match PacketFixedHeader::read_from_stream(&mut stream) {
+            Ok(header_type) => {
+                //println!("message handler: fixheader leido ok");
+                header_type
+            }
+            Err(e) => {
+                logger_handler.log_event(&("Message handler error: ".to_string() + &e.to_string()), &"0".to_string(), &",".to_string());
+                logger_handler.close_logger();
+                return Err(e)
+            },
+        };
+
+        /*
         match get_connect_packet(&mut stream, fixed_header.get_package_type(), fixed_header.remaining_length){
             Ok(r) => {
                 println!("Obteniendo connect pack");
@@ -193,19 +208,23 @@ impl MqttServer {
             },
             Err(e) => todo!(),
         }
-        /*
+        */
+
         match get_packet(
             &mut stream,
             fixed_header.get_package_type(),
             fixed_header.remaining_length,
-        ) 
+        ) {
             Ok(pack) => match pack {
                 PacketReceived::Connect(connect_pack) => {
                     println!("Client try to connect");
-                    self.handle_connect(stream, *connect_pack)
+                    logger_handler.log_event(&"Client try to connect".to_string(), &"0".to_string(), &",".to_string());
+                    logger_handler.close_logger();
+                    self.handle_connect(stream, *connect_pack, log_file_path)
                 }
                 PacketReceived::Disconnect(_pack) => {
-                    //Ok(MqttActions::DisconnectClient.register_action())
+                    MqttActions::DisconnectClient.register_action(&logger_handler);
+                    logger_handler.close_logger();
                     Ok(MqttActions::DisconnectClient)
                 }
                 /*
@@ -223,10 +242,14 @@ impl MqttServer {
                     }
                 }
                 */
-                _ => Err(Error::new(
-                    std::io::ErrorKind::Other,
-                    "Server - Paquete desconocido",
-                )),
+                _ => {
+                    logger_handler.log_event(&"Message handler error: Server - Unknow package".to_string(), &"0".to_string(), &",".to_string());
+                    logger_handler.close_logger();    
+                        Err(Error::new(
+                        std::io::ErrorKind::Other,
+                        "Server - Paquete desconocido",
+                    ))
+                },
                 // el servidor de la app debera poder
                 // ejecutar el connack, para esto,
                 // tanto el enum del server MQTT, como el
@@ -235,29 +258,40 @@ impl MqttServer {
             },
             Err(e) => Err(e),
         }
-        */
     }
 
     fn handle_connect(
         &mut self,
         mut stream: TcpStream,
         connect: Connect,
+        log_file_path: &String
     ) -> Result<MqttActions, Error> {
         let client = connect.payload.client_id.clone();
         let connack_properties: ConnackProperties = self.handle_connection(connect);
+        let logger_handler = match create_logger(log_file_path) {
+            Ok(log) => log,
+            Err(e) => return Err(e),
+        };
         match Connack::new(connack_properties).send(&mut stream) {
-            Ok(_) => println!("Connack enviado"),
+            Ok(_) => {
+                println!("Connack enviado");
+                logger_handler.log_event(&"Connack sent".to_string(), &"0".to_string(), &",".to_string());
+            },
             Err(e) => {
                 eprintln!("Connack send error: {}", e);
+                logger_handler.log_event(&"Connack sending error".to_string(), &"0".to_string(), &",".to_string());
+                logger_handler.close_logger();
                 return Err(e);
-            },
+            }
         };
-        //Ok(MqttActions::ServerConnection(client).register_action())
+
+        MqttActions::ServerConnection(client.to_string()).register_action(&logger_handler);
+        logger_handler.close_logger();
         Ok(MqttActions::ServerConnection(client))
     }
 
     //fn handle_connection(&mut self, connect: Connect) -> Result<ConnackProperties, Error> {
-        fn handle_connection(&mut self, connect: Connect) -> ConnackProperties {
+    fn handle_connection(&mut self, connect: Connect) -> ConnackProperties {
         // Si no recibe ninguna conexión en cierta cantidad de tiempo debe cortar la conexión (timer!)
 
         // Connect Flags:

@@ -1,6 +1,10 @@
+use std::io::Error;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::sync::mpsc::channel;
+
+use app::logger::LoggerHandler;
 
 // Abre el archivo recibiendo su ruta por parametro,
 // devuelve el archivo encapsulado en un option
@@ -83,4 +87,19 @@ pub fn obtener_parametros_archivo(
         return Vec::new();
     }
     parametros
+}
+
+pub fn create_logger(log_file_path: &String) -> Result<LoggerHandler, Error> {
+    let (tw, tr) = channel();
+    let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
+
+    match logger_handler.initiate_listener(tr) {
+        Err(e) => Err(Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Logger fails to initiate by error: ".to_string() + &e.to_string(),
+        )),
+        Ok(..) => {           
+            Ok(logger_handler)
+        }
+    }
 }

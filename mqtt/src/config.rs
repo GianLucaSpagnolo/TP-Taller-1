@@ -4,8 +4,6 @@ use std::{
     net::{IpAddr, SocketAddr},
 };
 
-use app::common::file_manager::open_file;
-
 use crate::{
     common::utils::*,
     control_packets::{
@@ -23,7 +21,6 @@ pub trait Config<Config = Self> {
         Self: Sized,
     {
         let archivo_abierto: Option<File> = abrir_archivo(&file_path);
-        //let open_fle = open_file(&file_path);
         let mut parametros = Vec::new();
 
         archivo_abierto.map(|archivo| match leer_archivo(&archivo) {

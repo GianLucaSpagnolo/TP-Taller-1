@@ -5,7 +5,10 @@ use crate::{
         variable_header_properties::VariableHeaderProperties,
     },
 };
-use std::{io::{Error, Read}, net::TcpStream};
+use std::{
+    io::{Error, Read},
+    net::TcpStream,
+};
 
 #[derive(Clone)]
 /// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
@@ -89,46 +92,47 @@ impl PacketProperties for SubscribeProperties {
 
     fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         //fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
-            let packet_identifier = read_two_byte_integer(stream)?;
-            let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
-    
-            let mut subscription_identifier = None;
-            let mut user_property = None;
-    
-            for property in &variable_header_properties.properties {
-                match property.id() {
-                    SUBSCRIPTION_IDENTIFIER => {
-                        subscription_identifier = property.value_u32();
-                    }
-                    USER_PROPERTY => {
-                        user_property = property.value_string_pair();
-                    }
-                    _ => {}
+        let packet_identifier = read_two_byte_integer(stream)?;
+        let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
+
+        let mut subscription_identifier = None;
+        let mut user_property = None;
+
+        for property in &variable_header_properties.properties {
+            match property.id() {
+                SUBSCRIPTION_IDENTIFIER => {
+                    subscription_identifier = property.value_u32();
                 }
+                USER_PROPERTY => {
+                    user_property = property.value_string_pair();
+                }
+                _ => {}
             }
-    
-            let mut topic_filters = Vec::new();
-            let topic_filters_len = read_two_byte_integer(stream)?;
-            let mut i = 0;
-            while i < topic_filters_len {
-                let topic_filter_len = read_two_byte_integer(stream)?;
-                let topic_filter = read_utf8_encoded_string(stream, topic_filter_len)?;
-                let subscription_options = read_byte(stream)?;
-                topic_filters.push(TopicFilter {
-                    topic_filter,
-                    subscription_options,
-                });
-                i += 1;
-            }
-    
-            Ok(SubscribeProperties {
-                packet_identifier,
-                subscription_identifier,
-                user_property,
-                topic_filters,
-            })
         }
 
+        let mut topic_filters = Vec::new();
+        let topic_filters_len = read_two_byte_integer(stream)?;
+        let mut i = 0;
+        while i < topic_filters_len {
+            let topic_filter_len = read_two_byte_integer(stream)?;
+            let topic_filter = read_utf8_encoded_string(stream, topic_filter_len)?;
+            let subscription_options = read_byte(stream)?;
+            topic_filters.push(TopicFilter {
+                topic_filter,
+                subscription_options,
+            });
+            i += 1;
+        }
+
+        Ok(SubscribeProperties {
+            packet_identifier,
+            subscription_identifier,
+            user_property,
+            topic_filters,
+        })
+    }
+
+    /*
     //fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
     fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
         let packet_identifier = read_two_byte_integer(stream)?;
@@ -170,10 +174,12 @@ impl PacketProperties for SubscribeProperties {
             topic_filters,
         })
     }
-
+    */
+    /*
     fn read_from_buffer(stream: &mut [u8]) -> Result<Self, Error> {
         todo!()
     }
+    */
 }
 
 impl SubscribeProperties {

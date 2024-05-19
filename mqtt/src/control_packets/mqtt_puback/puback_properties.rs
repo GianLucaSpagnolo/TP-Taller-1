@@ -71,33 +71,33 @@ impl PacketProperties for _PubackProperties {
 
     fn read_from(stream: &mut dyn std::io::prelude::Read) -> Result<Self, Error> {
         //fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
-            let packet_id = read_two_byte_integer(stream)?;
-            let puback_reason_code = read_byte(stream)?;
-            let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
-    
-            let mut reason_string = None;
-            let mut user_property = None;
-    
-            for property in &variable_header_properties.properties {
-                match property.id() {
-                    REASON_STRING => {
-                        reason_string = property.value_string();
-                    }
-                    USER_PROPERTY => {
-                        user_property = property.value_string_pair();
-                    }
-                    _ => {}
+        let packet_id = read_two_byte_integer(stream)?;
+        let puback_reason_code = read_byte(stream)?;
+        let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
+
+        let mut reason_string = None;
+        let mut user_property = None;
+
+        for property in &variable_header_properties.properties {
+            match property.id() {
+                REASON_STRING => {
+                    reason_string = property.value_string();
                 }
+                USER_PROPERTY => {
+                    user_property = property.value_string_pair();
+                }
+                _ => {}
             }
-    
-            Ok(_PubackProperties {
-                packet_id,
-                puback_reason_code,
-                reason_string,
-                user_property,
-            })
         }
 
+        Ok(_PubackProperties {
+            packet_id,
+            puback_reason_code,
+            reason_string,
+            user_property,
+        })
+    }
+    /*
     //fn read_from(stream: &mut dyn std::io::prelude::Read) -> Result<Self, Error> {
     fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
         let packet_id = read_two_byte_integer(stream)?;
@@ -126,8 +126,10 @@ impl PacketProperties for _PubackProperties {
             user_property,
         })
     }
-
+    */
+    /*
     fn read_from_buffer(stream: &mut [u8]) -> Result<Self, Error> {
         todo!()
     }
+    */
 }

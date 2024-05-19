@@ -141,87 +141,87 @@ impl PacketProperties for ConnectPayload {
 
     fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         //fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
-            let client_id_len = read_two_byte_integer(stream)?;
-            let client_id = read_utf8_encoded_string(stream, client_id_len)?;
-            let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
-    
-            let mut will_delay_interval = None;
-            let mut payload_format_indicator = None;
-            let mut message_expiry_interval = None;
-            let mut content_type = None;
-            let mut response_topic = None;
-            let mut correlation_data = None;
-            let mut user_property = None;
-    
-            for property in &variable_header_properties.properties {
-                match property.id() {
-                    WILL_DELAY_INTERVAL => {
-                        will_delay_interval = property.value_u32();
-                    }
-                    PAYLOAD_FORMAT_INDICATOR => {
-                        payload_format_indicator = property.value_u8();
-                    }
-                    MESSAGE_EXPIRY_INTERVAL => {
-                        message_expiry_interval = property.value_u32();
-                    }
-                    CONTENT_TYPE => {
-                        content_type = property.value_string();
-                    }
-                    RESPONSE_TOPIC => {
-                        response_topic = property.value_string();
-                    }
-                    CORRELATION_DATA => {
-                        correlation_data = property.value_string();
-                    }
-                    USER_PROPERTY => {
-                        user_property = property.value_string_pair();
-                    }
-                    _ => {}
+        let client_id_len = read_two_byte_integer(stream)?;
+        let client_id = read_utf8_encoded_string(stream, client_id_len)?;
+        let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
+
+        let mut will_delay_interval = None;
+        let mut payload_format_indicator = None;
+        let mut message_expiry_interval = None;
+        let mut content_type = None;
+        let mut response_topic = None;
+        let mut correlation_data = None;
+        let mut user_property = None;
+
+        for property in &variable_header_properties.properties {
+            match property.id() {
+                WILL_DELAY_INTERVAL => {
+                    will_delay_interval = property.value_u32();
                 }
+                PAYLOAD_FORMAT_INDICATOR => {
+                    payload_format_indicator = property.value_u8();
+                }
+                MESSAGE_EXPIRY_INTERVAL => {
+                    message_expiry_interval = property.value_u32();
+                }
+                CONTENT_TYPE => {
+                    content_type = property.value_string();
+                }
+                RESPONSE_TOPIC => {
+                    response_topic = property.value_string();
+                }
+                CORRELATION_DATA => {
+                    correlation_data = property.value_string();
+                }
+                USER_PROPERTY => {
+                    user_property = property.value_string_pair();
+                }
+                _ => {}
             }
-    
-            let mut will_topic = None;
-            let will_topic_len = read_two_byte_integer(stream).unwrap_or(0);
-            if will_topic_len > 0 {
-                will_topic = Some(read_utf8_encoded_string(stream, will_topic_len).unwrap());
-            }
-    
-            let mut will_payload = None;
-            let will_payload_len = read_two_byte_integer(stream).unwrap_or(0);
-            if will_payload_len > 0 {
-                will_payload = Some(read_utf8_encoded_string(stream, will_payload_len).unwrap());
-            }
-    
-            let mut username: Option<String> = None;
-            let username_len = read_two_byte_integer(stream).unwrap_or(0);
-            if username_len > 0 {
-                username = Some(read_utf8_encoded_string(stream, username_len).unwrap());
-            }
-    
-            let mut password = None;
-            let password_len = read_two_byte_integer(stream).unwrap_or(0);
-    
-            if password_len > 0 {
-                password = Some(read_utf8_encoded_string(stream, password_len).unwrap());
-            }
-    
-            Ok(ConnectPayload {
-                client_id,
-                will_delay_interval,
-                payload_format_indicator,
-                message_expiry_interval,
-                content_type,
-                response_topic,
-                correlation_data,
-                user_property,
-    
-                will_topic,
-                will_payload,
-                username,
-                password,
-            })
         }
 
+        let mut will_topic = None;
+        let will_topic_len = read_two_byte_integer(stream).unwrap_or(0);
+        if will_topic_len > 0 {
+            will_topic = Some(read_utf8_encoded_string(stream, will_topic_len).unwrap());
+        }
+
+        let mut will_payload = None;
+        let will_payload_len = read_two_byte_integer(stream).unwrap_or(0);
+        if will_payload_len > 0 {
+            will_payload = Some(read_utf8_encoded_string(stream, will_payload_len).unwrap());
+        }
+
+        let mut username: Option<String> = None;
+        let username_len = read_two_byte_integer(stream).unwrap_or(0);
+        if username_len > 0 {
+            username = Some(read_utf8_encoded_string(stream, username_len).unwrap());
+        }
+
+        let mut password = None;
+        let password_len = read_two_byte_integer(stream).unwrap_or(0);
+
+        if password_len > 0 {
+            password = Some(read_utf8_encoded_string(stream, password_len).unwrap());
+        }
+
+        Ok(ConnectPayload {
+            client_id,
+            will_delay_interval,
+            payload_format_indicator,
+            message_expiry_interval,
+            content_type,
+            response_topic,
+            correlation_data,
+            user_property,
+
+            will_topic,
+            will_payload,
+            username,
+            password,
+        })
+    }
+    /*
     //fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
     fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
         let client_id_len = read_two_byte_integer(stream)?;
@@ -304,10 +304,12 @@ impl PacketProperties for ConnectPayload {
             password,
         })
     }
-
+    */
+    /*
     fn read_from_buffer(stream: &mut [u8]) -> Result<Self, Error> {
         todo!()
     }
+    */
 }
 
 fn read_from_buffer_static(stream: &[u8]) -> Result<VariableHeaderProperties, Error> {

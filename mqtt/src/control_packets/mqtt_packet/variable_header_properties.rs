@@ -1,5 +1,8 @@
 use std::{
-    io::{Error, Read}, mem::{size_of, size_of_val}, net::TcpStream, string::FromUtf8Error
+    io::{Error, Read},
+    mem::{size_of, size_of_val},
+    net::TcpStream,
+    string::FromUtf8Error,
 };
 
 use crate::common::data_types::data_representation::read_two_byte_integer;
@@ -123,32 +126,32 @@ impl VariableHeaderProperties {
 
     pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
         //pub fn read_from(stream: &mut TcpStream) -> Result<Self, Error> {
-            let mut properties_len = read_two_byte_integer(stream)?;
-            properties_len -= size_of::<u16>() as u16;
-    
-            let mut properties_buff = vec![0u8; properties_len as usize];
-            stream.read_exact(&mut properties_buff)?;
-    
-            match VariableHeaderProperties::from_be_bytes(&properties_buff) {
-                Ok(properties) => Ok(properties),
-                Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e)),
-            }
+        let mut properties_len = read_two_byte_integer(stream)?;
+        properties_len -= size_of::<u16>() as u16;
+
+        let mut properties_buff = vec![0u8; properties_len as usize];
+        stream.read_exact(&mut properties_buff)?;
+
+        match VariableHeaderProperties::from_be_bytes(&properties_buff) {
+            Ok(properties) => Ok(properties),
+            Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e)),
         }
+    }
 
     // ---------------------------------
     //pub fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
     pub fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
-            let mut properties_len = read_two_byte_integer(stream)?;
-            properties_len -= size_of::<u16>() as u16;
-    
-            let mut properties_buff = vec![0u8; properties_len as usize];
-            stream.read_exact(&mut properties_buff)?;
-    
-            match VariableHeaderProperties::from_be_bytes(&properties_buff) {
-                Ok(properties) => Ok(properties),
-                Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e)),
-            }
+        let mut properties_len = read_two_byte_integer(stream)?;
+        properties_len -= size_of::<u16>() as u16;
+
+        let mut properties_buff = vec![0u8; properties_len as usize];
+        stream.read_exact(&mut properties_buff)?;
+
+        match VariableHeaderProperties::from_be_bytes(&properties_buff) {
+            Ok(properties) => Ok(properties),
+            Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e)),
         }
+    }
 
     pub fn read_from_buffer(stream: &mut [u8]) -> Result<Self, Error> {
         // let mut properties_len = read_two_byte_integer(stream)?;
@@ -156,24 +159,30 @@ impl VariableHeaderProperties {
             Some(r) => r,
             None => {
                 eprintln!("Error al crear varaible header properties desde un header");
-                return Err(Error::new(std::io::ErrorKind::InvalidData, "Error al crear varaible header properties desde un header (vh properties"));
-            },
+                return Err(Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Error al crear varaible header properties desde un header (vh properties",
+                ));
+            }
         };
 
         let mut properties_len_2 = match stream.get(1) {
             Some(r) => r,
             None => {
                 eprintln!("Error al crear varaible header properties desde un header");
-                return Err(Error::new(std::io::ErrorKind::InvalidData, "Error al crear varaible header properties desde un header (vh properties"));
-            },
+                return Err(Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Error al crear varaible header properties desde un header (vh properties",
+                ));
+            }
         };
-        const SIZEOFU16 :u16 = 2;
-        let mut properties_len :u16 = (((properties_len_1 << 8) & properties_len_2)).into();
+        const SIZEOFU16: u16 = 2;
+        let mut properties_len: u16 = ((properties_len_1 << 8) & properties_len_2).into();
         properties_len -= SIZEOFU16 as u16;
 
         let mut properties_buff = vec![0u8; properties_len as usize];
         let mut propertie_byte;
-        
+
         // stream.read_exact(&mut properties_buff)?;
         // leo los bytes que faltan:
         for i in 2..properties_len {
@@ -181,8 +190,11 @@ impl VariableHeaderProperties {
                 Some(r) => r,
                 None => {
                     eprintln!("Error al leer resto de varaible header properties desde header");
-                    return Err(Error::new(std::io::ErrorKind::InvalidData, "Error al crear varaible header properties desde un header (vh properties"));
-                },
+                    return Err(Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Error al crear varaible header properties desde un header (vh properties",
+                    ));
+                }
             };
             properties_buff.push(*propertie_byte);
         }

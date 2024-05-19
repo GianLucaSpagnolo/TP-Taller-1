@@ -8,7 +8,7 @@
 /// todas las acciones seran thread-safe
 use std::{
     fs::{File, OpenOptions},
-    io::{BufRead, BufReader, Error, Write},
+    io::{BufRead, BufReader, Error, Write}, sync::{Arc, RwLock},
 };
 
 pub fn open_file(route: &String) -> Result<File, Error> {
@@ -36,7 +36,10 @@ pub fn open_file(route: &String) -> Result<File, Error> {
 
 // debe ser thread-safe
 pub fn write_line(action: &mut String, file: &mut File) -> Result<(), Error> {
-    file.write_all(action.as_bytes())
+    let lock_file = Arc::new(RwLock::new(file));
+    let result = lock_file.write().unwrap().write_all(action.as_bytes());
+    result
+    //file.write_all(action.as_bytes())
 }
 
 pub fn read_file(archivo: &File) -> Option<Vec<String>> {
