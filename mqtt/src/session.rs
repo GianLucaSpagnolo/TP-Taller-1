@@ -1,6 +1,6 @@
 use std::net::TcpStream;
 
-use crate::control_packets::{mqtt_connect::connect::Connect, mqtt_packet::flags::flags_handler};
+use crate::control_packets::{mqtt_connect::connect::Connect, mqtt_packet::flags::flags_handler, mqtt_subscribe::subscribe_properties::TopicFilter};
 
 pub struct WillMessage {
     pub will_topic: String,
@@ -40,7 +40,7 @@ pub struct Session {
     pub active: bool,
     pub stream_connection: TcpStream,
     pub session_expiry_interval: u32,
-    pub subscriptions: Vec<String>,
+    pub subscriptions: Vec<TopicFilter>,
     pub will_message: Option<WillMessage>,
 }
 

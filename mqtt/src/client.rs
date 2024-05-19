@@ -67,20 +67,25 @@ impl MqttClient {
         .register_action();
 
         let current_packet_id = 0;
-
-        Ok(MqttClient {
+        
+        let client = MqttClient {
             id,
             config,
             stream,
-            current_packet_id,
-        })
+            current_packet_id
+        };
+
+        Ok(client)
+
     }
 
     pub fn run_listener(
         &mut self,
     ) -> Result<(Receiver<Message>, JoinHandle<Result<(), Error>>), Error> {
         let mut counter = 0;
+        
         let client = self.clone();
+
         let (sender, receiver) = mpsc::channel();
 
         let handler = thread::spawn(move || -> Result<(), Error> {
@@ -136,12 +141,12 @@ impl MqttClient {
             PacketReceived::Publish(publish) => {
                 data = publish.properties.application_message.clone();
                 topic = publish.properties.topic_name.clone();
-                MqttActions::ClientReceive(self.id.clone(), publish.properties.topic_name.clone())
+                MqttActions::ClientReceivePublish(self.id.clone(), data.clone(), topic.clone())
                     .register_action();
             }
             _ => return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido")),
         }
-
+        
         Ok(Message { topic, data: data.as_bytes().to_vec() })
     }
 
@@ -155,20 +160,16 @@ impl MqttClient {
             ..Default::default()
         };
 
-        match Publish::new(
+        Publish::new(
             self.config.publish_dup_flag,
             self.config.publish_qos,
             self.config.publish_retain,
             properties,
         )
-        .send(&mut self.stream)
-        {
-            Ok(_) => {
-                MqttActions::ClientSendPublish(self.id.clone(), message, topic).register_action();
-                Ok(())
-            }
-            Err(e) => Err(e),
-        }
+        .send(&mut self.stream)?;
+
+        MqttActions::ClientSendPublish(self.id.clone(), message, topic).register_action();
+        Ok(())
     }
 
     pub fn subscribe(
@@ -185,8 +186,9 @@ impl MqttClient {
         };
 
         topics.iter().for_each(|topic| {
+            let topic_filter = [self.id.clone(), topic.to_string()].join("/");
             properties.add_topic_filter(
-                topic.to_string(),
+                topic_filter,
                 max_qos,
                 no_local_option,
                 retain_as_published,
@@ -196,13 +198,9 @@ impl MqttClient {
 
         let prop_topics = properties.topic_filters.clone();
 
-        match Subscribe::new(properties).send(&mut self.stream) {
-            Ok(_) => {
-                MqttActions::ClientSendSubscribe(self.id.clone(), prop_topics).register_action();
-                Ok(())
-            }
-            Err(e) => Err(e),
-        }
+        Subscribe::new(properties).send(&mut self.stream)?;
+        MqttActions::ClientSendSubscribe(self.id.clone(), prop_topics).register_action();
+        Ok(())
     }
 
     pub fn unsubscribe() {

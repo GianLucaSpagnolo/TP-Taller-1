@@ -1,24 +1,22 @@
 use std::{
-    env,
-    io::Error,
-    thread::{self, JoinHandle},
+    env, io::Error, sync::mpsc::Receiver, thread::{self, JoinHandle}
 };
 
 use mqtt::{
-    client::MqttClient,
+    client::{Message, MqttClient},
     config::{ClientConfig, Config},
 };
 
-fn recive_message(client: &mut MqttClient) -> Result<JoinHandle<Result<(), Error>>, Error> {
-    let (receiver, handler) = client.run_listener()?;
+#[allow(dead_code)]
+fn process_messages(receiver: Receiver<Message>) -> Result<JoinHandle<()>, Error> {
 
-    thread::spawn(move || {
+    let handler = thread::spawn(move || {
         let _message_received = receiver.recv().unwrap();
         match _message_received.topic.as_str() {
-            "topic1" => {
+            "cams" => {
                 // cambiar estado
             }
-            "topic2" => {
+            "dron" => {
                 // cambiar estado
             }
             _ => {}
@@ -44,12 +42,17 @@ fn main() -> Result<(), Error> {
     let config = ClientConfig::from_file(String::from(config_path))?;
 
     let mut client = MqttClient::init(String::from(client_id), config)?;
+    
+    let (messages_receiver, listener_handler) = client.run_listener()? ;
 
-    let messages_handler = recive_message(&mut client)?;
+    let process_message_handler = process_messages(messages_receiver)?;
 
-    client.subscribe(vec!["topic1", "topic2"], 1, false, false, 0)?;
+    client.subscribe(vec!["cams", "dron"], 1, false, false, 0)?;
 
-    client.publish("mensaje del cliente".to_string(), "topic1".to_string())?;
+    client.publish("mensaje del cliente".to_string(), "cams".to_string())?;
 
-    messages_handler.join().unwrap()
+    listener_handler.join().unwrap()?;
+    process_message_handler.join().unwrap();
+
+    Ok(())
 }

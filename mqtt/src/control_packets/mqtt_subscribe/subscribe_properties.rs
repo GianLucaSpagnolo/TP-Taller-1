@@ -5,26 +5,13 @@ use crate::{
         variable_header_properties::VariableHeaderProperties,
     },
 };
-use std::{
-    fmt::{Display, Formatter},
-    io::{Error, Read},
-};
+use std::io::{Error, Read};
 
 #[derive(Clone, Debug)]
 /// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
 pub struct TopicFilter {
     pub topic_filter: String,
     pub subscription_options: u8,
-}
-
-impl Display for TopicFilter {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Topic Filter: {} - Subscription Options: {}",
-            self.topic_filter, self.subscription_options
-        )
-    }
 }
 
 #[derive(Default)]

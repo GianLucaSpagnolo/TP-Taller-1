@@ -7,11 +7,13 @@ use crate::control_packets::{
 pub enum MqttActions {
     ServerConnection(String),
     ClientConnection(String, u8),
-    ClientReceive(String, String),
+    ClientReceivePublish(String, String, String),
     ClientSendPublish(String, String, String),
     ClientSendSubscribe(String, Vec<TopicFilter>),
     DisconnectClient,
     ServerPublishReceive(String, String),
+    ServerSendPublish(String, String, Vec<String>),
+    ServerSubscribeReceive(Vec<TopicFilter>),
     MessageSended,
     TryConnect, // guardara el exit code
     PackageError,
@@ -36,7 +38,7 @@ impl fmt::Display for MqttActions {
                     addrs, reason_code
                 )
             }
-            MqttActions::ClientReceive(id, msg) => write!(f, "Cliente '{}' recibio: {}", id, msg),
+            MqttActions::ClientReceivePublish(id, msg, topic) => write!(f, "Cliente '{}' recibio: '{}' proveniente del topic: '{}'", id, msg, topic),
             MqttActions::ClientSendPublish(id, msg, topic) => {
                 write!(f, "Cliente '{}' envio: '{}' al topico '{}'", id, msg, topic)
             }
@@ -46,7 +48,13 @@ impl fmt::Display for MqttActions {
             MqttActions::TryConnect => write!(f, "Intentando conectar"),
             MqttActions::DisconnectClient => write!(f, "Desconectando cliente"),
             MqttActions::ServerPublishReceive(topic, msg) =>{
-                write!(f, "Servidor recibio: '{}' del topico '{}'", msg, topic)
+                write!(f, "Servidor recibio '{}' del topico '{}'", msg, topic)
+            },
+            MqttActions::ServerSendPublish(topic, msg, receivers) =>{
+                write!(f, "Servidor envío '{}' del topico '{}' a los clientes {:?}", msg, topic, receivers)
+            },
+            MqttActions::ServerSubscribeReceive(topics) =>{
+                write!(f, "Servidor recibio una subscripción a los tópicos '{:?}'", topics)
             },
             MqttActions::MessageSended => write!(f, "Mensaje enviado"),
             MqttActions::PackageError => write!(f, "Error en el paquete"),
