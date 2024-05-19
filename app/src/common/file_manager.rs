@@ -8,7 +8,8 @@
 /// todas las acciones seran thread-safe
 use std::{
     fs::{File, OpenOptions},
-    io::{BufRead, BufReader, Error, Write}, sync::{Arc, RwLock},
+    io::{BufRead, BufReader, Error, Write},
+    sync::{Arc, RwLock},
 };
 
 pub fn open_file(route: &String) -> Result<File, Error> {

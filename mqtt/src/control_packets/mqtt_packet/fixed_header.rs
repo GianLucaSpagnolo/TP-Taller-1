@@ -1,7 +1,4 @@
-use std::{
-    io::{Error, Read},
-    net::TcpStream,
-};
+use std::io::{Error, Read};
 
 use crate::common::data_types::data_representation::{read_byte, read_two_byte_integer};
 
@@ -48,31 +45,8 @@ impl PacketFixedHeader {
 
     pub fn read_from(mut stream: &mut dyn Read) -> Result<Self, Error> {
         let packet_type = read_byte(&mut stream)?;
-        /*
-        let packet_type = match read_byte(&mut stream) {
-            Ok(r) => {
-                println!("fixheader 1 byte leido ok");
-                r
-            },
-            Err(e) => {
-                eprintln!("fixheader read_byte error: {}", e);
-                return Err(e);
-            },
-        };
-        */
         let remaining_length = read_two_byte_integer(&mut stream)?;
-        /*
-        let remaining_length = match read_two_byte_integer(&mut stream) {
-            Ok(re) => {
-                println!("fixheader 2 bytes leidos ok");
-                re
-            },
-            Err(e) => {
-                eprintln!("fixheader read_two_byte error: {}", e);
-                return Err(e);
-            },
-        };
-        */
+
         Ok(PacketFixedHeader::new(packet_type, remaining_length))
     }
 
@@ -88,37 +62,5 @@ impl PacketFixedHeader {
             _DISCONNECT_PACKET => PacketType::DisconnectType,
             _ => PacketType::Unknow,
         }
-    }
-
-    // ----------------
-    // pasar a operacion bloqueante:
-    pub fn read_from_stream(mut stream: &TcpStream) -> Result<Self, Error> {
-        let packet_type = match read_byte(&mut stream) {
-            Ok(r) => {
-                println!("fix header (stream) 1 bytes leido ok");
-                r
-            }
-            Err(e) => {
-                eprintln!("fix header (stream) read_byte error: {}", e);
-                return Err(e);
-            }
-        };
-
-        let remaining_length = match read_two_byte_integer(&mut stream) {
-            Ok(re) => {
-                println!("fix header (stream)2 bytes leidos ok");
-                re
-            }
-            Err(e) => {
-                eprintln!("fix header (stream) read_two_byte error: {}", e);
-                return Err(e);
-            }
-        };
-
-        Ok(PacketFixedHeader::new(packet_type, remaining_length))
-    }
-
-    pub fn read_from_buffer(buffer: &mut [u8]) -> Result<Self, Error> {
-        todo!()
     }
 }

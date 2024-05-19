@@ -4,8 +4,6 @@ pub mod generic_packet {
         net::TcpStream,
     };
 
-    use app::logger::{self, LoggerHandler};
-
     use crate::control_packets::{
         mqtt_connack::connack::Connack, mqtt_connect::connect::Connect,
         mqtt_disconnect::disconnect::_Disconnect, mqtt_pingreq::pingreq::_PingReq,

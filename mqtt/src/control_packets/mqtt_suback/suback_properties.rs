@@ -5,7 +5,6 @@ use crate::control_packets::mqtt_packet::{
 };
 
 use std::io::Error;
-use std::net::TcpStream;
 
 #[derive(Default)]
 pub struct _SubackProperties {
@@ -77,7 +76,6 @@ impl PacketProperties for _SubackProperties {
     }
 
     fn read_from(stream: &mut dyn std::io::Read) -> Result<Self, Error> {
-        //fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
         let packet_identifier = read_two_byte_integer(stream)?;
 
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
@@ -113,49 +111,4 @@ impl PacketProperties for _SubackProperties {
             reason_codes,
         })
     }
-
-    /*
-    //fn read_from(stream: &mut dyn std::io::Read) -> Result<Self, Error> {
-    fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
-        let packet_identifier = read_two_byte_integer(stream)?;
-
-        let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
-
-        let mut reason_string = None;
-        let mut user_property = None;
-
-        for property in &variable_header_properties.properties {
-            match property.id() {
-                REASON_STRING => {
-                    reason_string = property.value_string();
-                }
-                USER_PROPERTY => {
-                    user_property = property.value_string_pair();
-                }
-                _ => {}
-            }
-        }
-
-        let mut reason_codes = Vec::new();
-        let reason_codes_len = read_two_byte_integer(stream)?;
-        let mut i = 0;
-        while i < reason_codes_len {
-            let reason_code = read_byte(stream)?;
-            reason_codes.push(reason_code);
-            i += 1;
-        }
-
-        Ok(_SubackProperties {
-            packet_identifier,
-            reason_string,
-            user_property,
-            reason_codes,
-        })
-    }
-    */
-    /*
-    fn read_from_buffer(stream: &mut [u8]) -> Result<Self, Error> {
-        todo!()
-    }
-    */
 }

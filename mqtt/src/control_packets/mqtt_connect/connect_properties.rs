@@ -1,6 +1,5 @@
 use std::io::Error;
 use std::io::Read;
-use std::net::TcpStream;
 
 use crate::common::data_types::data_representation::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
@@ -121,7 +120,6 @@ impl PacketProperties for ConnectProperties {
     }
 
     fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        //fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
         let protocol_name_length = read_two_byte_integer(stream)?;
         let protocol_name = read_utf8_encoded_string(stream, protocol_name_length)?;
         let protocol_version = read_byte(stream)?;
@@ -188,145 +186,4 @@ impl PacketProperties for ConnectProperties {
             maximum_packet_size,
         })
     }
-    /*
-    //fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-    fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
-        let protocol_name_length = read_two_byte_integer(stream)?;
-        let protocol_name = read_utf8_encoded_string(stream, protocol_name_length)?;
-        let protocol_version = read_byte(stream)?;
-        let connect_flags = read_byte(stream)?;
-        let keep_alive = read_two_byte_integer(stream)?;
-        let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
-
-        let mut session_expiry_interval = None;
-        let mut authentication_method = None;
-        let mut authentication_data = None;
-        let mut request_problem_information = None;
-        let mut request_response_information = None;
-        let mut receive_maximum = None;
-        let mut topic_alias_maximum = None;
-        let mut user_property = None;
-        let mut maximum_packet_size = None;
-
-        for property in &variable_header_properties.properties {
-            match property.id() {
-                SESSION_EXPIRY_INTERVAL => {
-                    session_expiry_interval = property.value_u32();
-                }
-                AUTHENTICATION_METHOD => {
-                    authentication_method = property.value_string();
-                }
-                AUTHENTICATION_DATA => {
-                    authentication_data = property.value_string();
-                }
-                REQUEST_PROBLEM_INFORMATION => {
-                    request_problem_information = property.value_u8();
-                }
-                REQUEST_RESPONSE_INFORMATION => {
-                    request_response_information = property.value_u8();
-                }
-                RECEIVE_MAXIMUM => {
-                    receive_maximum = property.value_u16();
-                }
-                TOPIC_ALIAS_MAXIMUM => {
-                    topic_alias_maximum = property.value_u16();
-                }
-                USER_PROPERTY => {
-                    user_property = property.value_string_pair();
-                }
-                MAXIMUM_PACKET_SIZE => {
-                    maximum_packet_size = property.value_u32();
-                }
-                _ => {}
-            }
-        }
-
-        Ok(ConnectProperties {
-            protocol_name,
-            protocol_version,
-            connect_flags,
-            keep_alive,
-            session_expiry_interval,
-            authentication_method,
-            authentication_data,
-            request_problem_information,
-            request_response_information,
-            receive_maximum,
-            topic_alias_maximum,
-            user_property,
-            maximum_packet_size,
-        })
-    }
-    */
-    /*
-    fn read_from_buffer(buffer: &mut [u8]) -> Result<ConnectProperties, Error> {
-        //let protocol_name_length = read_two_byte_integer(stream)?;
-        let protocol_name_length = read_two_byte_integer_buffer(buffer)?;
-        let protocol_name = read_utf8_encoded_string_buffer(buffer, protocol_name_length)?;
-        let protocol_version = read_byte_buffer(buffer)?;
-        let connect_flags = read_byte_buffer(buffer)?;
-        let keep_alive = read_two_byte_integer_buffer(buffer)?;
-        // let variable_header_properties = VariableHeaderProperties::read_from(buffer)?;
-        let variable_header_properties = VariableHeaderProperties::read_from_buffer(buffer)?;
-
-        let mut session_expiry_interval = None;
-        let mut authentication_method = None;
-        let mut authentication_data = None;
-        let mut request_problem_information = None;
-        let mut request_response_information = None;
-        let mut receive_maximum = None;
-        let mut topic_alias_maximum = None;
-        let mut user_property = None;
-        let mut maximum_packet_size = None;
-
-        for property in &variable_header_properties.properties {
-            match property.id() {
-                SESSION_EXPIRY_INTERVAL => {
-                    session_expiry_interval = property.value_u32();
-                }
-                AUTHENTICATION_METHOD => {
-                    authentication_method = property.value_string();
-                }
-                AUTHENTICATION_DATA => {
-                    authentication_data = property.value_string();
-                }
-                REQUEST_PROBLEM_INFORMATION => {
-                    request_problem_information = property.value_u8();
-                }
-                REQUEST_RESPONSE_INFORMATION => {
-                    request_response_information = property.value_u8();
-                }
-                RECEIVE_MAXIMUM => {
-                    receive_maximum = property.value_u16();
-                }
-                TOPIC_ALIAS_MAXIMUM => {
-                    topic_alias_maximum = property.value_u16();
-                }
-                USER_PROPERTY => {
-                    user_property = property.value_string_pair();
-                }
-                MAXIMUM_PACKET_SIZE => {
-                    maximum_packet_size = property.value_u32();
-                }
-                _ => {}
-            }
-        }
-
-        Ok(ConnectProperties {
-            protocol_name,
-            protocol_version,
-            connect_flags,
-            keep_alive,
-            session_expiry_interval,
-            authentication_method,
-            authentication_data,
-            request_problem_information,
-            request_response_information,
-            receive_maximum,
-            topic_alias_maximum,
-            user_property,
-            maximum_packet_size,
-        })
-    }
-    */
 }

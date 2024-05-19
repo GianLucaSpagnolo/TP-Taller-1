@@ -31,7 +31,7 @@ fn main() -> ExitCode {
 
     // logger -------------------------------------------------
     let (tw, tr) = channel();
-    let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
+    let mut logger_handler = LoggerHandler::create_logger_handler(tw, log_file_path);
 
     match logger_handler.initiate_listener(tr) {
         Err(e) => {

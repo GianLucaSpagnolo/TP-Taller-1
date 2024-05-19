@@ -1,5 +1,4 @@
 use std::io::{Error, Read, Write};
-use std::ops::Deref;
 
 use super::puback_properties::_PubackProperties;
 use crate::control_packets::mqtt_packet::fixed_header::{PacketFixedHeader, _PUBACK_PACKET};
@@ -77,7 +76,6 @@ impl Serialization for _Puback {
         let mut buffer = aux_buffer.as_slice();
 
         let properties = _PubackProperties::read_from(&mut buffer)?;
-        //let properties = _PubackProperties::read_from_buffer(&mut buffer)?;
         Ok(_Puback { properties })
     }
 

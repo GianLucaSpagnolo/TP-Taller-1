@@ -388,6 +388,5 @@ mod test {
         let _ = remove_file(&log_file_path);
         // plus 1 for the unique header
         assert_eq!(line_counter + 1, readed_lines.len());
-
     }
 }

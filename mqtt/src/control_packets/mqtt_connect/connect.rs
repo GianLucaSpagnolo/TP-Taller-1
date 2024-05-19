@@ -1,7 +1,6 @@
 use std::io::Error;
 use std::io::Read;
 use std::io::Write;
-use std::net::TcpStream;
 
 use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
@@ -98,122 +97,10 @@ use super::payload::ConnectPayload;
 /// Password (Connect Flag - Password = 1)
 ///
 ///
-use crate::control_packets::mqtt_connect::connect_properties::*;
 
 pub struct Connect {
     pub properties: ConnectProperties,
     pub payload: ConnectPayload,
-}
-
-// lee los bytes
-// devolvera el paquete encapsulado en un enum
-// interpretable por el protocolo
-pub fn get_connect_packet(
-    stream: &mut TcpStream,
-    package_type: PacketType,
-    remaining_length: u16,
-) -> Result<Connect, Error> {
-    match package_type {
-        PacketType::ConnectType => {
-            println!("Connect get connect receiving ...");
-            pack_stream_connect_bytes(stream, remaining_length)
-        }
-        PacketType::ConnackType => todo!(),
-        PacketType::_PublishType => todo!(),
-        PacketType::_PubackType => todo!(),
-        PacketType::SubscribeType => todo!(),
-        PacketType::SubackType => todo!(),
-        PacketType::_PingReqType => todo!(),
-        PacketType::_PingRespType => todo!(),
-        PacketType::DisconnectType => todo!(),
-        _ => Err(Error::new(
-            std::io::ErrorKind::Other,
-            "Server processing - Paquete no implementado por connect",
-        )),
-    }
-}
-
-pub fn pack_stream_connect_bytes(
-    mut stream: &mut TcpStream,
-    remaining_length: u16,
-) -> Result<Connect, Error> {
-    // Delega al tipo de paquete correspondiente la lectura de
-    // los bytes correspondientes
-    /*
-    match T::read_from(stream, remaining_length) {
-        Ok(package) => Ok(T::packed_package(package)),
-        Err(e) => Err(e),
-    }
-    */
-    /*
-    let mut aux_buffer = vec![0; remaining_length as usize];
-        stream.read_exact(&mut aux_buffer)?;
-        let mut buffer = aux_buffer.as_slice();
-
-        let properties = ConnectProperties::read_from(&mut buffer)?;
-        let payload = ConnectPayload::read_from(&mut buffer)?;
-
-        //let properties = ConnectProperties::read_from_buffer(&mut buffer)?;
-        //let payload = ConnectPayload::read_from_buffer(&mut buffer)?;
-        Ok(Connect {
-            properties,
-            payload,
-        })
-    */
-    let mut aux_buffer = vec![0; remaining_length as usize];
-    //stream.read_exact(&mut aux_buffer)?;
-    /*
-    pub fn read_byte(stream: &mut dyn Read) -> Result<u8, Error> {
-        let mut read_buff = [0u8; 1];
-        stream.read_exact(&mut read_buff)?;
-        Ok(u8::from_be_bytes(read_buff))
-    }
-
-    pub fn read_byte_buffer(buffer: &mut [u8]) -> Result<u8, Error> {
-        let mut read_buff = [0u8; 1];
-
-        //stream.read_exact(&mut read_buff)?;
-        let mut handle = buffer.take(1);
-        handle.read(&mut read_buff)?;
-        Ok(u8::from_be_bytes(read_buff))
-    }
-     */
-
-    let mut handle = stream.take(remaining_length.into());
-    handle.read(&mut aux_buffer)?;
-
-    let mut buffer: &[u8] = aux_buffer.as_slice();
-    // let properties = ConnectProperties::read_from(&mut buffer);
-    let properties = match ConnectProperties::read_from(&mut buffer) {
-        Ok(r) => {
-            println!("Connect - Connect properties received ok");
-            r
-        }
-        Err(e) => {
-            eprintln!("error de connect properties al leer desde stream");
-            return Err(e);
-        }
-    };
-
-    //let payload = ConnectPayload::read_from(&mut buffer);
-    let payload = match ConnectPayload::read_from(&mut buffer) {
-        Ok(p) => {
-            println!("Connect - Connect payload received ok");
-            p
-        }
-        Err(e) => {
-            eprintln!("Connect - Connect paylod read fails");
-            return Err(e);
-        }
-    };
-    //let payload = ConnectPayload::read_from_buffer_static(buffer)?;
-
-    //let properties = ConnectProperties::read_from_buffer(&mut buffer)?;
-    //let payload = ConnectPayload::read_from_buffer(&mut buffer)?;
-    Ok(Connect {
-        properties,
-        payload,
-    })
 }
 
 impl Serialization for Connect {
@@ -225,8 +112,6 @@ impl Serialization for Connect {
         let properties = ConnectProperties::read_from(&mut buffer)?;
         let payload = ConnectPayload::read_from(&mut buffer)?;
 
-        //let properties = ConnectProperties::read_from_buffer(&mut buffer)?;
-        //let payload = ConnectPayload::read_from_buffer(&mut buffer)?;
         Ok(Connect {
             properties,
             payload,

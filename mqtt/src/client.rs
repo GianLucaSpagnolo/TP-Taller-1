@@ -3,11 +3,14 @@ use std::{io::Error, net::TcpStream, sync::RwLock, thread};
 use app::logger::LoggerHandler;
 
 use crate::{
-    actions::MqttActions, common::utils::create_logger, config::{ClientConfig, Config}, control_packets::{
+    actions::MqttActions,
+    common::utils::create_logger,
+    config::{ClientConfig, Config},
+    control_packets::{
         mqtt_connack::connack::Connack,
         mqtt_connect::{connect::Connect, payload},
         mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
-    }
+    },
 };
 pub struct MqttClient {
     id: String,
@@ -37,11 +40,7 @@ fn handle_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
 }
 
 impl MqttClient {
-    pub fn init(
-        id: String,
-        config: ClientConfig,
-        log_file_path: &String
-    ) -> Result<Self, Error> {
+    pub fn init(id: String, config: ClientConfig, log_file_path: &String) -> Result<Self, Error> {
         let logger_handler = match create_logger(log_file_path) {
             Ok(logger) => logger,
             Err(e) => return Err(e),
@@ -50,17 +49,21 @@ impl MqttClient {
         let mut stream = match TcpStream::connect(config.get_socket_address()) {
             Ok(file) => file,
             Err(e) => {
-                logger_handler.log_event(&("Mqtt client init fails by: ".to_string() + &e.to_string()), &id, &",".to_string());
+                logger_handler.log_event(
+                    &("Mqtt client init fails by: ".to_string() + &e.to_string()),
+                    &id,
+                    &",".to_string(),
+                );
                 logger_handler.close_logger();
                 return Err(e);
-            },
+            }
         };
 
         let payload = payload::ConnectPayload {
             client_id: id.clone(),
             ..Default::default()
         };
-        
+
         let connection = Connect::new(config.connect_properties.clone(), payload);
         match connection.send(&mut stream) {
             Ok(_) => {
@@ -70,7 +73,6 @@ impl MqttClient {
                     &id,
                     &",".to_string(),
                 );
-                
             }
             Err(e) => {
                 eprintln!("Client connection failure");
@@ -100,7 +102,7 @@ impl MqttClient {
                 return Err(e);
             }
         };
-        
+
         MqttActions::ClientConnection(id.to_string(), connack.properties.connect_reason_code)
             .register_action(&logger_handler);
         logger_handler.close_logger();
@@ -110,7 +112,7 @@ impl MqttClient {
     pub fn run_listener(self, logger_handler: &LoggerHandler) -> Result<(), Error> {
         let mut stream_cpy = self.stream.try_clone()?;
         let mut counter = 0;
- 
+
         logger_handler.log_event(
             &"Initializing client listener ...".to_string(),
             &self.id,
@@ -173,7 +175,7 @@ impl MqttClient {
                 Err(e) => {
                     let err = &("Error at lock comunication stream: ".to_string() + &e.to_string())
                         .to_string();
-                    logger_handler.log_event(&err, &self.id, &",".to_string());
+                    logger_handler.log_event(err, &self.id, &",".to_string());
                     eprintln!("{}", err);
 
                     return Err(Error::new(std::io::ErrorKind::InvalidData, err.to_string()));
@@ -195,7 +197,7 @@ impl MqttClient {
         &self,
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
-        logger_handler: &LoggerHandler
+        logger_handler: &LoggerHandler,
     ) -> Result<(), Error> {
         let packet_recived = match get_packet(
             &mut stream,
@@ -205,7 +207,11 @@ impl MqttClient {
             Ok(received) => received,
             Err(e) => {
                 //eprintln!("Error at reading package");
-                logger_handler.log_event(&("Error at reading package".to_string() + &e.to_string()), &self.id, &",".to_string());
+                logger_handler.log_event(
+                    &("Error at reading package".to_string() + &e.to_string()),
+                    &self.id,
+                    &",".to_string(),
+                );
                 return Err(e);
             }
         };

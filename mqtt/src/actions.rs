@@ -1,4 +1,4 @@
-use std::{fmt, sync::{Arc, Mutex}};
+use std::fmt;
 
 use app::logger::LoggerHandler;
 
@@ -15,7 +15,7 @@ pub enum MqttActions {
 }
 
 impl MqttActions {
-    pub fn register_action(&self,  logger: &LoggerHandler) {
+    pub fn register_action(&self, logger: &LoggerHandler) {
         match &self {
             MqttActions::ServerConnection(id) => {
                 logger.log_event(&"Connection successful".to_string(), id, &",".to_string())
@@ -37,7 +37,6 @@ impl MqttActions {
             MqttActions::TryConnect => todo!(),
             MqttActions::PackageError => todo!(),
         }
-        
     }
 }
 

@@ -1,6 +1,5 @@
 use std::io::Error;
 use std::io::Read;
-use std::net::TcpStream;
 
 use crate::common::data_types::data_representation::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
@@ -124,7 +123,6 @@ impl PacketProperties for _PublishProperties {
     }
 
     fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        //fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
         let topic_name_length = read_two_byte_integer(stream)?;
         let topic_name = read_utf8_encoded_string(stream, topic_name_length)?;
         let packet_identifier = read_two_byte_integer(stream)?;
@@ -190,79 +188,4 @@ impl PacketProperties for _PublishProperties {
             application_message,
         })
     }
-
-    /*
-    //fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-    fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
-        let topic_name_length = read_two_byte_integer(stream)?;
-        let topic_name = read_utf8_encoded_string(stream, topic_name_length)?;
-        let packet_identifier = read_two_byte_integer(stream)?;
-        let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
-
-        let mut payload_format_indicator = None;
-        let mut message_expiry_interval = None;
-        let mut topic_alias = None;
-        let mut response_topic = None;
-        let mut correlation_data = None;
-        let mut user_property = None;
-        let mut subscription_identifier = None;
-        let mut content_type = None;
-
-        for property in &variable_header_properties.properties {
-            match property.id() {
-                PAYLOAD_FORMAT_INDICATOR => {
-                    payload_format_indicator = property.value_u8();
-                }
-                MESSAGE_EXPIRY_INTERVAL => {
-                    message_expiry_interval = property.value_u32();
-                }
-                TOPIC_ALIAS => {
-                    topic_alias = property.value_u16();
-                }
-                RESPONSE_TOPIC => {
-                    response_topic = property.value_string();
-                }
-                CORRELATION_DATA => {
-                    correlation_data = property.value_string();
-                }
-                USER_PROPERTY => {
-                    user_property = property.value_string_pair();
-                }
-                SUBSCRIPTION_IDENTIFIER => {
-                    subscription_identifier = property.value_u32();
-                }
-                CONTENT_TYPE => {
-                    content_type = property.value_string();
-                }
-                _ => {}
-            }
-        }
-
-        let mut application_message = None;
-        let application_message_len = read_two_byte_integer(stream).unwrap_or(0);
-        if application_message_len > 0 {
-            application_message =
-                Some(read_utf8_encoded_string(stream, application_message_len).unwrap());
-        }
-
-        Ok(_PublishProperties {
-            topic_name,
-            packet_identifier,
-            payload_format_indicator,
-            message_expiry_interval,
-            topic_alias,
-            response_topic,
-            correlation_data,
-            user_property,
-            subscription_identifier,
-            content_type,
-            application_message,
-        })
-    }
-    */
-    /*
-    fn read_from_buffer(stream: &mut [u8]) -> Result<Self, Error> {
-        todo!()
-    }
-    */
 }
