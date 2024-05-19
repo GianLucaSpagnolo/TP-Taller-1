@@ -6,7 +6,6 @@ mod server_pool;
 mod session;
 
 mod control_packets {
-
     pub mod mqtt_packet {
         pub mod fixed_header;
         pub mod flags;
@@ -48,6 +47,16 @@ mod control_packets {
         pub mod suback_properties;
     }
 
+    pub mod mqtt_unsubscribe {
+        pub mod unsubscribe;
+        pub mod unsubscribe_properties;
+    }
+
+    pub mod mqtt_unsuback {
+        pub mod unsuback;
+        pub mod unsuback_properties;
+    }
+
     pub mod mqtt_pingreq {
         pub mod pingreq;
     }
@@ -59,6 +68,11 @@ mod control_packets {
     pub mod mqtt_disconnect {
         pub mod disconnect;
         pub mod disconnect_properties;
+    }
+
+    pub mod mqtt_auth {
+        pub mod auth;
+        pub mod auth_properties;
     }
 }
 

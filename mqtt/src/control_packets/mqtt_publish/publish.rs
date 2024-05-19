@@ -1,11 +1,10 @@
-use std::io::Error;
-use std::io::Read;
-use std::io::Write;
+use std::io::{Error, Read, Write};
 
 use crate::control_packets::mqtt_packet::fixed_header::*;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_publish::publish_properties::*;
+
 /// ## PUBLISH PACKET
 ///
 /// ### FIXED HEADER: 2 BYTES
@@ -68,21 +67,21 @@ use crate::control_packets::mqtt_publish::publish_properties::*;
 /// El PUBLISH PACKET contiene el Subscription Identifier llevado por el SUBSCRIBE PACKET
 /// Pero un PUBLISH PACKET enviado desde un cliente a un servidor no debe contener ese Subscription Identifier
 ///
-pub struct _Publish {
+#[allow(dead_code)]
+pub struct Publish {
     pub fixed_header_flags: u8, // Fixed Header Flags
-    pub properties: _PublishProperties,
+    pub properties: PublishProperties,
 }
 
-impl Serialization for _Publish {
-    fn read_from(stream: &mut dyn Read, remaining_length: u16) -> Result<_Publish, Error> {
+impl Serialization for Publish {
+    fn read_from(stream: &mut dyn Read, remaining_length: u32) -> Result<Publish, Error> {
         let mut aux_buffer = vec![0; remaining_length as usize];
         stream.read_exact(&mut aux_buffer)?;
         let mut buffer = aux_buffer.as_slice();
 
-        let properties = _PublishProperties::read_from(&mut buffer)?;
-        //let properties = _PublishProperties::read_from_buffer(&mut buffer)?;
+        let properties = PublishProperties::read_from(&mut buffer)?;
 
-        Ok(_Publish {
+        Ok(Publish {
             fixed_header_flags: 0,
             properties,
         })
@@ -91,7 +90,7 @@ impl Serialization for _Publish {
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
         let remaining_length = self.properties.size_of();
 
-        let fixed_header_content = _PUBLISH_PACKET | self.fixed_header_flags;
+        let fixed_header_content = PUBLISH_PACKET | self.fixed_header_flags;
         let fixed_header = PacketFixedHeader::new(fixed_header_content, remaining_length);
         let fixed_header_bytes = fixed_header.as_bytes();
 
@@ -103,14 +102,12 @@ impl Serialization for _Publish {
         Ok(())
     }
 
-    fn packed_package(
-        package: Self,
-    ) -> crate::control_packets::mqtt_packet::packet::generic_packet::PacketReceived {
+    fn packed_package(package: Self) -> PacketReceived {
         PacketReceived::Publish(Box::new(package))
     }
 }
 
-impl _Publish {
+impl Publish {
     /// ### Flags del Fixed Header de Publish:
     ///
     /// 4 bits mas significativos: MQTT Control Packet type
@@ -136,13 +133,14 @@ impl _Publish {
     /// retenido. Si el bit Retain es 1, el Servidor DEBE retener el mensaje como un mensaje retenido y lo debe
     /// entregar a los suscriptores con un Topic Name que coincida cuando sea posible.
     ///
-    pub fn _new(dup_flag: u8, qos_level: u8, retain: u8, properties: _PublishProperties) -> Self {
+    #[allow(dead_code)]
+    pub fn new(dup_flag: u8, qos_level: u8, retain: u8, properties: PublishProperties) -> Self {
         let mut fixed_header_flags = 0;
         fixed_header_flags |= dup_flag << 3;
         fixed_header_flags |= qos_level << 1;
         fixed_header_flags |= retain;
 
-        _Publish {
+        Publish {
             fixed_header_flags,
             properties,
         }
@@ -151,14 +149,14 @@ impl _Publish {
 
 #[cfg(test)]
 mod test {
-    use crate::control_packets::mqtt_packet::fixed_header::_PUBLISH_PACKET;
+    use crate::control_packets::mqtt_packet::fixed_header::PUBLISH_PACKET;
     use crate::control_packets::mqtt_packet::flags::flags_handler;
 
     use super::*;
 
     #[test]
     fn test_publish() {
-        let properties = _PublishProperties {
+        let properties = PublishProperties {
             topic_name: "mensajeria".to_string(),
             packet_identifier: 1,
             payload_format_indicator: Some(1),
@@ -169,10 +167,10 @@ mod test {
             user_property: Some(("test_key".to_string(), "test_value".to_string())),
             subscription_identifier: Some(0),
             content_type: Some("type".to_string()),
-            application_message: Some("message".to_string()),
+            application_message: "message".to_string(),
         };
 
-        let publish = _Publish::_new(1, 2, 1, properties);
+        let publish = Publish::new(1, 2, 1, properties);
 
         // ESCRIBE EL PACKET EN EL BUFFER
         let mut bytes = Vec::new();
@@ -184,19 +182,19 @@ mod test {
         //let publish_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
 
         let publish =
-            _Publish::read_from(&mut buffer, publish_fixed_header.remaining_length).unwrap();
+            Publish::read_from(&mut buffer, publish_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(publish_fixed_header.get_packet_type(), _PUBLISH_PACKET);
+        assert_eq!(publish_fixed_header.get_packet_type(), PUBLISH_PACKET);
         assert_eq!(
-            flags_handler::_get_publish_dup_flag(publish_fixed_header.packet_type),
+            flags_handler::get_publish_dup_flag(publish_fixed_header.packet_type),
             1
         );
         assert_eq!(
-            flags_handler::_get_publish_qos_level(publish_fixed_header.packet_type),
+            flags_handler::get_publish_qos_level(publish_fixed_header.packet_type),
             2
         );
         assert_eq!(
-            flags_handler::_get_publish_retain(publish_fixed_header.packet_type),
+            flags_handler::get_publish_retain(publish_fixed_header.packet_type),
             1
         );
 
@@ -254,22 +252,18 @@ mod test {
             panic!("Error");
         }
 
-        if let Some(value) = props.application_message {
-            assert_eq!(value, "message");
-        } else {
-            panic!("Error");
-        }
+        assert_eq!(props.application_message, "message".to_string());
     }
 
     #[test]
     fn test_publish_empty_optional_fields() {
-        let properties = _PublishProperties {
+        let properties = PublishProperties {
             topic_name: "mensajeria".to_string(),
             packet_identifier: 2,
             ..Default::default()
         };
 
-        let publish = _Publish::_new(0, 0, 0, properties);
+        let publish = Publish::new(0, 0, 0, properties);
 
         // ESCRIBE EL PACKET EN EL BUFFER
         let mut bytes = Vec::new();
@@ -280,19 +274,19 @@ mod test {
         let publish_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
         //let publish_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let publish =
-            _Publish::read_from(&mut buffer, publish_fixed_header.remaining_length).unwrap();
+            Publish::read_from(&mut buffer, publish_fixed_header.remaining_length).unwrap();
 
-        assert_eq!(publish_fixed_header.get_packet_type(), _PUBLISH_PACKET);
+        assert_eq!(publish_fixed_header.get_packet_type(), PUBLISH_PACKET);
         assert_eq!(
-            flags_handler::_get_publish_dup_flag(publish_fixed_header.packet_type),
+            flags_handler::get_publish_dup_flag(publish_fixed_header.packet_type),
             0
         );
         assert_eq!(
-            flags_handler::_get_publish_qos_level(publish_fixed_header.packet_type),
+            flags_handler::get_publish_qos_level(publish_fixed_header.packet_type),
             0
         );
         assert_eq!(
-            flags_handler::_get_publish_retain(publish_fixed_header.packet_type),
+            flags_handler::get_publish_retain(publish_fixed_header.packet_type),
             0
         );
 
@@ -308,6 +302,6 @@ mod test {
         assert_eq!(publish.properties.subscription_identifier, None);
         assert_eq!(publish.properties.content_type, None);
 
-        assert_eq!(publish.properties.application_message, None);
+        assert_eq!(publish.properties.application_message, "".to_string());
     }
 }

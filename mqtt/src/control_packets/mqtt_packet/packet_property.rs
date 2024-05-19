@@ -77,6 +77,11 @@ fn write_u32_property_as_bytes(bytes: &mut Vec<u8>, id: u8, val: &u32) {
     bytes.extend_from_slice(&val.to_be_bytes());
 }
 
+fn write_variable_byte_integer_property_as_bytes(bytes: &mut Vec<u8>, id: u8, val: &u32) {
+    bytes.push(id);
+    variable_byte_integer_encode(bytes, *val);
+}
+
 fn write_utf8_string_as_bytes(bytes: &mut Vec<u8>, val: &str) {
     let len = val.len() as u16;
     len.to_be_bytes().map(|b| bytes.push(b));
@@ -161,10 +166,16 @@ impl PacketProperty {
     pub fn value_u32(&self) -> Option<u32> {
         match self {
             PacketProperty::MessageExpiryInterval(value) => Some(*value),
-            PacketProperty::SubscriptionIdentifier(value) => Some(*value),
             PacketProperty::SessionExpiryInterval(value) => Some(*value),
             PacketProperty::WillDelayInterval(value) => Some(*value),
             PacketProperty::MaximumPacketSize(value) => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub fn value_variable_byte_integer(&self) -> Option<u32> {
+        match self {
+            PacketProperty::SubscriptionIdentifier(value) => Some(*value),
             _ => None,
         }
     }
@@ -223,10 +234,19 @@ impl PacketProperty {
         }
     }
 
+    pub fn new_property_variable_byte_integer(id: u8, value: u32) -> Result<Self, Error> {
+        match id {
+            SUBSCRIPTION_IDENTIFIER => Ok(PacketProperty::SubscriptionIdentifier(value)),
+            _ => Err(Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Invalid property id",
+            )),
+        }
+    }
+
     pub fn new_property_u32(id: u8, value: u32) -> Result<Self, Error> {
         match id {
             MESSAGE_EXPIRY_INTERVAL => Ok(PacketProperty::MessageExpiryInterval(value)),
-            SUBSCRIPTION_IDENTIFIER => Ok(PacketProperty::SubscriptionIdentifier(value)),
             SESSION_EXPIRY_INTERVAL => Ok(PacketProperty::SessionExpiryInterval(value)),
             WILL_DELAY_INTERVAL => Ok(PacketProperty::WillDelayInterval(value)),
             MAXIMUM_PACKET_SIZE => Ok(PacketProperty::MaximumPacketSize(value)),
@@ -301,7 +321,7 @@ impl PacketProperty {
                 Some(PacketProperty::CorrelationData(value))
             }
             SUBSCRIPTION_IDENTIFIER => {
-                let value = four_byte_integer_from_be_bytes(buff, buff_size);
+                let value = variable_byte_integer_from_be_bytes(buff, buff_size);
                 Some(PacketProperty::SubscriptionIdentifier(value))
             }
             SESSION_EXPIRY_INTERVAL => {
@@ -423,7 +443,7 @@ impl PacketProperty {
                 write_utf8_string_property_as_bytes(bytes, self.id(), value)
             }
             PacketProperty::SubscriptionIdentifier(value) => {
-                write_u32_property_as_bytes(bytes, self.id(), value)
+                write_variable_byte_integer_property_as_bytes(bytes, self.id(), value)
             }
             PacketProperty::SessionExpiryInterval(value) => {
                 write_u32_property_as_bytes(bytes, self.id(), value)
