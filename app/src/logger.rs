@@ -173,14 +173,11 @@ mod test {
         let str1 = "Initiate logger ...".to_string();
         let str2 = "Closing logger ...".to_string();
 
-        //let writed_lines = vec![header.to_string(), str1.to_string(), str2.to_string()];
-
         let (tw, tr) = channel();
         let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
 
-        if let Err(..) = logger_handler.initiate_listener(tr) {
+        if logger_handler.initiate_listener(tr).is_err() {
             println!("Logger fails to initiate");
-            //assert!(false)
             panic!()
         };
 
@@ -194,7 +191,6 @@ mod test {
             Err(e) => {
                 println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
                 let _ = remove_file(&log_file_path);
-                //return assert!(false);
                 panic!()
             }
         };
@@ -230,7 +226,7 @@ mod test {
         let (tw, tr) = channel();
         let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
 
-        let _ = if let Err(..) = logger_handler.initiate_listener(tr) {
+        if logger_handler.initiate_listener(tr).is_err() {
             println!("Logger fails to initiate");
             panic!()
         };
@@ -246,7 +242,6 @@ mod test {
             Ok(f) => f,
             Err(e) => {
                 println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
-                //return assert!(false);
                 panic!()
             }
         };
@@ -260,7 +255,7 @@ mod test {
 
             println!("Unknow line: [{}]", line);
             let _ = remove_file(&log_file_path);
-            assert!(false);
+            panic!()
         }
 
         // reseting logger:
@@ -268,7 +263,7 @@ mod test {
         logger_handler = LoggerHandler::create_logger_handler(twc, &log_file_path);
         writed_lines.push(str3.to_string());
 
-        let _ = if let Err(..) = logger_handler.initiate_listener(trc) {
+        if logger_handler.initiate_listener(trc).is_err() {
             println!("Logger fails to initiate");
             panic!()
         };
@@ -286,7 +281,6 @@ mod test {
             Err(e) => {
                 println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
                 let _ = remove_file(&log_file_path);
-                //return assert!(false);
                 panic!()
             }
         };
@@ -326,7 +320,7 @@ mod test {
         let (tw, tr) = channel();
         let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
 
-        let _ = if let Err(..) = logger_handler.initiate_listener(tr) {
+        if logger_handler.initiate_listener(tr).is_err() {
             println!("Logger 1 fails to initiate");
             panic!()
         };
@@ -334,7 +328,7 @@ mod test {
         let (tw2, tr2) = channel();
         let mut logger_handler2 = LoggerHandler::create_logger_handler(tw2, &log_file_path);
 
-        let _ = if let Err(..) = logger_handler2.initiate_listener(tr2) {
+        if logger_handler2.initiate_listener(tr2).is_err() {
             println!("Logger 1 fails to initiate");
             panic!()
         };
