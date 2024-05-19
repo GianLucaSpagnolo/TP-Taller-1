@@ -102,7 +102,7 @@ impl LoggerHandler {
             msg.to_string()
         };
 
-        let logger_msg: String = separator.to_string() + &client_id + &separator + &message;
+        let logger_msg: String = separator.to_string() + client_id + separator + &message;
         let _ = &self.enqueue_message(&logger_msg);
     }
 
@@ -163,6 +163,7 @@ fn log_action(action: &mut String, file: &mut File) -> Result<(), Error> {
 mod test {
     use super::LoggerHandler;
     use crate::common::file_manager::{open_file, read_file};
+    use core::panic;
     use std::{fs::remove_file, sync::mpsc::channel};
 
     #[test]
@@ -172,20 +173,15 @@ mod test {
         let str1 = "Initiate logger ...".to_string();
         let str2 = "Closing logger ...".to_string();
 
-        let mut writed_lines = vec![];
-        writed_lines.push(header.to_string());
-        writed_lines.push(str1.to_string());
-        writed_lines.push(str2.to_string());
+        //let writed_lines = vec![header.to_string(), str1.to_string(), str2.to_string()];
 
         let (tw, tr) = channel();
         let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
 
-        let _ = match logger_handler.initiate_listener(tr) {
-            Err(..) => {
-                println!("Logger fails to initiate");
-                assert!(false)
-            }
-            Ok(..) => (),
+        if let Err(..) = logger_handler.initiate_listener(tr) {
+            println!("Logger fails to initiate");
+            //assert!(false)
+            panic!()
         };
 
         logger_handler.log_event(&str1, &0.to_string(), &",".to_string());
@@ -193,16 +189,17 @@ mod test {
         logger_handler.close_logger();
 
         // testing
-        let mut file = match open_file(&log_file_path) {
+        let file = match open_file(&log_file_path) {
             Ok(f) => f,
             Err(e) => {
                 println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
                 let _ = remove_file(&log_file_path);
-                return assert!(false);
+                //return assert!(false);
+                panic!()
             }
         };
 
-        let readed_lines = read_file(&mut file).unwrap();
+        let readed_lines = read_file(&file).unwrap();
 
         for line in readed_lines {
             if line.contains(&header) || line.contains(&str1) || line.contains(&str2) {
@@ -210,10 +207,10 @@ mod test {
             };
             println!("{}", line);
             let _ = remove_file(&log_file_path);
-            assert!(false);
+            panic!()
         }
         let _ = remove_file(&log_file_path);
-        assert!(true)
+        //assert!(true)
     }
 
     #[test]
@@ -233,12 +230,9 @@ mod test {
         let (tw, tr) = channel();
         let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
 
-        let _ = match logger_handler.initiate_listener(tr) {
-            Err(..) => {
-                println!("Logger fails to initiate");
-                assert!(false)
-            }
-            Ok(..) => (),
+        let _ = if let Err(..) = logger_handler.initiate_listener(tr) {
+            println!("Logger fails to initiate");
+            panic!()
         };
 
         logger_handler.log_event(&str1, &0.to_string(), &",".to_string());
@@ -252,11 +246,12 @@ mod test {
             Ok(f) => f,
             Err(e) => {
                 println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
-                return assert!(false);
+                //return assert!(false);
+                panic!()
             }
         };
 
-        let mut readed_lines = read_file(&mut file).unwrap();
+        let mut readed_lines = read_file(&file).unwrap();
 
         for line in &readed_lines {
             if line.contains(&header) || line.contains(&str1) || line.contains(&str2) {
@@ -273,12 +268,9 @@ mod test {
         logger_handler = LoggerHandler::create_logger_handler(twc, &log_file_path);
         writed_lines.push(str3.to_string());
 
-        let _ = match logger_handler.initiate_listener(trc) {
-            Err(..) => {
-                println!("Logger fails to initiate");
-                assert!(false)
-            }
-            Ok(..) => (),
+        let _ = if let Err(..) = logger_handler.initiate_listener(trc) {
+            println!("Logger fails to initiate");
+            panic!()
         };
 
         logger_handler.log_event(&str1, &0.to_string(), &",".to_string());
@@ -294,11 +286,12 @@ mod test {
             Err(e) => {
                 println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
                 let _ = remove_file(&log_file_path);
-                return assert!(false);
+                //return assert!(false);
+                panic!()
             }
         };
 
-        readed_lines = read_file(&mut file).unwrap();
+        readed_lines = read_file(&file).unwrap();
 
         for line in &readed_lines {
             if line.contains(&header)
@@ -311,7 +304,8 @@ mod test {
 
             println!("Unknow line: [{}]", line);
             let _ = remove_file(&log_file_path);
-            assert!(false);
+            //assert!(false);
+            panic!()
         }
 
         // deleting the file:
@@ -329,31 +323,20 @@ mod test {
         //let str3 = "Appened event".to_string();
         let mut line_counter = 0;
 
-        let mut writed_lines = vec![];
-        writed_lines.push(header.to_string());
-        writed_lines.push(str1.to_string());
-        writed_lines.push(str2.to_string());
-
         let (tw, tr) = channel();
         let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
 
-        let _ = match logger_handler.initiate_listener(tr) {
-            Err(..) => {
-                println!("Logger 1 fails to initiate");
-                assert!(false)
-            }
-            Ok(..) => (),
+        let _ = if let Err(..) = logger_handler.initiate_listener(tr) {
+            println!("Logger 1 fails to initiate");
+            panic!()
         };
 
         let (tw2, tr2) = channel();
         let mut logger_handler2 = LoggerHandler::create_logger_handler(tw2, &log_file_path);
 
-        let _ = match logger_handler2.initiate_listener(tr2) {
-            Err(..) => {
-                println!("Logger 2 fails to initiate");
-                assert!(false)
-            }
-            Ok(..) => (),
+        let _ = if let Err(..) = logger_handler2.initiate_listener(tr2) {
+            println!("Logger 1 fails to initiate");
+            panic!()
         };
 
         logger_handler.log_event(&str1, &0.to_string(), &",".to_string());
@@ -364,15 +347,15 @@ mod test {
         logger_handler2.close_logger();
 
         // testing
-        let mut file = match open_file(&log_file_path) {
+        let file = match open_file(&log_file_path) {
             Ok(f) => f,
             Err(e) => {
                 println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
-                return assert!(false);
+                panic!()
             }
         };
 
-        let readed_lines = read_file(&mut file).unwrap();
+        let readed_lines = read_file(&file).unwrap();
 
         for line in &readed_lines {
             if line.contains(&header) || line.contains(&str1) || line.contains(&str2) {
@@ -381,7 +364,7 @@ mod test {
 
             println!("Unknow line: [{}]", line);
             let _ = remove_file(&log_file_path);
-            assert!(false);
+            panic!()
         }
 
         // deleting the file:
