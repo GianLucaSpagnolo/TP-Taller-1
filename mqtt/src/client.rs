@@ -67,7 +67,7 @@ impl MqttClient {
         let connection = Connect::new(config.connect_properties.clone(), payload);
         match connection.send(&mut stream) {
             Ok(_) => {
-                println!("Client initial connection config successfully");
+                //println!("Client initial connection config successfully");
                 logger_handler.log_event(
                     &"Client initial connection config successfully".to_string(),
                     &id,
@@ -75,7 +75,7 @@ impl MqttClient {
                 );
             }
             Err(e) => {
-                eprintln!("Client connection failure");
+                //eprintln!("Client connection failure");
                 logger_handler.log_event(
                     &("Client connection config failure by: ".to_string() + &e.to_string()),
                     &id,
@@ -88,7 +88,7 @@ impl MqttClient {
 
         let connack = match handle_connack_packet(&mut stream) {
             Ok(r) => {
-                println!("Connack handler finish");
+                //println!("Connack handler finish");
                 r
             }
             Err(e) => {
@@ -118,7 +118,7 @@ impl MqttClient {
             &self.id,
             &",".to_string(),
         );
-        println!("Listener initialized");
+        //println!("Listener initialized");
 
         // probando:
         /*
@@ -144,12 +144,12 @@ impl MqttClient {
                     match PacketFixedHeader::read_from(&mut lread_file.clone()) {
                         //match PacketFixedHeader::read_from_stream(&lread_file) {
                         Ok(header) => {
-                            println!("listening packages");
+                            //println!("listening packages");
                             self.messages_handler(&mut stream_cpy, header, logger_handler)?;
                             counter = 0;
                         }
                         Err(e) => {
-                            eprintln!("listening package error: {}", e);
+                            //eprintln!("listening package error: {}", e);
                             logger_handler.log_event(
                                 &("Client listener package error by: ".to_string()
                                     + &e.to_string()),
@@ -189,7 +189,7 @@ impl MqttClient {
             &self.id,
             &",".to_string(),
         );
-        println!("Listener closed");
+        //println!("Listener closed");
         Ok(())
     }
 

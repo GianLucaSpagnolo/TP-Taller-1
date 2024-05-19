@@ -213,7 +213,7 @@ impl MqttServer {
         ) {
             Ok(pack) => match pack {
                 PacketReceived::Connect(connect_pack) => {
-                    println!("Client try to connect");
+                    //println!("Client try to connect");
                     logger_handler.log_event(
                         &"Client try to connect".to_string(),
                         &"0".to_string(),
@@ -273,7 +273,7 @@ impl MqttServer {
         };
         match Connack::new(connack_properties).send(&mut stream) {
             Ok(_) => {
-                println!("Connack enviado");
+                //println!("Connack enviado");
                 logger_handler.log_event(
                     &"Connack sent".to_string(),
                     &"0".to_string(),
@@ -281,7 +281,7 @@ impl MqttServer {
                 );
             }
             Err(e) => {
-                eprintln!("Connack send error: {}", e);
+                //eprintln!("Connack send error: {}", e);
                 logger_handler.log_event(
                     &"Connack sending error".to_string(),
                     &"0".to_string(),
