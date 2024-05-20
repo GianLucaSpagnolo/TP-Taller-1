@@ -28,7 +28,7 @@ pub struct Message {
     pub data: String,
 }
 
-fn handle_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
+fn receive_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
     let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
 
     let packet_recived = get_packet(
@@ -57,7 +57,10 @@ impl MqttClient {
 
         Connect::new(config.connect_properties.clone(), payload).send(&mut stream)?;
 
-        let connack = handle_connack_packet(&mut stream)?;
+        MqttActions::ClientSendConnect(config.id.clone(), config.get_socket_address().to_string())
+            .register_action();
+
+        let connack = receive_connack_packet(&mut stream)?;
 
         MqttActions::ClientConnection(
             config.get_socket_address().to_string(),
@@ -66,22 +69,21 @@ impl MqttClient {
         .register_action();
 
         let current_packet_id = 0;
-        
+
         let client = MqttClient {
             config,
             stream,
-            current_packet_id
+            current_packet_id,
         };
 
         Ok(client)
-
     }
 
     pub fn run_listener(
         &mut self,
     ) -> Result<(Receiver<Message>, JoinHandle<Result<(), Error>>), Error> {
         let mut counter = 0;
-        
+
         let client = self.clone();
 
         let (sender, receiver) = mpsc::channel();
@@ -90,7 +92,9 @@ impl MqttClient {
             loop {
                 client.listen_message(client.stream.try_clone()?, sender.clone(), &mut counter)?;
 
-                if let Some(expiry_interval) = client.config.connect_properties.session_expiry_interval {
+                if let Some(expiry_interval) =
+                    client.config.connect_properties.session_expiry_interval
+                {
                     MqttClient::session_timer(&mut counter, expiry_interval)?;
                 }
             }
@@ -99,7 +103,7 @@ impl MqttClient {
         Ok((receiver, handler))
     }
 
-    fn session_timer(counter: &mut u32, expiry_interval: u32) -> Result<(), Error>{
+    fn session_timer(counter: &mut u32, expiry_interval: u32) -> Result<(), Error> {
         thread::sleep(std::time::Duration::from_millis(1000));
         *counter += 1;
         if expiry_interval != 0 && *counter > expiry_interval {
@@ -109,7 +113,7 @@ impl MqttClient {
         Ok(())
     }
 
-    fn listen_message(
+    pub fn listen_message(
         &self,
         mut stream: TcpStream,
         sender: Sender<Message>,
@@ -133,19 +137,26 @@ impl MqttClient {
             fixed_header.remaining_length,
         )?;
 
-        let data ;
+        let data;
         let topic;
         match packet_recived {
             PacketReceived::Publish(publish) => {
                 data = publish.properties.application_message.clone();
                 topic = publish.properties.topic_name.clone();
-                MqttActions::ClientReceivePublish(self.config.id.clone(), data.clone(), topic.clone())
-                    .register_action();
+                MqttActions::ClientReceivePublish(
+                    self.config.id.clone(),
+                    data.clone(),
+                    topic.clone(),
+                )
+                .register_action();
             }
             _ => return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido")),
         }
-        
-        Ok(Message { topic, data: data.clone() })
+
+        Ok(Message {
+            topic,
+            data: data.clone(),
+        })
     }
 
     pub fn publish(&mut self, message: String, topic: String) -> Result<(), Error> {

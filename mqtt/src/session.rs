@@ -1,6 +1,9 @@
 use std::net::TcpStream;
 
-use crate::control_packets::{mqtt_connect::connect::Connect, mqtt_packet::flags::flags_handler, mqtt_subscribe::subscribe_properties::TopicFilter};
+use crate::control_packets::{
+    mqtt_connect::connect::Connect, mqtt_packet::flags::flags_handler,
+    mqtt_subscribe::subscribe_properties::TopicFilter,
+};
 
 pub struct WillMessage {
     pub will_topic: String,

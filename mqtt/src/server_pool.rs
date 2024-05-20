@@ -56,7 +56,7 @@ impl ServerPool {
         let job = Box::new(f);
 
         match self.sender.send(Message::NewJob(job)) {
-            Ok(a ) => Ok(()),
+            Ok(a) => Ok(()),
             Err(_) => Err(Error::new(
                 std::io::ErrorKind::Other,
                 "El thread no pudo enviar el mensaje al worker",
