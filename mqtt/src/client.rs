@@ -1,7 +1,7 @@
 use std::{
     io::Error,
     net::TcpStream,
-    sync::mpsc::{self, Receiver, Sender},
+    sync::{mpsc::{self, Receiver, Sender}, Arc, Mutex, MutexGuard},
     thread::{self, JoinHandle},
 };
 
@@ -19,7 +19,7 @@ use crate::{
 
 pub struct MqttClient {
     config: ClientConfig,
-    stream: TcpStream,
+    stream: Arc<Mutex<TcpStream>>,
     current_packet_id: u16,
 }
 
@@ -72,7 +72,7 @@ impl MqttClient {
 
         let client = MqttClient {
             config,
-            stream,
+            stream: Arc::new(Mutex::new(stream)),
             current_packet_id,
         };
 
@@ -87,10 +87,15 @@ impl MqttClient {
         let client = self.clone();
 
         let (sender, receiver) = mpsc::channel();
-
+        
+        let stream = Arc::clone(&self.stream);
+        
         let handler = thread::spawn(move || -> Result<(), Error> {
             loop {
-                client.listen_message(client.stream.try_clone()?, sender.clone(), &mut counter)?;
+                
+                let s = stream.lock().unwrap();
+
+                client.listen_message(s, sender.clone(), &mut counter)?;
 
                 if let Some(expiry_interval) =
                     client.config.connect_properties.session_expiry_interval
@@ -115,11 +120,11 @@ impl MqttClient {
 
     pub fn listen_message(
         &self,
-        mut stream: TcpStream,
+        mut stream: MutexGuard<TcpStream>,
         sender: Sender<Message>,
         counter: &mut u32,
     ) -> Result<(), Error> {
-        let header = PacketFixedHeader::read_from(&mut stream)?;
+        let header = PacketFixedHeader::read_from(&mut *stream)?;
         let data = self.messages_handler(&mut stream, header)?;
         sender.send(data).unwrap();
         *counter = 0;
@@ -175,7 +180,7 @@ impl MqttClient {
             self.config.publish_retain,
             properties,
         )
-        .send(&mut self.stream)?;
+        .send(&mut *self.stream.lock().unwrap())?;
 
         MqttActions::ClientSendPublish(self.config.id.clone(), message, topic).register_action();
         Ok(())
@@ -207,7 +212,7 @@ impl MqttClient {
 
         let prop_topics = properties.topic_filters.clone();
 
-        Subscribe::new(properties).send(&mut self.stream)?;
+        Subscribe::new(properties).send(&mut *self.stream.lock().unwrap())?;
         MqttActions::ClientSendSubscribe(self.config.id.clone(), prop_topics).register_action();
         Ok(())
     }
@@ -229,7 +234,7 @@ impl Clone for MqttClient {
     fn clone(&self) -> Self {
         MqttClient {
             config: self.config.clone(),
-            stream: self.stream.try_clone().unwrap(),
+            stream: Arc::clone(&self.stream),
             current_packet_id: self.current_packet_id,
         }
     }
