@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::io::Error;
 use std::net::{TcpListener, TcpStream};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 
 use crate::actions::MqttActions;
@@ -53,38 +53,37 @@ impl MqttServer {
         let pool = ServerPool::build(self.config.maximum_threads)?;
 
         let server_ref = Arc::new(Mutex::new(self));
+        let mut counter = 0;
 
         for client_stream in listener.incoming() {
-            if let Ok(stream) = client_stream {
-                let shared_server = server_ref.clone();
-                let shared_stream = Arc::new(Mutex::new(stream));
-                pool.execute(move || loop {
-                    let stream = shared_stream.lock().unwrap();
-                    match shared_server.lock().unwrap().messages_handler(stream) {
-                        Ok(action) => {
-                            action.register_action();
-                        }
-                        Err(e) => return Err(e),
+            let shared_server = server_ref.clone();
+            let shared_stream = client_stream?.try_clone()?;
+            //MqttServer::handle_client(shared_server, shared_stream, &pool)?;
+            pool.execute( move || loop {
+                let stream = shared_stream.try_clone()?;
+                match shared_server.clone().lock().unwrap().messages_handler(stream) {
+                    Ok(action) => {
+                        action.register_action();
                     }
-                })?;
-                println!("Cliente conectado");
-                thread::sleep(std::time::Duration::from_secs(1));
-            }
-            println!("Esperando mensaje del cliente...");
+                    Err(e) => return Err(e),
+                }
+            })?;
         }
-
+            println!("Esperando mensaje del cliente...");
+        
+    
         Err(Error::new(
             std::io::ErrorKind::Other,
             "No se pudo recibir el paquete",
         ))
     }
 
-    pub fn messages_handler(&mut self, mut stream: MutexGuard<TcpStream>) -> Result<MqttActions, Error> {
+    pub fn messages_handler(&mut self, mut stream: TcpStream) -> Result<MqttActions, Error> {
         // averiguo el tipo de paquete:
-        let fixed_header = PacketFixedHeader::read_from(&mut *stream)?;
+        let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
 
         match get_packet(
-            &mut *stream,
+            &mut stream,
             fixed_header.get_package_type(),
             fixed_header.remaining_length,
         ) {
@@ -110,7 +109,7 @@ impl MqttServer {
 
     fn resend_publish_to_subscribers(
         &self,
-        _stream_connection:  MutexGuard<TcpStream>,
+        _stream_connection:  TcpStream,
         pub_packet: Publish,
     ) -> Result<MqttActions, Error> {
         let topic = pub_packet.properties.topic_name.clone();
@@ -173,7 +172,7 @@ impl MqttServer {
 
     fn add_subscriptions(
         &mut self,
-        _stream_connection:  MutexGuard<TcpStream>,
+        _stream_connection:  TcpStream,
         mut sub_packet: Subscribe,
     ) -> Result<MqttActions, Error> {
         let client_id =
@@ -202,13 +201,13 @@ impl MqttServer {
 
     fn stablish_connection(
         &mut self,
-        mut stream: MutexGuard<TcpStream>,
+        mut stream: TcpStream,
         connect: Connect,
     ) -> Result<MqttActions, Error> {
         let client = connect.payload.client_id.clone();
         let connack_properties: ConnackProperties =
             self.determinate_acknowledge(connect, stream.try_clone()?)?;
-        Connack::new(connack_properties).send(&mut *stream)?;
+        Connack::new(connack_properties).send(&mut stream)?;
         Ok(MqttActions::ServerConnection(client))
     }
 
