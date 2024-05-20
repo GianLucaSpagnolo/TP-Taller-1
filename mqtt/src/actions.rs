@@ -14,7 +14,7 @@ pub enum MqttActions {
     DisconnectClient,
     ServerPublishReceive(String, String),
     ServerSendPublish(String, String, Vec<String>),
-    ServerSubscribeReceive(Vec<TopicFilter>),
+    ServerSubscribeReceive(String, Vec<TopicFilter>),
     TryConnect, // guardara el exit code
     PackageError,
 }
@@ -80,10 +80,11 @@ impl fmt::Display for MqttActions {
                     msg, topic, receivers
                 )
             }
-            MqttActions::ServerSubscribeReceive(topics) => {
+            MqttActions::ServerSubscribeReceive(id, topics) => {
                 write!(
                     f,
-                    "SUBSCRIBE - Servidor recibio una subscripción a los tópicos '{:?}'",
+                    "SUBSCRIBE - Servidor recibió una subscripción del cliente '{}' a los tópicos '{:?}'",
+                    id,
                     topics
                 )
             }

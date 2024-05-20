@@ -179,6 +179,7 @@ impl MqttServer {
         }
         // send suback to stream
         Ok(MqttActions::ServerSubscribeReceive(
+            client_id.clone(),
             sub_packet.properties.topic_filters,
         ))
     }

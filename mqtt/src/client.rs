@@ -28,7 +28,7 @@ pub struct Message {
     pub data: String,
 }
 
-pub struct Lisenter {
+pub struct Listener {
     pub receiver: Receiver<Message>,
     pub handler: JoinHandle<Result<(), Error>>,
 }
@@ -84,7 +84,7 @@ impl MqttClient {
         Ok(client)
     }
 
-    pub fn run_listener(&mut self) -> Result<Lisenter, Error> {
+    pub fn run_listener(&mut self) -> Result<Listener, Error> {
         let mut counter = 0;
 
         let client = self.clone();
@@ -108,7 +108,7 @@ impl MqttClient {
             }
         });
 
-        Ok(Lisenter { receiver, handler })
+        Ok(Listener { receiver, handler })
     }
 
     fn session_timer(counter: &mut u32, expiry_interval: u32) -> Result<(), Error> {
@@ -127,11 +127,17 @@ impl MqttClient {
         mut stream: TcpStream,
         sender: Sender<Message>,
     ) -> Result<(), Error> {
+
         let header = PacketFixedHeader::read_from(&mut stream)?;
+    
         let data = self.messages_handler(&mut stream, header)?;
+    
         sender.send(data).unwrap();
+    
         thread::sleep(std::time::Duration::from_millis(1000));
+    
         Ok(())
+    
     }
 
     pub fn messages_handler(
@@ -184,6 +190,8 @@ impl MqttClient {
             properties,
         )
         .send(&mut self.stream)?;
+        
+        //recibir puback o reenviar publish
 
         MqttActions::ClientSendPublish(self.config.id.clone(), message, topic).register_action();
         Ok(())
@@ -216,6 +224,9 @@ impl MqttClient {
         let prop_topics = properties.topic_filters.clone();
 
         Subscribe::new(properties).send(&mut self.stream)?;
+
+        //recibir suback o reenviar subscribe
+
         MqttActions::ClientSendSubscribe(self.config.id.clone(), prop_topics).register_action();
         Ok(())
     }
