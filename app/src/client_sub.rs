@@ -37,15 +37,15 @@ fn main() -> Result<(), Error> {
 
     let mut client = MqttClient::init(config)?;
 
-    let (messages_receiver, listener_handler) = client.run_listener()?;
+    let listener = client.run_listener()?;
 
-    let process_message_handler = process_messages(messages_receiver)?;
+    let process_message_handler = process_messages(listener.receiver)?;
 
     client.subscribe(vec!["cams", "dron"], 1, false, false, 0)?;
 
     //client.publish("mensaje del cliente".to_string(), "cams".to_string())?;
 
-    listener_handler.join().unwrap()?;
+    listener.handler.join().unwrap()?;
     process_message_handler.join().unwrap();
 
     Ok(())

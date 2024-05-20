@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::io::Error;
 use std::net::{TcpListener, TcpStream};
-use std::sync::{Arc, Mutex, RwLock};
-use std::thread;
 
 use crate::actions::MqttActions;
 use crate::config::{Config, ServerConfig};
@@ -52,16 +50,11 @@ impl MqttServer {
 
         let pool = ServerPool::build(self.config.maximum_threads)?;
 
-        let server_ref = Arc::new(Mutex::new(self));
-        let mut counter = 0;
-
         for client_stream in listener.incoming() {
-            let shared_server = server_ref.clone();
-            let shared_stream = client_stream?.try_clone()?;
-            //MqttServer::handle_client(shared_server, shared_stream, &pool)?;
-            pool.execute( move || loop {
-                let stream = shared_stream.try_clone()?;
-                match shared_server.clone().lock().unwrap().messages_handler(stream) {
+            let mut shared_server = self.clone();
+            let stream = client_stream?.try_clone()?;
+            pool.execute(move || loop {
+                match shared_server.messages_handler(stream.try_clone()?) {
                     Ok(action) => {
                         action.register_action();
                     }
@@ -69,9 +62,7 @@ impl MqttServer {
                 }
             })?;
         }
-            println!("Esperando mensaje del cliente...");
-        
-    
+
         Err(Error::new(
             std::io::ErrorKind::Other,
             "No se pudo recibir el paquete",
@@ -109,7 +100,7 @@ impl MqttServer {
 
     fn resend_publish_to_subscribers(
         &self,
-        _stream_connection:  TcpStream,
+        _stream_connection: TcpStream,
         pub_packet: Publish,
     ) -> Result<MqttActions, Error> {
         let topic = pub_packet.properties.topic_name.clone();
@@ -121,11 +112,9 @@ impl MqttServer {
         <HashMap<String, Session> as Clone>::clone(&self.sessions)
             .into_iter()
             .for_each(|(id, s)| {
-                if s.active {
-                    if s.subscriptions.iter().any(|t| t.topic_filter == topic) {
-                        let _ = pub_packet.send(&mut s.stream_connection.try_clone().unwrap());
-                        receivers.push(id.clone());
-                    }
+                if s.active && s.subscriptions.iter().any(|t| t.topic_filter == topic) {
+                    let _ = pub_packet.send(&mut s.stream_connection.try_clone().unwrap());
+                    receivers.push(id.clone());
                 }
             });
         // send puback to stream
@@ -172,7 +161,7 @@ impl MqttServer {
 
     fn add_subscriptions(
         &mut self,
-        _stream_connection:  TcpStream,
+        _stream_connection: TcpStream,
         mut sub_packet: Subscribe,
     ) -> Result<MqttActions, Error> {
         let client_id =

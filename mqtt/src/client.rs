@@ -1,7 +1,7 @@
 use std::{
     io::Error,
     net::TcpStream,
-    sync::{mpsc::{self, Receiver, Sender}, Arc, Mutex, MutexGuard},
+    sync::mpsc::{self, Receiver, Sender},
     thread::{self, JoinHandle},
 };
 
@@ -19,13 +19,18 @@ use crate::{
 
 pub struct MqttClient {
     config: ClientConfig,
-    stream: Arc<Mutex<TcpStream>>,
+    stream: TcpStream,
     current_packet_id: u16,
 }
 
 pub struct Message {
     pub topic: String,
     pub data: String,
+}
+
+pub struct Lisenter {
+    pub receiver: Receiver<Message>,
+    pub handler: JoinHandle<Result<(), Error>>,
 }
 
 fn receive_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
@@ -72,45 +77,44 @@ impl MqttClient {
 
         let client = MqttClient {
             config,
-            stream: Arc::new(Mutex::new(stream)),
+            stream,
             current_packet_id,
         };
 
         Ok(client)
     }
 
-    pub fn run_listener(
-        &mut self,
-    ) -> Result<(Receiver<Message>, JoinHandle<Result<(), Error>>), Error> {
+    pub fn run_listener(&mut self) -> Result<Lisenter, Error> {
         let mut counter = 0;
 
         let client = self.clone();
 
         let (sender, receiver) = mpsc::channel();
-        
-        let stream = Arc::clone(&self.stream);
-        
+
         let handler = thread::spawn(move || -> Result<(), Error> {
             loop {
-                
-                let s = stream.lock().unwrap();
-
-                client.listen_message(s, sender.clone(), &mut counter)?;
-
-                if let Some(expiry_interval) =
-                    client.config.connect_properties.session_expiry_interval
-                {
-                    MqttClient::session_timer(&mut counter, expiry_interval)?;
-                }
+                match client.listen_message(client.stream.try_clone()?, sender.clone()) {
+                    Ok(_) => {
+                        counter = 0;
+                    }
+                    Err(_) => {
+                        if let Some(expiry_interval) =
+                            client.config.connect_properties.session_expiry_interval
+                        {
+                            MqttClient::session_timer(&mut counter, expiry_interval)?;
+                        }
+                    }
+                };
             }
         });
 
-        Ok((receiver, handler))
+        Ok(Lisenter { receiver, handler })
     }
 
     fn session_timer(counter: &mut u32, expiry_interval: u32) -> Result<(), Error> {
         thread::sleep(std::time::Duration::from_millis(1000));
         *counter += 1;
+        //println!("Counter: {}", *counter);
         if expiry_interval != 0 && *counter > expiry_interval {
             //disconnect
             return Err(Error::new(std::io::ErrorKind::Other, "Session expired"));
@@ -120,14 +124,13 @@ impl MqttClient {
 
     pub fn listen_message(
         &self,
-        mut stream: MutexGuard<TcpStream>,
+        mut stream: TcpStream,
         sender: Sender<Message>,
-        counter: &mut u32,
     ) -> Result<(), Error> {
-        let header = PacketFixedHeader::read_from(&mut *stream)?;
+        let header = PacketFixedHeader::read_from(&mut stream)?;
         let data = self.messages_handler(&mut stream, header)?;
         sender.send(data).unwrap();
-        *counter = 0;
+        thread::sleep(std::time::Duration::from_millis(1000));
         Ok(())
     }
 
@@ -180,7 +183,7 @@ impl MqttClient {
             self.config.publish_retain,
             properties,
         )
-        .send(&mut *self.stream.lock().unwrap())?;
+        .send(&mut self.stream)?;
 
         MqttActions::ClientSendPublish(self.config.id.clone(), message, topic).register_action();
         Ok(())
@@ -212,7 +215,7 @@ impl MqttClient {
 
         let prop_topics = properties.topic_filters.clone();
 
-        Subscribe::new(properties).send(&mut *self.stream.lock().unwrap())?;
+        Subscribe::new(properties).send(&mut self.stream)?;
         MqttActions::ClientSendSubscribe(self.config.id.clone(), prop_topics).register_action();
         Ok(())
     }
@@ -234,7 +237,7 @@ impl Clone for MqttClient {
     fn clone(&self) -> Self {
         MqttClient {
             config: self.config.clone(),
-            stream: Arc::clone(&self.stream),
+            stream: self.stream.try_clone().unwrap(),
             current_packet_id: self.current_packet_id,
         }
     }
