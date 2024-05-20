@@ -38,6 +38,7 @@ pub trait Config<Config = Self> {
 }
 
 pub struct ClientConfig {
+    pub id: String,
     pub ip: IpAddr,
     pub port: u16,
     pub connect_properties: ConnectProperties,
@@ -49,6 +50,7 @@ pub struct ClientConfig {
 impl Clone for ClientConfig {
     fn clone(&self) -> Self {
         ClientConfig {
+            id: self.id.clone(),
             ip: self.ip,
             port: self.port,
             connect_properties: self.connect_properties.clone(),
@@ -66,6 +68,7 @@ impl Config for ClientConfig {
 
     fn set_params(params: &[(String, String)]) -> Result<Self, Error> {
         // seteo los parametros del cliente:
+        let mut id = None;
         let mut ip = None;
         let mut port = None;
 
@@ -77,6 +80,7 @@ impl Config for ClientConfig {
 
         for param in params.iter() {
             match param.0.as_str() {
+                "id" => id = Some(param.1.clone()),
                 "ip" => {
                     ip = match param.1.parse::<IpAddr>() {
                         Ok(p) => Some(p),
@@ -270,8 +274,9 @@ impl Config for ClientConfig {
             }
         }
 
-        if let (Some(ip), Some(port)) = (ip, port) {
+        if let (Some(id), Some(ip), Some(port)) = (id, ip, port) {
             return Ok(ClientConfig {
+                id,
                 ip,
                 port,
                 connect_properties,

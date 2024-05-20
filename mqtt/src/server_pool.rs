@@ -81,6 +81,22 @@ impl Drop for ServerPool {
     }
 }
 
+impl Clone for ServerPool {
+    fn clone(&self) -> Self {
+        let (sender, receiver) = mpsc::channel();
+
+        let receiver = Arc::new(Mutex::new(receiver));
+
+        let mut workers = Vec::with_capacity(self.workers.len());
+
+        for id in 0..self.workers.len() {
+            workers.push(WorkerThread::new(Arc::clone(&receiver)));
+        }
+
+        ServerPool { workers, sender }
+    }
+}
+
 struct WorkerThread {
     thread: Option<thread::JoinHandle<()>>,
 }

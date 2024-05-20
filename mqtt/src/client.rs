@@ -18,7 +18,6 @@ use crate::{
 };
 
 pub struct MqttClient {
-    id: String,
     config: ClientConfig,
     stream: TcpStream,
     current_packet_id: u16,
@@ -26,7 +25,7 @@ pub struct MqttClient {
 
 pub struct Message {
     pub topic: String,
-    pub data: Vec<u8>,
+    pub data: String,
 }
 
 fn handle_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
@@ -48,11 +47,11 @@ fn handle_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
 }
 
 impl MqttClient {
-    pub fn init(id: String, config: ClientConfig) -> Result<Self, Error> {
+    pub fn init(config: ClientConfig) -> Result<Self, Error> {
         let mut stream = TcpStream::connect(config.get_socket_address())?;
 
         let payload = payload::ConnectPayload {
-            client_id: id.clone(),
+            client_id: config.id.clone(),
             ..Default::default()
         };
 
@@ -69,7 +68,6 @@ impl MqttClient {
         let current_packet_id = 0;
         
         let client = MqttClient {
-            id,
             config,
             stream,
             current_packet_id
@@ -90,37 +88,37 @@ impl MqttClient {
 
         let handler = thread::spawn(move || -> Result<(), Error> {
             loop {
-                client.listener(client.stream.try_clone()?, sender.clone(), &mut counter)?;
+                client.listen_message(client.stream.try_clone()?, sender.clone(), &mut counter)?;
+
+                if let Some(expiry_interval) = client.config.connect_properties.session_expiry_interval {
+                    MqttClient::session_timer(&mut counter, expiry_interval)?;
+                }
             }
         });
 
         Ok((receiver, handler))
     }
 
-    pub fn listener(
+    fn session_timer(counter: &mut u32, expiry_interval: u32) -> Result<(), Error>{
+        thread::sleep(std::time::Duration::from_millis(1000));
+        *counter += 1;
+        if expiry_interval != 0 && *counter > expiry_interval {
+            //disconnect
+            return Err(Error::new(std::io::ErrorKind::Other, "Session expired"));
+        }
+        Ok(())
+    }
+
+    fn listen_message(
         &self,
         mut stream: TcpStream,
         sender: Sender<Message>,
         counter: &mut u32,
     ) -> Result<(), Error> {
-        match PacketFixedHeader::read_from(&mut stream) {
-            Ok(header) => {
-                let data = self.messages_handler(&mut stream, header)?;
-                sender.send(data).unwrap();
-                *counter = 0;
-            }
-            Err(_) => {
-                thread::sleep(std::time::Duration::from_secs(10));
-                *counter += 10;
-                if let Some(expiry_interval) =
-                    self.config.connect_properties.session_expiry_interval
-                {
-                    if expiry_interval != 0 && *counter > expiry_interval {
-                        return Err(Error::new(std::io::ErrorKind::Other, "Session expired"));
-                    }
-                }
-            }
-        }
+        let header = PacketFixedHeader::read_from(&mut stream)?;
+        let data = self.messages_handler(&mut stream, header)?;
+        sender.send(data).unwrap();
+        *counter = 0;
         Ok(())
     }
 
@@ -141,13 +139,13 @@ impl MqttClient {
             PacketReceived::Publish(publish) => {
                 data = publish.properties.application_message.clone();
                 topic = publish.properties.topic_name.clone();
-                MqttActions::ClientReceivePublish(self.id.clone(), data.clone(), topic.clone())
+                MqttActions::ClientReceivePublish(self.config.id.clone(), data.clone(), topic.clone())
                     .register_action();
             }
             _ => return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido")),
         }
         
-        Ok(Message { topic, data: data.as_bytes().to_vec() })
+        Ok(Message { topic, data: data.clone() })
     }
 
     pub fn publish(&mut self, message: String, topic: String) -> Result<(), Error> {
@@ -168,7 +166,7 @@ impl MqttClient {
         )
         .send(&mut self.stream)?;
 
-        MqttActions::ClientSendPublish(self.id.clone(), message, topic).register_action();
+        MqttActions::ClientSendPublish(self.config.id.clone(), message, topic).register_action();
         Ok(())
     }
 
@@ -186,7 +184,7 @@ impl MqttClient {
         };
 
         topics.iter().for_each(|topic| {
-            let topic_filter = [self.id.clone(), topic.to_string()].join("/");
+            let topic_filter = [self.config.id.clone(), topic.to_string()].join("/");
             properties.add_topic_filter(
                 topic_filter,
                 max_qos,
@@ -199,7 +197,7 @@ impl MqttClient {
         let prop_topics = properties.topic_filters.clone();
 
         Subscribe::new(properties).send(&mut self.stream)?;
-        MqttActions::ClientSendSubscribe(self.id.clone(), prop_topics).register_action();
+        MqttActions::ClientSendSubscribe(self.config.id.clone(), prop_topics).register_action();
         Ok(())
     }
 
@@ -219,7 +217,6 @@ impl MqttClient {
 impl Clone for MqttClient {
     fn clone(&self) -> Self {
         MqttClient {
-            id: self.id.clone(),
             config: self.config.clone(),
             stream: self.stream.try_clone().unwrap(),
             current_packet_id: self.current_packet_id,

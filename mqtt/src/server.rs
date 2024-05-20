@@ -56,29 +56,21 @@ impl MqttServer {
         for client_stream in listener.incoming() {
             let shared_server = server_ref.clone();
             let shared_stream = client_stream?.try_clone()?;
-            MqttServer::handle_client(shared_server, shared_stream, &pool)?;
+            pool.execute( move || loop {
+                let stream = shared_stream.try_clone()?;
+                match shared_server.lock().unwrap().messages_handler(stream) {
+                    Ok(action) => {
+                        action.register_action();
+                    }
+                    Err(e) => return Err(e),
+                }
+            })?;
         }
 
         Err(Error::new(
             std::io::ErrorKind::Other,
             "No se pudo recibir el paquete",
         ))
-    }
-
-    fn handle_client(
-        server: Arc<Mutex<MqttServer>>,
-        client_stream: TcpStream,
-        pool: &ServerPool,
-    ) -> Result<(), Error> {
-        pool.execute(move || loop {
-            let stream = client_stream.try_clone()?;
-            match server.lock().unwrap().messages_handler(stream) {
-                Ok(action) => {
-                    action.register_action();
-                }
-                Err(e) => return Err(e),
-            }
-        })
     }
 
     pub fn messages_handler(&mut self, mut stream: TcpStream) -> Result<MqttActions, Error> {

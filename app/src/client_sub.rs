@@ -1,5 +1,5 @@
 use std::{
-    env, io::Error, sync::mpsc::Receiver, thread::{self, JoinHandle}
+    io::Error, sync::mpsc::Receiver, thread::{self, JoinHandle}
 };
 
 use mqtt::{
@@ -7,14 +7,13 @@ use mqtt::{
     config::{ClientConfig, Config},
 };
 
-#[allow(dead_code)]
 fn process_messages(receiver: Receiver<Message>) -> Result<JoinHandle<()>, Error> {
 
     let handler = thread::spawn(move || {
-        let _message_received = receiver.recv().unwrap();
-        match _message_received.topic.as_str() {
+        let message_received = receiver.recv().unwrap();
+        match message_received.topic.as_str() {
             "cams" => {
-                // cambiar estado
+                println!("Mensaje recibido y procesado del topic 'cams': {}", message_received.data);
             }
             "dron" => {
                 // cambiar estado
@@ -28,20 +27,12 @@ fn process_messages(receiver: Receiver<Message>) -> Result<JoinHandle<()>, Error
 }
 
 fn main() -> Result<(), Error> {
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() != 3 {
-        return Err(Error::new(
-            std::io::ErrorKind::Other,
-            "Cantidad de argumentos incorrecta - debe pasarse el archivo de configuracion del servidor",
-        ));
-    }
-
-    let (config_path, client_id) = (&args[1], &args[2]);
+    
+    let config_path = "app/files/client_sub.txt";
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
-    let mut client = MqttClient::init(String::from(client_id), config)?;
+    let mut client = MqttClient::init(config)?;
     
     let (messages_receiver, listener_handler) = client.run_listener()? ;
 
@@ -52,7 +43,7 @@ fn main() -> Result<(), Error> {
     client.publish("mensaje del cliente".to_string(), "cams".to_string())?;
 
     listener_handler.join().unwrap()?;
-    process_message_handler.join().unwrap();
+    process_message_handler.join().unwrap(); 
 
     Ok(())
 }
