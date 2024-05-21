@@ -9,6 +9,7 @@ pub struct ServerConfig {
     pub ip: IpAddr,
     pub port: u16,
     pub maximum_threads: usize,
+    pub log_path: String,
 }
 
 impl Clone for ServerConfig {
@@ -17,6 +18,7 @@ impl Clone for ServerConfig {
             ip: self.ip,
             port: self.port,
             maximum_threads: self.maximum_threads,
+            log_path: self.log_path.clone(),
         }
     }
 }
@@ -31,6 +33,7 @@ impl Config for ServerConfig {
         let mut ip = None;
         let mut port = None;
         let mut maximum_threads = None;
+        let mut log_path = None;
 
         for param in params.iter() {
             match param.0.as_str() {
@@ -69,6 +72,8 @@ impl Config for ServerConfig {
                     };
                 }
 
+                "log_path" => log_path = Some(param.1.clone()),
+
                 _ => {
                     return Err(Error::new(
                         std::io::ErrorKind::InvalidData,
@@ -78,16 +83,17 @@ impl Config for ServerConfig {
             }
         }
 
-        if let (Some(port), Some(ip), Some(maximum_threads)) = (port, ip, maximum_threads) {
+        if let (Some(port), Some(ip), Some(maximum_threads), Some(log_path)) = (port, ip, maximum_threads, log_path) {
             return Ok(ServerConfig {
                 port,
                 ip,
                 maximum_threads,
+                log_path,
             });
         }
         Err(Error::new(
             std::io::ErrorKind::InvalidData,
-            "Config fields are missing",
+            "Config fields are missing: ip, port, maximum_threads or log_path",
         ))
     }
 }

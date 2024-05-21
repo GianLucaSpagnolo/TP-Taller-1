@@ -1,6 +1,7 @@
 id: camssystem
 ip: 127.0.0.1
 port: 5000
+log_path: central_cams_system/cams_log.txt
 protocol_name: MQTT
 protocol_version: 5
 keep_alive: 60

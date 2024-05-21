@@ -13,6 +13,7 @@ pub struct ClientConfig {
     pub id: String,
     pub ip: IpAddr,
     pub port: u16,
+    pub log_path: String,
     pub connect_properties: ConnectProperties,
     pub publish_dup_flag: u8,
     pub publish_qos: u8,
@@ -25,6 +26,7 @@ impl Clone for ClientConfig {
             id: self.id.clone(),
             ip: self.ip,
             port: self.port,
+            log_path: self.log_path.clone(),
             connect_properties: self.connect_properties.clone(),
             publish_dup_flag: self.publish_dup_flag,
             publish_qos: self.publish_qos,
@@ -43,6 +45,7 @@ impl Config for ClientConfig {
         let mut id = None;
         let mut ip = None;
         let mut port = None;
+        let mut log_path = None;
 
         // Corroborar que le pasen los campos obligatorios
         let mut connect_properties = ConnectProperties::default();
@@ -237,6 +240,8 @@ impl Config for ClientConfig {
                     };
                 }
 
+                "log_path" => log_path = Some(param.1.clone()),
+
                 _ => {
                     return Err(Error::new(
                         std::io::ErrorKind::InvalidData,
@@ -246,11 +251,12 @@ impl Config for ClientConfig {
             }
         }
 
-        if let (Some(id), Some(ip), Some(port)) = (id, ip, port) {
+        if let (Some(id), Some(ip), Some(port), Some(log_path)) = (id, ip, port, log_path) {
             return Ok(ClientConfig {
                 id,
                 ip,
                 port,
+                log_path,
                 connect_properties,
                 publish_dup_flag,
                 publish_qos,
@@ -260,7 +266,7 @@ impl Config for ClientConfig {
 
         Err(Error::new(
             std::io::ErrorKind::InvalidData,
-            "Invalid parameter: Ip",
+            "Config fields are missing: ip, port, id or log_path",
         ))
     }
 }
