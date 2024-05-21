@@ -9,5 +9,9 @@ edition = "2021"
 mqtt = { path = "../mqtt" }
 
 [[bin]]
-name = "client"
-path = "src/client_example.rs"
+name = "publisher"
+path = "src/client_pub.rs"
+
+[[bin]]
+name = "subscriber"
+path = "src/client_sub.rs"

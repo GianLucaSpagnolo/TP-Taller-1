@@ -6,7 +6,7 @@ use crate::control_packets::mqtt_packet::{
 };
 
 #[allow(dead_code)]
-pub struct PingReq {}
+pub struct PingReq;
 
 impl Serialization for PingReq {
     fn read_from(_stream: &mut dyn Read, remaining_length: u32) -> Result<Self, Error> {
@@ -17,7 +17,7 @@ impl Serialization for PingReq {
             ));
         }
 
-        Ok(PingReq::new())
+        Ok(PingReq)
     }
 
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
@@ -33,20 +33,13 @@ impl Serialization for PingReq {
     }
 }
 
-impl PingReq {
-    #[allow(dead_code)]
-    pub fn new() -> Self {
-        PingReq {}
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
     #[test]
     fn pingreq() {
-        let pingreq = PingReq::new();
+        let pingreq = PingReq;
 
         let mut buffer = Vec::new();
         pingreq.write_to(&mut buffer).unwrap();

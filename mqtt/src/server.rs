@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::io::Error;
 use std::net::{TcpListener, TcpStream};
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
+use std::thread;
 
 use crate::actions::MqttActions;
 use crate::config::{Config, ServerConfig};
@@ -11,7 +13,10 @@ use crate::control_packets::mqtt_connect::connect::*;
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
-use crate::control_packets::mqtt_packet::reason_codes::ReasonMode;
+use crate::control_packets::mqtt_packet::reason_codes::ReasonCode;
+use crate::control_packets::mqtt_publish::publish::Publish;
+use crate::control_packets::mqtt_subscribe::subscribe::Subscribe;
+use crate::control_packets::mqtt_subscribe::subscribe_properties::TopicFilter;
 use crate::server_pool::ServerPool;
 use crate::session::Session;
 
@@ -31,6 +36,31 @@ impl Clone for MqttServer {
     }
 }
 
+pub fn messages_handler(
+    mut stream: TcpStream,
+    sender: Arc<Mutex<Sender<(PacketReceived, TcpStream)>>>,
+) -> Result<(), Error> {
+    // averiguo el tipo de paquete:
+    let sender = sender.lock().unwrap().clone();
+
+    let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
+
+    match get_packet(
+        &mut stream,
+        fixed_header.get_package_type(),
+        fixed_header.remaining_length,
+    ) {
+        Ok(pack) => match sender.send((pack, stream)) {
+            Ok(_) => Ok(()),
+            Err(_) => Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - Error al enviar el paquete",
+            )),
+        },
+        Err(e) => Err(e),
+    }
+}
+
 impl MqttServer {
     pub fn new(config: ServerConfig) -> Self {
         MqttServer {
@@ -43,17 +73,32 @@ impl MqttServer {
     // le devuelve el paquete al servidor
     // el servidor lo pasa al logger
     // el logger le pide traduccion al protocolo
-    pub fn start_server(self) -> Result<MqttActions, Error> {
+    pub fn start_server(mut self) -> Result<(), Error> {
         let listener = TcpListener::bind(self.config.get_socket_address())?;
 
         let pool = ServerPool::build(self.config.maximum_threads)?;
 
-        let server_ref = Arc::new(Mutex::new(self));
+        let (sender, receiver) = mpsc::channel();
+
+        let sender = Arc::new(Mutex::new(sender));
+
+        let receiver = Arc::new(Mutex::new(receiver));
+
+        thread::spawn(move || -> Result<(), Error> {
+            loop {
+                match self.process_messages(Arc::clone(&receiver)) {
+                    Ok(a) => a.register_action(),
+                    Err(e) => return Err(e),
+                };
+            }
+        });
 
         for client_stream in listener.incoming() {
-            let shared_server = server_ref.clone();
-
-            Self::handle_client(shared_server, client_stream?, &pool)?;
+            let stream = client_stream?.try_clone()?;
+            let sender_clone = Arc::clone(&sender);
+            pool.execute(move || loop {
+                messages_handler(stream.try_clone()?, sender_clone.clone())?
+            })?;
         }
 
         Err(Error::new(
@@ -62,80 +107,136 @@ impl MqttServer {
         ))
     }
 
-    fn handle_client(
-        server: Arc<Mutex<MqttServer>>,
-        client_stream: TcpStream,
-        pool: &ServerPool,
+    fn process_messages(
+        &mut self,
+        receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>,
     ) -> Result<MqttActions, Error> {
-        match pool.execute(move || -> Result<MqttActions, Error> {
-            match server.lock().unwrap().messages_handler(client_stream) {
-                Ok(action) => Ok(action),
-                Err(e) => Err(e),
+        let (pack, stream) = receiver.lock().unwrap().recv().unwrap();
+
+        match pack {
+            PacketReceived::Connect(connect_pack) => {
+                self.stablish_connection(stream, *connect_pack)
             }
-        }) {
-            Ok(_) => Ok(MqttActions::MessageReceived.register_action()),
-            Err(e) => Err(e),
+            PacketReceived::Disconnect(_pack) => self.disconnect(),
+            PacketReceived::Publish(pub_packet) => {
+                self.resend_publish_to_subscribers(stream, *pub_packet)
+            }
+            PacketReceived::Subscribe(sub_packet) => self.add_subscriptions(stream, *sub_packet),
+            _ => Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - Paquete recibido no es válido",
+            )),
         }
     }
 
-    pub fn messages_handler(&mut self, mut stream: TcpStream) -> Result<MqttActions, Error> {
-        // averiguo el tipo de paquete:
-        let fixed_header = match PacketFixedHeader::read_from(&mut stream) {
-            Ok(header_type) => header_type,
-            Err(e) => return Err(e),
-        };
+    fn resend_publish_to_subscribers(
+        &self,
+        _stream_connection: TcpStream,
+        pub_packet: Publish,
+    ) -> Result<MqttActions, Error> {
+        let topic = pub_packet.properties.topic_name.clone();
+        let data = pub_packet.properties.application_message.clone();
+        let mut receivers = Vec::new();
 
-        match get_packet(
-            &mut stream,
-            fixed_header.get_package_type(),
-            fixed_header.remaining_length,
-        ) {
-            Ok(pack) => match pack {
-                PacketReceived::Connect(connect_pack) => self.handle_connect(stream, *connect_pack),
-                PacketReceived::Disconnect(_pack) => {
-                    Ok(MqttActions::DisconnectClient.register_action())
+        MqttActions::ServerPublishReceive(topic.clone(), data.clone()).register_action();
+
+        <HashMap<String, Session> as Clone>::clone(&self.sessions)
+            .into_iter()
+            .for_each(|(id, s)| {
+                if s.active && s.subscriptions.iter().any(|t| t.topic_filter == topic) {
+                    let _ = pub_packet.send(&mut s.stream_connection.try_clone().unwrap());
+                    receivers.push(id.clone());
                 }
-                /*
-                PacketReceived::Publish(_pack) => {
-                    let topic = pack.topic_name;
-                    self.sessions.into_iter().map(|(id, session)| if session.active {
-                        if session._subscriptions.contains(&topic) {
-                            self.publish(session.client, pack);
-                        }
-                    });
-                    let puback = puback::Puback::new(0);
-                    match puback.write_to(&mut stream) {
-                        Ok(_) => Ok(MqttActions::ConnectionEstablished),
-                        Err(e) => Err(e),
-                    }
+            });
+        // send puback to stream
+        Ok(MqttActions::ServerSendPublish(
+            topic.clone(),
+            data.clone(),
+            receivers,
+        ))
+    }
+
+    fn get_sub_id_and_topics(topics: &mut Vec<TopicFilter>) -> Result<String, Error> {
+        let mut client_id = None;
+
+        for t in topics {
+            let topic_split = t
+                .topic_filter
+                .split('/')
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>();
+
+            if let Some(id) = client_id.clone() {
+                if id != topic_split[0] {
+                    return Err(Error::new(
+                        std::io::ErrorKind::Other,
+                        "Server - Cliente de los topics no coinciden",
+                    ));
                 }
-                */
-                _ => Err(Error::new(
-                    std::io::ErrorKind::Other,
-                    "Server - Paquete desconocido",
-                )),
-                // el servidor de la app debera poder
-                // ejecutar el connack, para esto,
-                // tanto el enum del server MQTT, como el
-                // enum del protocolo, deben de tener lo necesario
-                // para poder reconstruir los paquetes
-            },
-            Err(e) => Err(e),
+            } else {
+                client_id = Some(topic_split[0].clone());
+            }
+
+            t.topic_filter = topic_split[1..].join("/");
+        }
+
+        if let Some(id) = client_id.clone() {
+            Ok(id)
+        } else {
+            Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - referencia al cliente no encontrada",
+            ))
         }
     }
 
-    fn handle_connect(
+    fn add_subscriptions(
+        &mut self,
+        _stream_connection: TcpStream,
+        mut sub_packet: Subscribe,
+    ) -> Result<MqttActions, Error> {
+        let client_id =
+            MqttServer::get_sub_id_and_topics(&mut sub_packet.properties.topic_filters)?;
+
+        if let Some(session) = self.sessions.get_mut(&client_id) {
+            session
+                .subscriptions
+                .append(&mut sub_packet.properties.topic_filters.clone());
+        } else {
+            return Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - Cliente no encontrado",
+            ));
+        }
+        // send suback to stream
+        Ok(MqttActions::ServerSubscribeReceive(
+            client_id.clone(),
+            sub_packet.properties.topic_filters,
+        ))
+    }
+
+    fn disconnect(&mut self) -> Result<MqttActions, Error> {
+        // Cerrar la conexion
+        Ok(MqttActions::DisconnectClient)
+    }
+
+    fn stablish_connection(
         &mut self,
         mut stream: TcpStream,
         connect: Connect,
     ) -> Result<MqttActions, Error> {
         let client = connect.payload.client_id.clone();
-        let connack_properties: ConnackProperties = self.handle_connection(connect)?;
+        let connack_properties: ConnackProperties =
+            self.determinate_acknowledge(connect, stream.try_clone()?)?;
         Connack::new(connack_properties).send(&mut stream)?;
-        Ok(MqttActions::ServerConnection(client).register_action())
+        Ok(MqttActions::ServerConnection(client))
     }
 
-    fn handle_connection(&mut self, connect: Connect) -> Result<ConnackProperties, Error> {
+    fn determinate_acknowledge(
+        &mut self,
+        connect: Connect,
+        stream_connection: TcpStream,
+    ) -> Result<ConnackProperties, Error> {
         // Si no recibe ninguna conexión en cierta cantidad de tiempo debe cortar la conexión (timer!)
 
         // Connect Flags:
@@ -156,28 +257,9 @@ impl MqttServer {
         // let connack_properties = self.determinate_connack_properties(&connect);
 
         let mut connack_properties = ConnackProperties {
-            connect_acknowledge_flags: 0,
-            connect_reason_code: ReasonMode::Success.get_id(),
-            assigned_client_identifier: None,
-            server_keep_alive: None,
-            reason_string: None,
-            session_expiry_interval: None,
-            receive_maximum: None,
-            maximum_packet_size: None,
-            topic_alias_maximum: None,
-            user_property: None,
-            authentication_method: None,
-            authentication_data: None,
-            response_information: None,
-            server_reference: None,
-            maximum_qos: None,
-            retain_available: None,
-            wildcard_subscription_available: None,
-            subscription_identifiers_available: None,
-            shared_subscription_available: None,
+            connect_reason_code: self.determinate_reason_code(&connect),
+            ..Default::default()
         };
-
-        connack_properties.connect_reason_code = self.determinate_reason_code(&connect);
 
         // Clean start: si es 1, el cliente y servidor deben descartar cualquier session state asociado con el Client Identifier. Session Present flag in connack = 0
         // Clean Start: si es 0, el cliente y servidor deben mantener el session state asociado con el Client Identifier.
@@ -190,19 +272,20 @@ impl MqttServer {
         // El will message debe ser publicado despues de que una network connection se cierra y la sesion expira, o el willdelay interval haya pasado
         // El will message debe ser borrado en caso de que el servidor reciba un DISCONNECT packet con reason code 0x00, o una nueva Network Connection con Clean Start = 1
         // con el mismo client identifier. Tambien debe ser borrado de la session state en caso de que ya haya sido publicado
-        connack_properties.connect_acknowledge_flags = self.open_new_session(connect);
+        connack_properties.connect_acknowledge_flags =
+            self.open_new_session(connect, stream_connection);
 
         Ok(connack_properties)
     }
 
-    fn open_new_session(&mut self, connect: Connect) -> u8 {
+    fn open_new_session(&mut self, connect: Connect, stream_connection: TcpStream) -> u8 {
         if let Some(session) = self.sessions.get_mut(&connect.payload.client_id) {
             // Resumes session
             session.reconnect();
             1
         } else {
             // New session
-            let session = Session::new(&connect);
+            let session = Session::new(&connect, stream_connection);
 
             self.sessions.insert(connect.payload.client_id, session);
             0
@@ -212,7 +295,7 @@ impl MqttServer {
     fn determinate_reason_code(&self, connect_packet: &Connect) -> u8 {
         // Si ya se recibió un CONNECT packet, se debe procesar como un Protocol Error (reason code 130) y cerrar la conexion.
         if self.connect_received {
-            return ReasonMode::ProtocolError.get_id();
+            return ReasonCode::ProtocolError.get_id();
         }
 
         // Protocol Name: "MQTT" - En caso de ser diferente, debe procesarlo como  Unsupported Protocol Version (reason code 132) y cerrar la conexion.
@@ -220,17 +303,17 @@ impl MqttServer {
         if connect_packet.properties.protocol_name != *"MQTT"
             || connect_packet.properties.protocol_version != 5
         {
-            return ReasonMode::UnsupportedProtocolVersion.get_id();
+            return ReasonCode::UnsupportedProtocolVersion.get_id();
         }
 
         // Reserved: 0. En caso de recibir 1 debe devolver Malformed Packet (reason code 129) y cerrar la conexion
         if flags_handler::get_connect_flag_reserved(connect_packet.properties.connect_flags) != 0 {
-            return ReasonMode::MalformedPacket.get_id();
+            return ReasonCode::MalformedPacket.get_id();
         }
 
         // - Will QoS: 1. En caso de recibir 3 debe devolver QoS Not Supported (reason code 155) y cerrar la conexion
         if flags_handler::get_connect_flag_will_qos(connect_packet.properties.connect_flags) <= 1 {
-            return ReasonMode::QoSNotSupported.get_id();
+            return ReasonCode::QoSNotSupported.get_id();
         }
 
         if !connect_packet
@@ -239,9 +322,9 @@ impl MqttServer {
             .chars()
             .all(|c| c.is_ascii_alphanumeric())
         {
-            return ReasonMode::ClientIdentifierNotValid.get_id();
+            return ReasonCode::ClientIdentifierNotValid.get_id();
         }
-        ReasonMode::Success.get_id()
+        ReasonCode::Success.get_id()
     }
 }
 

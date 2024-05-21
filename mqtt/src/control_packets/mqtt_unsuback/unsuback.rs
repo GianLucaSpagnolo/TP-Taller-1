@@ -104,9 +104,9 @@ mod test {
 
             // Payload
             reason_codes: vec![
-                ReasonMode::BadUserNameOrPassword.get_id(),
-                ReasonMode::Banned.get_id(),
-                ReasonMode::NotAuthorized.get_id(),
+                ReasonCode::BadUserNameOrPassword.get_id(),
+                ReasonCode::Banned.get_id(),
+                ReasonCode::NotAuthorized.get_id(),
             ],
         };
 

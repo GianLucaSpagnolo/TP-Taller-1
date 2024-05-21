@@ -38,9 +38,27 @@ pub trait Config<Config = Self> {
 }
 
 pub struct ClientConfig {
+    pub id: String,
     pub ip: IpAddr,
     pub port: u16,
     pub connect_properties: ConnectProperties,
+    pub publish_dup_flag: u8,
+    pub publish_qos: u8,
+    pub publish_retain: u8,
+}
+
+impl Clone for ClientConfig {
+    fn clone(&self) -> Self {
+        ClientConfig {
+            id: self.id.clone(),
+            ip: self.ip,
+            port: self.port,
+            connect_properties: self.connect_properties.clone(),
+            publish_dup_flag: self.publish_dup_flag,
+            publish_qos: self.publish_qos,
+            publish_retain: self.publish_retain,
+        }
+    }
 }
 
 impl Config for ClientConfig {
@@ -50,14 +68,19 @@ impl Config for ClientConfig {
 
     fn set_params(params: &[(String, String)]) -> Result<Self, Error> {
         // seteo los parametros del cliente:
+        let mut id = None;
         let mut ip = None;
         let mut port = None;
 
         // Corroborar que le pasen los campos obligatorios
         let mut connect_properties = ConnectProperties::default();
+        let mut publish_dup_flag = 0;
+        let mut publish_qos = 0;
+        let mut publish_retain = 0;
 
         for param in params.iter() {
             match param.0.as_str() {
+                "id" => id = Some(param.1.clone()),
                 "ip" => {
                     ip = match param.1.parse::<IpAddr>() {
                         Ok(p) => Some(p),
@@ -221,6 +244,26 @@ impl Config for ClientConfig {
                 "authentication_data" => {
                     connect_properties.authentication_data = Some(param.1.clone())
                 }
+                "publish_dup" => {
+                    publish_dup_flag = match catch_true_false(&param.1) {
+                        Ok(p) => p,
+                        Err(e) => return Err(e),
+                    };
+                }
+                "publish_qos" => {
+                    publish_qos = match param.1.parse::<u8>() {
+                        Ok(p) => p,
+                        Err(e) => {
+                            return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
+                        }
+                    };
+                }
+                "publish_retain" => {
+                    publish_retain = match catch_true_false(&param.1) {
+                        Ok(p) => p,
+                        Err(e) => return Err(e),
+                    };
+                }
 
                 _ => {
                     return Err(Error::new(
@@ -231,11 +274,15 @@ impl Config for ClientConfig {
             }
         }
 
-        if let (Some(ip), Some(port)) = (ip, port) {
+        if let (Some(id), Some(ip), Some(port)) = (id, ip, port) {
             return Ok(ClientConfig {
+                id,
                 ip,
                 port,
                 connect_properties,
+                publish_dup_flag,
+                publish_qos,
+                publish_retain,
             });
         }
 
