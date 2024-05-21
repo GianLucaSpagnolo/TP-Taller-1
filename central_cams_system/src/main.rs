@@ -1,5 +1,4 @@
 use std::{
-    env,
     io::Error,
     sync::mpsc::Receiver,
     thread::{self, JoinHandle},
@@ -32,16 +31,7 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
 }
 
 fn main() -> Result<(), Error> {
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() != 2 {
-        return Err(Error::new(
-            std::io::ErrorKind::Other,
-            "Cantidad de argumentos incorrecta - debe pasarse el archivo de configuracion del servidor",
-        ));
-    }
-
-    let config_path = &args[1];
+    let config_path = "central_cams_system/config/cams_config.txt";
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 

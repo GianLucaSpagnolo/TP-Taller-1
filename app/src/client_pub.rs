@@ -5,11 +5,11 @@ use std::{
 };
 
 use mqtt::{
-    client::{Message, MqttClient},
-    config::{ClientConfig, Config},
+    client::mqtt_client::{MqttClient, MqttClientMessage},
+    configs::{client_config::ClientConfig, config::Config},
 };
 
-fn process_messages(receiver: Receiver<Message>) -> Result<JoinHandle<()>, Error> {
+fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<()>, Error> {
     let handler = thread::spawn(move || loop {
         let message_received = receiver.recv().unwrap();
         match message_received.topic.as_str() {

@@ -5,8 +5,8 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use crate::actions::MqttActions;
-use crate::config::{Config, ServerConfig};
+use crate::configs::config::Config;
+use crate::configs::server_config::ServerConfig;
 use crate::control_packets::mqtt_connack::connack::*;
 use crate::control_packets::mqtt_connack::connack_properties::ConnackProperties;
 use crate::control_packets::mqtt_connect::connect::*;
@@ -17,8 +17,11 @@ use crate::control_packets::mqtt_packet::reason_codes::ReasonCode;
 use crate::control_packets::mqtt_publish::publish::Publish;
 use crate::control_packets::mqtt_subscribe::subscribe::Subscribe;
 use crate::control_packets::mqtt_subscribe::subscribe_properties::TopicFilter;
-use crate::server_pool::ServerPool;
-use crate::session::Session;
+use crate::logger::actions::MqttActions;
+use crate::logger::server_actions::MqttServerActions;
+
+use super::server_pool::ServerPool;
+use super::server_session::Session;
 
 pub struct MqttServer {
     pub config: ServerConfig,
@@ -110,7 +113,7 @@ impl MqttServer {
     fn process_messages(
         &mut self,
         receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>,
-    ) -> Result<MqttActions, Error> {
+    ) -> Result<MqttServerActions, Error> {
         let (pack, stream) = receiver.lock().unwrap().recv().unwrap();
 
         match pack {
@@ -133,12 +136,12 @@ impl MqttServer {
         &self,
         _stream_connection: TcpStream,
         pub_packet: Publish,
-    ) -> Result<MqttActions, Error> {
+    ) -> Result<MqttServerActions, Error> {
         let topic = pub_packet.properties.topic_name.clone();
         let data = pub_packet.properties.application_message.clone();
         let mut receivers = Vec::new();
 
-        MqttActions::ServerPublishReceive(topic.clone(), data.clone()).register_action();
+        MqttServerActions::ReceivePublish(topic.clone(), data.clone()).register_action();
 
         <HashMap<String, Session> as Clone>::clone(&self.sessions)
             .into_iter()
@@ -149,7 +152,7 @@ impl MqttServer {
                 }
             });
         // send puback to stream
-        Ok(MqttActions::ServerSendPublish(
+        Ok(MqttServerActions::SendPublish(
             topic.clone(),
             data.clone(),
             receivers,
@@ -194,7 +197,7 @@ impl MqttServer {
         &mut self,
         _stream_connection: TcpStream,
         mut sub_packet: Subscribe,
-    ) -> Result<MqttActions, Error> {
+    ) -> Result<MqttServerActions, Error> {
         let client_id =
             MqttServer::get_sub_id_and_topics(&mut sub_packet.properties.topic_filters)?;
 
@@ -209,27 +212,27 @@ impl MqttServer {
             ));
         }
         // send suback to stream
-        Ok(MqttActions::ServerSubscribeReceive(
+        Ok(MqttServerActions::SubscribeReceive(
             client_id.clone(),
             sub_packet.properties.topic_filters,
         ))
     }
 
-    fn disconnect(&mut self) -> Result<MqttActions, Error> {
+    fn disconnect(&mut self) -> Result<MqttServerActions, Error> {
         // Cerrar la conexion
-        Ok(MqttActions::DisconnectClient)
+        Ok(MqttServerActions::DisconnectClient)
     }
 
     fn stablish_connection(
         &mut self,
         mut stream: TcpStream,
         connect: Connect,
-    ) -> Result<MqttActions, Error> {
+    ) -> Result<MqttServerActions, Error> {
         let client = connect.payload.client_id.clone();
         let connack_properties: ConnackProperties =
             self.determinate_acknowledge(connect, stream.try_clone()?)?;
         Connack::new(connack_properties).send(&mut stream)?;
-        Ok(MqttActions::ServerConnection(client))
+        Ok(MqttServerActions::Connection(client))
     }
 
     fn determinate_acknowledge(
