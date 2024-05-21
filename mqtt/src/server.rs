@@ -78,22 +78,20 @@ impl MqttServer {
 
         let receiver = Arc::new(Mutex::new(receiver));
 
-        thread::spawn(move || loop {
-            match self.process_messages(Arc::clone(&receiver)) {
-                Ok(a) => a.register_action(),
-                Err(e) => {
-                    eprintln!("Error: {:?}", e);
-                    break;
-                }
-            };
+        thread::spawn(move || -> Result<(), Error> {
+            loop {
+                match self.process_messages(Arc::clone(&receiver)) {
+                    Ok(a) => a.register_action(),
+                    Err(e) => return Err(e),
+                };
+            }
         });
 
         for client_stream in listener.incoming() {
             let stream = client_stream?.try_clone()?;
             let sender_clone = Arc::clone(&sender);
-            let stream_clone = stream.try_clone()?; 
             pool.execute(move || loop {
-                messages_handler(stream_clone.try_clone()?, sender_clone.clone())? 
+                messages_handler(stream.try_clone()?, sender_clone.clone())? 
             })?;
         };
 
