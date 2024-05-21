@@ -127,17 +127,15 @@ impl MqttClient {
         mut stream: TcpStream,
         sender: Sender<Message>,
     ) -> Result<(), Error> {
-
         let header = PacketFixedHeader::read_from(&mut stream)?;
-    
+
         let data = self.messages_handler(&mut stream, header)?;
-    
+
         sender.send(data).unwrap();
-    
+
         thread::sleep(std::time::Duration::from_millis(1000));
-    
+
         Ok(())
-    
     }
 
     pub fn messages_handler(
@@ -190,7 +188,7 @@ impl MqttClient {
             properties,
         )
         .send(&mut self.stream)?;
-        
+
         //recibir puback o reenviar publish
 
         MqttActions::ClientSendPublish(self.config.id.clone(), message, topic).register_action();

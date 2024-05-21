@@ -1,5 +1,8 @@
 use std::{
-    env, io::Error, sync::mpsc::Receiver, thread::{self, JoinHandle}
+    env,
+    io::Error,
+    sync::mpsc::Receiver,
+    thread::{self, JoinHandle},
 };
 
 use mqtt::{
@@ -29,7 +32,6 @@ fn process_messages(receiver: Receiver<Message>) -> Result<JoinHandle<()>, Error
 }
 
 fn main() -> Result<(), Error> {
-    
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 2 {

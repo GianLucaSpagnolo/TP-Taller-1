@@ -36,7 +36,10 @@ impl Clone for MqttServer {
     }
 }
 
-pub fn messages_handler(mut stream: TcpStream, sender: Arc<Mutex<Sender<(PacketReceived, TcpStream)>>> ) -> Result<(), Error> {
+pub fn messages_handler(
+    mut stream: TcpStream,
+    sender: Arc<Mutex<Sender<(PacketReceived, TcpStream)>>>,
+) -> Result<(), Error> {
     // averiguo el tipo de paquete:
     let sender = sender.lock().unwrap().clone();
 
@@ -49,8 +52,11 @@ pub fn messages_handler(mut stream: TcpStream, sender: Arc<Mutex<Sender<(PacketR
     ) {
         Ok(pack) => match sender.send((pack, stream)) {
             Ok(_) => Ok(()),
-            Err(_) => return Err(Error::new(std::io::ErrorKind::Other, "Server - Error al enviar el paquete"))
-        }, 
+            Err(_) => Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - Error al enviar el paquete",
+            )),
+        },
         Err(e) => Err(e),
     }
 }
@@ -91,9 +97,9 @@ impl MqttServer {
             let stream = client_stream?.try_clone()?;
             let sender_clone = Arc::clone(&sender);
             pool.execute(move || loop {
-                messages_handler(stream.try_clone()?, sender_clone.clone())? 
+                messages_handler(stream.try_clone()?, sender_clone.clone())?
             })?;
-        };
+        }
 
         Err(Error::new(
             std::io::ErrorKind::Other,
@@ -101,9 +107,10 @@ impl MqttServer {
         ))
     }
 
-
-    fn process_messages(&mut self, receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>) -> Result<MqttActions, Error> {
-
+    fn process_messages(
+        &mut self,
+        receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>,
+    ) -> Result<MqttActions, Error> {
         let (pack, stream) = receiver.lock().unwrap().recv().unwrap();
 
         match pack {
@@ -114,9 +121,7 @@ impl MqttServer {
             PacketReceived::Publish(pub_packet) => {
                 self.resend_publish_to_subscribers(stream, *pub_packet)
             }
-            PacketReceived::Subscribe(sub_packet) => {
-                self.add_subscriptions(stream, *sub_packet)
-            }
+            PacketReceived::Subscribe(sub_packet) => self.add_subscriptions(stream, *sub_packet),
             _ => Err(Error::new(
                 std::io::ErrorKind::Other,
                 "Server - Paquete recibido no es válido",
