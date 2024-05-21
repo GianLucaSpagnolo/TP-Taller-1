@@ -83,7 +83,9 @@ impl Config for ServerConfig {
             }
         }
 
-        if let (Some(port), Some(ip), Some(maximum_threads), Some(log_path)) = (port, ip, maximum_threads, log_path) {
+        if let (Some(port), Some(ip), Some(maximum_threads), Some(log_path)) =
+            (port, ip, maximum_threads, log_path)
+        {
             return Ok(ServerConfig {
                 port,
                 ip,
