@@ -1,7 +1,5 @@
 use std::{
-    io::Error,
-    sync::mpsc::Receiver,
-    thread::{self, JoinHandle},
+    env, io::Error, sync::mpsc::Receiver, thread::{self, JoinHandle}
 };
 
 use mqtt::{
@@ -10,7 +8,7 @@ use mqtt::{
 };
 
 fn process_messages(receiver: Receiver<Message>) -> Result<JoinHandle<()>, Error> {
-    let handler = thread::spawn(move || {
+    let handler = thread::spawn(move || loop {
         let message_received = receiver.recv().unwrap();
         match message_received.topic.as_str() {
             "cams" => {
@@ -31,7 +29,17 @@ fn process_messages(receiver: Receiver<Message>) -> Result<JoinHandle<()>, Error
 }
 
 fn main() -> Result<(), Error> {
-    let config_path = "app/files/client_sub.txt";
+    
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() != 2 {
+        return Err(Error::new(
+            std::io::ErrorKind::Other,
+            "Cantidad de argumentos incorrecta - debe pasarse el archivo de configuracion del servidor",
+        ));
+    }
+
+    let config_path = &args[1];
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
