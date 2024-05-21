@@ -7,7 +7,7 @@ use crate::control_packets::{
     mqtt_connect::connect_properties::ConnectProperties, mqtt_packet::flags::flags_handler::*,
 };
 
-use super::config::Config;
+use super::mqtt_config::Config;
 
 pub struct ClientConfig {
     pub id: String,

@@ -14,9 +14,9 @@ mod logger {
     pub mod server_actions;
 }
 
-pub mod configs {
+pub mod config {
     pub mod client_config;
-    pub mod config;
+    pub mod mqtt_config;
     pub mod server_config;
 }
 

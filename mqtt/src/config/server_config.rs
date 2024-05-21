@@ -3,7 +3,7 @@ use std::{
     net::{IpAddr, SocketAddr},
 };
 
-use super::config::Config;
+use super::mqtt_config::Config;
 
 pub struct ServerConfig {
     pub ip: IpAddr,

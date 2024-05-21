@@ -5,8 +5,8 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use crate::configs::config::Config;
-use crate::configs::server_config::ServerConfig;
+use crate::config::mqtt_config::Config;
+use crate::config::server_config::ServerConfig;
 use crate::control_packets::mqtt_connack::connack::*;
 use crate::control_packets::mqtt_connack::connack_properties::ConnackProperties;
 use crate::control_packets::mqtt_connect::connect::*;

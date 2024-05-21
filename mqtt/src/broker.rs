@@ -1,7 +1,7 @@
 use std::io::Error;
 
 use mqtt::{
-    configs::{config::Config, server_config::ServerConfig},
+    config::{mqtt_config::Config, server_config::ServerConfig},
     server::mqtt_server::MqttServer,
 };
 

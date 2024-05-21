@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    configs::{client_config::ClientConfig, config::Config},
+    config::{client_config::ClientConfig, mqtt_config::Config},
     control_packets::{
         mqtt_connack::connack::Connack,
         mqtt_connect::{connect::Connect, payload},
