@@ -1,46 +1,19 @@
 use std::{
-    fs::File,
     io::Error,
     net::{IpAddr, SocketAddr},
 };
 
-use crate::{
-    common::utils::*,
-    control_packets::{
-        mqtt_connect::connect_properties::ConnectProperties, mqtt_packet::flags::flags_handler::*,
-    },
+use crate::control_packets::{
+    mqtt_connect::connect_properties::ConnectProperties, mqtt_packet::flags::flags_handler::*,
 };
 
-pub trait Config<Config = Self> {
-    fn set_params(params: &[(String, String)]) -> Result<Self, Error>
-    where
-        Self: Sized;
-
-    fn from_file(file_path: String) -> Result<Self, Error>
-    where
-        Self: Sized,
-    {
-        let archivo_abierto: Option<File> = abrir_archivo(&file_path);
-        let mut parametros = Vec::new();
-
-        archivo_abierto.map(|archivo| match leer_archivo(&archivo) {
-            None => None,
-            Some(lineas_leidas) => {
-                parametros = obtener_parametros_archivo(lineas_leidas, 2);
-                Some(())
-            }
-        });
-
-        Self::set_params(&parametros)
-    }
-
-    fn get_socket_address(&self) -> SocketAddr;
-}
+use super::mqtt_config::Config;
 
 pub struct ClientConfig {
     pub id: String,
     pub ip: IpAddr,
     pub port: u16,
+    pub log_path: String,
     pub connect_properties: ConnectProperties,
     pub publish_dup_flag: u8,
     pub publish_qos: u8,
@@ -53,6 +26,7 @@ impl Clone for ClientConfig {
             id: self.id.clone(),
             ip: self.ip,
             port: self.port,
+            log_path: self.log_path.clone(),
             connect_properties: self.connect_properties.clone(),
             publish_dup_flag: self.publish_dup_flag,
             publish_qos: self.publish_qos,
@@ -71,6 +45,7 @@ impl Config for ClientConfig {
         let mut id = None;
         let mut ip = None;
         let mut port = None;
+        let mut log_path = None;
 
         // Corroborar que le pasen los campos obligatorios
         let mut connect_properties = ConnectProperties::default();
@@ -265,6 +240,8 @@ impl Config for ClientConfig {
                     };
                 }
 
+                "log_path" => log_path = Some(param.1.clone()),
+
                 _ => {
                     return Err(Error::new(
                         std::io::ErrorKind::InvalidData,
@@ -274,11 +251,12 @@ impl Config for ClientConfig {
             }
         }
 
-        if let (Some(id), Some(ip), Some(port)) = (id, ip, port) {
+        if let (Some(id), Some(ip), Some(port), Some(log_path)) = (id, ip, port, log_path) {
             return Ok(ClientConfig {
                 id,
                 ip,
                 port,
+                log_path,
                 connect_properties,
                 publish_dup_flag,
                 publish_qos,
@@ -288,94 +266,7 @@ impl Config for ClientConfig {
 
         Err(Error::new(
             std::io::ErrorKind::InvalidData,
-            "Invalid parameter: Ip",
-        ))
-    }
-}
-
-pub struct ServerConfig {
-    pub ip: IpAddr,
-    pub port: u16,
-    pub maximum_threads: usize,
-}
-
-impl Clone for ServerConfig {
-    fn clone(&self) -> Self {
-        ServerConfig {
-            ip: self.ip,
-            port: self.port,
-            maximum_threads: self.maximum_threads,
-        }
-    }
-}
-
-impl Config for ServerConfig {
-    fn get_socket_address(&self) -> SocketAddr {
-        SocketAddr::new(self.ip, self.port)
-    }
-
-    fn set_params(params: &[(String, String)]) -> Result<Self, Error> {
-        // seteo los parametros obligatorios del servidor:
-        let mut ip = None;
-        let mut port = None;
-        let mut maximum_threads = None;
-
-        for param in params.iter() {
-            match param.0.as_str() {
-                "ip" => {
-                    ip = match param.1.parse::<IpAddr>() {
-                        Ok(p) => Some(p),
-                        Err(_) => {
-                            return Err(Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                "Invalid ip parameter",
-                            ))
-                        }
-                    }
-                }
-                "port" => {
-                    port = match param.1.parse::<u16>() {
-                        Ok(p) => Some(p),
-                        Err(_) => {
-                            return Err(Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                "Invalid port parameter",
-                            ))
-                        }
-                    }
-                }
-
-                "maximum_threads" => {
-                    maximum_threads = match param.1.parse::<usize>() {
-                        Ok(p) => Some(p),
-                        Err(_) => {
-                            return Err(Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                "Invalid maximum threads parameter",
-                            ))
-                        }
-                    };
-                }
-
-                _ => {
-                    return Err(Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        "Invalid parameter",
-                    ))
-                }
-            }
-        }
-
-        if let (Some(port), Some(ip), Some(maximum_threads)) = (port, ip, maximum_threads) {
-            return Ok(ServerConfig {
-                port,
-                ip,
-                maximum_threads,
-            });
-        }
-        Err(Error::new(
-            std::io::ErrorKind::InvalidData,
-            "Config fields are missing",
+            "Config fields are missing: ip, port, id or log_path",
         ))
     }
 }

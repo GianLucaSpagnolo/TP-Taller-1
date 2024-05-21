@@ -6,8 +6,7 @@ use std::{
 };
 
 use crate::{
-    actions::MqttActions,
-    config::{ClientConfig, Config},
+    config::{client_config::ClientConfig, mqtt_config::Config},
     control_packets::{
         mqtt_connack::connack::Connack,
         mqtt_connect::{connect::Connect, payload},
@@ -15,6 +14,7 @@ use crate::{
         mqtt_publish::{publish::Publish, publish_properties},
         mqtt_subscribe::{subscribe::Subscribe, subscribe_properties},
     },
+    logger::{actions::MqttActions, client_actions::MqttClientActions},
 };
 
 pub struct MqttClient {
@@ -23,13 +23,13 @@ pub struct MqttClient {
     current_packet_id: u16,
 }
 
-pub struct Message {
+pub struct MqttClientMessage {
     pub topic: String,
     pub data: String,
 }
 
-pub struct Listener {
-    pub receiver: Receiver<Message>,
+pub struct MqttClientListener {
+    pub receiver: Receiver<MqttClientMessage>,
     pub handler: JoinHandle<Result<(), Error>>,
 }
 
@@ -62,12 +62,12 @@ impl MqttClient {
 
         Connect::new(config.connect_properties.clone(), payload).send(&mut stream)?;
 
-        MqttActions::ClientSendConnect(config.id.clone(), config.get_socket_address().to_string())
+        MqttClientActions::SendConnect(config.id.clone(), config.get_socket_address().to_string())
             .register_action();
 
         let connack = receive_connack_packet(&mut stream)?;
 
-        MqttActions::ClientConnection(
+        MqttClientActions::Connection(
             config.get_socket_address().to_string(),
             connack.properties.connect_reason_code,
         )
@@ -84,7 +84,7 @@ impl MqttClient {
         Ok(client)
     }
 
-    pub fn run_listener(&mut self) -> Result<Listener, Error> {
+    pub fn run_listener(&mut self) -> Result<MqttClientListener, Error> {
         let mut counter = 0;
 
         let client = self.clone();
@@ -108,7 +108,7 @@ impl MqttClient {
             }
         });
 
-        Ok(Listener { receiver, handler })
+        Ok(MqttClientListener { receiver, handler })
     }
 
     fn session_timer(counter: &mut u32, expiry_interval: u32) -> Result<(), Error> {
@@ -125,7 +125,7 @@ impl MqttClient {
     pub fn listen_message(
         &self,
         mut stream: TcpStream,
-        sender: Sender<Message>,
+        sender: Sender<MqttClientMessage>,
     ) -> Result<(), Error> {
         let header = PacketFixedHeader::read_from(&mut stream)?;
 
@@ -142,7 +142,7 @@ impl MqttClient {
         &self,
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
-    ) -> Result<Message, Error> {
+    ) -> Result<MqttClientMessage, Error> {
         let packet_recived = get_packet(
             &mut stream,
             fixed_header.get_package_type(),
@@ -155,7 +155,7 @@ impl MqttClient {
             PacketReceived::Publish(publish) => {
                 data = publish.properties.application_message.clone();
                 topic = publish.properties.topic_name.clone();
-                MqttActions::ClientReceivePublish(
+                MqttClientActions::ReceivePublish(
                     self.config.id.clone(),
                     data.clone(),
                     topic.clone(),
@@ -165,7 +165,7 @@ impl MqttClient {
             _ => return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido")),
         }
 
-        Ok(Message {
+        Ok(MqttClientMessage {
             topic,
             data: data.clone(),
         })
@@ -191,7 +191,7 @@ impl MqttClient {
 
         //recibir puback o reenviar publish
 
-        MqttActions::ClientSendPublish(self.config.id.clone(), message, topic).register_action();
+        MqttClientActions::SendPublish(self.config.id.clone(), message, topic).register_action();
         Ok(())
     }
 
@@ -225,7 +225,7 @@ impl MqttClient {
 
         //recibir suback o reenviar subscribe
 
-        MqttActions::ClientSendSubscribe(self.config.id.clone(), prop_topics).register_action();
+        MqttClientActions::SendSubscribe(self.config.id.clone(), prop_topics).register_action();
         Ok(())
     }
 

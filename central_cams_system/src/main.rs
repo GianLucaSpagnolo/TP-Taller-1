@@ -14,7 +14,10 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
         let message_received = receiver.recv().unwrap();
         match message_received.topic.as_str() {
             "cams" => {
-                // cambiar estado
+                println!(
+                    "Mensaje recibido y procesado del topic 'cams': {}",
+                    message_received.data
+                );
             }
             "dron" => {
                 // cambiar estado
@@ -28,7 +31,7 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
 }
 
 fn main() -> Result<(), Error> {
-    let config_path = "app/files/client_pub.txt";
+    let config_path = "central_cams_system/config/cams_config.txt";
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
@@ -38,7 +41,9 @@ fn main() -> Result<(), Error> {
 
     let process_message_handler = process_messages(listener.receiver)?;
 
-    client.publish("mensaje del cliente".to_string(), "cams".to_string())?;
+    client.subscribe(vec!["cams", "dron"], 1, false, false, 0)?;
+
+    //client.publish("mensaje del cliente".to_string(), "cams".to_string())?;
 
     listener.handler.join().unwrap()?;
     process_message_handler.join().unwrap();

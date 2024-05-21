@@ -1,9 +1,24 @@
-mod actions;
-pub mod client;
-pub mod config;
-pub mod server;
-mod server_pool;
-mod session;
+pub mod client {
+    pub mod mqtt_client;
+}
+
+pub mod server {
+    pub mod mqtt_server;
+    pub mod server_pool;
+    pub mod server_session;
+}
+
+mod logger {
+    pub mod actions;
+    pub mod client_actions;
+    pub mod server_actions;
+}
+
+pub mod config {
+    pub mod client_config;
+    pub mod mqtt_config;
+    pub mod server_config;
+}
 
 mod control_packets {
     pub mod mqtt_packet {
