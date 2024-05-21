@@ -15,8 +15,8 @@ pub enum MqttActions {
     ServerPublishReceive(String, String),
     ServerSendPublish(String, String, Vec<String>),
     ServerSubscribeReceive(String, Vec<TopicFilter>),
-    TryConnect, // guardara el exit code
-    PackageError,
+    _TryConnect, // guardara el exit code
+    _PackageError,
 }
 
 impl MqttActions {
@@ -88,9 +88,9 @@ impl fmt::Display for MqttActions {
                     topics
                 )
             }
-            MqttActions::TryConnect => write!(f, "Intentando conectar"),
+            MqttActions::_TryConnect => write!(f, "Intentando conectar"),
             MqttActions::DisconnectClient => write!(f, "Desconectando cliente"),
-            MqttActions::PackageError => write!(f, "Error en el paquete"),
+            MqttActions::_PackageError => write!(f, "Error en el paquete"),
         }
     }
 }

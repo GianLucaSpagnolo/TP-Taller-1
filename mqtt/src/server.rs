@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::io::Error;
 use std::net::{TcpListener, TcpStream};
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 use crate::actions::MqttActions;
 use crate::config::{Config, ServerConfig};
@@ -33,6 +36,25 @@ impl Clone for MqttServer {
     }
 }
 
+pub fn messages_handler(mut stream: TcpStream, sender: Arc<Mutex<Sender<(PacketReceived, TcpStream)>>> ) -> Result<(), Error> {
+    // averiguo el tipo de paquete:
+    let sender = sender.lock().unwrap().clone();
+
+    let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
+
+    match get_packet(
+        &mut stream,
+        fixed_header.get_package_type(),
+        fixed_header.remaining_length,
+    ) {
+        Ok(pack) => match sender.send((pack, stream)) {
+            Ok(_) => Ok(()),
+            Err(_) => return Err(Error::new(std::io::ErrorKind::Other, "Server - Error al enviar el paquete"))
+        }, 
+        Err(e) => Err(e),
+    }
+}
+
 impl MqttServer {
     pub fn new(config: ServerConfig) -> Self {
         MqttServer {
@@ -45,23 +67,35 @@ impl MqttServer {
     // le devuelve el paquete al servidor
     // el servidor lo pasa al logger
     // el logger le pide traduccion al protocolo
-    pub fn start_server(self) -> Result<(), Error> {
+    pub fn start_server(mut self) -> Result<(), Error> {
         let listener = TcpListener::bind(self.config.get_socket_address())?;
 
         let pool = ServerPool::build(self.config.maximum_threads)?;
 
-        for client_stream in listener.incoming() {
-            let mut shared_server = self.clone();
-            let stream = client_stream?.try_clone()?;
-            pool.execute(move || loop {
-                match shared_server.messages_handler(stream.try_clone()?) {
-                    Ok(action) => {
-                        action.register_action();
-                    }
-                    Err(e) => return Err(e),
+        let (sender, receiver) = mpsc::channel();
+
+        let sender = Arc::new(Mutex::new(sender));
+
+        let receiver = Arc::new(Mutex::new(receiver));
+
+        thread::spawn(move || loop {
+            match self.process_messages(Arc::clone(&receiver)) {
+                Ok(a) => a.register_action(),
+                Err(e) => {
+                    eprintln!("Error: {:?}", e);
+                    break;
                 }
+            };
+        });
+
+        for client_stream in listener.incoming() {
+            let stream = client_stream?.try_clone()?;
+            let sender_clone = Arc::clone(&sender);
+            let stream_clone = stream.try_clone()?; 
+            pool.execute(move || loop {
+                messages_handler(stream_clone.try_clone()?, sender_clone.clone())? 
             })?;
-        }
+        };
 
         Err(Error::new(
             std::io::ErrorKind::Other,
@@ -69,32 +103,26 @@ impl MqttServer {
         ))
     }
 
-    pub fn messages_handler(&mut self, mut stream: TcpStream) -> Result<MqttActions, Error> {
-        // averiguo el tipo de paquete:
-        let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
 
-        match get_packet(
-            &mut stream,
-            fixed_header.get_package_type(),
-            fixed_header.remaining_length,
-        ) {
-            Ok(pack) => match pack {
-                PacketReceived::Connect(connect_pack) => {
-                    self.stablish_connection(stream, *connect_pack)
-                }
-                PacketReceived::Disconnect(_pack) => self.disconnect(),
-                PacketReceived::Publish(pub_packet) => {
-                    self.resend_publish_to_subscribers(stream, *pub_packet)
-                }
-                PacketReceived::Subscribe(sub_packet) => {
-                    self.add_subscriptions(stream, *sub_packet)
-                }
-                _ => Err(Error::new(
-                    std::io::ErrorKind::Other,
-                    "Server - Paquete recibido no es válido",
-                )),
-            },
-            Err(e) => Err(e),
+    fn process_messages(&mut self, receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>) -> Result<MqttActions, Error> {
+
+        let (pack, stream) = receiver.lock().unwrap().recv().unwrap();
+
+        match pack {
+            PacketReceived::Connect(connect_pack) => {
+                self.stablish_connection(stream, *connect_pack)
+            }
+            PacketReceived::Disconnect(_pack) => self.disconnect(),
+            PacketReceived::Publish(pub_packet) => {
+                self.resend_publish_to_subscribers(stream, *pub_packet)
+            }
+            PacketReceived::Subscribe(sub_packet) => {
+                self.add_subscriptions(stream, *sub_packet)
+            }
+            _ => Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - Paquete recibido no es válido",
+            )),
         }
     }
 
