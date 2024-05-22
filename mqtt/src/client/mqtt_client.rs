@@ -55,12 +55,14 @@ fn receive_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> 
 impl MqttClient {
     pub fn init(config: ClientConfig) -> Result<Self, Error> {
         let log_path = config.log_path.to_string();
+        let client_id = config.id.to_string();
+
         let logger = match create_logger(&log_path) {
             Ok(log) => {
                 // si se configura el mismo path del server, sacar este mensaje.
                 log.log_event(
                     &"Logger del cliente inicializado".to_string(),
-                    &"?".to_string(),
+                    &client_id,
                     &",".to_string(),
                 );
                 log
@@ -76,7 +78,7 @@ impl MqttClient {
             Err(e) => {
                 logger.log_event(
                     &("Error al conectar con servidor: ".to_string() + &e.to_string()),
-                    &"?".to_string(),
+                    &client_id,
                     &",".to_string(),
                 );
                 logger.close_logger();
@@ -94,7 +96,7 @@ impl MqttClient {
             Err(e) => {
                 logger.log_event(
                     &("Error al conectar con servidor: ".to_string() + &e.to_string()),
-                    &"?".to_string(),
+                    &client_id,
                     &",".to_string(),
                 );
                 logger.close_logger();
@@ -108,20 +110,32 @@ impl MqttClient {
         MqttClientActions::SendConnect(config.id.clone(), config.get_socket_address().to_string())
             .log_action(&logger);
 
-        let connack = receive_connack_packet(&mut stream)?;
+        match receive_connack_packet(&mut stream) {
+            Ok(connack) => {
+                MqttClientActions::Connection(
+                    config.get_socket_address().to_string(),
+                    connack.properties.connect_reason_code,
+                )
+                .register_action();
+        
+                MqttClientActions::Connection(
+                    config.get_socket_address().to_string(),
+                    connack.properties.connect_reason_code,
+                )
+                .log_action(&logger);
+            },
+            Err(e) => {
+                logger.log_event(
+                    &("Error al procesar connack: ".to_string() + &e.to_string()),
+                    &client_id,
+                    &",".to_string(),
+                );
+                logger.close_logger();
+                return Err(e);
+            },
+        };
 
-        MqttClientActions::Connection(
-            config.get_socket_address().to_string(),
-            connack.properties.connect_reason_code,
-        )
-        .register_action();
-
-        MqttClientActions::Connection(
-            config.get_socket_address().to_string(),
-            connack.properties.connect_reason_code,
-        )
-        .log_action(&logger);
-
+        
         let current_packet_id = 0;
 
         let client = MqttClient {

@@ -48,9 +48,9 @@ impl fmt::Display for MqttServerActions {
 }
 
 impl MqttActions for MqttServerActions {
-    fn register_action(self) -> Self {
+    fn register_action(&self) {
         println!("{}", self);
-        self
+        //self
     }
 
     fn log_action(&self, logger: &LoggerHandler) {

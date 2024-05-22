@@ -5,8 +5,8 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use crate::config::mqtt_config::Config;
-use crate::config::server_config::ServerConfig;
+use crate::common::utils::create_logger;
+use crate::config::{mqtt_config::Config, server_config::ServerConfig};
 use crate::control_packets::mqtt_connack::connack::*;
 use crate::control_packets::mqtt_connack::connack_properties::ConnackProperties;
 use crate::control_packets::mqtt_connect::connect::*;
@@ -77,9 +77,47 @@ impl MqttServer {
     // el servidor lo pasa al logger
     // el logger le pide traduccion al protocolo
     pub fn start_server(mut self) -> Result<(), Error> {
-        let listener = TcpListener::bind(self.config.get_socket_address())?;
+        let log_path = self.config.log_path.to_string();
+        let logger = match create_logger(&log_path) {
+            Ok(log) => {
+                log.log_event(
+                    &"Logger del servidor inicializado".to_string(),
+                    &"0".to_string(),
+                    &",".to_string(),
+                );
+                log
+            }
+            Err(e) => {
+                eprintln!("Error obtenido al inicializar el logger del servidor: {}", e);
+                return Err(e);
+            }
+        };
 
-        let pool = ServerPool::build(self.config.maximum_threads)?;
+        let listener = match TcpListener::bind(self.config.get_socket_address()) {
+            Ok(lis) => lis,
+            Err(e) => {
+                logger.log_event(
+                    &("Error al conectar con servidor: ".to_string() + &e.to_string()),
+                    &"0".to_string(),
+                    &",".to_string(),
+                );
+                logger.close_logger();
+                return Err(e);
+            },
+        };
+
+        let pool = match ServerPool::build(self.config.maximum_threads) {
+            Ok(p) => p,
+            Err(e) => {
+                logger.log_event(
+                    &("Error al crear serverpool: ".to_string() + &e.to_string()),
+                    &"0".to_string(),
+                    &",".to_string(),
+                );
+                logger.close_logger();
+                return Err(e);
+            },
+        };
 
         let (sender, receiver) = mpsc::channel();
 
@@ -88,10 +126,26 @@ impl MqttServer {
         let receiver = Arc::new(Mutex::new(receiver));
 
         thread::spawn(move || -> Result<(), Error> {
+            let logger_handler = match create_logger(&log_path) {
+                Ok(log) => log,
+                Err(e) => return Err(e),
+            };
+
             loop {
                 match self.process_messages(Arc::clone(&receiver)) {
-                    Ok(a) => a.register_action(),
-                    Err(e) => return Err(e),
+                    Ok(a) => {
+                        a.register_action();
+                        a.log_action(&logger_handler);
+                    },
+                    Err(e) => {
+                        logger_handler.log_event(
+                            &("Error al procesar el mensaje: ".to_string() + &e.to_string()),
+                            &"0".to_string(),
+                            &",".to_string(),
+                        );
+                        logger_handler.close_logger();
+                        return Err(e);
+                    },
                 };
             }
         });
@@ -104,6 +158,12 @@ impl MqttServer {
             })?;
         }
 
+        logger.log_event(
+            &("Cerrando servidor ... no se reciben mas paquetes".to_string()),
+            &"0".to_string(),
+            &",".to_string(),
+        );
+        logger.close_logger();
         Err(Error::new(
             std::io::ErrorKind::Other,
             "No se pudo recibir el paquete",
