@@ -1,5 +1,3 @@
-//use crate::common::file_manager::{open_file, read_file, write_line};
-
 use crate::common::utils::*;
 /// El logger guarda en alto nivel las acciones de todas las aplicaciones,
 /// que pasan por el servidor.

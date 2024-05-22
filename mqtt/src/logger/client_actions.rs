@@ -4,7 +4,7 @@ use crate::control_packets::{
     mqtt_packet::reason_codes::ReasonCode, mqtt_subscribe::subscribe_properties::TopicFilter,
 };
 
-use super::actions::MqttActions;
+use super::{actions::MqttActions, logger_handler::LoggerHandler};
 
 #[derive(Debug)]
 pub enum MqttClientActions {
@@ -62,8 +62,42 @@ impl MqttActions for MqttClientActions {
         self
     }
 
-    fn log_action(self) -> Self {
-        // implementar logica del logger
-        self
+    fn log_action(&self, logger: &LoggerHandler) {
+        match self {
+            MqttClientActions::Connection(addrs, code) => {
+                let reason_code = ReasonCode::new(*code);
+                let msg = "CONNACK - Conexion establecida con [ ".to_string()
+                    + &addrs.to_string()
+                    + &" ] y reason code: [ ".to_string()
+                    + &reason_code.to_string()
+                    + &" ] ".to_string();
+                logger.log_event(&msg, addrs, &",".to_string());
+            }
+            MqttClientActions::ReceivePublish(id, message, topic) => {
+                let msg = "PUBLISH - Cliente recibio: [".to_string()
+                    + &message
+                    + &"] proveniente del topic: ".to_string()
+                    + &topic;
+                logger.log_event(&msg, id, &",".to_string());
+            }
+            MqttClientActions::SendConnect(id, addrs) => {
+                let msg = "CONNECT - Cliente intenta conectarse a: ".to_string() + &addrs;
+                logger.log_event(&msg, id, &",".to_string());
+            }
+            MqttClientActions::SendPublish(id, message, topic) => {
+                let msg = "PUBLISH - Cliente envio: [".to_string()
+                    + &message
+                    + &"] al topico: ".to_string()
+                    + &topic;
+                logger.log_event(&msg, id, &",".to_string());
+            }
+            MqttClientActions::SendSubscribe(id, topics) => {
+                let mut msg = "SUBSCRIBE - Cliente se subscribió a el/los topicos: ".to_string();
+                for top in topics {
+                    msg = msg + &top.topic_filter + &" - ".to_string();
+                }
+                logger.log_event(&msg, id, &",".to_string());
+            }
+        }
     }
 }

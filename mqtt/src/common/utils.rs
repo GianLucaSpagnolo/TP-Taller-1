@@ -6,27 +6,27 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use crate::logger::logger::LoggerHandler;
+use crate::logger::logger_handler::LoggerHandler;
 
 // Abre el archivo recibiendo su ruta por parametro,
 // devuelve el archivo encapsulado en un option
 // si pudo encontrar su ruta o, devuelve None ante un caso
 // de error e imprime el error por salida de error estandar
-pub fn open_config_file(ruta_archivo: &String) -> Option<File> {
-    let resultado_open = File::open(ruta_archivo);
+pub fn open_config_file(file_path: &String) -> Option<File> {
+    let open_res = File::open(file_path);
 
-    let archivo_abierto = match resultado_open {
-        Ok(archivo) => archivo,
+    let open_file = match open_res {
+        Ok(file) => file,
         Err(..) => {
             eprintln!(
                 "\nNo se pudo encontrar el archivo: '{}' en la ruta indicada",
-                ruta_archivo
+                file_path
             );
             return None;
         }
     };
 
-    Some(archivo_abierto)
+    Some(open_file)
 }
 
 // Recibe un archivo abierto, lo lee linea por linea y
@@ -132,5 +132,4 @@ pub fn write_line(action: &mut String, file: &mut File) -> Result<(), Error> {
     let lock_file = Arc::new(RwLock::new(file));
     let result = lock_file.write().unwrap().write_all(action.as_bytes());
     result
-    //file.write_all(action.as_bytes())
 }

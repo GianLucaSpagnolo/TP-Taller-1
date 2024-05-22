@@ -1,16 +1,13 @@
-use std::io::Error;
-
 use mqtt::{
     config::{mqtt_config::Config, server_config::ServerConfig},
     server::mqtt_server::MqttServer,
 };
 
-use std::{env, process::ExitCode};
+use std::process::ExitCode;
 
 fn main() -> ExitCode {
     const CONFIGERROR: u8 = 3;
     const SERVER_LISTENERERROR: u8 = 4;
-
 
     let config_path = "mqtt/config/server_config.txt";
     let config = match ServerConfig::from_file(String::from(config_path)) {

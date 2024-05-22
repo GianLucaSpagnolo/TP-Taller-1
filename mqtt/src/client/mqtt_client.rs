@@ -6,6 +6,7 @@ use std::{
 };
 
 use crate::{
+    common::utils::create_logger,
     config::{client_config::ClientConfig, mqtt_config::Config},
     control_packets::{
         mqtt_connack::connack::Connack,
@@ -53,17 +54,59 @@ fn receive_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> 
 
 impl MqttClient {
     pub fn init(config: ClientConfig) -> Result<Self, Error> {
-        let mut stream = TcpStream::connect(config.get_socket_address())?;
+        let log_path = config.log_path.to_string();
+        let logger = match create_logger(&log_path) {
+            Ok(log) => {
+                // si se configura el mismo path del server, sacar este mensaje.
+                log.log_event(
+                    &"Logger del cliente inicializado".to_string(),
+                    &"?".to_string(),
+                    &",".to_string(),
+                );
+                log
+            }
+            Err(e) => {
+                eprintln!("Error obtenido al inicializar el logger: {}", e);
+                return Err(e);
+            }
+        };
+
+        let mut stream = match TcpStream::connect(config.get_socket_address()) {
+            Ok(stream) => stream,
+            Err(e) => {
+                logger.log_event(
+                    &("Error al conectar con servidor: ".to_string() + &e.to_string()),
+                    &"?".to_string(),
+                    &",".to_string(),
+                );
+                logger.close_logger();
+                return Err(e);
+            }
+        };
 
         let payload = payload::ConnectPayload {
             client_id: config.id.clone(),
             ..Default::default()
         };
 
-        Connect::new(config.connect_properties.clone(), payload).send(&mut stream)?;
+        match Connect::new(config.connect_properties.clone(), payload).send(&mut stream) {
+            Ok(_) => (),
+            Err(e) => {
+                logger.log_event(
+                    &("Error al conectar con servidor: ".to_string() + &e.to_string()),
+                    &"?".to_string(),
+                    &",".to_string(),
+                );
+                logger.close_logger();
+                return Err(e);
+            }
+        };
 
         MqttClientActions::SendConnect(config.id.clone(), config.get_socket_address().to_string())
             .register_action();
+
+        MqttClientActions::SendConnect(config.id.clone(), config.get_socket_address().to_string())
+            .log_action(&logger);
 
         let connack = receive_connack_packet(&mut stream)?;
 
@@ -73,6 +116,12 @@ impl MqttClient {
         )
         .register_action();
 
+        MqttClientActions::Connection(
+            config.get_socket_address().to_string(),
+            connack.properties.connect_reason_code,
+        )
+        .log_action(&logger);
+
         let current_packet_id = 0;
 
         let client = MqttClient {
@@ -81,10 +130,11 @@ impl MqttClient {
             current_packet_id,
         };
 
+        logger.close_logger();
         Ok(client)
     }
 
-    pub fn run_listener(&mut self) -> Result<MqttClientListener, Error> {
+    pub fn run_listener(&mut self, log_path: String) -> Result<MqttClientListener, Error> {
         let mut counter = 0;
 
         let client = self.clone();
@@ -93,7 +143,11 @@ impl MqttClient {
 
         let handler = thread::spawn(move || -> Result<(), Error> {
             loop {
-                match client.listen_message(client.stream.try_clone()?, sender.clone()) {
+                match client.listen_message(
+                    client.stream.try_clone()?,
+                    sender.clone(),
+                    &log_path.to_string(),
+                ) {
                     Ok(_) => {
                         counter = 0;
                     }
@@ -126,15 +180,57 @@ impl MqttClient {
         &self,
         mut stream: TcpStream,
         sender: Sender<MqttClientMessage>,
+        log_path: &String,
     ) -> Result<(), Error> {
-        let header = PacketFixedHeader::read_from(&mut stream)?;
+        let logger = match create_logger(log_path) {
+            Ok(log) => log,
+            Err(e) => {
+                eprintln!(
+                    "Error obtenido al inicializar el logger: {} en path: {}",
+                    e, log_path
+                );
+                return Err(e);
+            }
+        };
 
-        let data = self.messages_handler(&mut stream, header)?;
+        let header = match PacketFixedHeader::read_from(&mut stream) {
+            Ok(r) => r,
+            Err(e) => {
+                logger.log_event(
+                    &("Error al leer el header: ".to_string() + &e.to_string()),
+                    &"?".to_string(),
+                    &",".to_string(),
+                );
+                logger.close_logger();
+                return Err(e);
+            }
+        };
 
-        sender.send(data).unwrap();
+        let data = match self.messages_handler(&mut stream, header, log_path) {
+            Ok(dat) => dat,
+            Err(e) => {
+                logger.log_event(
+                    &("Error al manejar el mensaje: ".to_string() + &e.to_string()),
+                    &"?".to_string(),
+                    &",".to_string(),
+                );
+                logger.close_logger();
+                return Err(e);
+            }
+        };
+
+        match sender.send(data) {
+            Ok(_) => (),
+            Err(e) => {
+                let msg = "Error al enviar mensaje al servidor: ".to_string() + &e.to_string();
+                logger.log_event(&msg, &"?".to_string(), &",".to_string());
+                logger.close_logger();
+                return Err(Error::new(std::io::ErrorKind::Other, msg));
+            }
+        };
 
         thread::sleep(std::time::Duration::from_millis(1000));
-
+        logger.close_logger();
         Ok(())
     }
 
@@ -142,7 +238,19 @@ impl MqttClient {
         &self,
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
+        log_path: &String,
     ) -> Result<MqttClientMessage, Error> {
+        let logger = match create_logger(log_path) {
+            Ok(log) => log,
+            Err(e) => {
+                eprintln!(
+                    "Error obtenido al inicializar el logger: {} en path: {}",
+                    e, log_path
+                );
+                return Err(e);
+            }
+        };
+
         let packet_recived = get_packet(
             &mut stream,
             fixed_header.get_package_type(),
@@ -161,10 +269,26 @@ impl MqttClient {
                     topic.clone(),
                 )
                 .register_action();
+
+                MqttClientActions::ReceivePublish(
+                    self.config.id.clone(),
+                    data.clone(),
+                    topic.clone(),
+                )
+                .log_action(&logger);
             }
-            _ => return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido")),
+            _ => {
+                logger.log_event(
+                    &"Paquete desconocido recibido".to_string(),
+                    &"?".to_string(),
+                    &",".to_string(),
+                );
+                logger.close_logger();
+                return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido"));
+            }
         }
 
+        logger.close_logger();
         Ok(MqttClientMessage {
             topic,
             data: data.clone(),

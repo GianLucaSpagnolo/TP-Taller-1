@@ -10,3 +10,4 @@ session_expiry_interval: 5
 publish_dup: false
 publish_qos: 1
 publish_retain: false 
+log_path: "app/files/logs/log_pub_1.csv"

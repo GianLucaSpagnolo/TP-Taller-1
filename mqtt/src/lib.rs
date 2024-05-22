@@ -11,8 +11,8 @@ pub mod server {
 mod logger {
     pub mod actions;
     pub mod client_actions;
+    pub mod logger_handler;
     pub mod server_actions;
-    pub mod logger;
 }
 
 pub mod config {
