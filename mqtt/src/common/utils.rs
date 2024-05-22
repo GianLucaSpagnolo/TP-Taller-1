@@ -1,16 +1,18 @@
-use std::fs::File;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::io::Error;
 use std::sync::mpsc::channel;
 
-use app::logger::LoggerHandler;
+use std::{
+    fs::{File, OpenOptions},
+    io::{BufRead, BufReader, Error, Write},
+    sync::{Arc, RwLock},
+};
+
+use crate::logger::logger::LoggerHandler;
 
 // Abre el archivo recibiendo su ruta por parametro,
 // devuelve el archivo encapsulado en un option
 // si pudo encontrar su ruta o, devuelve None ante un caso
 // de error e imprime el error por salida de error estandar
-pub fn abrir_archivo(ruta_archivo: &String) -> Option<File> {
+pub fn open_config_file(ruta_archivo: &String) -> Option<File> {
     let resultado_open = File::open(ruta_archivo);
 
     let archivo_abierto = match resultado_open {
@@ -32,21 +34,21 @@ pub fn abrir_archivo(ruta_archivo: &String) -> Option<File> {
 // con las lineas cargadas.
 // Ante un caso de error, imprime por salidar de error estandar
 // y devuelve None
-pub fn leer_archivo(archivo: &File) -> Option<Vec<String>> {
+pub fn read_file(archivo: &File) -> Option<Vec<String>> {
     let lector = BufReader::new(archivo);
-    let mut lineas: Vec<String> = Vec::new();
+    let mut lines: Vec<String> = Vec::new();
 
-    for linea in lector.lines() {
-        match linea {
-            Err(..) => {
-                eprintln!("Error al leer archivo");
+    for line in lector.lines() {
+        match line {
+            Err(e) => {
+                eprintln!("Error at reading file: {}", e);
                 return None;
             }
-            Ok(linea) => lineas.push(linea),
+            Ok(line) => lines.push(line),
         };
     }
 
-    Some(lineas)
+    Some(lines)
 }
 
 // Dadas las lineas de un archivo de configuragcion
@@ -100,4 +102,35 @@ pub fn create_logger(log_file_path: &String) -> Result<LoggerHandler, Error> {
         )),
         Ok(..) => Ok(logger_handler),
     }
+}
+
+pub fn open_file(route: &String) -> Result<File, Error> {
+    let open_result = OpenOptions::new().read(true).append(true).open(route);
+
+    match open_result {
+        Ok(file) => Ok(file),
+        Err(..) => {
+            // crea el archivo
+            match OpenOptions::new()
+                .create_new(true)
+                .read(true)
+                .append(true)
+                .open(route)
+            {
+                Ok(created_file) => Ok(created_file),
+                Err(e) => {
+                    eprintln!("\nCould not find file: '{}' at the given path, error when try to create it", route);
+                    Err(e)
+                }
+            }
+        }
+    }
+}
+
+// debe ser thread-safe
+pub fn write_line(action: &mut String, file: &mut File) -> Result<(), Error> {
+    let lock_file = Arc::new(RwLock::new(file));
+    let result = lock_file.write().unwrap().write_all(action.as_bytes());
+    result
+    //file.write_all(action.as_bytes())
 }

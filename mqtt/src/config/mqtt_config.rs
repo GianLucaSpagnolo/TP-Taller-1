@@ -11,10 +11,10 @@ pub trait Config<Config = Self> {
     where
         Self: Sized,
     {
-        let archivo_abierto: Option<File> = abrir_archivo(&file_path);
+        let archivo_abierto: Option<File> = open_config_file(&file_path);
         let mut parametros = Vec::new();
 
-        archivo_abierto.map(|archivo| match leer_archivo(&archivo) {
+        archivo_abierto.map(|archivo| match read_file(&archivo) {
             None => None,
             Some(lineas_leidas) => {
                 parametros = obtener_parametros_archivo(lineas_leidas, 2);

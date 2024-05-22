@@ -12,6 +12,7 @@ mod logger {
     pub mod actions;
     pub mod client_actions;
     pub mod server_actions;
+    pub mod logger;
 }
 
 pub mod config {

@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-app = { path = "../app" }
+chrono = "0.4.38"
 
 [lib]
 name = "mqtt"
@@ -15,7 +15,3 @@ path = "src/lib.rs"
 [[bin]]
 name = "broker"
 path = "src/broker.rs"
-
-[[bin]]
-name = "client"
-path = "src/client_example.rs"

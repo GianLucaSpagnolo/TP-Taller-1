@@ -1,4 +1,6 @@
-use crate::common::file_manager::{open_file, read_file, write_line};
+//use crate::common::file_manager::{open_file, read_file, write_line};
+
+use crate::common::utils::*;
 /// El logger guarda en alto nivel las acciones de todas las aplicaciones,
 /// que pasan por el servidor.
 /// Cuando el servidor recibe una accion de su protocolo, llama al logger
@@ -162,7 +164,7 @@ fn log_action(action: &mut String, file: &mut File) -> Result<(), Error> {
 #[cfg(test)]
 mod test {
     use super::LoggerHandler;
-    use crate::common::file_manager::{open_file, read_file};
+    use crate::common::utils::*;
     use core::panic;
     use std::{fs::remove_file, sync::mpsc::channel};
 
