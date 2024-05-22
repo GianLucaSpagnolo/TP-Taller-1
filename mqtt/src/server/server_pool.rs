@@ -5,8 +5,6 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 
-use crate::actions::MqttActions;
-
 enum Message {
     NewJob(Job),
     Terminate,
@@ -18,11 +16,11 @@ pub struct ServerPool {
 }
 
 trait FnBox {
-    fn call_box(self: Box<Self>) -> Result<MqttActions, Error>;
+    fn call_box(self: Box<Self>) -> Result<(), Error>;
 }
 
-impl<F: FnOnce() -> Result<MqttActions, Error>> FnBox for F {
-    fn call_box(self: Box<F>) -> Result<MqttActions, Error> {
+impl<F: FnOnce() -> Result<(), Error>> FnBox for F {
+    fn call_box(self: Box<F>) -> Result<(), Error> {
         (*self)()
     }
 }
@@ -53,12 +51,12 @@ impl ServerPool {
 
     pub fn execute<F>(&self, f: F) -> Result<(), Error>
     where
-        F: FnOnce() -> Result<MqttActions, Error> + Send + 'static,
+        F: FnOnce() -> Result<(), Error> + Send + 'static,
     {
         let job = Box::new(f);
 
         match self.sender.send(Message::NewJob(job)) {
-            Ok(_) => Ok(()),
+            Ok(a) => Ok(()),
             Err(_) => Err(Error::new(
                 std::io::ErrorKind::Other,
                 "El thread no pudo enviar el mensaje al worker",
@@ -80,6 +78,22 @@ impl Drop for ServerPool {
                 thread.join().unwrap();
             }
         }
+    }
+}
+
+impl Clone for ServerPool {
+    fn clone(&self) -> Self {
+        let (sender, receiver) = mpsc::channel();
+
+        let receiver = Arc::new(Mutex::new(receiver));
+
+        let mut workers = Vec::with_capacity(self.workers.len());
+
+        for id in 0..self.workers.len() {
+            workers.push(WorkerThread::new(Arc::clone(&receiver)));
+        }
+
+        ServerPool { workers, sender }
     }
 }
 

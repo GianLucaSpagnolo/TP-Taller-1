@@ -59,7 +59,7 @@ impl Auth {
 mod test {
     use super::*;
     use crate::control_packets::mqtt_auth::auth_properties::AuthProperties;
-    use crate::control_packets::mqtt_packet::reason_codes::ReasonMode::{
+    use crate::control_packets::mqtt_packet::reason_codes::ReasonCode::{
         ContinueAuthentication, ReAuthenticate, Success,
     };
 

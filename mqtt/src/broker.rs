@@ -1,23 +1,18 @@
+use std::io::Error;
+
 use mqtt::{
-    config::{Config, ServerConfig},
-    server::MqttServer,
+    config::{mqtt_config::Config, server_config::ServerConfig},
+    server::mqtt_server::MqttServer,
 };
 
 use std::{env, process::ExitCode};
 
 fn main() -> ExitCode {
-    const PARAMERROR: u8 = 1;
     const CONFIGERROR: u8 = 3;
     const SERVER_LISTENERERROR: u8 = 4;
 
-    let args: Vec<String> = env::args().collect();
 
-    if args.len() != 2 {
-        eprintln!("Cantidad de argumentos incorrecta - debe pasarse el archivo de configuracion del servidor");
-        return PARAMERROR.into();
-    }
-
-    let config_path = &args[1];
+    let config_path = "mqtt/config/server_config.txt";
     let config = match ServerConfig::from_file(String::from(config_path)) {
         Ok(conf) => conf,
         Err(e) => {

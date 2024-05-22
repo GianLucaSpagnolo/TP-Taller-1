@@ -1,3 +1,4 @@
 ip: 127.0.0.1
 port: 5000
 maximum_threads: 4
+log_path: mqtt/broker_log.txt

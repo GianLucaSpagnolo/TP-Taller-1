@@ -1,5 +1,3 @@
-use std::io::{Error, Read};
-
 use crate::{
     common::data_types::data_representation::*,
     control_packets::mqtt_packet::{
@@ -7,8 +5,9 @@ use crate::{
         variable_header_properties::VariableHeaderProperties,
     },
 };
+use std::io::{Error, Read};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 /// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
 pub struct TopicFilter {
     pub topic_filter: String,
