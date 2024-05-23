@@ -88,7 +88,7 @@ impl MqttServer {
                 log
             }
             Err(e) => {
-                eprintln!("Error obtenido al inicializar el logger del servidor: {}", e);
+                //eprintln!("Error obtenido al inicializar el logger del servidor: {}", e);
                 return Err(e);
             }
         };
@@ -103,7 +103,7 @@ impl MqttServer {
                 );
                 logger.close_logger();
                 return Err(e);
-            },
+            }
         };
 
         let pool = match ServerPool::build(self.config.maximum_threads) {
@@ -116,7 +116,7 @@ impl MqttServer {
                 );
                 logger.close_logger();
                 return Err(e);
-            },
+            }
         };
 
         let (sender, receiver) = mpsc::channel();
@@ -136,7 +136,7 @@ impl MqttServer {
                     Ok(a) => {
                         a.register_action();
                         a.log_action(&logger_handler);
-                    },
+                    }
                     Err(e) => {
                         logger_handler.log_event(
                             &("Error al procesar el mensaje: ".to_string() + &e.to_string()),
@@ -145,7 +145,7 @@ impl MqttServer {
                         );
                         logger_handler.close_logger();
                         return Err(e);
-                    },
+                    }
                 };
             }
         });

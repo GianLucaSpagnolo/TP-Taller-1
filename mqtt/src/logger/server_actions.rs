@@ -57,33 +57,33 @@ impl MqttActions for MqttServerActions {
         // implementar logica del logger
         match self {
             MqttServerActions::Connection(id) => {
-                let msg = "CONNECT - Conexion establecida con: ".to_string() + &id;
+                let msg = "CONNECT - Conexion establecida con: ".to_string() + id;
                 logger.log_event(&msg, &"0".to_string(), &",".to_string());
             }
             MqttServerActions::ReceivePublish(topic, message) => {
                 let msg = "PUBLISH - Servidor recibio: [".to_string()
-                    + &message
-                    + &"] del topico: ".to_string()
-                    + &topic;
+                    + message
+                    + "] del topico: "
+                    + topic;
                 logger.log_event(&msg, &"0".to_string(), &",".to_string());
             }
             MqttServerActions::SendPublish(topic, message, receivers) => {
                 let mut msg = "PUBLISH - Servidor envío: [".to_string()
-                    + &message
-                    + &"] del topico: ".to_string()
-                    + &topic
-                    + &" a los clientes: ".to_string();
+                    + message
+                    + "] del topico: "
+                    + topic
+                    + " a los clientes: - ";
                 for client in receivers {
-                    msg = msg.to_string() + &client + &" - ".to_string();
+                    msg = msg.to_string() + client + " - ";
                 }
                 logger.log_event(&msg, &"0".to_string(), &",".to_string());
             }
             MqttServerActions::SubscribeReceive(id, topics) => {
                 let mut msg = "SUBSCRIBE - Servidor recibió una subscripción del cliente: "
                     .to_string()
-                    + &" a los topicos: ".to_string();
+                    + " a los topicos:";
                 for top in topics {
-                    msg = msg + &top.topic_filter + &" - ".to_string();
+                    msg = msg + " - " + &top.topic_filter;
                 }
                 logger.log_event(&msg, id, &",".to_string());
             }

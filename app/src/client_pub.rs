@@ -28,7 +28,7 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
 }
 
 fn main() -> Result<(), Error> {
-    let config_path = "app/files/client_pub.txt";
+    let config_path = "files/client_pub.txt";
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 

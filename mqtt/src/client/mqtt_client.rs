@@ -67,10 +67,7 @@ impl MqttClient {
                 );
                 log
             }
-            Err(e) => {
-                eprintln!("Error obtenido al inicializar el logger: {}", e);
-                return Err(e);
-            }
+            Err(e) => return Err(e),
         };
 
         let mut stream = match TcpStream::connect(config.get_socket_address()) {
@@ -117,13 +114,13 @@ impl MqttClient {
                     connack.properties.connect_reason_code,
                 )
                 .register_action();
-        
+
                 MqttClientActions::Connection(
                     config.get_socket_address().to_string(),
                     connack.properties.connect_reason_code,
                 )
                 .log_action(&logger);
-            },
+            }
             Err(e) => {
                 logger.log_event(
                     &("Error al procesar connack: ".to_string() + &e.to_string()),
@@ -132,10 +129,9 @@ impl MqttClient {
                 );
                 logger.close_logger();
                 return Err(e);
-            },
+            }
         };
 
-        
         let current_packet_id = 0;
 
         let client = MqttClient {
@@ -198,13 +194,7 @@ impl MqttClient {
     ) -> Result<(), Error> {
         let logger = match create_logger(log_path) {
             Ok(log) => log,
-            Err(e) => {
-                eprintln!(
-                    "Error obtenido al inicializar el logger: {} en path: {}",
-                    e, log_path
-                );
-                return Err(e);
-            }
+            Err(e) => return Err(e),
         };
 
         let header = match PacketFixedHeader::read_from(&mut stream) {
@@ -212,7 +202,7 @@ impl MqttClient {
             Err(e) => {
                 logger.log_event(
                     &("Error al leer el header: ".to_string() + &e.to_string()),
-                    &"?".to_string(),
+                    &self.config.id,
                     &",".to_string(),
                 );
                 logger.close_logger();
@@ -225,7 +215,7 @@ impl MqttClient {
             Err(e) => {
                 logger.log_event(
                     &("Error al manejar el mensaje: ".to_string() + &e.to_string()),
-                    &"?".to_string(),
+                    &self.config.id,
                     &",".to_string(),
                 );
                 logger.close_logger();
@@ -237,7 +227,7 @@ impl MqttClient {
             Ok(_) => (),
             Err(e) => {
                 let msg = "Error al enviar mensaje al servidor: ".to_string() + &e.to_string();
-                logger.log_event(&msg, &"?".to_string(), &",".to_string());
+                logger.log_event(&msg, &self.config.id, &",".to_string());
                 logger.close_logger();
                 return Err(Error::new(std::io::ErrorKind::Other, msg));
             }
@@ -256,13 +246,7 @@ impl MqttClient {
     ) -> Result<MqttClientMessage, Error> {
         let logger = match create_logger(log_path) {
             Ok(log) => log,
-            Err(e) => {
-                eprintln!(
-                    "Error obtenido al inicializar el logger: {} en path: {}",
-                    e, log_path
-                );
-                return Err(e);
-            }
+            Err(e) => return Err(e),
         };
 
         let packet_recived = get_packet(
@@ -294,7 +278,7 @@ impl MqttClient {
             _ => {
                 logger.log_event(
                     &"Paquete desconocido recibido".to_string(),
-                    &"?".to_string(),
+                    &self.config.id,
                     &",".to_string(),
                 );
                 logger.close_logger();

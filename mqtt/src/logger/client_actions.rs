@@ -67,33 +67,31 @@ impl MqttActions for MqttClientActions {
                 let reason_code = ReasonCode::new(*code);
                 let msg = "CONNACK - Conexion establecida con [ ".to_string()
                     + &addrs.to_string()
-                    + &" ] y reason code: [ ".to_string()
+                    + " ] y reason code: [ "
                     + &reason_code.to_string()
-                    + &" ] ".to_string();
+                    + " ] ";
                 logger.log_event(&msg, addrs, &",".to_string());
             }
             MqttClientActions::ReceivePublish(id, message, topic) => {
                 let msg = "PUBLISH - Cliente recibio: [".to_string()
-                    + &message
-                    + &"] proveniente del topic: ".to_string()
-                    + &topic;
+                    + message
+                    + "] proveniente del topic: "
+                    + topic;
                 logger.log_event(&msg, id, &",".to_string());
             }
             MqttClientActions::SendConnect(id, addrs) => {
-                let msg = "CONNECT - Cliente intenta conectarse a: ".to_string() + &addrs;
+                let msg = "CONNECT - Cliente intenta conectarse a: ".to_string() + addrs;
                 logger.log_event(&msg, id, &",".to_string());
             }
             MqttClientActions::SendPublish(id, message, topic) => {
-                let msg = "PUBLISH - Cliente envio: [".to_string()
-                    + &message
-                    + &"] al topico: ".to_string()
-                    + &topic;
+                let msg =
+                    "PUBLISH - Cliente envio: [".to_string() + message + "] al topico: " + topic;
                 logger.log_event(&msg, id, &",".to_string());
             }
             MqttClientActions::SendSubscribe(id, topics) => {
-                let mut msg = "SUBSCRIBE - Cliente se subscribió a el/los topicos: ".to_string();
+                let mut msg = "SUBSCRIBE - Cliente se subscribió a el/los topicos:".to_string();
                 for top in topics {
-                    msg = msg + &top.topic_filter + &" - ".to_string();
+                    msg = msg + " - " + &top.topic_filter;
                 }
                 logger.log_event(&msg, id, &",".to_string());
             }
