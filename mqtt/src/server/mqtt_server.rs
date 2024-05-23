@@ -126,18 +126,22 @@ impl MqttServer {
         let receiver = Arc::new(Mutex::new(receiver));
 
         thread::spawn(move || -> Result<(), Error> {
-            let logger_handler = match create_logger(&log_path) {
-                Ok(log) => log,
-                Err(e) => return Err(e),
-            };
-
             loop {
                 match self.process_messages(Arc::clone(&receiver)) {
                     Ok(a) => {
+                        let logger_handler = match create_logger(&log_path) {
+                            Ok(log) => log,
+                            Err(e) => return Err(e),
+                        };
                         a.register_action();
                         a.log_action(&logger_handler);
+                        logger_handler.close_logger();
                     }
                     Err(e) => {
+                        let logger_handler = match create_logger(&log_path) {
+                            Ok(log) => log,
+                            Err(e) => return Err(e),
+                        };
                         logger_handler.log_event(
                             &("Error al procesar el mensaje: ".to_string() + &e.to_string()),
                             &"0".to_string(),

@@ -55,14 +55,11 @@ pub fn read_file(archivo: &File) -> Option<Vec<String>> {
 // y la cantidad esperada de parametros devuelve
 // un vector con todos los parametros ordenados
 // devuelve un vector vacio si no se obtienen todos los parametrtos
-pub fn obtener_parametros_archivo(
-    lineas: Vec<String>,
-    cant_parametros_necesarios: usize,
-) -> Vec<(String, String)> {
-    let mut parametros: Vec<(String, String)> = Vec::new();
+pub fn get_file_parameters(lines: Vec<String>, param_qty: usize) -> Vec<(String, String)> {
+    let mut params: Vec<(String, String)> = Vec::new();
 
-    for linea in lineas {
-        let mut split = linea.split_whitespace();
+    for line in lines {
+        let mut split = line.split_whitespace();
         let (mut key, mut value) = (String::new(), String::new());
         match split.next() {
             None => None,
@@ -81,14 +78,14 @@ pub fn obtener_parametros_archivo(
             }
         };
 
-        parametros.push((key, value));
+        params.push((key, value));
     }
 
-    if parametros.len() < cant_parametros_necesarios {
+    if params.len() < param_qty {
         eprintln!("Parametros de servidor faltantes");
         return Vec::new();
     }
-    parametros
+    params
 }
 
 pub fn create_logger(log_file_path: &String) -> Result<LoggerHandler, Error> {

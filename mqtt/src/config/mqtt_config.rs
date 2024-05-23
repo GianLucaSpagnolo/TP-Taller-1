@@ -17,7 +17,7 @@ pub trait Config<Config = Self> {
         archivo_abierto.map(|archivo| match read_file(&archivo) {
             None => None,
             Some(lineas_leidas) => {
-                parametros = obtener_parametros_archivo(lineas_leidas, 2);
+                parametros = get_file_parameters(lineas_leidas, 2);
                 Some(())
             }
         });
