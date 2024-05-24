@@ -27,6 +27,10 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
     Ok(handler)
 }
 
+fn serialize_string(string: String) -> Vec<u8> {
+    string.as_bytes().to_vec()
+}
+
 fn main() -> Result<(), Error> {
     let config_path = "monitoring_app/config/app_config.txt";
 
@@ -39,7 +43,11 @@ fn main() -> Result<(), Error> {
 
     let process_message_handler = process_messages(listener.receiver)?;
 
-    client.publish("mensaje del cliente".to_string(), "cams".to_string())?;
+    let message_str = "mensaje del cliente".to_string();
+    let message = serialize_string(message_str.clone());
+
+    client.publish(message, "cams".to_string())?;
+    println!("Mensaje publicado en el topic 'cams': {}", message_str);
 
     listener.handler.join().unwrap()?;
     process_message_handler.join().unwrap();

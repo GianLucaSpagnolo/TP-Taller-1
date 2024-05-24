@@ -9,7 +9,7 @@ edition = "2021"
 mqtt = { path = "../mqtt" }
 
 [lib]
-name = "aap"
+name = "app"
 path = "src/lib.rs"
 
 [[bin]]

@@ -151,8 +151,21 @@ mod test {
     use crate::control_packets::mqtt_connect::connect_properties::ConnectProperties;
     use crate::control_packets::mqtt_packet::flags::flags_handler;
 
+    fn serialize_string(string: String) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(string.as_bytes());
+        bytes
+    }
+
+    fn deserialize_string(buffer: Vec<u8>) -> String {
+        String::from_utf8(buffer).unwrap()
+    }
+
     #[test]
     fn test_connect() {
+        let authentication_data_str = "auth".to_string();
+        let authentication_data = serialize_string(authentication_data_str);
+
         let properties = ConnectProperties {
             protocol_name: "MQTT".to_string(),
             protocol_version: 5,
@@ -160,7 +173,7 @@ mod test {
             keep_alive: 10,
             session_expiry_interval: Some(0),
             authentication_method: Some("test".to_string()),
-            authentication_data: Some("auth".to_string()),
+            authentication_data: Some(authentication_data),
             request_problem_information: Some(0),
             request_response_information: Some(0),
             receive_maximum: Some(0),
@@ -169,6 +182,13 @@ mod test {
             maximum_packet_size: Some(20),
         };
 
+        let correlation_data_str = "correlation".to_string();
+        let correlation_data = serialize_string(correlation_data_str);
+        let will_message_str = "payload".to_string();
+        let will_message = serialize_string(will_message_str);
+        let password_str = "password".to_string();
+        let password = serialize_string(password_str);
+
         let payload = ConnectPayload {
             client_id: "Marcus".to_string(),
             will_delay_interval: Some(30),
@@ -176,13 +196,13 @@ mod test {
             message_expiry_interval: Some(20),
             content_type: Some("content".to_string()),
             response_topic: Some("response".to_string()),
-            correlation_data: Some("correlation".to_string()),
+            correlation_data: Some(correlation_data),
             user_property: Some(("key".to_string(), "value".to_string())),
 
             will_topic: Some("topic".to_string()),
-            will_payload: Some("payload".to_string()),
+            will_payload: Some(will_message),
             username: Some("username".to_string()),
-            password: Some("password".to_string()),
+            password: Some(password),
         };
 
         let connect = Connect::new(properties, payload);
@@ -248,7 +268,7 @@ mod test {
         }
 
         if let Some(value) = props.authentication_data {
-            assert_eq!(value, "auth".to_string());
+            assert_eq!(deserialize_string(value), "auth".to_string());
         } else {
             panic!("Invalid property");
         }
@@ -325,7 +345,7 @@ mod test {
         }
 
         if let Some(value) = payload_props.correlation_data {
-            assert_eq!(value, "correlation".to_string());
+            assert_eq!(deserialize_string(value), "correlation".to_string());
         } else {
             panic!("Invalid property");
         }
@@ -344,7 +364,7 @@ mod test {
         }
 
         if let Some(value) = payload_props.will_payload {
-            assert_eq!(value, "payload".to_string());
+            assert_eq!(deserialize_string(value), "payload".to_string());
         } else {
             panic!("Invalid property");
         }
@@ -356,7 +376,7 @@ mod test {
         }
 
         if let Some(value) = payload_props.password {
-            assert_eq!(value, "password".to_string());
+            assert_eq!(deserialize_string(value), "password".to_string());
         } else {
             panic!("Invalid property");
         }
@@ -436,6 +456,14 @@ mod test {
         assert_eq!(new_connect.properties.maximum_packet_size, None);
 
         assert_eq!(new_connect.payload.client_id, "test2".to_string());
+
+        assert_eq!(new_connect.payload.will_delay_interval, None);
+        assert_eq!(new_connect.payload.payload_format_indicator, None);
+        assert_eq!(new_connect.payload.message_expiry_interval, None);
+        assert_eq!(new_connect.payload.content_type, None);
+        assert_eq!(new_connect.payload.response_topic, None);
+        assert_eq!(new_connect.payload.correlation_data, None);
+        assert_eq!(new_connect.payload.user_property, None);
 
         assert_eq!(new_connect.payload.will_topic, None);
         assert_eq!(new_connect.payload.will_payload, None);

@@ -7,8 +7,8 @@ use super::actions::MqttActions;
 #[derive(Debug)]
 pub enum MqttServerActions {
     Connection(String),
-    ReceivePublish(String, String),
-    SendPublish(String, String, Vec<String>),
+    ReceivePublish(String),
+    SendPublish(String, Vec<String>),
     SubscribeReceive(String, Vec<TopicFilter>),
     DisconnectClient,
 }
@@ -20,18 +20,18 @@ impl fmt::Display for MqttServerActions {
                 write!(f, "CONNECT - Conexion establecida con '{}'", id)
             }
 
-            MqttServerActions::ReceivePublish(topic, msg) => {
+            MqttServerActions::ReceivePublish(topic) => {
                 write!(
                     f,
-                    "PUBLISH - Servidor recibio [{}] del topico '{}'",
-                    msg, topic
+                    "PUBLISH - Servidor recibio un mensaje del topico '{}'",
+                    topic
                 )
             }
-            MqttServerActions::SendPublish(topic, msg, receivers) => {
+            MqttServerActions::SendPublish(topic, receivers) => {
                 write!(
                     f,
-                    "PUBLISH - Servidor envío [{}] del topico '{}' a los clientes {:?}",
-                    msg, topic, receivers
+                    "PUBLISH - Servidor envío un mensaje del topico '{}' a los clientes {:?}",
+                    topic, receivers
                 )
             }
             MqttServerActions::SubscribeReceive(id, topics) => {

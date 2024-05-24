@@ -288,6 +288,7 @@ fn show_menu_options(){
     println!("Para listar las cámaras se debe utilizar el comando: list, sin ningún parámetro.");
     println!("Ejemplo: list");
 }
+
 fn main() -> Result<(), Error> {
     let config_path = "central_cams_system/config/cams_config.txt";
     let cam_system = Arc::new(Mutex::new(CamsSystem::init(10)));
