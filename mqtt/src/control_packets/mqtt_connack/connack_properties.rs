@@ -16,7 +16,7 @@ pub struct ConnackProperties {
     pub assigned_client_identifier: Option<String>,
     pub server_keep_alive: Option<u16>,
     pub authentication_method: Option<String>,
-    pub authentication_data: Option<String>,
+    pub authentication_data: Option<Vec<u8>>,
     pub response_information: Option<String>,
     pub server_reference: Option<String>,
     pub reason_string: Option<String>,
@@ -81,7 +81,7 @@ impl PacketProperties for ConnackProperties {
             variable_props.add_utf8_string_property(AUTHENTICATION_METHOD, value)?;
         }
         if let Some(value) = self.authentication_data.clone() {
-            variable_props.add_utf8_string_property(AUTHENTICATION_DATA, value)?;
+            variable_props.add_binary_data_property(AUTHENTICATION_DATA, value)?;
         }
         if let Some(value) = self.response_information.clone() {
             variable_props.add_utf8_string_property(RESPONSE_INFORMATION, value)?;
@@ -178,7 +178,7 @@ impl PacketProperties for ConnackProperties {
                     authentication_method = property.value_string();
                 }
                 AUTHENTICATION_DATA => {
-                    authentication_data = property.value_string();
+                    authentication_data = property.value_binary_data();
                 }
                 RESPONSE_INFORMATION => {
                     response_information = property.value_string();

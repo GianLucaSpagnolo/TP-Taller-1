@@ -182,7 +182,9 @@ impl Config for ClientConfig {
                     connect_properties.authentication_method = Some(param.1.clone())
                 }
                 "authentication_data" => {
-                    connect_properties.authentication_data = Some(param.1.clone())
+                    let mut bytes = Vec::new();
+                    bytes.extend_from_slice(param.1.as_bytes());
+                    connect_properties.authentication_data = Some(bytes)
                 }
                 "publish_dup" => {
                     publish_dup_flag = match catch_true_false(&param.1) {

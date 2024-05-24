@@ -79,6 +79,13 @@ pub mod data_representation {
         value
     }
 
+    pub fn binary_data_from_be_bytes(buff: &[u8], length: u16, buff_size: &mut usize) -> Vec<u8> {
+        let mut local_buff: Vec<u8> = vec![0; length as usize];
+        local_buff.copy_from_slice(&buff[*buff_size..*buff_size + length as usize]);
+        *buff_size += length as usize;
+        local_buff
+    }
+
     pub fn utf8_string_from_be_bytes(
         buff: &[u8],
         length: u16,

@@ -13,7 +13,7 @@ pub struct ConnectProperties {
     pub keep_alive: u16,
     pub session_expiry_interval: Option<u32>,
     pub authentication_method: Option<String>,
-    pub authentication_data: Option<String>,
+    pub authentication_data: Option<Vec<u8>>,
     pub request_problem_information: Option<u8>,
     pub request_response_information: Option<u8>,
     pub receive_maximum: Option<u16>,
@@ -61,7 +61,7 @@ impl PacketProperties for ConnectProperties {
         };
 
         if let Some(auth_data) = self.authentication_data.clone() {
-            variable_props.add_utf8_string_property(AUTHENTICATION_DATA, auth_data)?;
+            variable_props.add_binary_data_property(AUTHENTICATION_DATA, auth_data)?;
         };
         if let Some(auth_method) = self.authentication_method.clone() {
             variable_props.add_utf8_string_property(AUTHENTICATION_METHOD, auth_method)?;
@@ -140,7 +140,7 @@ impl PacketProperties for ConnectProperties {
                     authentication_method = property.value_string();
                 }
                 AUTHENTICATION_DATA => {
-                    authentication_data = property.value_string();
+                    authentication_data = property.value_binary_data();
                 }
                 REQUEST_PROBLEM_INFORMATION => {
                     request_problem_information = property.value_u8();

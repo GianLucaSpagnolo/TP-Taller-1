@@ -9,9 +9,9 @@ use super::actions::MqttActions;
 #[derive(Debug)]
 pub enum MqttClientActions {
     Connection(String, u8),
-    ReceivePublish(String, String),
+    ReceivePublish(String),
     SendConnect(String),
-    SendPublish(String, String),
+    SendPublish(String),
     SendSubscribe(Vec<TopicFilter>),
 }
 
@@ -26,19 +26,19 @@ impl fmt::Display for MqttClientActions {
                     addrs, reason_code
                 )
             }
-            MqttClientActions::ReceivePublish(msg, topic) => write!(
+            MqttClientActions::ReceivePublish(topic) => write!(
                 f,
-                "PUBLISH - Cliente recibió: [{}] proveniente del topic: '{}'",
-                msg, topic
+                "PUBLISH - Cliente recibió un mensaje proveniente del topic: '{}'",
+                topic
             ),
             MqttClientActions::SendConnect(addrs) => {
                 write!(f, "CONNECT - Cliente intenta conectarse a '{}'", addrs)
             }
-            MqttClientActions::SendPublish(msg, topic) => {
+            MqttClientActions::SendPublish(topic) => {
                 write!(
                     f,
-                    "PUBLISH - Cliente envió: [{}] al topico '{}'",
-                    msg, topic
+                    "PUBLISH - Cliente envió un mensaje al topico '{}'",
+                    topic
                 )
             }
             MqttClientActions::SendSubscribe(topics) => {

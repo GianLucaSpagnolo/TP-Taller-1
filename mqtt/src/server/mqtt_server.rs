@@ -201,12 +201,11 @@ impl MqttServer {
         pub_packet: Publish,
     ) -> Result<MqttServerActions, Error> {
         let topic = pub_packet.properties.topic_name.clone();
-        let data = pub_packet.properties.application_message.clone();
         let mut receivers = Vec::new();
 
         let logger = create_logger(&self.config.general.log_path)?;
 
-        MqttServerActions::ReceivePublish(topic.clone(), data.clone()).log_action(
+        MqttServerActions::ReceivePublish(topic.clone()).log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
@@ -222,11 +221,7 @@ impl MqttServer {
             });
         // send puback to stream
         logger.close_logger();
-        Ok(MqttServerActions::SendPublish(
-            topic.clone(),
-            data.clone(),
-            receivers,
-        ))
+        Ok(MqttServerActions::SendPublish(topic.clone(), receivers))
     }
 
     fn get_sub_id_and_topics(topics: &mut Vec<TopicFilter>) -> Result<String, Error> {

@@ -26,7 +26,7 @@ pub struct MqttClient {
 
 pub struct MqttClientMessage {
     pub topic: String,
-    pub data: String,
+    pub data: Vec<u8>,
 }
 
 pub struct MqttClientListener {
@@ -238,10 +238,10 @@ impl MqttClient {
         let topic;
         match packet_recived {
             PacketReceived::Publish(publish) => {
-                data = publish.properties.application_message.clone();
                 topic = publish.properties.topic_name.clone();
+                data = publish.properties.application_message.clone();
                 println!("Client id: {}", self.config.general.id);
-                MqttClientActions::ReceivePublish(data.clone(), topic.clone()).log_action(
+                MqttClientActions::ReceivePublish(topic.clone()).log_action(
                     &self.config.general.id,
                     &logger,
                     &self.config.general.log_in_term,
@@ -258,13 +258,10 @@ impl MqttClient {
         }
 
         logger.close_logger();
-        Ok(MqttClientMessage {
-            topic,
-            data: data.clone(),
-        })
+        Ok(MqttClientMessage { topic, data })
     }
 
-    pub fn publish(&mut self, message: String, topic: String) -> Result<(), Error> {
+    pub fn publish(&mut self, message: Vec<u8>, topic: String) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
 
         self.current_packet_id += 1;
@@ -272,7 +269,7 @@ impl MqttClient {
             topic_name: topic.clone(),
             packet_identifier: self.current_packet_id,
             payload_format_indicator: Some(1),
-            application_message: message.clone(),
+            application_message: message,
             ..Default::default()
         };
 
@@ -286,7 +283,7 @@ impl MqttClient {
 
         //recibir puback o reenviar publish
 
-        MqttClientActions::SendPublish(message, topic).log_action(
+        MqttClientActions::SendPublish(topic).log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
