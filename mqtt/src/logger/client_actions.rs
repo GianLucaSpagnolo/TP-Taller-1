@@ -9,10 +9,10 @@ use super::actions::MqttActions;
 #[derive(Debug)]
 pub enum MqttClientActions {
     Connection(String, u8),
-    ReceivePublish(String, String, String),
-    SendConnect(String, String),
+    ReceivePublish(String, String),
+    SendConnect(String),
     SendPublish(String, String, String),
-    SendSubscribe(String, Vec<TopicFilter>),
+    SendSubscribe(Vec<TopicFilter>),
 }
 
 impl fmt::Display for MqttClientActions {
@@ -26,27 +26,27 @@ impl fmt::Display for MqttClientActions {
                     addrs, reason_code
                 )
             }
-            MqttClientActions::ReceivePublish(id, msg, topic) => write!(
+            MqttClientActions::ReceivePublish(msg, topic) => write!(
                 f,
-                "PUBLISH - Cliente '{}' recibio: [{}] proveniente del topic: '{}'",
-                id, msg, topic
+                "PUBLISH - Cliente recibió: [{}] proveniente del topic: '{}'",
+                msg, topic
             ),
-            MqttClientActions::SendConnect(id, addrs) => {
+            MqttClientActions::SendConnect(addrs) => {
                 write!(
                     f,
-                    "CONNECT - Cliente '{}' intenta conectarse a '{}'",
-                    id, addrs
+                    "CONNECT - Cliente intenta conectarse a '{}'",
+                    addrs
                 )
             }
             MqttClientActions::SendPublish(id, msg, topic) => {
                 write!(
                     f,
-                    "PUBLISH - Cliente '{}' envio: [{}] al topico '{}'",
-                    id, msg, topic
+                    "PUBLISH - Cliente envió: [{}] al topico '{}'",
+                    msg, topic
                 )
             }
-            MqttClientActions::SendSubscribe(id, topics) => {
-                let mut msg = "Cliente '".to_string() + id + "' se subscribió a el/los topicos:";
+            MqttClientActions::SendSubscribe(topics) => {
+                let mut msg = "Cliente se subscribió a el/los topicos: ".to_string();
 
                 for top in topics {
                     msg = msg + " - " + &top.topic_filter;
