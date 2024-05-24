@@ -12,6 +12,3 @@ chrono = "0.4.38"
 name = "mqtt"
 path = "src/lib.rs"
 
-[[bin]]
-name = "broker"
-path = "src/broker.rs"

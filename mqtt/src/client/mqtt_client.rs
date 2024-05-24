@@ -95,11 +95,11 @@ impl MqttClient {
             }
         };
 
-        MqttClientActions::SendConnect(
-            config.general.id.clone(),
-            config.get_socket_address().to_string(),
-        )
-        .log_action(&client_id, &logger, &config.general.log_in_term);
+        MqttClientActions::SendConnect(config.get_socket_address().to_string()).log_action(
+            &client_id,
+            &logger,
+            &config.general.log_in_term,
+        );
 
         match receive_connack_packet(&mut stream) {
             Ok(connack) => {
@@ -241,12 +241,7 @@ impl MqttClient {
                 data = publish.properties.application_message.clone();
                 topic = publish.properties.topic_name.clone();
                 println!("Client id: {}", self.config.general.id);
-                MqttClientActions::ReceivePublish(
-                    self.config.general.id.clone(),
-                    data.clone(),
-                    topic.clone(),
-                )
-                .log_action(
+                MqttClientActions::ReceivePublish(data.clone(), topic.clone()).log_action(
                     &self.config.general.id,
                     &logger,
                     &self.config.general.log_in_term,
@@ -291,7 +286,7 @@ impl MqttClient {
 
         //recibir puback o reenviar publish
 
-        MqttClientActions::SendPublish(self.config.general.id.clone(), message, topic).log_action(
+        MqttClientActions::SendPublish(message, topic).log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
@@ -332,7 +327,7 @@ impl MqttClient {
 
         //recibir suback o reenviar subscribe
 
-        MqttClientActions::SendSubscribe(self.config.general.id.clone(), prop_topics).log_action(
+        MqttClientActions::SendSubscribe(prop_topics).log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,

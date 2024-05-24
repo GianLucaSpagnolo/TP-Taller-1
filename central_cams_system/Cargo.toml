@@ -9,5 +9,5 @@ edition = "2021"
 mqtt = { path = "../mqtt" }
 
 [[bin]]
-name = "cams"
+name = "cams_system"
 path = "src/main.rs"
