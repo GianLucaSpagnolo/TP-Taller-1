@@ -15,12 +15,12 @@ pub struct PublishProperties {
     pub message_expiry_interval: Option<u32>,
     pub topic_alias: Option<u16>,
     pub response_topic: Option<String>,
-    pub correlation_data: Option<String>,
+    pub correlation_data: Option<Vec<u8>>,
     pub user_property: Option<(String, String)>,
     pub subscription_identifier: Option<u32>,
     pub content_type: Option<String>,
 
-    pub application_message: String, // Payload
+    pub application_message: Vec<u8>, // Payload
 }
 
 impl Clone for PublishProperties {
@@ -72,8 +72,8 @@ impl PacketProperties for PublishProperties {
             variable_props.add_utf8_string_property(RESPONSE_TOPIC, response_topic.clone())?;
         }
 
-        if let Some(correlation_data) = &self.correlation_data {
-            variable_props.add_utf8_string_property(CORRELATION_DATA, correlation_data.clone())?;
+        if let Some(correlation_data) = self.correlation_data.clone() {
+            variable_props.add_binary_data_property(CORRELATION_DATA, correlation_data)?;
         }
 
         if let Some(user_property) = self.user_property.clone() {
@@ -111,7 +111,7 @@ impl PacketProperties for PublishProperties {
 
         let application_message_len = self.application_message.len() as u16;
         bytes.extend_from_slice(&application_message_len.to_be_bytes());
-        bytes.extend_from_slice(self.application_message.as_bytes());
+        bytes.extend_from_slice(&self.application_message);
 
         Ok(bytes)
     }
@@ -146,7 +146,7 @@ impl PacketProperties for PublishProperties {
                     response_topic = property.value_string();
                 }
                 CORRELATION_DATA => {
-                    correlation_data = property.value_string();
+                    correlation_data = property.value_binary_data();
                 }
                 USER_PROPERTY => {
                     user_property = property.value_string_pair();
@@ -162,7 +162,8 @@ impl PacketProperties for PublishProperties {
         }
 
         let application_message_len = read_two_byte_integer(stream).unwrap_or(0);
-        let application_message = read_utf8_encoded_string(stream, application_message_len)?;
+        let mut application_message = vec![0; application_message_len as usize];
+        stream.read_exact(&mut application_message)?;
 
         Ok(PublishProperties {
             topic_name,

@@ -154,8 +154,23 @@ mod test {
 
     use super::*;
 
+    fn serialize_string(string: String) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(string.as_bytes());
+        bytes
+    }
+
+    fn deserialize_string(buffer: Vec<u8>) -> String {
+        String::from_utf8(buffer).unwrap()
+    }
+
     #[test]
     fn test_publish() {
+        let message = "message".to_string();
+        let application_message = serialize_string(message.clone());
+        let correlation_data_str = "data".to_string();
+        let correlation_data = serialize_string(correlation_data_str.clone());
+
         let properties = PublishProperties {
             topic_name: "mensajeria".to_string(),
             packet_identifier: 1,
@@ -163,11 +178,11 @@ mod test {
             message_expiry_interval: Some(0),
             topic_alias: Some(0),
             response_topic: Some("response".to_string()),
-            correlation_data: Some("data".to_string()),
+            correlation_data: Some(correlation_data),
             user_property: Some(("test_key".to_string(), "test_value".to_string())),
             subscription_identifier: Some(0),
             content_type: Some("type".to_string()),
-            application_message: "message".to_string(),
+            application_message,
         };
 
         let publish = Publish::new(1, 2, 1, properties);
@@ -179,6 +194,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let publish_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+
         let publish =
             Publish::read_from(&mut buffer, publish_fixed_header.remaining_length).unwrap();
 
@@ -226,7 +242,7 @@ mod test {
         }
 
         if let Some(value) = props.correlation_data {
-            assert_eq!(value, "data".to_string());
+            assert_eq!(deserialize_string(value), "data".to_string());
         } else {
             panic!("Error");
         }
@@ -250,7 +266,7 @@ mod test {
             panic!("Error");
         }
 
-        assert_eq!(props.application_message, "message".to_string());
+        assert_eq!(deserialize_string(props.application_message), message);
     }
 
     #[test]
@@ -270,6 +286,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let publish_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let publish_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let publish =
             Publish::read_from(&mut buffer, publish_fixed_header.remaining_length).unwrap();
 
@@ -299,6 +316,9 @@ mod test {
         assert_eq!(publish.properties.subscription_identifier, None);
         assert_eq!(publish.properties.content_type, None);
 
-        assert_eq!(publish.properties.application_message, "".to_string());
+        assert_eq!(
+            deserialize_string(publish.properties.application_message),
+            "".to_string()
+        );
     }
 }

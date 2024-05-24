@@ -126,6 +126,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buf = buf.as_slice();
         let puback_fixed_header = PacketFixedHeader::read_from(&mut buf).unwrap();
+        //let puback_fixed_header = PacketFixedHeader::read_from_buffer(&mut buf).unwrap();
 
         let puback = Puback::read_from(&mut buf, puback_fixed_header.remaining_length).unwrap();
 
@@ -165,6 +166,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buf = buf.as_slice();
         let puback_fixed_header = PacketFixedHeader::read_from(&mut buf).unwrap();
+        //let puback_fixed_header = PacketFixedHeader::read_from_buffer(&mut buf).unwrap();
 
         let puback = Puback::read_from(&mut buf, puback_fixed_header.remaining_length).unwrap();
 

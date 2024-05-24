@@ -16,7 +16,7 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
             "cams" => {
                 println!(
                     "Mensaje recibido y procesado del topic 'cams': {}",
-                    message_received.data
+                    deserialize_string(message_received.data)
                 );
             }
             "dron" => {
@@ -30,14 +30,19 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
     Ok(handler)
 }
 
+fn deserialize_string(data: Vec<u8>) -> String {
+    String::from_utf8(data).unwrap()
+}
+
 fn main() -> Result<(), Error> {
     let config_path = "central_cams_system/config/cams_config.txt";
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
+    let log_path = config.general.log_path.to_string();
     let mut client = MqttClient::init(config)?;
 
-    let listener = client.run_listener()?;
+    let listener = client.run_listener(log_path)?;
 
     let process_message_handler = process_messages(listener.receiver)?;
 

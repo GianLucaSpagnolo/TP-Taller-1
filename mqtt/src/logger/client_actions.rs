@@ -9,10 +9,10 @@ use super::actions::MqttActions;
 #[derive(Debug)]
 pub enum MqttClientActions {
     Connection(String, u8),
-    ReceivePublish(String, String, String),
-    SendConnect(String, String),
-    SendPublish(String, String, String),
-    SendSubscribe(String, Vec<TopicFilter>),
+    ReceivePublish(String),
+    SendConnect(String),
+    SendPublish(String),
+    SendSubscribe(Vec<TopicFilter>),
 }
 
 impl fmt::Display for MqttClientActions {
@@ -22,48 +22,36 @@ impl fmt::Display for MqttClientActions {
                 let reason_code = ReasonCode::new(*code);
                 write!(
                     f,
-                    "CONNACK - Conexion establecida con '{}' y reason code: {}",
+                    "CONNACK - Conexion establecida con '{}' - reason code: [{}]",
                     addrs, reason_code
                 )
             }
-            MqttClientActions::ReceivePublish(id, msg, topic) => write!(
+            MqttClientActions::ReceivePublish(topic) => write!(
                 f,
-                "PUBLISH - Cliente '{}' recibio: '{}' proveniente del topic: '{}'",
-                id, msg, topic
+                "PUBLISH - Cliente recibió un mensaje proveniente del topic: '{}'",
+                topic
             ),
-            MqttClientActions::SendConnect(id, addrs) => {
+            MqttClientActions::SendConnect(addrs) => {
+                write!(f, "CONNECT - Cliente intenta conectarse a '{}'", addrs)
+            }
+            MqttClientActions::SendPublish(topic) => {
                 write!(
                     f,
-                    "CONNECT - Cliente '{}' intenta conectarse a '{}'",
-                    id, addrs
+                    "PUBLISH - Cliente envió un mensaje al topico '{}'",
+                    topic
                 )
             }
-            MqttClientActions::SendPublish(id, msg, topic) => {
-                write!(
-                    f,
-                    "PUBLISH - Cliente '{}' envio: '{}' al topico '{}'",
-                    id, msg, topic
-                )
-            }
-            MqttClientActions::SendSubscribe(id, topics) => {
-                write!(
-                    f,
-                    "SUBSCRIBE - Cliente '{}' se subscribió a {:?}",
-                    id, topics
-                )
+            MqttClientActions::SendSubscribe(topics) => {
+                let mut msg = "Cliente se subscribió a el/los topicos: ".to_string();
+
+                for top in topics {
+                    msg = msg + " - " + &top.topic_filter;
+                }
+
+                write!(f, "SUBSCRIBE - {}", msg)
             }
         }
     }
 }
 
-impl MqttActions for MqttClientActions {
-    fn register_action(self) -> Self {
-        println!("{}", self);
-        self
-    }
-
-    fn log_action(self) -> Self {
-        // implementar logica del logger
-        self
-    }
-}
+impl MqttActions for MqttClientActions {}

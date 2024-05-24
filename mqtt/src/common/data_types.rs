@@ -13,7 +13,10 @@ pub mod data_representation {
 
     pub fn read_two_byte_integer(stream: &mut dyn Read) -> Result<u16, Error> {
         let mut read_buff = [0u8; 2];
+
         stream.read_exact(&mut read_buff)?;
+        //let mut handle = stream.take(2);
+        //handle.read(&mut read_buff)?;
         Ok(u16::from_be_bytes(read_buff))
     }
 
@@ -74,6 +77,13 @@ pub mod data_representation {
         let value = buff[*buff_size];
         *buff_size += size_of::<u8>();
         value
+    }
+
+    pub fn binary_data_from_be_bytes(buff: &[u8], length: u16, buff_size: &mut usize) -> Vec<u8> {
+        let mut local_buff: Vec<u8> = vec![0; length as usize];
+        local_buff.copy_from_slice(&buff[*buff_size..*buff_size + length as usize]);
+        *buff_size += length as usize;
+        local_buff
     }
 
     pub fn utf8_string_from_be_bytes(

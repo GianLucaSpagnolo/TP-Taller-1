@@ -1,5 +1,5 @@
 [package]
-name = "app"
+name = "broker"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,10 +8,10 @@ edition = "2021"
 [dependencies]
 mqtt = { path = "../mqtt" }
 
-[[bin]]
-name = "publisher"
-path = "src/client_pub.rs"
+[lib]
+name = "app"
+path = "src/lib.rs"
 
 [[bin]]
-name = "subscriber"
-path = "src/client_sub.rs"
+name = "broker"
+path = "src/broker.rs"

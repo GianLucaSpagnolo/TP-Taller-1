@@ -37,13 +37,13 @@ pub enum PacketProperty {
     MessageExpiryInterval(u32),           // Four Byte Integer
     ContentType(String),                  // UTF-8 Encoded String
     ResponseTopic(String),                // UTF-8 Encoded String
-    CorrelationData(String),              // Binary Data (handled as a String)
+    CorrelationData(Vec<u8>),             // Binary Data
     SubscriptionIdentifier(u32),          // Variable Byte Integer
     SessionExpiryInterval(u32),           // Four Byte Integer
     AssignedClientIdentifier(String),     // UTF-8 string
     ServerKeepAlive(u16),                 // Two Byte Integer
     AuthenticationMethod(String),         // UTF-8 Encoded String
-    AuthenticationData(String),           // Binary Data (Handled as a String)
+    AuthenticationData(Vec<u8>),          // Binary Data
     RequestProblemInformation(u8),        // Byte
     WillDelayInterval(u32),               // Four Byte Integer
     RequestResponseInformation(u8),       // Byte
@@ -80,6 +80,13 @@ fn write_u32_property_as_bytes(bytes: &mut Vec<u8>, id: u8, val: &u32) {
 fn write_variable_byte_integer_property_as_bytes(bytes: &mut Vec<u8>, id: u8, val: &u32) {
     bytes.push(id);
     variable_byte_integer_encode(bytes, *val);
+}
+
+fn write_binary_data_as_bytes(bytes: &mut Vec<u8>, id: u8, val: &[u8]) {
+    bytes.push(id);
+    let len = val.len() as u16;
+    bytes.extend_from_slice(&len.to_be_bytes());
+    bytes.extend_from_slice(val);
 }
 
 fn write_utf8_string_as_bytes(bytes: &mut Vec<u8>, val: &str) {
@@ -180,14 +187,20 @@ impl PacketProperty {
         }
     }
 
+    pub fn value_binary_data(&self) -> Option<Vec<u8>> {
+        match self {
+            PacketProperty::CorrelationData(value) => Some(value.clone()),
+            PacketProperty::AuthenticationData(value) => Some(value.clone()),
+            _ => None,
+        }
+    }
+
     pub fn value_string(&self) -> Option<String> {
         match self {
             PacketProperty::ContentType(value) => Some(value.clone()),
             PacketProperty::ResponseTopic(value) => Some(value.clone()),
-            PacketProperty::CorrelationData(value) => Some(value.clone()),
             PacketProperty::AssignedClientIdentifier(value) => Some(value.clone()),
             PacketProperty::AuthenticationMethod(value) => Some(value.clone()),
-            PacketProperty::AuthenticationData(value) => Some(value.clone()),
             PacketProperty::ResponseInformation(value) => Some(value.clone()),
             PacketProperty::ServerReference(value) => Some(value.clone()),
             PacketProperty::ReasonString(value) => Some(value.clone()),
@@ -220,13 +233,22 @@ impl PacketProperty {
         match id {
             CONTENT_TYPE => Ok(PacketProperty::ContentType(str)),
             RESPONSE_TOPIC => Ok(PacketProperty::ResponseTopic(str)),
-            CORRELATION_DATA => Ok(PacketProperty::CorrelationData(str)),
             ASSIGNED_CLIENT_IDENTIFIER => Ok(PacketProperty::AssignedClientIdentifier(str)),
             AUTHENTICATION_METHOD => Ok(PacketProperty::AuthenticationMethod(str)),
-            AUTHENTICATION_DATA => Ok(PacketProperty::AuthenticationData(str)),
             RESPONSE_INFORMATION => Ok(PacketProperty::ResponseInformation(str)),
             SERVER_REFERENCE => Ok(PacketProperty::ServerReference(str)),
             REASON_STRING => Ok(PacketProperty::ReasonString(str)),
+            _ => Err(Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Invalid property id",
+            )),
+        }
+    }
+
+    pub fn new_property_binary_data(id: u8, data: Vec<u8>) -> Result<Self, Error> {
+        match id {
+            CORRELATION_DATA => Ok(PacketProperty::CorrelationData(data)),
+            AUTHENTICATION_DATA => Ok(PacketProperty::AuthenticationData(data)),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Invalid property id",
@@ -317,7 +339,7 @@ impl PacketProperty {
             }
             CORRELATION_DATA => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
-                let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
+                let value = binary_data_from_be_bytes(buff, value_len, buff_size);
                 Some(PacketProperty::CorrelationData(value))
             }
             SUBSCRIPTION_IDENTIFIER => {
@@ -344,7 +366,7 @@ impl PacketProperty {
             }
             AUTHENTICATION_DATA => {
                 let value_len = two_byte_integer_from_be_bytes(buff, buff_size);
-                let value = utf8_string_from_be_bytes(buff, value_len, buff_size)?;
+                let value = binary_data_from_be_bytes(buff, value_len, buff_size);
                 Some(PacketProperty::AuthenticationData(value))
             }
             REQUEST_PROBLEM_INFORMATION => {
@@ -440,7 +462,7 @@ impl PacketProperty {
                 write_utf8_string_property_as_bytes(bytes, self.id(), value)
             }
             PacketProperty::CorrelationData(value) => {
-                write_utf8_string_property_as_bytes(bytes, self.id(), value)
+                write_binary_data_as_bytes(bytes, self.id(), value)
             }
             PacketProperty::SubscriptionIdentifier(value) => {
                 write_variable_byte_integer_property_as_bytes(bytes, self.id(), value)
@@ -452,7 +474,7 @@ impl PacketProperty {
                 write_utf8_string_property_as_bytes(bytes, self.id(), value)
             }
             PacketProperty::AuthenticationData(value) => {
-                write_utf8_string_property_as_bytes(bytes, self.id(), value)
+                write_binary_data_as_bytes(bytes, self.id(), value)
             }
             PacketProperty::RequestProblemInformation(value) => {
                 write_u8_property_as_bytes(bytes, self.id(), value)

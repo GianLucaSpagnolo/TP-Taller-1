@@ -77,6 +77,7 @@ impl Serialization for Connack {
         let mut buffer = aux_buffer.as_slice();
 
         let properties = ConnackProperties::read_from(&mut buffer)?;
+        //let properties = ConnackProperties::read_from_buffer(&mut buffer)?;
 
         Ok(Connack { properties })
     }
@@ -111,8 +112,21 @@ mod test {
     use crate::control_packets::mqtt_connack::connack_properties::ConnackProperties;
     use crate::control_packets::mqtt_packet::reason_codes::ReasonCode;
 
+    fn serialize_string(string: String) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(string.as_bytes());
+        bytes
+    }
+
+    fn deserialize_string(buffer: Vec<u8>) -> String {
+        String::from_utf8(buffer).unwrap()
+    }
+
     #[test]
     fn test_connack() {
+        let authentication_data_str = "auth_data".to_string();
+        let authentication_data = serialize_string(authentication_data_str);
+
         let properties = ConnackProperties {
             connect_acknowledge_flags: 0x01,
             connect_reason_code: ReasonCode::Success.get_id(),
@@ -120,7 +134,7 @@ mod test {
             assigned_client_identifier: Some("client".to_string()),
             server_keep_alive: Some(0),
             authentication_method: Some("auth".to_string()),
-            authentication_data: Some("auth_data".to_string()),
+            authentication_data: Some(authentication_data),
             response_information: Some("response".to_string()),
             server_reference: Some("server".to_string()),
             reason_string: Some("reason".to_string()),
@@ -144,6 +158,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let connack_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let connack_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
 
         let connack =
             Connack::read_from(&mut buffer, connack_fixed_header.remaining_length).unwrap();
@@ -179,7 +194,7 @@ mod test {
         }
 
         if let Some(value) = props.authentication_data {
-            assert_eq!(value, "auth_data");
+            assert_eq!(deserialize_string(value), "auth_data");
         } else {
             panic!("Invalid Authentication Data");
         }
@@ -275,6 +290,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let connack_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let connack_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
 
         let connack =
             Connack::read_from(&mut buffer, connack_fixed_header.remaining_length).unwrap();

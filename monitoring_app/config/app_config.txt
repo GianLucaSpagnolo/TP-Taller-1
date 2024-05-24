@@ -1,7 +1,8 @@
 id: monitoringapp
 ip: 127.0.0.1
 port: 5000
-log_path: monitoring_app/app_log.txt
+log_path: app/logs/broker_log.csv
+log_in_terminal: true
 protocol_name: MQTT
 protocol_version: 5
 keep_alive: 60
