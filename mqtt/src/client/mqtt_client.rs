@@ -95,10 +95,11 @@ impl MqttClient {
             }
         };
 
-        MqttClientActions::SendConnect(
-            config.get_socket_address().to_string(),
-        )
-        .log_action(&client_id, &logger, &config.general.log_in_term);
+        MqttClientActions::SendConnect(config.get_socket_address().to_string()).log_action(
+            &client_id,
+            &logger,
+            &config.general.log_in_term,
+        );
 
         match receive_connack_packet(&mut stream) {
             Ok(connack) => {
@@ -240,11 +241,7 @@ impl MqttClient {
                 data = publish.properties.application_message.clone();
                 topic = publish.properties.topic_name.clone();
                 println!("Client id: {}", self.config.general.id);
-                MqttClientActions::ReceivePublish(
-                    data.clone(),
-                    topic.clone(),
-                )
-                .log_action(
+                MqttClientActions::ReceivePublish(data.clone(), topic.clone()).log_action(
                     &self.config.general.id,
                     &logger,
                     &self.config.general.log_in_term,

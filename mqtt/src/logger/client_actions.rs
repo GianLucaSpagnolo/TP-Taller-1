@@ -32,11 +32,7 @@ impl fmt::Display for MqttClientActions {
                 msg, topic
             ),
             MqttClientActions::SendConnect(addrs) => {
-                write!(
-                    f,
-                    "CONNECT - Cliente intenta conectarse a '{}'",
-                    addrs
-                )
+                write!(f, "CONNECT - Cliente intenta conectarse a '{}'", addrs)
             }
             MqttClientActions::SendPublish(msg, topic) => {
                 write!(
