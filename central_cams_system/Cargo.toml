@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 mqtt = { path = "../mqtt" }
 
+rand = "0.8.4"
+
 [[bin]]
 name = "cams_system"
 path = "src/main.rs"
