@@ -32,7 +32,7 @@ fn main() -> Result<(), Error> {
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
-    let log_path = config.log_path.to_string();
+    let log_path = config.general.log_path.to_string();
     let mut client = MqttClient::init(config)?;
 
     let listener = client.run_listener(log_path)?;

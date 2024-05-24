@@ -4,7 +4,7 @@ use crate::control_packets::{
     mqtt_packet::reason_codes::ReasonCode, mqtt_subscribe::subscribe_properties::TopicFilter,
 };
 
-use super::{actions::MqttActions, logger_handler::LoggerHandler};
+use super::actions::MqttActions;
 
 #[derive(Debug)]
 pub enum MqttClientActions {
@@ -22,13 +22,13 @@ impl fmt::Display for MqttClientActions {
                 let reason_code = ReasonCode::new(*code);
                 write!(
                     f,
-                    "CONNACK - Conexion establecida con '{}' y reason code: {}",
+                    "CONNACK - Conexion establecida con '{}' - reason code: [{}]",
                     addrs, reason_code
                 )
             }
             MqttClientActions::ReceivePublish(id, msg, topic) => write!(
                 f,
-                "PUBLISH - Cliente '{}' recibio: '{}' proveniente del topic: '{}'",
+                "PUBLISH - Cliente '{}' recibio: [{}] proveniente del topic: '{}'",
                 id, msg, topic
             ),
             MqttClientActions::SendConnect(id, addrs) => {
@@ -41,60 +41,21 @@ impl fmt::Display for MqttClientActions {
             MqttClientActions::SendPublish(id, msg, topic) => {
                 write!(
                     f,
-                    "PUBLISH - Cliente '{}' envio: '{}' al topico '{}'",
+                    "PUBLISH - Cliente '{}' envio: [{}] al topico '{}'",
                     id, msg, topic
                 )
             }
             MqttClientActions::SendSubscribe(id, topics) => {
-                write!(
-                    f,
-                    "SUBSCRIBE - Cliente '{}' se subscribió a {:?}",
-                    id, topics
-                )
-            }
-        }
-    }
-}
+                let mut msg = "Cliente '".to_string() + id + "' se subscribió a el/los topicos:";
 
-impl MqttActions for MqttClientActions {
-    fn register_action(&self) {
-        println!("{}", self);
-    }
-
-    fn log_action(&self, logger: &LoggerHandler) {
-        match self {
-            MqttClientActions::Connection(addrs, code) => {
-                let reason_code = ReasonCode::new(*code);
-                let msg = "CONNACK - Conexion establecida con [ ".to_string()
-                    + &addrs.to_string()
-                    + " ] y reason code: [ "
-                    + &reason_code.to_string()
-                    + " ] ";
-                logger.log_event(&msg, addrs, &",".to_string());
-            }
-            MqttClientActions::ReceivePublish(id, message, topic) => {
-                let msg = "PUBLISH - Cliente recibio: [".to_string()
-                    + message
-                    + "] proveniente del topic: "
-                    + topic;
-                logger.log_event(&msg, id, &",".to_string());
-            }
-            MqttClientActions::SendConnect(id, addrs) => {
-                let msg = "CONNECT - Cliente intenta conectarse a: ".to_string() + addrs;
-                logger.log_event(&msg, id, &",".to_string());
-            }
-            MqttClientActions::SendPublish(id, message, topic) => {
-                let msg =
-                    "PUBLISH - Cliente envio: [".to_string() + message + "] al topico: " + topic;
-                logger.log_event(&msg, id, &",".to_string());
-            }
-            MqttClientActions::SendSubscribe(id, topics) => {
-                let mut msg = "SUBSCRIBE - Cliente se subscribió a el/los topicos:".to_string();
                 for top in topics {
                     msg = msg + " - " + &top.topic_filter;
                 }
-                logger.log_event(&msg, id, &",".to_string());
+
+                write!(f, "SUBSCRIBE - {}", msg)
             }
         }
     }
 }
+
+impl MqttActions for MqttClientActions {}

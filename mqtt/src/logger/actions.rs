@@ -1,8 +1,15 @@
+use std::fmt::Display;
+
 use super::logger_handler::LoggerHandler;
 
-#[allow(dead_code)]
 pub trait MqttActions<Role = Self> {
-    fn register_action(&self);
-
-    fn log_action(&self, logger: &LoggerHandler);
+    fn log_action(&self, id: &String, logger: &LoggerHandler, log_in_term: &bool)
+    where
+        Self: Display,
+    {
+        if *log_in_term {
+            println!("{} - {}", id, self);
+        }
+        logger.log_event(&self.to_string(), id);
+    }
 }

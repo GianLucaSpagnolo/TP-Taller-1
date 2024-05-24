@@ -77,13 +77,13 @@ impl MqttServer {
     // el servidor lo pasa al logger
     // el logger le pide traduccion al protocolo
     pub fn start_server(mut self) -> Result<(), Error> {
-        let log_path = self.config.log_path.to_string();
+        let id = self.config.general.id.clone();
+        let log_path = self.config.general.log_path.to_string();
         let logger = match create_logger(&log_path) {
             Ok(log) => {
                 log.log_event(
                     &"Logger del servidor inicializado".to_string(),
-                    &"0".to_string(),
-                    &",".to_string(),
+                    &self.config.general.id,
                 );
                 log
             }
@@ -98,8 +98,7 @@ impl MqttServer {
             Err(e) => {
                 logger.log_event(
                     &("Error al conectar con servidor: ".to_string() + &e.to_string()),
-                    &"0".to_string(),
-                    &",".to_string(),
+                    &self.config.general.id,
                 );
                 logger.close_logger();
                 return Err(e);
@@ -111,8 +110,7 @@ impl MqttServer {
             Err(e) => {
                 logger.log_event(
                     &("Error al crear serverpool: ".to_string() + &e.to_string()),
-                    &"0".to_string(),
-                    &",".to_string(),
+                    &self.config.general.id,
                 );
                 logger.close_logger();
                 return Err(e);
@@ -133,8 +131,11 @@ impl MqttServer {
                             Ok(log) => log,
                             Err(e) => return Err(e),
                         };
-                        a.register_action();
-                        a.log_action(&logger_handler);
+                        a.log_action(
+                            &self.config.general.id,
+                            &logger_handler,
+                            &self.config.general.log_in_term,
+                        );
                         logger_handler.close_logger();
                     }
                     Err(e) => {
@@ -144,8 +145,7 @@ impl MqttServer {
                         };
                         logger_handler.log_event(
                             &("Error al procesar el mensaje: ".to_string() + &e.to_string()),
-                            &"0".to_string(),
-                            &",".to_string(),
+                            &self.config.general.id,
                         );
                         logger_handler.close_logger();
                         return Err(e);
@@ -164,8 +164,7 @@ impl MqttServer {
 
         logger.log_event(
             &("Cerrando servidor ... no se reciben mas paquetes".to_string()),
-            &"0".to_string(),
-            &",".to_string(),
+            &id,
         );
         logger.close_logger();
         Err(Error::new(
@@ -205,7 +204,13 @@ impl MqttServer {
         let data = pub_packet.properties.application_message.clone();
         let mut receivers = Vec::new();
 
-        MqttServerActions::ReceivePublish(topic.clone(), data.clone()).register_action();
+        let logger = create_logger(&self.config.general.log_path)?;
+
+        MqttServerActions::ReceivePublish(topic.clone(), data.clone()).log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
 
         <HashMap<String, Session> as Clone>::clone(&self.sessions)
             .into_iter()
@@ -216,6 +221,7 @@ impl MqttServer {
                 }
             });
         // send puback to stream
+        logger.close_logger();
         Ok(MqttServerActions::SendPublish(
             topic.clone(),
             data.clone(),

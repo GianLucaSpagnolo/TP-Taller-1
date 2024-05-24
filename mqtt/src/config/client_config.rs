@@ -1,19 +1,13 @@
-use std::{
-    io::Error,
-    net::{IpAddr, SocketAddr},
-};
+use std::{io::Error, net::SocketAddr};
 
 use crate::control_packets::{
     mqtt_connect::connect_properties::ConnectProperties, mqtt_packet::flags::flags_handler::*,
 };
 
-use super::mqtt_config::Config;
+use super::mqtt_config::{Config, MqttConfig};
 
 pub struct ClientConfig {
-    pub id: String,
-    pub ip: IpAddr,
-    pub port: u16,
-    pub log_path: String,
+    pub general: MqttConfig,
     pub connect_properties: ConnectProperties,
     pub publish_dup_flag: u8,
     pub publish_qos: u8,
@@ -23,10 +17,7 @@ pub struct ClientConfig {
 impl Clone for ClientConfig {
     fn clone(&self) -> Self {
         ClientConfig {
-            id: self.id.clone(),
-            ip: self.ip,
-            port: self.port,
-            log_path: self.log_path.clone(),
+            general: self.general.clone(),
             connect_properties: self.connect_properties.clone(),
             publish_dup_flag: self.publish_dup_flag,
             publish_qos: self.publish_qos,
@@ -37,15 +28,12 @@ impl Clone for ClientConfig {
 
 impl Config for ClientConfig {
     fn get_socket_address(&self) -> SocketAddr {
-        SocketAddr::new(self.ip, self.port)
+        self.general.get_socket_address()
     }
 
     fn set_params(params: &[(String, String)]) -> Result<Self, Error> {
         // seteo los parametros del cliente:
-        let mut id = None;
-        let mut ip = None;
-        let mut port = None;
-        let mut log_path = None;
+        let general = MqttConfig::set_params(params)?;
 
         // Corroborar que le pasen los campos obligatorios
         let mut connect_properties = ConnectProperties::default();
@@ -55,29 +43,6 @@ impl Config for ClientConfig {
 
         for param in params.iter() {
             match param.0.as_str() {
-                "id" => id = Some(param.1.clone()),
-                "ip" => {
-                    ip = match param.1.parse::<IpAddr>() {
-                        Ok(p) => Some(p),
-                        Err(_) => {
-                            return Err(Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                "Invalid parameter",
-                            ))
-                        }
-                    }
-                }
-                "port" => {
-                    port = match param.1.parse::<u16>() {
-                        Ok(p) => Some(p),
-                        Err(_) => {
-                            return Err(Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                "Invalid parameter: Port",
-                            ))
-                        }
-                    }
-                }
                 "protocol_name" => connect_properties.protocol_name.clone_from(&param.1),
                 "protocol_version" => {
                     connect_properties.protocol_version = match param.1.parse::<u8>() {
@@ -240,7 +205,7 @@ impl Config for ClientConfig {
                     };
                 }
 
-                "log_path" => log_path = Some(param.1.clone()),
+                "id" | "ip" | "port" | "log_path" | "log_in_terminal" => {}
 
                 _ => {
                     return Err(Error::new(
@@ -251,22 +216,12 @@ impl Config for ClientConfig {
             }
         }
 
-        if let (Some(id), Some(ip), Some(port), Some(log_path)) = (id, ip, port, log_path) {
-            return Ok(ClientConfig {
-                id,
-                ip,
-                port,
-                log_path,
-                connect_properties,
-                publish_dup_flag,
-                publish_qos,
-                publish_retain,
-            });
-        }
-
-        Err(Error::new(
-            std::io::ErrorKind::InvalidData,
-            "Config fields are missing: ip, port, id or log_path",
-        ))
+        Ok(ClientConfig {
+            general,
+            connect_properties,
+            publish_dup_flag,
+            publish_qos,
+            publish_retain,
+        })
     }
 }

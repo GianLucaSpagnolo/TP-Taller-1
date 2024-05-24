@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::control_packets::mqtt_subscribe::subscribe_properties::TopicFilter;
 
-use super::{actions::MqttActions, logger_handler::LoggerHandler};
+use super::actions::MqttActions;
 
 #[derive(Debug)]
 pub enum MqttServerActions {
@@ -23,77 +23,32 @@ impl fmt::Display for MqttServerActions {
             MqttServerActions::ReceivePublish(topic, msg) => {
                 write!(
                     f,
-                    "PUBLISH - Servidor recibio '{}' del topico '{}'",
+                    "PUBLISH - Servidor recibio [{}] del topico '{}'",
                     msg, topic
                 )
             }
             MqttServerActions::SendPublish(topic, msg, receivers) => {
                 write!(
                     f,
-                    "PUBLISH - Servidor envío '{}' del topico '{}' a los clientes {:?}",
+                    "PUBLISH - Servidor envío [{}] del topico '{}' a los clientes {:?}",
                     msg, topic, receivers
                 )
             }
             MqttServerActions::SubscribeReceive(id, topics) => {
-                write!(
-                    f,
-                    "SUBSCRIBE - Servidor recibió una subscripción del cliente '{}' a los tópicos '{:?}'",
-                    id,
-                    topics
-                )
+                let mut msg = "SUBSCRIBE - Servidor recibió una subscripción del cliente '"
+                    .to_string()
+                    + id
+                    + "' a los topicos:";
+
+                for top in topics {
+                    msg = msg + " - " + &top.topic_filter;
+                }
+
+                write!(f, "{}", msg)
             }
             MqttServerActions::DisconnectClient => write!(f, "Desconectando cliente"),
         }
     }
 }
 
-impl MqttActions for MqttServerActions {
-    fn register_action(&self) {
-        println!("{}", self);
-        //self
-    }
-
-    fn log_action(&self, logger: &LoggerHandler) {
-        // implementar logica del logger
-        match self {
-            MqttServerActions::Connection(id) => {
-                let msg = "CONNECT - Conexion establecida con: ".to_string() + id;
-                logger.log_event(&msg, &"0".to_string(), &",".to_string());
-            }
-            MqttServerActions::ReceivePublish(topic, message) => {
-                let msg = "PUBLISH - Servidor recibio: [".to_string()
-                    + message
-                    + "] del topico: "
-                    + topic;
-                logger.log_event(&msg, &"0".to_string(), &",".to_string());
-            }
-            MqttServerActions::SendPublish(topic, message, receivers) => {
-                let mut msg = "PUBLISH - Servidor envío: [".to_string()
-                    + message
-                    + "] del topico: "
-                    + topic
-                    + " a los clientes: - ";
-                for client in receivers {
-                    msg = msg.to_string() + client + " - ";
-                }
-                logger.log_event(&msg, &"0".to_string(), &",".to_string());
-            }
-            MqttServerActions::SubscribeReceive(id, topics) => {
-                let mut msg = "SUBSCRIBE - Servidor recibió una subscripción del cliente: "
-                    .to_string()
-                    + " a los topicos:";
-                for top in topics {
-                    msg = msg + " - " + &top.topic_filter;
-                }
-                logger.log_event(&msg, id, &",".to_string());
-            }
-            MqttServerActions::DisconnectClient => {
-                logger.log_event(
-                    &"Desconectando cliente".to_string(),
-                    &"0".to_string(),
-                    &",".to_string(),
-                );
-            }
-        }
-    }
-}
+impl MqttActions for MqttServerActions {}

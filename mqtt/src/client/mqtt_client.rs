@@ -54,17 +54,13 @@ fn receive_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> 
 
 impl MqttClient {
     pub fn init(config: ClientConfig) -> Result<Self, Error> {
-        let log_path = config.log_path.to_string();
-        let client_id = config.id.to_string();
+        let log_path = config.general.log_path.to_string();
+        let client_id = config.general.id.to_string();
 
         let logger = match create_logger(&log_path) {
             Ok(log) => {
                 // si se configura el mismo path del server, sacar este mensaje.
-                log.log_event(
-                    &"Logger del cliente inicializado".to_string(),
-                    &client_id,
-                    &",".to_string(),
-                );
+                log.log_event(&"Logger del cliente inicializado".to_string(), &client_id);
                 log
             }
             Err(e) => return Err(e),
@@ -76,7 +72,6 @@ impl MqttClient {
                 logger.log_event(
                     &("Error al conectar con servidor: ".to_string() + &e.to_string()),
                     &client_id,
-                    &",".to_string(),
                 );
                 logger.close_logger();
                 return Err(e);
@@ -84,7 +79,7 @@ impl MqttClient {
         };
 
         let payload = payload::ConnectPayload {
-            client_id: config.id.clone(),
+            client_id: config.general.id.clone(),
             ..Default::default()
         };
 
@@ -94,18 +89,17 @@ impl MqttClient {
                 logger.log_event(
                     &("Error al conectar con servidor: ".to_string() + &e.to_string()),
                     &client_id,
-                    &",".to_string(),
                 );
                 logger.close_logger();
                 return Err(e);
             }
         };
 
-        MqttClientActions::SendConnect(config.id.clone(), config.get_socket_address().to_string())
-            .register_action();
-
-        MqttClientActions::SendConnect(config.id.clone(), config.get_socket_address().to_string())
-            .log_action(&logger);
+        MqttClientActions::SendConnect(
+            config.general.id.clone(),
+            config.get_socket_address().to_string(),
+        )
+        .log_action(&client_id, &logger, &config.general.log_in_term);
 
         match receive_connack_packet(&mut stream) {
             Ok(connack) => {
@@ -113,19 +107,12 @@ impl MqttClient {
                     config.get_socket_address().to_string(),
                     connack.properties.connect_reason_code,
                 )
-                .register_action();
-
-                MqttClientActions::Connection(
-                    config.get_socket_address().to_string(),
-                    connack.properties.connect_reason_code,
-                )
-                .log_action(&logger);
+                .log_action(&client_id, &logger, &config.general.log_in_term);
             }
             Err(e) => {
                 logger.log_event(
                     &("Error al procesar connack: ".to_string() + &e.to_string()),
                     &client_id,
-                    &",".to_string(),
                 );
                 logger.close_logger();
                 return Err(e);
@@ -192,18 +179,14 @@ impl MqttClient {
         sender: Sender<MqttClientMessage>,
         log_path: &String,
     ) -> Result<(), Error> {
-        let logger = match create_logger(log_path) {
-            Ok(log) => log,
-            Err(e) => return Err(e),
-        };
+        let logger = create_logger(log_path)?;
 
         let header = match PacketFixedHeader::read_from(&mut stream) {
             Ok(r) => r,
             Err(e) => {
                 logger.log_event(
                     &("Error al leer el header: ".to_string() + &e.to_string()),
-                    &self.config.id,
-                    &",".to_string(),
+                    &self.config.general.id,
                 );
                 logger.close_logger();
                 return Err(e);
@@ -215,8 +198,7 @@ impl MqttClient {
             Err(e) => {
                 logger.log_event(
                     &("Error al manejar el mensaje: ".to_string() + &e.to_string()),
-                    &self.config.id,
-                    &",".to_string(),
+                    &self.config.general.id,
                 );
                 logger.close_logger();
                 return Err(e);
@@ -227,7 +209,7 @@ impl MqttClient {
             Ok(_) => (),
             Err(e) => {
                 let msg = "Error al enviar mensaje al servidor: ".to_string() + &e.to_string();
-                logger.log_event(&msg, &self.config.id, &",".to_string());
+                logger.log_event(&msg, &self.config.general.id);
                 logger.close_logger();
                 return Err(Error::new(std::io::ErrorKind::Other, msg));
             }
@@ -244,10 +226,7 @@ impl MqttClient {
         fixed_header: PacketFixedHeader,
         log_path: &String,
     ) -> Result<MqttClientMessage, Error> {
-        let logger = match create_logger(log_path) {
-            Ok(log) => log,
-            Err(e) => return Err(e),
-        };
+        let logger = create_logger(log_path)?;
 
         let packet_recived = get_packet(
             &mut stream,
@@ -261,25 +240,22 @@ impl MqttClient {
             PacketReceived::Publish(publish) => {
                 data = publish.properties.application_message.clone();
                 topic = publish.properties.topic_name.clone();
+                println!("Client id: {}", self.config.general.id);
                 MqttClientActions::ReceivePublish(
-                    self.config.id.clone(),
+                    self.config.general.id.clone(),
                     data.clone(),
                     topic.clone(),
                 )
-                .register_action();
-
-                MqttClientActions::ReceivePublish(
-                    self.config.id.clone(),
-                    data.clone(),
-                    topic.clone(),
-                )
-                .log_action(&logger);
+                .log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                );
             }
             _ => {
                 logger.log_event(
                     &"Paquete desconocido recibido".to_string(),
-                    &self.config.id,
-                    &",".to_string(),
+                    &self.config.general.id,
                 );
                 logger.close_logger();
                 return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido"));
@@ -294,6 +270,8 @@ impl MqttClient {
     }
 
     pub fn publish(&mut self, message: String, topic: String) -> Result<(), Error> {
+        let logger = create_logger(&self.config.general.log_path)?;
+
         self.current_packet_id += 1;
         let properties = publish_properties::PublishProperties {
             topic_name: topic.clone(),
@@ -313,7 +291,12 @@ impl MqttClient {
 
         //recibir puback o reenviar publish
 
-        MqttClientActions::SendPublish(self.config.id.clone(), message, topic).register_action();
+        MqttClientActions::SendPublish(self.config.general.id.clone(), message, topic).log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+        logger.close_logger();
         Ok(())
     }
 
@@ -325,13 +308,15 @@ impl MqttClient {
         retain_as_published: bool,
         retain_handling: u8,
     ) -> Result<(), Error> {
+        let logger = create_logger(&self.config.general.log_path)?;
+
         let mut properties = subscribe_properties::SubscribeProperties {
             packet_identifier: 0,
             ..Default::default()
         };
 
         topics.iter().for_each(|topic| {
-            let topic_filter = [self.config.id.clone(), topic.to_string()].join("/");
+            let topic_filter = [self.config.general.id.clone(), topic.to_string()].join("/");
             properties.add_topic_filter(
                 topic_filter,
                 max_qos,
@@ -347,7 +332,12 @@ impl MqttClient {
 
         //recibir suback o reenviar subscribe
 
-        MqttClientActions::SendSubscribe(self.config.id.clone(), prop_topics).register_action();
+        MqttClientActions::SendSubscribe(self.config.general.id.clone(), prop_topics).log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+        logger.close_logger();
         Ok(())
     }
 
