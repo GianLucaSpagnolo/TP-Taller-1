@@ -289,7 +289,7 @@ impl MqttClient {
 
         //recibir puback o reenviar publish
 
-        MqttClientActions::SendPublish(self.config.general.id.clone(), message, topic).log_action(
+        MqttClientActions::SendPublish(message, topic).log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,

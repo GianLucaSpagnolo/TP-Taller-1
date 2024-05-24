@@ -11,7 +11,7 @@ pub enum MqttClientActions {
     Connection(String, u8),
     ReceivePublish(String, String),
     SendConnect(String),
-    SendPublish(String, String, String),
+    SendPublish(String, String),
     SendSubscribe(Vec<TopicFilter>),
 }
 
@@ -38,7 +38,7 @@ impl fmt::Display for MqttClientActions {
                     addrs
                 )
             }
-            MqttClientActions::SendPublish(id, msg, topic) => {
+            MqttClientActions::SendPublish(msg, topic) => {
                 write!(
                     f,
                     "PUBLISH - Cliente envió: [{}] al topico '{}'",
