@@ -16,7 +16,7 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
             "cams" => {
                 println!(
                     "Mensaje recibido y procesado del topic 'cams': {}",
-                    message_received.data
+                    deserialize_string(message_received.data)
                 );
             }
             "dron" => {
@@ -28,6 +28,10 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
     });
 
     Ok(handler)
+}
+
+fn deserialize_string(data: Vec<u8>) -> String {
+    String::from_utf8(data).unwrap()
 }
 
 fn main() -> Result<(), Error> {

@@ -20,7 +20,7 @@ pub struct PublishProperties {
     pub subscription_identifier: Option<u32>,
     pub content_type: Option<String>,
 
-    pub application_message: String, // Payload
+    pub application_message: Vec<u8>, // Payload
 }
 
 impl Clone for PublishProperties {
@@ -111,7 +111,7 @@ impl PacketProperties for PublishProperties {
 
         let application_message_len = self.application_message.len() as u16;
         bytes.extend_from_slice(&application_message_len.to_be_bytes());
-        bytes.extend_from_slice(self.application_message.as_bytes());
+        bytes.extend_from_slice(&self.application_message);
 
         Ok(bytes)
     }
@@ -162,7 +162,8 @@ impl PacketProperties for PublishProperties {
         }
 
         let application_message_len = read_two_byte_integer(stream).unwrap_or(0);
-        let application_message = read_utf8_encoded_string(stream, application_message_len)?;
+        let mut application_message = vec![0; application_message_len as usize];
+        stream.read_exact(&mut application_message)?;
 
         Ok(PublishProperties {
             topic_name,

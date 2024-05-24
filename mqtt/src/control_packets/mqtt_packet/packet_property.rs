@@ -43,7 +43,7 @@ pub enum PacketProperty {
     AssignedClientIdentifier(String),     // UTF-8 string
     ServerKeepAlive(u16),                 // Two Byte Integer
     AuthenticationMethod(String),         // UTF-8 Encoded String
-    AuthenticationData(String),           // Binary Data (Handled as a String)
+    AuthenticationData(String),           // Binary Data (Handled as a String for authentication)
     RequestProblemInformation(u8),        // Byte
     WillDelayInterval(u32),               // Four Byte Integer
     RequestResponseInformation(u8),       // Byte
