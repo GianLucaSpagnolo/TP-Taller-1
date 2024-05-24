@@ -56,7 +56,8 @@ pub mod generic_packet {
         }
 
         fn send(&self, stream: &mut TcpStream) -> Result<(), Error> {
-            self.write_to(stream)
+            self.write_to(stream)?;
+            stream.flush()
         }
     }
 

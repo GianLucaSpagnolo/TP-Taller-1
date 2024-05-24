@@ -1,6 +1,8 @@
-/// ## Reason Codes for MQTT Packets
-///
-/// #### 0 - 0x00 - Success
+use std::fmt::Display;
+
+/// Connect Reason Code
+/// Byte 2 in the Variable Header is the Connect Reason Code.
+/// 0 - 0x00 - Success
 /// The Connection is accepted.
 ///
 /// #### 0 - 0x00 - Normal disconnection
@@ -134,7 +136,7 @@
 /// The Server does not support Wildcard Subscriptions; the subscription is not accepted.
 ///
 #[allow(dead_code)]
-pub enum ReasonMode {
+pub enum ReasonCode {
     Success,
     NormalDisconnection,
     GrantedQoS0,
@@ -181,53 +183,202 @@ pub enum ReasonMode {
     WildcardSubscriptionsNotSupported,
 }
 
-impl ReasonMode {
+impl ReasonCode {
     pub fn get_id(&self) -> u8 {
         match *self {
-            ReasonMode::Success => 0,             // CONNACK, PUBACK, UNSUBACK, AUTH
-            ReasonMode::NormalDisconnection => 0, // DISCONNECT
-            ReasonMode::GrantedQoS0 => 0,         // SUBACK
-            ReasonMode::GrantedQoS1 => 1,         // SUBACK
-            ReasonMode::GrantedQoS2 => 2,         // SUBACK
-            ReasonMode::DisconnectWithWillMessage => 4, // DISCONNECT
-            ReasonMode::NoMatchingSubscribers => 16, // PUBACK
-            ReasonMode::NoSubscriptionExisted => 17, // UNSUBACK
-            ReasonMode::ContinueAuthentication => 24, // AUTH
-            ReasonMode::ReAuthenticate => 25,     // AUTH
-            ReasonMode::UnspecifiedError => 128,  // CONNACK, PUBACK, SUBACK, UNSUBACK, DISCONNECT
-            ReasonMode::MalformedPacket => 129,   // CONNACK, DISCONNECT
-            ReasonMode::ProtocolError => 130,     // CONNACK, DISCONNECT
-            ReasonMode::ImplementationSpecificError => 131, // CONNACK, PUBACK, SUBACK, UNSUBACK, DISCONNECT
-            ReasonMode::UnsupportedProtocolVersion => 132,  // CONNACK
-            ReasonMode::ClientIdentifierNotValid => 133,    // CONNACK
-            ReasonMode::BadUserNameOrPassword => 134,       // CONNACK
-            ReasonMode::NotAuthorized => 135, // CONNACK, PUBACK, SUBACK, UNSUBACK, DISCONNECT
-            ReasonMode::ServerUnavailable => 136, // CONNACK
-            ReasonMode::ServerBusy => 137,    // CONNACK, DISCONNECT
-            ReasonMode::Banned => 138,        // CONNACK
-            ReasonMode::ServerShuttingDown => 139, // DISCONNECT
-            ReasonMode::BadAuthenticationMethod => 140, // CONNACK, DISCONNECT
-            ReasonMode::KeepAliveTimeout => 141, // DISCONNECT
-            ReasonMode::SessionTakenOver => 142, // DISCONNECT
-            ReasonMode::TopicFilterInvalid => 143, // SUBACK, UNSUBACK, DISCONNECT
-            ReasonMode::TopicNameInvalid => 144, // CONNACK, PUBACK, DISCONNECT
-            ReasonMode::PacketIdentifierInUse => 145, // PUBACK, SUBACK, UNSUBACK
-            ReasonMode::ReceiveMaximumExceeded => 147, // DISCONNECT
-            ReasonMode::TopicAliasInvalid => 148, // DISCONNECT
-            ReasonMode::PacketTooLarge => 149, // CONNACK, DISCONNECT
-            ReasonMode::MessageRateTooHigh => 150, // DISCONNECT
-            ReasonMode::QuotaExceeded => 151, // CONNACK, PUBACK, SUBACK, DISCONNECT
-            ReasonMode::AdministrativeAction => 152, // DISCONNECT
-            ReasonMode::PayloadFormatInvalid => 153, // CONNACK, PUBACK, DISCONNECT
-            ReasonMode::RetainNotSupported => 154, // CONNACK, DISCONNECT
-            ReasonMode::QoSNotSupported => 155, // CONNACK, DISCONNECT
-            ReasonMode::UseAnotherServer => 156, // CONNACK, DISCONNECT
-            ReasonMode::ServerMoved => 157,   // CONNACK, DISCONNECT
-            ReasonMode::SharedSubscriptionsNotSupported => 158, // SUBACK, DISCONNECT
-            ReasonMode::ConnectionRateExceeded => 159, // CONNACK, DISCONNECT
-            ReasonMode::MaximumConnectTime => 160, // DISCONNECT
-            ReasonMode::SubscriptionIdentifiersNotSupported => 161, // SUBACK, DISCONNECT
-            ReasonMode::WildcardSubscriptionsNotSupported => 162, // SUBACK, DISCONNECT
+            ReasonCode::Success => 0,             // CONNACK, PUBACK, UNSUBACK, AUTH
+            ReasonCode::NormalDisconnection => 0, // DISCONNECT
+            ReasonCode::GrantedQoS0 => 0,         // SUBACK
+            ReasonCode::GrantedQoS1 => 1,         // SUBACK
+            ReasonCode::GrantedQoS2 => 2,         // SUBACK
+            ReasonCode::DisconnectWithWillMessage => 4, // DISCONNECT
+            ReasonCode::NoMatchingSubscribers => 16, // PUBACK
+            ReasonCode::NoSubscriptionExisted => 17, // UNSUBACK
+            ReasonCode::ContinueAuthentication => 24, // AUTH
+            ReasonCode::ReAuthenticate => 25,     // AUTH
+            ReasonCode::UnspecifiedError => 128,  // CONNACK, PUBACK, SUBACK, UNSUBACK, DISCONNECT
+            ReasonCode::MalformedPacket => 129,   // CONNACK, DISCONNECT
+            ReasonCode::ProtocolError => 130,     // CONNACK, DISCONNECT
+            ReasonCode::ImplementationSpecificError => 131, // CONNACK, PUBACK, SUBACK, UNSUBACK, DISCONNECT
+            ReasonCode::UnsupportedProtocolVersion => 132,  // CONNACK
+            ReasonCode::ClientIdentifierNotValid => 133,    // CONNACK
+            ReasonCode::BadUserNameOrPassword => 134,       // CONNACK
+            ReasonCode::NotAuthorized => 135, // CONNACK, PUBACK, SUBACK, UNSUBACK, DISCONNECT
+            ReasonCode::ServerUnavailable => 136, // CONNACK
+            ReasonCode::ServerBusy => 137,    // CONNACK, DISCONNECT
+            ReasonCode::Banned => 138,        // CONNACK
+            ReasonCode::ServerShuttingDown => 139, // DISCONNECT
+            ReasonCode::BadAuthenticationMethod => 140, // CONNACK, DISCONNECT
+            ReasonCode::KeepAliveTimeout => 141, // DISCONNECT
+            ReasonCode::SessionTakenOver => 142, // DISCONNECT
+            ReasonCode::TopicFilterInvalid => 143, // SUBACK, UNSUBACK, DISCONNECT
+            ReasonCode::TopicNameInvalid => 144, // CONNACK, PUBACK, DISCONNECT
+            ReasonCode::PacketIdentifierInUse => 145, // PUBACK, SUBACK, UNSUBACK
+            ReasonCode::ReceiveMaximumExceeded => 147, // DISCONNECT
+            ReasonCode::TopicAliasInvalid => 148, // DISCONNECT
+            ReasonCode::PacketTooLarge => 149, // CONNACK, DISCONNECT
+            ReasonCode::MessageRateTooHigh => 150, // DISCONNECT
+            ReasonCode::QuotaExceeded => 151, // CONNACK, PUBACK, SUBACK, DISCONNECT
+            ReasonCode::AdministrativeAction => 152, // DISCONNECT
+            ReasonCode::PayloadFormatInvalid => 153, // CONNACK, PUBACK, DISCONNECT
+            ReasonCode::RetainNotSupported => 154, // CONNACK, DISCONNECT
+            ReasonCode::QoSNotSupported => 155, // CONNACK, DISCONNECT
+            ReasonCode::UseAnotherServer => 156, // CONNACK, DISCONNECT
+            ReasonCode::ServerMoved => 157,   // CONNACK, DISCONNECT
+            ReasonCode::SharedSubscriptionsNotSupported => 158, // SUBACK, DISCONNECT
+            ReasonCode::ConnectionRateExceeded => 159, // CONNACK, DISCONNECT
+            ReasonCode::MaximumConnectTime => 160, // DISCONNECT
+            ReasonCode::SubscriptionIdentifiersNotSupported => 161, // SUBACK, DISCONNECT
+            ReasonCode::WildcardSubscriptionsNotSupported => 162, // SUBACK, DISCONNECT
+        }
+    }
+
+    pub fn new(id: u8) -> Self {
+        match id {
+            0 => ReasonCode::Success,
+            1 => ReasonCode::GrantedQoS1,
+            2 => ReasonCode::GrantedQoS2,
+            4 => ReasonCode::DisconnectWithWillMessage,
+            16 => ReasonCode::NoMatchingSubscribers,
+            17 => ReasonCode::NoSubscriptionExisted,
+            24 => ReasonCode::ContinueAuthentication,
+            25 => ReasonCode::ReAuthenticate,
+            128 => ReasonCode::UnspecifiedError,
+            129 => ReasonCode::MalformedPacket,
+            130 => ReasonCode::ProtocolError,
+            131 => ReasonCode::ImplementationSpecificError,
+            132 => ReasonCode::UnsupportedProtocolVersion,
+            133 => ReasonCode::ClientIdentifierNotValid,
+            134 => ReasonCode::BadUserNameOrPassword,
+            135 => ReasonCode::NotAuthorized,
+            136 => ReasonCode::ServerUnavailable,
+            137 => ReasonCode::ServerBusy,
+            138 => ReasonCode::Banned,
+            139 => ReasonCode::ServerShuttingDown,
+            140 => ReasonCode::BadAuthenticationMethod,
+            141 => ReasonCode::KeepAliveTimeout,
+            142 => ReasonCode::SessionTakenOver,
+            143 => ReasonCode::TopicFilterInvalid,
+            144 => ReasonCode::TopicNameInvalid,
+            145 => ReasonCode::PacketIdentifierInUse,
+            147 => ReasonCode::ReceiveMaximumExceeded,
+            148 => ReasonCode::TopicAliasInvalid,
+            149 => ReasonCode::PacketTooLarge,
+            150 => ReasonCode::MessageRateTooHigh,
+            151 => ReasonCode::QuotaExceeded,
+            152 => ReasonCode::AdministrativeAction,
+            153 => ReasonCode::PayloadFormatInvalid,
+            154 => ReasonCode::RetainNotSupported,
+            155 => ReasonCode::QoSNotSupported,
+            156 => ReasonCode::UseAnotherServer,
+            157 => ReasonCode::ServerMoved,
+            158 => ReasonCode::SharedSubscriptionsNotSupported,
+            159 => ReasonCode::ConnectionRateExceeded,
+            160 => ReasonCode::MaximumConnectTime,
+            161 => ReasonCode::SubscriptionIdentifiersNotSupported,
+            162 => ReasonCode::WildcardSubscriptionsNotSupported,
+            _ => ReasonCode::UnspecifiedError,
+        }
+    }
+}
+
+impl Display for ReasonCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            ReasonCode::Success => write!(f, "{} - Success", self.get_id()),
+            ReasonCode::NormalDisconnection => {
+                write!(f, "{} - Normal Disconnection", self.get_id())
+            }
+            ReasonCode::GrantedQoS0 => write!(f, "{} - Granted QoS 0", self.get_id()),
+            ReasonCode::GrantedQoS1 => write!(f, "{} - Granted QoS 1", self.get_id()),
+            ReasonCode::GrantedQoS2 => write!(f, "{} - Granted QoS 2", self.get_id()),
+            ReasonCode::DisconnectWithWillMessage => {
+                write!(f, "{} - Disconnect With Will Message", self.get_id())
+            }
+            ReasonCode::NoMatchingSubscribers => {
+                write!(f, "{} - No Matching Subscribers", self.get_id())
+            }
+            ReasonCode::NoSubscriptionExisted => {
+                write!(f, "{} - No Subscription Existed", self.get_id())
+            }
+            ReasonCode::ContinueAuthentication => {
+                write!(f, "{} - Continue Authentication", self.get_id())
+            }
+            ReasonCode::ReAuthenticate => write!(f, "{} - Re-authenticate", self.get_id()),
+            ReasonCode::UnspecifiedError => write!(f, "{} - Unspecified Error", self.get_id()),
+            ReasonCode::MalformedPacket => write!(f, "{} - Malformed Packet", self.get_id()),
+            ReasonCode::ProtocolError => write!(f, "{} - Protocol Error", self.get_id()),
+            ReasonCode::ImplementationSpecificError => {
+                write!(f, "{} - Implementation Specific Error", self.get_id())
+            }
+            ReasonCode::UnsupportedProtocolVersion => {
+                write!(f, "{} - Unsupported Protocol Version", self.get_id())
+            }
+            ReasonCode::ClientIdentifierNotValid => {
+                write!(f, "{} - Client Identifier not valid", self.get_id())
+            }
+            ReasonCode::BadUserNameOrPassword => {
+                write!(f, "{} - Bad User Name or Password", self.get_id())
+            }
+            ReasonCode::NotAuthorized => write!(f, "{} - Not authorized", self.get_id()),
+            ReasonCode::ServerUnavailable => write!(f, "{} - Server unavailable", self.get_id()),
+            ReasonCode::ServerBusy => write!(f, "{} - Server busy", self.get_id()),
+            ReasonCode::Banned => write!(f, "{} - Banned", self.get_id()),
+            ReasonCode::ServerShuttingDown => {
+                write!(f, "{} - Server shutting down", self.get_id())
+            }
+            ReasonCode::BadAuthenticationMethod => {
+                write!(f, "{} - Bad authentication method", self.get_id())
+            }
+            ReasonCode::KeepAliveTimeout => write!(f, "{} - Keep alive timeout", self.get_id()),
+            ReasonCode::SessionTakenOver => write!(f, "{} - Session taken over", self.get_id()),
+            ReasonCode::TopicFilterInvalid => {
+                write!(f, "{} - Topic filter invalid", self.get_id())
+            }
+            ReasonCode::TopicNameInvalid => write!(f, "{} - Topic name invalid", self.get_id()),
+            ReasonCode::PacketIdentifierInUse => {
+                write!(f, "{} - Packet identifier in use", self.get_id())
+            }
+            ReasonCode::ReceiveMaximumExceeded => {
+                write!(f, "{} - Receive maximum exceeded", self.get_id())
+            }
+            ReasonCode::TopicAliasInvalid => write!(f, "{} - Topic alias invalid", self.get_id()),
+            ReasonCode::PacketTooLarge => write!(f, "{} - Packet too large", self.get_id()),
+            ReasonCode::MessageRateTooHigh => {
+                write!(f, "{} - Message rate too high", self.get_id())
+            }
+            ReasonCode::QuotaExceeded => write!(f, "{} - Quota exceeded", self.get_id()),
+            ReasonCode::AdministrativeAction => {
+                write!(f, "{} - Administrative action", self.get_id())
+            }
+            ReasonCode::PayloadFormatInvalid => {
+                write!(f, "{} - Payload format invalid", self.get_id())
+            }
+            ReasonCode::RetainNotSupported => {
+                write!(f, "{} - Retain not supported", self.get_id())
+            }
+            ReasonCode::QoSNotSupported => write!(f, "{} - QoS not supported", self.get_id()),
+            ReasonCode::UseAnotherServer => write!(f, "{} - Use another server", self.get_id()),
+            ReasonCode::ServerMoved => write!(f, "{} - Server moved", self.get_id()),
+            ReasonCode::SharedSubscriptionsNotSupported => {
+                write!(f, "{} - Shared subscriptions not supported", self.get_id())
+            }
+            ReasonCode::ConnectionRateExceeded => {
+                write!(f, "{} - Connection rate exceeded", self.get_id())
+            }
+            ReasonCode::MaximumConnectTime => {
+                write!(f, "{} - Maximum connect time", self.get_id())
+            }
+            ReasonCode::SubscriptionIdentifiersNotSupported => write!(
+                f,
+                "{} - Subscription identifiers not supported",
+                self.get_id()
+            ),
+            ReasonCode::WildcardSubscriptionsNotSupported => write!(
+                f,
+                "{} - Wildcard subscriptions not supported",
+                self.get_id()
+            ),
         }
     }
 }

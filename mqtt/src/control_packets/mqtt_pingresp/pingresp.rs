@@ -6,7 +6,7 @@ use crate::control_packets::mqtt_packet::{
 };
 
 #[allow(dead_code)]
-pub struct PingResp {}
+pub struct PingResp;
 
 impl Serialization for PingResp {
     fn read_from(_stream: &mut dyn Read, remaining_length: u32) -> Result<Self, Error> {
@@ -17,7 +17,7 @@ impl Serialization for PingResp {
             ));
         }
 
-        Ok(PingResp {})
+        Ok(PingResp)
     }
 
     fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error> {
@@ -33,26 +33,20 @@ impl Serialization for PingResp {
     }
 }
 
-impl PingResp {
-    #[allow(dead_code)]
-    pub fn new() -> Self {
-        PingResp {}
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
     #[test]
     fn pingresp() {
-        let pingresp = PingResp::new();
+        let pingresp = PingResp;
 
         let mut buffer = Vec::new();
         pingresp.write_to(&mut buffer).unwrap();
 
         let mut buffer = buffer.as_slice();
         let pingresp_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let pingresp_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
 
         assert_eq!(pingresp_fixed_header.get_packet_type(), PINGRESP_PACKET);
     }

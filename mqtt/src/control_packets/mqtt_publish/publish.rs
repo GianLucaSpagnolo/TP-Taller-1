@@ -179,6 +179,8 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let publish_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let publish_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
+
         let publish =
             Publish::read_from(&mut buffer, publish_fixed_header.remaining_length).unwrap();
 
@@ -270,6 +272,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = bytes.as_slice();
         let publish_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let publish_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let publish =
             Publish::read_from(&mut buffer, publish_fixed_header.remaining_length).unwrap();
 

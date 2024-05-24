@@ -13,7 +13,10 @@ pub mod data_representation {
 
     pub fn read_two_byte_integer(stream: &mut dyn Read) -> Result<u16, Error> {
         let mut read_buff = [0u8; 2];
+
         stream.read_exact(&mut read_buff)?;
+        //let mut handle = stream.take(2);
+        //handle.read(&mut read_buff)?;
         Ok(u16::from_be_bytes(read_buff))
     }
 
