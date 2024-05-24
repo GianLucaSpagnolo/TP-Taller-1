@@ -7,14 +7,14 @@ use crate::control_packets::{
 
 pub struct WillMessage {
     pub will_topic: String,
-    pub will_payload: String,
+    pub will_payload: Vec<u8>,
 }
 
 impl WillMessage {
     fn new(
         will_flag: u8,
         will_topic: Option<&String>,
-        will_payload: Option<&String>,
+        will_payload: Option<Vec<u8>>,
     ) -> Option<WillMessage> {
         if will_flag != 1 {
             return None;
@@ -57,7 +57,7 @@ impl Session {
             will_message: WillMessage::new(
                 flags_handler::get_connect_flag_will_flag(connection.properties.connect_flags),
                 connection.payload.will_topic.as_ref(),
-                connection.payload.will_payload.as_ref(),
+                connection.payload.will_payload.clone(),
             ),
         }
     }

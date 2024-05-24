@@ -151,6 +151,16 @@ mod test {
     use crate::control_packets::mqtt_connect::connect_properties::ConnectProperties;
     use crate::control_packets::mqtt_packet::flags::flags_handler;
 
+    fn serialize_string(string: String) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(string.as_bytes());
+        bytes
+    }
+
+    fn deserialize_string(buffer: Vec<u8>) -> String {
+        String::from_utf8(buffer).unwrap()
+    }
+
     #[test]
     fn test_connect() {
         let properties = ConnectProperties {
@@ -169,6 +179,9 @@ mod test {
             maximum_packet_size: Some(20),
         };
 
+        let will_message_str = "payload".to_string();
+        let will_message = serialize_string(will_message_str);
+
         let payload = ConnectPayload {
             client_id: "Marcus".to_string(),
             will_delay_interval: Some(30),
@@ -180,7 +193,7 @@ mod test {
             user_property: Some(("key".to_string(), "value".to_string())),
 
             will_topic: Some("topic".to_string()),
-            will_payload: Some("payload".to_string()),
+            will_payload: Some(will_message),
             username: Some("username".to_string()),
             password: Some("password".to_string()),
         };
@@ -344,7 +357,7 @@ mod test {
         }
 
         if let Some(value) = payload_props.will_payload {
-            assert_eq!(value, "payload".to_string());
+            assert_eq!(deserialize_string(value), "payload".to_string());
         } else {
             panic!("Invalid property");
         }

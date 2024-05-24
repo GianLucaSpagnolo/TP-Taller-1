@@ -18,7 +18,7 @@ pub struct ConnectPayload {
     pub user_property: Option<(String, String)>,
     // Campos opcionales
     pub will_topic: Option<String>,
-    pub will_payload: Option<String>,
+    pub will_payload: Option<Vec<u8>>,
     pub username: Option<String>,
     pub password: Option<String>,
 }
@@ -118,7 +118,7 @@ impl PacketProperties for ConnectPayload {
         }
         if let Some(will_payload) = self.will_payload.clone() {
             bytes.extend_from_slice(&(will_payload.len() as u16).to_be_bytes());
-            bytes.extend_from_slice(will_payload.as_bytes());
+            bytes.extend_from_slice(&will_payload);
         }
         if let Some(username) = self.username.clone() {
             bytes.extend_from_slice(&(username.len() as u16).to_be_bytes());
@@ -181,7 +181,8 @@ impl PacketProperties for ConnectPayload {
         let mut will_payload = None;
         let will_payload_len = read_two_byte_integer(stream).unwrap_or(0);
         if will_payload_len > 0 {
-            will_payload = Some(read_utf8_encoded_string(stream, will_payload_len).unwrap());
+            will_payload = Some(vec![0; will_payload_len as usize]);
+            stream.read_exact(will_payload.as_mut().unwrap())?;
         }
 
         let mut username: Option<String> = None;
