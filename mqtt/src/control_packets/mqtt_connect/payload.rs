@@ -14,13 +14,13 @@ pub struct ConnectPayload {
     pub message_expiry_interval: Option<u32>,
     pub content_type: Option<String>,
     pub response_topic: Option<String>,
-    pub correlation_data: Option<String>,
+    pub correlation_data: Option<Vec<u8>>,
     pub user_property: Option<(String, String)>,
     // Campos opcionales
     pub will_topic: Option<String>,
     pub will_payload: Option<Vec<u8>>,
     pub username: Option<String>,
-    pub password: Option<String>,
+    pub password: Option<Vec<u8>>,
 }
 
 impl Clone for ConnectPayload {
@@ -86,9 +86,8 @@ impl PacketProperties for ConnectPayload {
             payload_props.add_utf8_string_property(RESPONSE_TOPIC, response_topic.to_string())?;
         }
 
-        if let Some(correlation_data) = &self.correlation_data {
-            payload_props
-                .add_utf8_string_property(CORRELATION_DATA, correlation_data.to_string())?;
+        if let Some(correlation_data) = self.correlation_data.clone() {
+            payload_props.add_binary_data_property(CORRELATION_DATA, correlation_data)?;
         }
 
         if let Some(user_property) = self.user_property.clone() {
@@ -126,7 +125,7 @@ impl PacketProperties for ConnectPayload {
         }
         if let Some(password) = self.password.clone() {
             bytes.extend_from_slice(&(password.len() as u16).to_be_bytes());
-            bytes.extend_from_slice(password.as_bytes());
+            bytes.extend_from_slice(&password);
         }
 
         Ok(bytes)
@@ -163,7 +162,7 @@ impl PacketProperties for ConnectPayload {
                     response_topic = property.value_string();
                 }
                 CORRELATION_DATA => {
-                    correlation_data = property.value_string();
+                    correlation_data = property.value_binary_data();
                 }
                 USER_PROPERTY => {
                     user_property = property.value_string_pair();
@@ -193,9 +192,9 @@ impl PacketProperties for ConnectPayload {
 
         let mut password = None;
         let password_len = read_two_byte_integer(stream).unwrap_or(0);
-
         if password_len > 0 {
-            password = Some(read_utf8_encoded_string(stream, password_len).unwrap());
+            password = Some(vec![0; password_len as usize]);
+            stream.read_exact(password.as_mut().unwrap())?;
         }
 
         Ok(ConnectPayload {

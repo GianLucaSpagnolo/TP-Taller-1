@@ -168,6 +168,8 @@ mod test {
     fn test_publish() {
         let message = "message".to_string();
         let application_message = serialize_string(message.clone());
+        let correlation_data_str = "data".to_string();
+        let correlation_data = serialize_string(correlation_data_str.clone());
 
         let properties = PublishProperties {
             topic_name: "mensajeria".to_string(),
@@ -176,7 +178,7 @@ mod test {
             message_expiry_interval: Some(0),
             topic_alias: Some(0),
             response_topic: Some("response".to_string()),
-            correlation_data: Some("data".to_string()),
+            correlation_data: Some(correlation_data),
             user_property: Some(("test_key".to_string(), "test_value".to_string())),
             subscription_identifier: Some(0),
             content_type: Some("type".to_string()),
@@ -240,7 +242,7 @@ mod test {
         }
 
         if let Some(value) = props.correlation_data {
-            assert_eq!(value, "data".to_string());
+            assert_eq!(deserialize_string(value), "data".to_string());
         } else {
             panic!("Error");
         }

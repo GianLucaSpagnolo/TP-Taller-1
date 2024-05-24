@@ -57,6 +57,16 @@ impl VariableHeaderProperties {
         Ok(())
     }
 
+    pub fn add_binary_data_property(&mut self, id: u8, data: Vec<u8>) -> Result<(), Error> {
+        self.bytes_length += size_of_val(&id) as u32 + size_of::<u16>() as u32 + data.len() as u32;
+
+        let prop_result = PacketProperty::new_property_binary_data(id, data)?;
+
+        self.properties.push(prop_result);
+
+        Ok(())
+    }
+
     pub fn add_variable_byte_integer_property(&mut self, id: u8, value: u32) -> Result<(), Error> {
         self.bytes_length += size_of_val(&id) as u32 + variable_byte_integer_length(value);
 

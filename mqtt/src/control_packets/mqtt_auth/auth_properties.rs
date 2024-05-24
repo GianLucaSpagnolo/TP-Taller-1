@@ -11,7 +11,7 @@ pub struct AuthProperties {
     pub reason_code: u8,
 
     pub authentication_method: Option<String>,
-    pub authentication_data: Option<String>,
+    pub authentication_data: Option<Vec<u8>>,
     pub reason_string: Option<String>,
     pub user_property: Option<(String, String)>,
 }
@@ -43,7 +43,7 @@ impl PacketProperties for AuthProperties {
         };
 
         if let Some(auth_data) = self.authentication_data.clone() {
-            variable_props.add_utf8_string_property(AUTHENTICATION_DATA, auth_data)?;
+            variable_props.add_binary_data_property(AUTHENTICATION_DATA, auth_data)?;
         };
 
         if let Some(reason_string) = self.reason_string.clone() {
@@ -86,7 +86,7 @@ impl PacketProperties for AuthProperties {
                     authentication_method = property.value_string();
                 }
                 AUTHENTICATION_DATA => {
-                    authentication_data = property.value_string();
+                    authentication_data = property.value_binary_data();
                 }
                 REASON_STRING => {
                     reason_string = property.value_string();

@@ -63,12 +63,25 @@ mod test {
         ContinueAuthentication, ReAuthenticate, Success,
     };
 
+    fn serialize_string(string: String) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(string.as_bytes());
+        bytes
+    }
+
+    fn deserialize_string(buffer: Vec<u8>) -> String {
+        String::from_utf8(buffer).unwrap()
+    }
+
     #[test]
     fn test_auth() {
+        let authentication_data_str = "data".to_string();
+        let authentication_data = serialize_string(authentication_data_str);
+
         let properties = AuthProperties {
             reason_code: ContinueAuthentication.get_id(),
             authentication_method: Some("method".to_string()),
-            authentication_data: Some("data".to_string()),
+            authentication_data: Some(authentication_data),
             reason_string: Some("string".to_string()),
             user_property: Some(("key".to_string(), "value".to_string())),
         };
@@ -96,7 +109,7 @@ mod test {
         }
 
         if let Some(value) = props.authentication_data {
-            assert_eq!(value, "data".to_string());
+            assert_eq!(deserialize_string(value), "data".to_string());
         } else {
             panic!("Invalid property");
         }
@@ -117,10 +130,13 @@ mod test {
 
     #[test]
     fn test_auth_success() {
+        let authentication_data_str = "squidward".to_string();
+        let authentication_data = serialize_string(authentication_data_str);
+
         let properties = AuthProperties {
             reason_code: Success.get_id(),
             authentication_method: Some("passkey".to_string()),
-            authentication_data: Some("squidward".to_string()),
+            authentication_data: Some(authentication_data),
             reason_string: Some("reason str".to_string()),
             user_property: Some(("newkey".to_string(), "newvalue".to_string())),
         };
@@ -148,7 +164,7 @@ mod test {
         }
 
         if let Some(value) = props.authentication_data {
-            assert_eq!(value, "squidward".to_string());
+            assert_eq!(deserialize_string(value), "squidward".to_string());
         } else {
             panic!("Invalid property");
         }
