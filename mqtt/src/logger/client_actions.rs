@@ -22,13 +22,13 @@ impl fmt::Display for MqttClientActions {
                 let reason_code = ReasonCode::new(*code);
                 write!(
                     f,
-                    "CONNACK - Conexion establecida con '{}' y reason code: {}",
+                    "CONNACK - Conexion establecida con '{}' - reason code: [{}]",
                     addrs, reason_code
                 )
             }
             MqttClientActions::ReceivePublish(id, msg, topic) => write!(
                 f,
-                "PUBLISH - Cliente '{}' recibio: '{}' proveniente del topic: '{}'",
+                "PUBLISH - Cliente '{}' recibio: [{}] proveniente del topic: '{}'",
                 id, msg, topic
             ),
             MqttClientActions::SendConnect(id, addrs) => {
@@ -41,29 +41,21 @@ impl fmt::Display for MqttClientActions {
             MqttClientActions::SendPublish(id, msg, topic) => {
                 write!(
                     f,
-                    "PUBLISH - Cliente '{}' envio: '{}' al topico '{}'",
+                    "PUBLISH - Cliente '{}' envio: [{}] al topico '{}'",
                     id, msg, topic
                 )
             }
             MqttClientActions::SendSubscribe(id, topics) => {
-                write!(
-                    f,
-                    "SUBSCRIBE - Cliente '{}' se subscribió a {:?}",
-                    id, topics
-                )
+                let mut msg = "Cliente '".to_string() + id + "' se subscribió a el/los topicos:";
+
+                for top in topics {
+                    msg = msg + " - " + &top.topic_filter;
+                }
+
+                write!(f, "SUBSCRIBE - {}", msg)
             }
         }
     }
 }
 
-impl MqttActions for MqttClientActions {
-    fn register_action(self) -> Self {
-        println!("{}", self);
-        self
-    }
-
-    fn log_action(self) -> Self {
-        // implementar logica del logger
-        self
-    }
-}
+impl MqttActions for MqttClientActions {}

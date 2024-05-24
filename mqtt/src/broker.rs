@@ -1,16 +1,28 @@
-use std::io::Error;
-
 use mqtt::{
     config::{mqtt_config::Config, server_config::ServerConfig},
     server::mqtt_server::MqttServer,
 };
 
-fn main() -> Result<(), Error> {
+use std::process::ExitCode;
+
+fn main() -> ExitCode {
+    const CONFIGERROR: u8 = 3;
+    const SERVER_LISTENERERROR: u8 = 4;
+
     let config_path = "mqtt/config/server_config.txt";
+    let config = match ServerConfig::from_file(String::from(config_path)) {
+        Ok(conf) => conf,
+        Err(e) => {
+            eprintln!("Server config fails by error: {}", e);
+            return CONFIGERROR.into();
+        }
+    };
 
-    let config = ServerConfig::from_file(String::from(config_path))?;
-
-    MqttServer::new(config).start_server()?;
-
-    Ok(())
+    match MqttServer::new(config).start_server() {
+        Ok(_) => 0.into(),
+        Err(e) => {
+            eprintln!("Server fails with error: {}", e);
+            SERVER_LISTENERERROR.into()
+        }
+    }
 }

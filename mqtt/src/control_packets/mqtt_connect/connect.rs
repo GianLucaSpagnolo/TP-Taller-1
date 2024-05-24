@@ -94,6 +94,8 @@ use super::payload::ConnectPayload;
 /// Username (Connect Flag - Username = 1)
 /// Password (Connect Flag - Password = 1)
 ///
+///
+
 pub struct Connect {
     pub properties: ConnectProperties,
     pub payload: ConnectPayload,
@@ -106,7 +108,6 @@ impl Serialization for Connect {
         let mut buffer = aux_buffer.as_slice();
 
         let properties = ConnectProperties::read_from(&mut buffer)?;
-
         let payload = ConnectPayload::read_from(&mut buffer)?;
 
         Ok(Connect {
@@ -193,6 +194,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let connect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let connect_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let connect =
             Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 
@@ -384,6 +386,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let connect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let connect_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let new_connect =
             Connect::read_from(&mut buffer, connect_fixed_header.remaining_length).unwrap();
 

@@ -73,6 +73,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let disconnect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let disconnect_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let disconnect =
             Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
 
@@ -122,6 +123,7 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buffer = buffer.as_slice();
         let disconnect_fixed_header = PacketFixedHeader::read_from(&mut buffer).unwrap();
+        //let disconnect_fixed_header = PacketFixedHeader::read_from_buffer(&mut buffer).unwrap();
         let disconnect =
             Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
 

@@ -75,6 +75,7 @@ impl PacketProperties for DisconnectProperties {
     }
 
     fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
+        //fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
         let disconnect_reason_code = read_byte(stream)?;
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
 

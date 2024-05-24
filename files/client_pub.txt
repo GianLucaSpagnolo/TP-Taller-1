@@ -1,4 +1,4 @@
-id: subscriber2
+id: publisher
 ip: 127.0.0.1
 port: 5000
 protocol_name: MQTT
@@ -10,3 +10,4 @@ session_expiry_interval: 5
 publish_dup: false
 publish_qos: 1
 publish_retain: false 
+log_path: files/logs/pub_1.csv
