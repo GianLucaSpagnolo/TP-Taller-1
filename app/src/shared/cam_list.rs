@@ -1,12 +1,15 @@
 use super::coordenates::Coordenates;
 
+#[derive(Debug, PartialEq, Clone)]
 pub enum CamState {
-    Inactive,
-    Active,
+    SavingEnergy,
+    Alert,
 }
 
+#[derive(Debug, PartialEq, Clone)]
+
 pub struct Cam {
-    pub id: String,
+    pub id: u8,
     pub location: Coordenates,
     pub state: CamState,
 }
@@ -22,15 +25,13 @@ pub fn serialize_cams_vec(cams: Vec<Cam>) -> Vec<u8> {
     bytes.extend_from_slice(cams_len.to_be_bytes().as_ref());
 
     for cam in cams {
-        let id_len = cam.id.len() as u16;
-        bytes.extend_from_slice(id_len.to_be_bytes().as_ref());
-        bytes.extend_from_slice(cam.id.as_bytes());
-        bytes.extend_from_slice(cam.location.lat.to_be_bytes().as_ref());
-        bytes.extend_from_slice(cam.location.long.to_be_bytes().as_ref());
+        bytes.push(cam.id);
+        bytes.extend_from_slice(cam.location.latitude.to_be_bytes().as_ref());
+        bytes.extend_from_slice(cam.location.longitude.to_be_bytes().as_ref());
 
         let state = match cam.state {
-            CamState::Inactive => 0,
-            CamState::Active => 1,
+            CamState::SavingEnergy => 0,
+            CamState::Alert => 1,
         };
         bytes.push(state);
     }
@@ -46,27 +47,24 @@ pub fn deserialize_cams_vec(bytes: Vec<u8>) -> Vec<Cam> {
     index += 2;
 
     for _ in 0..cams_len {
-        let id_len = u16::from_be_bytes([bytes[index], bytes[index + 1]]) as u16;
-        index += 2;
+        let id = bytes[index];
+        index += 1;
 
-        let id = String::from_utf8(bytes[index..index + id_len as usize].to_vec()).unwrap();
-        index += id_len as usize;
-
-        let lat = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
+        let latitude = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
         index += 8;
-        let long = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
+        let longitude = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
         index += 8;
 
         let state = match bytes[index] {
-            0 => CamState::Inactive,
-            1 => CamState::Active,
+            0 => CamState::SavingEnergy,
+            1 => CamState::Alert,
             _ => panic!("Invalid state"),
         };
         index += 1;
 
         cams.push(Cam {
             id,
-            location: Coordenates { lat, long },
+            location: Coordenates { latitude, longitude },
             state,
         });
     }
