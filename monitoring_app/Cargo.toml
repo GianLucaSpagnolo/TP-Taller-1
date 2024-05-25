@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 mqtt = { path = "../mqtt" }
 
+broker = { path = "../app"}
+
 [[bin]]
 name = "monitoring_app"
 path = "src/main.rs"
