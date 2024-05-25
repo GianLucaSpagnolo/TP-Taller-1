@@ -16,10 +16,11 @@ use mqtt::{
 pub struct CamsSystem {
     pub system: CamList,
     pub range_alert: f64,
+    pub range_alert_between_cameras: f64,
 }
 
 impl CamsSystem {
-    fn init(number_of_camaras: i32, range_alert: f64) -> Self {
+    fn init(number_of_camaras: i32, range_alert: f64, range_alert_between_cameras: f64) -> Self {
         let mut rng = rand::thread_rng();
         let mut cams = Vec::new();
         for i in 0..number_of_camaras {
@@ -32,7 +33,7 @@ impl CamsSystem {
                 state: CamState::SavingEnergy,
             });
         }
-        CamsSystem { system: CamList { cams }, range_alert }
+        CamsSystem { system: CamList { cams }, range_alert, range_alert_between_cameras }
     }
 
     fn add_new_camara(&mut self, cam: Cam) -> Cam{
@@ -67,11 +68,25 @@ impl CamsSystem {
     }
 
     pub fn modify_cameras_state(&mut self, incident_location: Coordenates, new_state: CamState) {
+        let mut modified_cams = Vec::new();
+    
         for cam in self.system.cams.iter_mut() {
             if (incident_location.latitude - cam.location.latitude).abs() < self.range_alert
                 && (incident_location.longitude - cam.location.longitude).abs() < self.range_alert
             {
                 cam.state = new_state.clone();
+                modified_cams.push(cam.clone());
+            }
+        }
+    
+        for cam in self.system.cams.iter_mut() {
+            for modified_cam in &modified_cams {
+                if (modified_cam.location.latitude - cam.location.latitude).abs() < self.range_alert_between_cameras
+                    && (modified_cam.location.longitude - cam.location.longitude).abs() < self.range_alert_between_cameras
+                {
+                    cam.state = new_state.clone();
+                    break;
+                }
             }
         }
     }
@@ -268,7 +283,8 @@ fn show_menu_options(){
 fn main() -> Result<(), Error> {
     let config_path = "central_cams_system/config/cams_config.txt";
     let range_alert = 0.1;
-    let cam_system = Arc::new(Mutex::new(CamsSystem::init(10, range_alert)));
+    let range_alert_between_cameras = 10.0;
+    let cam_system = Arc::new(Mutex::new(CamsSystem::init(10, range_alert, range_alert_between_cameras)));
 
     let config = ClientConfig::from_file(String::from(config_path))?;
     
