@@ -4,9 +4,8 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use app::shared::cam_list::*;
-use app::shared::coordenates::*;
 use app::shared::incident::*;
+use app::shared::{cam_list::CamList, coordenates::*};
 use mqtt::{
     client::mqtt_client::{MqttClient, MqttClientMessage},
     config::{client_config::ClientConfig, mqtt_config::Config},
@@ -17,8 +16,9 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
         let message_received = receiver.recv().unwrap();
         match message_received.topic.as_str() {
             "camaras" => {
-                let data = deserialize_cams_vec(message_received.data);
-                println!("Camaras: {:?}", data)
+                let data = CamList::from_be_bytes(message_received.data);
+                println!("Actualización de cámaras:");
+                println!("{}", data)
             }
             "dron" => {
                 // cambiar estado
@@ -54,7 +54,7 @@ fn main() -> Result<(), Error> {
         state: IncidentState::InProgess,
     };
 
-    let incident_bytes = serialize_incident(incident.clone());
+    let incident_bytes = incident.clone().as_bytes();
 
     client.publish(incident_bytes, "inc".to_string())?;
     println!("Mensaje publicado en el topic 'inc': {:?}", incident);
