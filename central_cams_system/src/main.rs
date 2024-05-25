@@ -5,79 +5,49 @@ use std::{
     };
 
 use rand::Rng;
-
+use app::shared::cam_list::{serialize_cams_vec, Cam, CamList, CamState};
+use app::shared::coordenates::Coordenates;
+use app::shared::incident::*;
 use mqtt::{
     client::mqtt_client::{MqttClient, MqttClientMessage},
     config::{client_config::ClientConfig, mqtt_config::Config},
-};
-
-pub enum IncidentStateType {
-    InProgress,
-    Resolved,
-}
-pub struct IncidentState {
-    pub state: IncidentStateType,
-}
-pub struct Incident {
-    pub location: Coordenate,
-    pub state: IncidentState,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum CamState {
-    SavingEnergy,
-    Alert, 
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Coordenate {
-    pub latitude: f64,
-    pub longitude: f64,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Cam {
-    pub id: i32,
-    pub mode: CamState,
-    pub coordenate: Coordenate,
-}
-
+};  
 
 pub struct CamsSystem {
-    pub cams: Vec<Cam>,
+    pub system: CamList,
+    pub range_alert: f64,
 }
 
-
 impl CamsSystem {
-    fn init(number_of_camaras: i32) -> Self {
+    fn init(number_of_camaras: i32, range_alert: f64) -> Self {
         let mut rng = rand::thread_rng();
         let mut cams = Vec::new();
         for i in 0..number_of_camaras {
             cams.push(Cam {
-                id: i,
-                mode: CamState::SavingEnergy,
-                coordenate: Coordenate {
+                id: i as u8,
+                location: Coordenates {
                     latitude: rng.gen_range(-90.0..90.0), 
                     longitude: rng.gen_range(-180.0..180.0)
                 },
+                state: CamState::SavingEnergy,
             });
         }
-        CamsSystem { cams }
+        CamsSystem { system: CamList { cams }, range_alert }
     }
 
     fn add_new_camara(&mut self, cam: Cam) -> Cam{
         let new_cam = cam.clone();
-        self.cams.push(cam);
+        self.system.cams.push(cam);
         new_cam
     }
 
-    fn delete_camara(&mut self, id: i32) -> Result<Option<Cam>, Error>{
-        let pos = match self.cams.iter().position(|cam| cam.id == id) {
+    fn delete_camara(&mut self, id: u8) -> Result<Option<Cam>, Error>{
+        let pos = match self.system.cams.iter().position(|cam| cam.id == id) {
             Some(pos) => pos,
             None => return Err(Error::new(std::io::ErrorKind::Other,"No se encontró la cámara")),
         };
-        let cam = self.cams.remove(pos);    
-        if cam.mode == CamState::Alert {
+        let cam = self.system.cams.remove(pos);    
+        if cam.state == CamState::Alert {
             return Err(Error::new(std::io::ErrorKind::Other,"No se puede eliminar una cámara en modo alerta"));
         }
     
@@ -85,30 +55,30 @@ impl CamsSystem {
 
     }
 
-    fn modify_cam_position(&mut self, id: i32, new_pos: Coordenate) -> Result<(), Error> {
-        match self.cams.iter_mut().find(|cam| cam.id == id) {
+    fn modify_cam_position(&mut self, id: u8, new_pos: Coordenates) -> Result<(), Error> {
+        match self.system.cams.iter_mut().find(|cam| cam.id == id) {
             Some(cam) => {
-                cam.coordenate.latitude = new_pos.latitude;
-                cam.coordenate.longitude = new_pos.longitude;
+                cam.location.latitude = new_pos.latitude;
+                cam.location.longitude = new_pos.longitude;
             },
             None => return Err(Error::new(std::io::ErrorKind::Other, "No se encontró la cámara")),
         }
         Ok(())
     }
 
-    pub fn modify_cameras_state(&mut self, incident_location: Coordenate, new_state: CamState) {
-        for cam in self.cams.iter_mut() {
-            if (incident_location.latitude - cam.coordenate.latitude).abs() < 0.1
-                && (incident_location.longitude - cam.coordenate.longitude).abs() < 0.1
+    pub fn modify_cameras_state(&mut self, incident_location: Coordenates, new_state: CamState) {
+        for cam in self.system.cams.iter_mut() {
+            if (incident_location.latitude - cam.location.latitude).abs() < self.range_alert
+                && (incident_location.longitude - cam.location.longitude).abs() < self.range_alert
             {
-                cam.mode = new_state.clone();
+                cam.state = new_state.clone();
             }
         }
     }
 
     pub fn list_cameras(&self) {
-        for cam in self.cams.iter() {
-            println!("Cámara: id:{} - modo:{:?} - latitud:{} - longitud:{}", cam.id, cam.mode, cam.coordenate.latitude, cam.coordenate.longitude);
+        for cam in self.system.cams.iter() {
+            println!("Cámara: id:{} - modo:{:?} - latitud:{} - longitud:{}", cam.id, cam.state, cam.location.latitude, cam.location.longitude);
         }
     }
 }
@@ -120,43 +90,40 @@ fn process_messages(client: &mut MqttClient, receiver: Receiver<MqttClientMessag
         let message_received = receiver.recv().unwrap();
         match message_received.topic.as_str() {
             "inc" => {
-                let parts: Vec<&str> = message_received.data.split(';').collect();
-                let coordenates = Coordenate {
-                    latitude: parts.get(1).unwrap().parse().unwrap(),
-                    longitude: parts.get(2).unwrap().parse().unwrap(),
-                };
-
-                if message_received.data.contains("Resolved") {
-                    let mut camsystem: std::sync::MutexGuard<CamsSystem> = camsystem.lock().unwrap();
-                        camsystem.modify_cameras_state(coordenates.clone(), CamState::SavingEnergy);
-                        match client.publish("cambio estado camaras por incidente resuelto".to_string(), "camaras".to_string()){
+                let incident = deserialize_incident(message_received.data);
+                println!("Mensaje recibido: {:?}", incident);
+                match incident.state {
+                    IncidentState::InProgess => {
+                        let mut camsystem = camsystem.lock().unwrap();
+                        camsystem.modify_cameras_state(incident.location.clone(), CamState::Alert);
+                        match client.publish(serialize_cams_vec(camsystem.system.cams.clone()), "camaras".to_string()){
                             Ok(_) => {}
                             Err(e) => {
                                 println!("Error al publicar mensaje: {}", e);
                             }
                         }
-                }
-
-                if message_received.data.contains("InProgress") {
-                    let mut camsystem = camsystem.lock().unwrap();
-                        camsystem.modify_cameras_state(coordenates, CamState::Alert);
-                        match client.publish("cambio estado camaras".to_string(), "camaras".to_string()){
+                    }
+                    IncidentState::Resolved => {
+                        let mut camsystem = camsystem.lock().unwrap();
+                        camsystem.modify_cameras_state(incident.location.clone(), CamState::SavingEnergy);
+                        match client.publish(serialize_cams_vec(camsystem.system.cams.clone()), "camaras".to_string()){
                             Ok(_) => {}
                             Err(e) => {
                                 println!("Error al publicar mensaje: {}", e);
                             }
                         }
+                    }
                 }
             }
             _ => {}
         }
-        // leer el mensaje recibido y cambiar estados según corresponda
     });
     
     Ok(handler)
 }
 
-fn process_standard_input(cam_system: Arc<Mutex<CamsSystem>>){
+fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSystem>>){
+    
     let stdin = io::stdin();
     let stdin = stdin.lock();
     for line in stdin.lines() {
@@ -176,14 +143,13 @@ fn process_standard_input(cam_system: Arc<Mutex<CamsSystem>>){
                                 println!("Error en la cantidad de argumentos");
                                 continue;
                             }
-                            let new_id = cam_system.lock().unwrap().cams.iter()
+                            let new_id = cam_system.lock().unwrap().system.cams.iter()
                             .max_by_key(|cam| cam.id)
                             .map(|cam| cam.id + 1) 
                             .unwrap_or(0); 
                                 let cam = Cam {
                                 id: new_id,
-                                mode: CamState::SavingEnergy,
-                                coordenate: Coordenate {
+                                location: Coordenates {
                                     latitude: match parts.get(1) {
                                         Some(lat) => match lat.parse() {
                                             Ok(lat) => lat,
@@ -211,19 +177,21 @@ fn process_standard_input(cam_system: Arc<Mutex<CamsSystem>>){
                                         }
                                     },
                                 },
+                                state: CamState::SavingEnergy,
                             };
-                            println!("Camera added: {:?} ",cam_system.lock().unwrap().add_new_camara(cam));                        
+                            let mut cam_system = cam_system.lock().unwrap();
+                            println!("Camera added: {:?} ",cam_system.add_new_camara(cam));                       
                         } "delete" => {
                             if parts.len() != 2 {
                                 println!("Error en la cantidad de argumentos");
                                 continue;
                             }
                             let id = parts.get(1).unwrap().parse().unwrap();
-                            println!("Id: {}", id);
-                            match cam_system.lock().unwrap().delete_camara(id) {
+                            let mut cam_system = cam_system.lock().unwrap();
+                            match cam_system.delete_camara(id) {
                                 Ok(cam) => {
                                     if let Some(cam) = cam {
-                                        println!("Cámara eliminada: id:{} - modo:{:?} - latitud:{} - longitud:{}", cam.id, cam.mode, cam.coordenate.latitude, cam.coordenate.longitude);
+                                        println!("Cámara eliminada: id:{} - modo:{:?} - latitud:{} - longitud:{}", cam.id, cam.state, cam.location.latitude, cam.location.longitude);
                                     }
                                     else {
                                         println!("Cámara no encontrada");
@@ -239,12 +207,13 @@ fn process_standard_input(cam_system: Arc<Mutex<CamsSystem>>){
                                 continue;
                             }
                             let id = parts.get(1).unwrap().parse().unwrap();
-                            let new_coordenate = Coordenate {
+                            let new_coordenate = Coordenates {
                                 latitude: parts.get(2).unwrap().parse().unwrap(),
                                 longitude: parts.get(3).unwrap().parse().unwrap(),
                             };
 
-                            match cam_system.lock().unwrap().modify_cam_position(id, new_coordenate) {
+                            let mut cam_system = cam_system.lock().unwrap();
+                            match cam_system.modify_cam_position(id, new_coordenate) {
                                 Ok(_) => {
                                     println!("Cámara modificada correctamente");
                                 }
@@ -265,8 +234,15 @@ fn process_standard_input(cam_system: Arc<Mutex<CamsSystem>>){
                     }
                 }
                 Err(err) => {
-                    // Handle the error
                     eprintln!("Error reading line: {}", err);
+                }
+            }
+
+            let cam_system = cam_system.lock().unwrap();
+            match client.publish(serialize_cams_vec(cam_system.system.cams.clone()), "camaras".to_string()){
+                Ok(_) => {}
+                Err(e) => {
+                    println!("Error al publicar mensaje: {}", e);
                 }
             }
         }
@@ -291,7 +267,8 @@ fn show_menu_options(){
 
 fn main() -> Result<(), Error> {
     let config_path = "central_cams_system/config/cams_config.txt";
-    let cam_system = Arc::new(Mutex::new(CamsSystem::init(10)));
+    let range_alert = 0.1;
+    let cam_system = Arc::new(Mutex::new(CamsSystem::init(10, range_alert)));
 
     let config = ClientConfig::from_file(String::from(config_path))?;
     
@@ -299,15 +276,18 @@ fn main() -> Result<(), Error> {
 
     let mut client = MqttClient::init(config)?;
 
-    show_menu_options();
     let cam_system_clone = Arc::clone(&cam_system);
+    client.publish(serialize_cams_vec(cam_system_clone.lock().unwrap().system.cams.clone()), "camaras".to_string())?;
+    client.subscribe(vec!["inc"], 1, false, false, 0)?;
+    
+    show_menu_options();
+    let mut client_clone = client.clone();
     let handle = thread::spawn(move || {
-        process_standard_input(cam_system_clone);
+        process_standard_input(&mut client_clone, cam_system_clone);
     });
 
     let listener = client.run_listener(log_path)?;
-    
-    client.subscribe(vec!["inc"], 1, false, false, 0)?;
+
     
     let process_message_handler: JoinHandle<()> = process_messages(&mut client, listener.receiver,cam_system)?;
     
