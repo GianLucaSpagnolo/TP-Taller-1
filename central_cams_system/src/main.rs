@@ -213,6 +213,12 @@ fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSys
                                 Ok(cam) => {
                                     if let Some(cam) = cam {
                                         println!("Cámara eliminada: id:{} - modo:{:?} - latitud:{} - longitud:{}", cam.id, cam.state, cam.location.latitude, cam.location.longitude);
+                                        match client.publish(serialize_cams_vec(cam_system.system.cams.clone()), "camaras".to_string()){
+                                            Ok(_) => {}
+                                            Err(e) => {
+                                                println!("Error al publicar mensaje: {}", e);
+                                            }
+                                        }
                                     }
                                     else {
                                         println!("Cámara no encontrada");
@@ -222,12 +228,7 @@ fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSys
                                     println!("Error al eliminar cámara: {}", e);
                                 }
                             }
-                            match client.publish(serialize_cams_vec(cam_system.system.cams.clone()), "camaras".to_string()){
-                                Ok(_) => {}
-                                Err(e) => {
-                                    println!("Error al publicar mensaje: {}", e);
-                                }
-                            }
+                            
                         } "modify" => {
                             if parts.len() != 4 {
                                 println!("Error en la cantidad de argumentos");
@@ -243,17 +244,18 @@ fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSys
                             match cam_system.modify_cam_position(id, new_coordenate) {
                                 Ok(_) => {
                                     println!("Cámara modificada correctamente");
+                                    match client.publish(serialize_cams_vec(cam_system.system.cams.clone()), "camaras".to_string()){
+                                        Ok(_) => {}
+                                        Err(e) => {
+                                            println!("Error al publicar mensaje: {}", e);
+                                        }
+                                    }
                                 }
                                 Err(e) => {
                                     println!("Error al modificar cámara: {}", e);
                                 }
                             }
-                            match client.publish(serialize_cams_vec(cam_system.system.cams.clone()), "camaras".to_string()){
-                                Ok(_) => {}
-                                Err(e) => {
-                                    println!("Error al publicar mensaje: {}", e);
-                                }
-                            }
+                            
                         } "list" => {
                             if parts.len() != 1 {
                                 println!("Error en la cantidad de argumentos");
