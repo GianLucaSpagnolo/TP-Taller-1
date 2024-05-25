@@ -8,7 +8,7 @@ pub mod server {
     pub mod server_session;
 }
 
-mod logger {
+pub mod logger {
     pub mod actions;
     pub mod client_actions;
     pub mod logger_handler;
@@ -21,7 +21,7 @@ pub mod config {
     pub mod server_config;
 }
 
-mod control_packets {
+pub mod control_packets {
     pub mod mqtt_packet {
         pub mod fixed_header;
         pub mod flags;
