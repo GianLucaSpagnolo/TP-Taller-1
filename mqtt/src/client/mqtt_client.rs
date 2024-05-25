@@ -132,7 +132,6 @@ impl MqttClient {
     }
 
     pub fn run_listener(&mut self, log_path: String) -> Result<MqttClientListener, Error> {
-        let mut counter = 0;
 
         let client = self.clone();
 
@@ -140,37 +139,15 @@ impl MqttClient {
 
         let handler = thread::spawn(move || -> Result<(), Error> {
             loop {
-                match client.listen_message(
+                client.listen_message(
                     client.stream.try_clone()?,
                     sender.clone(),
                     &log_path.to_string(),
-                ) {
-                    Ok(_) => {
-                        counter = 0;
-                    }
-                    Err(_) => {
-                        if let Some(expiry_interval) =
-                            client.config.connect_properties.session_expiry_interval
-                        {
-                            MqttClient::session_timer(&mut counter, expiry_interval)?;
-                        }
-                    }
-                };
+                )?
             }
         });
 
         Ok(MqttClientListener { receiver, handler })
-    }
-
-    fn session_timer(counter: &mut u32, expiry_interval: u32) -> Result<(), Error> {
-        thread::sleep(std::time::Duration::from_millis(1000));
-        *counter += 1;
-        //println!("Counter: {}", *counter);
-        if expiry_interval != 0 && *counter > expiry_interval {
-            //disconnect
-            return Err(Error::new(std::io::ErrorKind::Other, "Session expired"));
-        }
-        Ok(())
     }
 
     pub fn listen_message(
@@ -208,7 +185,7 @@ impl MqttClient {
         match sender.send(data) {
             Ok(_) => (),
             Err(e) => {
-                let msg = "Error al enviar mensaje al servidor: ".to_string() + &e.to_string();
+                let msg = "Error al recibir mensaje del servidor: ".to_string() + &e.to_string();
                 logger.log_event(&msg, &self.config.general.id);
                 logger.close_logger();
                 return Err(Error::new(std::io::ErrorKind::Other, msg));
