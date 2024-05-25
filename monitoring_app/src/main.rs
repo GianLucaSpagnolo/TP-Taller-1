@@ -4,6 +4,8 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use app::shared::incident::*;
+use app::shared::{cam_list::CamList, coordenates::*};
 use mqtt::{
     client::mqtt_client::{MqttClient, MqttClientMessage},
     config::{client_config::ClientConfig, mqtt_config::Config},
@@ -13,8 +15,10 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
     let handler = thread::spawn(move || loop {
         let message_received = receiver.recv().unwrap();
         match message_received.topic.as_str() {
-            "cams" => {
-                // cambiar estado
+            "camaras" => {
+                let data = CamList::from_be_bytes(message_received.data);
+                println!("Actualización de cámaras:");
+                println!("{}", data)
             }
             "dron" => {
                 // cambiar estado
@@ -27,10 +31,6 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
     Ok(handler)
 }
 
-fn serialize_string(string: String) -> Vec<u8> {
-    string.as_bytes().to_vec()
-}
-
 fn main() -> Result<(), Error> {
     let config_path = "monitoring_app/config/app_config.txt";
 
@@ -41,13 +41,23 @@ fn main() -> Result<(), Error> {
 
     let listener = client.run_listener(log_path)?;
 
+    client.subscribe(vec!["camaras"], 1, false, false, 0)?;
+
     let process_message_handler = process_messages(listener.receiver)?;
 
-    let message_str = "mensaje del cliente".to_string();
-    let message = serialize_string(message_str.clone());
+    let incident = Incident {
+        id: "1".to_string(),
+        location: Coordenates {
+            latitude: 1.0,
+            longitude: 1.0,
+        },
+        state: IncidentState::InProgess,
+    };
 
-    client.publish(message, "cams".to_string())?;
-    println!("Mensaje publicado en el topic 'cams': {}", message_str);
+    let incident_bytes = incident.clone().as_bytes();
+
+    client.publish(incident_bytes, "inc".to_string())?;
+    println!("Mensaje publicado en el topic 'inc': {:?}", incident);
 
     listener.handler.join().unwrap()?;
     process_message_handler.join().unwrap();
