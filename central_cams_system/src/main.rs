@@ -195,7 +195,13 @@ fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSys
                                 state: CamState::SavingEnergy,
                             };
                             let mut cam_system = cam_system.lock().unwrap();
-                            println!("Camera added: {:?} ",cam_system.add_new_camara(cam));                       
+                            println!("Camera added: {:?} ",cam_system.add_new_camara(cam));  
+                            match client.publish(serialize_cams_vec(cam_system.system.cams.clone()), "camaras".to_string()){
+                                Ok(_) => {}
+                                Err(e) => {
+                                    println!("Error al publicar mensaje: {}", e);
+                                }
+                            }                     
                         } "delete" => {
                             if parts.len() != 2 {
                                 println!("Error en la cantidad de argumentos");
@@ -214,6 +220,12 @@ fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSys
                                 }
                                 Err(e) => {
                                     println!("Error al eliminar cámara: {}", e);
+                                }
+                            }
+                            match client.publish(serialize_cams_vec(cam_system.system.cams.clone()), "camaras".to_string()){
+                                Ok(_) => {}
+                                Err(e) => {
+                                    println!("Error al publicar mensaje: {}", e);
                                 }
                             }
                         } "modify" => {
@@ -236,6 +248,12 @@ fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSys
                                     println!("Error al modificar cámara: {}", e);
                                 }
                             }
+                            match client.publish(serialize_cams_vec(cam_system.system.cams.clone()), "camaras".to_string()){
+                                Ok(_) => {}
+                                Err(e) => {
+                                    println!("Error al publicar mensaje: {}", e);
+                                }
+                            }
                         } "list" => {
                             if parts.len() != 1 {
                                 println!("Error en la cantidad de argumentos");
@@ -250,14 +268,6 @@ fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSys
                 }
                 Err(err) => {
                     eprintln!("Error reading line: {}", err);
-                }
-            }
-
-            let cam_system = cam_system.lock().unwrap();
-            match client.publish(serialize_cams_vec(cam_system.system.cams.clone()), "camaras".to_string()){
-                Ok(_) => {}
-                Err(e) => {
-                    println!("Error al publicar mensaje: {}", e);
                 }
             }
         }
