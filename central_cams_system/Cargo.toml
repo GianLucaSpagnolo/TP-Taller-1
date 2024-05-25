@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 mqtt = { path = "../mqtt" }
 
+broker = { path = "../app" }
+
 rand = "0.8.4"
 
 [[bin]]
