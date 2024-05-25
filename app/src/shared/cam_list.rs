@@ -43,7 +43,7 @@ pub fn deserialize_cams_vec(bytes: Vec<u8>) -> Vec<Cam> {
     let mut cams = Vec::new();
     let mut index = 0;
 
-    let cams_len = u16::from_be_bytes([bytes[index], bytes[index + 1]]) as u16;
+    let cams_len = u16::from_be_bytes([bytes[index], bytes[index + 1]]);
     index += 2;
 
     for _ in 0..cams_len {
@@ -64,7 +64,10 @@ pub fn deserialize_cams_vec(bytes: Vec<u8>) -> Vec<Cam> {
 
         cams.push(Cam {
             id,
-            location: Coordenates { latitude, longitude },
+            location: Coordenates {
+                latitude,
+                longitude,
+            },
             state,
         });
     }

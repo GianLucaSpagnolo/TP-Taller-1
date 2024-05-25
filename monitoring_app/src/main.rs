@@ -4,9 +4,9 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use app::shared::incident::*;
-use app::shared::coordenates::*;
 use app::shared::cam_list::*;
+use app::shared::coordenates::*;
+use app::shared::incident::*;
 use mqtt::{
     client::mqtt_client::{MqttClient, MqttClientMessage},
     config::{client_config::ClientConfig, mqtt_config::Config},
@@ -39,7 +39,6 @@ fn main() -> Result<(), Error> {
     let log_path = config.general.log_path.to_string();
     let mut client = MqttClient::init(config)?;
 
-
     let listener = client.run_listener(log_path)?;
 
     client.subscribe(vec!["camaras"], 1, false, false, 0)?;
@@ -47,11 +46,11 @@ fn main() -> Result<(), Error> {
     let process_message_handler = process_messages(listener.receiver)?;
 
     let incident = Incident {
-       id: "1".to_string(),
+        id: "1".to_string(),
         location: Coordenates {
             latitude: 1.0,
             longitude: 1.0,
-       },
+        },
         state: IncidentState::InProgess,
     };
 

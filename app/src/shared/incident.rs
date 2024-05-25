@@ -55,7 +55,10 @@ pub fn deserialize_incident(bytes: Vec<u8>) -> Incident {
 
     Incident {
         id,
-        location: Coordenates { latitude, longitude },
+        location: Coordenates {
+            latitude,
+            longitude,
+        },
         state,
     }
 }
