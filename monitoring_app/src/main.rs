@@ -4,8 +4,8 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use app::shared::incident::*;
-use app::shared::{cam_list::CamList, coordenates::*};
+use app::shared::cam_list::CamList;
+use monitoring_app::view::view::run_interface;
 use mqtt::{
     client::mqtt_client::{MqttClient, MqttClientMessage},
     config::{client_config::ClientConfig, mqtt_config::Config},
@@ -46,6 +46,7 @@ fn main() -> Result<(), Error> {
 
     let process_message_handler = process_messages(listener.receiver)?;
 
+    /* 
     let incident = Incident {
         id: "1".to_string(),
         location: Coordenates {
@@ -53,12 +54,18 @@ fn main() -> Result<(), Error> {
             longitude: 1.0,
         },
         state: IncidentState::InProgess,
-    };
-
+    }; 
+    
     let incident_bytes = incident.clone().as_bytes();
-
+    
     client.publish(incident_bytes, "inc".to_string())?;
     println!("Mensaje publicado en el topic 'inc': {:?}", incident);
+    */
+
+    match run_interface(){
+        Ok(_) => println!("Interfaz cerrada"),
+        Err(e) => println!("Error al ejecutar la interfaz: {:?}", e),
+    }
 
     listener.handler.join().unwrap()?;
     process_message_handler.join().unwrap();

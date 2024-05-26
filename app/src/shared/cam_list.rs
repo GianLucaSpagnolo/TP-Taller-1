@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use super::coordenates::Coordenates;
 
+use rand::Rng;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum CamState {
     SavingEnergy,
@@ -105,6 +107,22 @@ impl CamList {
             });
         }
 
+        CamList { cams }
+    }
+
+    pub fn generate_ramdoms_cams(number_of_camaras: i32) -> Self {
+        let mut rng = rand::thread_rng();
+        let mut cams = Vec::new();
+        for i in 0..number_of_camaras {
+            cams.push(Cam {
+                id: i as u8,
+                location: Coordenates {
+                    latitude: rng.gen_range(-90.0..90.0),
+                    longitude: rng.gen_range(-180.0..180.0),
+                },
+                state: CamState::SavingEnergy,
+            });
+        }
         CamList { cams }
     }
 }

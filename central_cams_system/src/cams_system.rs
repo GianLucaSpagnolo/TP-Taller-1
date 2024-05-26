@@ -6,7 +6,7 @@ use app::shared::{
     incident::Incident,
 };
 use mqtt::client::mqtt_client::MqttClient;
-use rand::Rng;
+
 
 pub struct CamsSystem {
     pub system: CamList,
@@ -20,20 +20,11 @@ impl CamsSystem {
         range_alert: f64,
         range_alert_between_cameras: f64,
     ) -> Self {
-        let mut rng = rand::thread_rng();
-        let mut cams = Vec::new();
-        for i in 0..number_of_camaras {
-            cams.push(Cam {
-                id: i as u8,
-                location: Coordenates {
-                    latitude: rng.gen_range(-90.0..90.0),
-                    longitude: rng.gen_range(-180.0..180.0),
-                },
-                state: CamState::SavingEnergy,
-            });
-        }
+        
+        let system = CamList::generate_ramdoms_cams(number_of_camaras);
+
         CamsSystem {
-            system: CamList { cams },
+            system,
             range_alert,
             range_alert_between_cameras,
         }
