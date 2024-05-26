@@ -1,36 +1,10 @@
-use std::{
-    io::Error,
-    sync::mpsc::{channel, Receiver},
-    thread::{self, JoinHandle},
-};
+use std::{io::Error, os::unix::process};
 
-use app::shared::cam_list::CamList;
-use monitoring_app::view::view::run_interface;
+use monitoring_app::model::monitoring_app::MonitoringApp;
 use mqtt::{
-    client::mqtt_client::{MqttClient, MqttClientMessage},
+    client::mqtt_client::MqttClient,
     config::{client_config::ClientConfig, mqtt_config::Config},
 };
-
-fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<()>, Error> {
-    let handler = thread::spawn(move || loop {
-        for message_received in receiver.try_iter() {
-            match message_received.topic.as_str() {
-                "camaras" => {
-                    let data = CamList::from_be_bytes(message_received.data);
-                    println!("Actualización de cámaras:");
-                    println!("{}", data)
-                }
-                "dron" => {
-                    // cambiar estado
-                }
-                _ => {}
-            }
-            // leer el mensaje recibido y cambiar estados según corresponda
-        }
-    });
-
-    Ok(handler)
-}
 
 fn main() -> Result<(), Error> {
     let config_path = "monitoring_app/config/app_config.txt";
@@ -40,11 +14,9 @@ fn main() -> Result<(), Error> {
     let log_path = config.general.log_path.to_string();
     let mut client = MqttClient::init(config)?;
 
-    let listener = client.run_listener(log_path)?;
+    let app = MonitoringApp::new(client, log_path);
 
-    client.subscribe(vec!["camaras"])?;
-
-    let process_message_handler = process_messages(listener.receiver)?;
+    let (client_handler, listener_handler) = app.init()?;
 
     /* 
     let incident = Incident {
@@ -61,8 +33,8 @@ fn main() -> Result<(), Error> {
     client.publish(incident_bytes, "inc".to_string())?;
     println!("Mensaje publicado en el topic 'inc': {:?}", incident);
     */
-
-    let (sender, receiver) = channel::<Vec<u8>>();
+    
+    /* let (sender, receiver) = channel::<Vec<u8>>();
     let mut client_clone = client.clone();
     let receiver_t = std::thread::spawn(move ||{
         loop{ 
@@ -77,13 +49,12 @@ fn main() -> Result<(), Error> {
                 Err(_) => todo!(),
             }
         } 
-    } );
+    } ); */
+    
 
-    let _ = run_interface(sender);
-
-    receiver_t.join().unwrap();
-    listener.handler.join().unwrap()?;
-    process_message_handler.join().unwrap();
+    /* receiver_t.join().unwrap(); */
+    client_handler.join().unwrap()?;
+    listener_handler.join().unwrap();
 
     Ok(())
 }

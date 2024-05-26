@@ -1,59 +1,10 @@
 pub mod view{
-    use std::sync::mpsc::Sender;
-
-    use app::shared::{cam_list::{Cam, CamList, CamState}, coordenates::Coordenates, incident::{Incident, IncidentState}};
+    use app::shared::cam_list::CamState;
     use eframe::egui::{self, Margin};
     use egui_extras::{Column, TableBuilder};
+
+    use crate::model::monitoring_app::MonitoringApp;
     /* use walkers::{Tiles, MapMemory, sources::OpenStreetMap}; */
-
-    //#[derive(Default)]
-    pub struct MyApp {
-        pub sender: Sender<Vec<u8>>,
-        pub system: CamList,
-        pub incident: Vec<Incident>,
-        pub coordenates: Coordenates,
-        /* tiles: Tiles,
-        map_memory: MapMemory, */
-    }
-    
-    impl MyApp {
-        fn new(sender: Sender<Vec<u8>>) -> Self {
-            let system = CamList::generate_ramdoms_cams(10);
-
-            Self {
-                sender,
-                system,
-                incident: Vec::new(),
-                coordenates: Coordenates::default(),
-                /* tiles: Tiles::new(OpenStreetMap, egui_ctx),
-                map_memory: MapMemory::default(), */
-            }
-        }
-        pub fn add_incident(&mut self, location: Coordenates) {
-            
-            println!("Incidente agregado en latitud: {}, longitud: {}", location.latitude, location.longitude);
-            let incident = Incident {
-                id: self.incident.len().to_string(),
-                location,
-                state: IncidentState::InProgess,
-            };
-
-            let _ = &self.send_incident(incident.clone());
-            self.incident.push(incident.clone());
-        }
-
-        pub fn add_cam(&mut self) {
-            self.system.cams.push(Cam {
-                id: self.system.cams.len() as u8,
-                location: Coordenates::default(),
-                state: CamState::Alert,
-            });
-        }
-
-        fn send_incident(&self, incident: Incident){
-            let _ = self.sender.send(incident.as_bytes());
-        }
-    }
 
     fn integer_edit_field(ui: &mut egui::Ui, value: &mut f64) -> egui::Response {
         let mut tmp_value = format!("{}", value);
@@ -64,7 +15,7 @@ pub mod view{
         res
     }
     
-    impl eframe::App for MyApp {
+    impl eframe::App for MonitoringApp {
 
         fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 
@@ -119,7 +70,7 @@ pub mod view{
                         });
                     })
                     .body(|mut body| {
-                        for cam in &self.system.cams {
+                        for cam in &self.system.lock().unwrap().cams {
                             body.row(20.0, |mut row| {
                                 row.col(|ui| {
                                     ui.label(&format!("{}", cam.id));
@@ -155,7 +106,7 @@ pub mod view{
             
     }
 
-    pub fn run_interface(sender: Sender<Vec<u8>>) -> Result<(), eframe::Error> {
+    pub fn run_interface(app: MonitoringApp) -> Result<(), eframe::Error> {
 
         let mut options = eframe::NativeOptions::default();
 
@@ -165,8 +116,8 @@ pub mod view{
             "Apliación de monitoreo",
             options,
             Box::new(|_cc|
-                Box::new(MyApp::new(sender)
-            )),
+                Box::new(app)
+            ),
         )
     }
 }
