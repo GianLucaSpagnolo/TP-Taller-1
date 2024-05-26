@@ -15,7 +15,7 @@ pub enum MqttClientActions {
     ReceiveDisconnect(ReasonCode),
     SendConnect(String),
     SendPublish(String),
-    AcknowledgePublish(String, String),
+    AcknowledgePublish(String, u8),
     SendSubscribe(Vec<TopicFilter>),
     SendUnsubscribe(Vec<String>),
     SendDisconnect(String, ReasonCode),
@@ -48,11 +48,12 @@ impl fmt::Display for MqttClientActions {
                     topic
                 )
             }
-            MqttClientActions::AcknowledgePublish(id, message) => {
+            MqttClientActions::AcknowledgePublish(id, code) => {
+                let reason_code = ReasonCode::new(*code);
                 write!(
                     f,
-                    "PUBACK - Cliente '{}' recibió confirmacion de envio del publish. \nMensaje: <{}>",
-                    id, message
+                    "PUBACK - Cliente '{}' recibió confirmacion de envio del publish - reason code: [{}]",
+                    id, reason_code
                 )
             }
             MqttClientActions::SendSubscribe(topics) => {
@@ -95,10 +96,15 @@ impl fmt::Display for MqttClientActions {
             MqttClientActions::AcknowledgeSubscribe(id, codes) => {
                 let mut msg = "SUBACK - Cliente ".to_string();
                 msg = msg + id;
-                msg += " recibió confirmacion de subscripcion. \nReason codes: [";
+                msg += " recibió confirmacion de subscripcion - reason codes: [";
 
+                let mut i = 0;
                 for code in codes {
-                    msg = msg + " - " + &ReasonCode::new(*code).to_string();
+                    if i > 0 {
+                        msg += ", ";
+                    }
+                    msg = msg + &ReasonCode::new(*code).to_string();
+                    i += 1;
                 }
                 msg += "]";
 

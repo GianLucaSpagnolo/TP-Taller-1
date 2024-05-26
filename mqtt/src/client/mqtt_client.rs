@@ -316,10 +316,7 @@ impl MqttClient {
         );
 
         let puback = receive_puback_packet(&mut self.stream)?;
-        MqttClientActions::AcknowledgePublish(
-            self.config.general.id.clone(),
-            puback.properties.reason_string.unwrap_or("".to_string()),
-        )
+        MqttClientActions::AcknowledgePublish(self.config.general.id.clone(), puback.properties.puback_reason_code)
         .log_action(
             &self.config.general.id,
             &logger,

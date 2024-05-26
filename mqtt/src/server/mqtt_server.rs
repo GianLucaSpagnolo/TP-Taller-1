@@ -434,12 +434,9 @@ impl MqttServer {
         &mut self,
         publish: Publish,
     ) -> Result<PubackProperties, Error> {
-        let return_string = "Respuesta del mensaje enviado".to_string();
-
         let puback_properties = PubackProperties {
             packet_id: publish.properties.packet_identifier,
             puback_reason_code: ReasonCode::Success.get_id(),
-            reason_string: Some(return_string),
             ..Default::default()
         };
 
