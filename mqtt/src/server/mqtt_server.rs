@@ -10,10 +10,13 @@ use crate::config::{mqtt_config::Config, server_config::ServerConfig};
 use crate::control_packets::mqtt_connack::connack::*;
 use crate::control_packets::mqtt_connack::connack_properties::ConnackProperties;
 use crate::control_packets::mqtt_connect::connect::*;
+use crate::control_packets::mqtt_disconnect::disconnect::Disconnect;
+use crate::control_packets::mqtt_disconnect::disconnect_properties::DisconnectProperties;
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 use crate::control_packets::mqtt_packet::reason_codes::ReasonCode;
+use crate::control_packets::mqtt_pingresp::pingresp::PingResp;
 use crate::control_packets::mqtt_puback::puback::Puback;
 use crate::control_packets::mqtt_puback::puback_properties::PubackProperties;
 use crate::control_packets::mqtt_publish::publish::Publish;
@@ -21,6 +24,9 @@ use crate::control_packets::mqtt_suback::suback::Suback;
 use crate::control_packets::mqtt_suback::suback_properties::SubackProperties;
 use crate::control_packets::mqtt_subscribe::subscribe::Subscribe;
 use crate::control_packets::mqtt_subscribe::subscribe_properties::TopicFilter;
+use crate::control_packets::mqtt_unsuback::unsuback::Unsuback;
+use crate::control_packets::mqtt_unsuback::unsuback_properties::UnsubackProperties;
+use crate::control_packets::mqtt_unsubscribe::unsubscribe::Unsubscribe;
 use crate::logger::actions::MqttActions;
 use crate::logger::server_actions::MqttServerActions;
 
@@ -129,24 +135,19 @@ impl MqttServer {
 
         thread::spawn(move || -> Result<(), Error> {
             loop {
+                let logger_handler = match create_logger(&log_path) {
+                    Ok(log) => log,
+                    Err(e) => return Err(e),
+                };
                 match self.process_messages(Arc::clone(&receiver)) {
                     Ok(a) => {
-                        let logger_handler = match create_logger(&log_path) {
-                            Ok(log) => log,
-                            Err(e) => return Err(e),
-                        };
                         a.log_action(
                             &self.config.general.id,
                             &logger_handler,
                             &self.config.general.log_in_term,
                         );
-                        logger_handler.close_logger();
                     }
                     Err(e) => {
-                        let logger_handler = match create_logger(&log_path) {
-                            Ok(log) => log,
-                            Err(e) => return Err(e),
-                        };
                         logger_handler.log_event(
                             &("Error al procesar el mensaje: ".to_string() + &e.to_string()),
                             &self.config.general.id,
@@ -155,6 +156,7 @@ impl MqttServer {
                         return Err(e);
                     }
                 };
+                logger_handler.close_logger();
             }
         });
 
@@ -181,22 +183,38 @@ impl MqttServer {
         &mut self,
         receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>,
     ) -> Result<MqttServerActions, Error> {
-        let (pack, stream) = receiver.lock().unwrap().recv().unwrap();
-
-        match pack {
+        let (pack, mut stream) = receiver.lock().unwrap().recv().unwrap();
+        let logger = create_logger(&self.config.general.log_path)?;
+        let result = match pack {
             PacketReceived::Connect(connect_pack) => {
                 self.stablish_connection(stream, *connect_pack)
             }
-            PacketReceived::Disconnect(_pack) => self.disconnect(),
+            PacketReceived::Disconnect(disconnect_pack) => {
+                Self::receive_disconnect(stream, *disconnect_pack)
+            }
             PacketReceived::Publish(pub_packet) => {
                 self.resend_publish_to_subscribers(stream, *pub_packet)
             }
             PacketReceived::Subscribe(sub_packet) => self.add_subscriptions(stream, *sub_packet),
+            PacketReceived::Unsubscribe(unsub_packet) => {
+                self.remove_subscriptions(stream, *unsub_packet)
+            }
+            PacketReceived::PingReq(_) => {
+                MqttServerActions::ReceivePingReq.log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                );
+                PingResp.send(&mut stream)?;
+                Ok(MqttServerActions::SendPingResp)
+            }
             _ => Err(Error::new(
                 std::io::ErrorKind::Other,
                 "Server - Paquete recibido no es válido",
             )),
-        }
+        };
+        logger.close_logger();
+        result
     }
 
     fn resend_publish_to_subscribers(
@@ -309,9 +327,74 @@ impl MqttServer {
         Ok(MqttServerActions::SendSuback(client_id.clone()))
     }
 
-    fn disconnect(&mut self) -> Result<MqttServerActions, Error> {
-        // Cerrar la conexion
-        Ok(MqttServerActions::DisconnectClient)
+    fn get_unsub_id_and_topics(topics: &mut Vec<String>) -> Result<String, Error> {
+        let mut client_id = None;
+
+        for t in topics {
+            let topic_split = t.split('/').map(|s| s.to_string()).collect::<Vec<String>>();
+
+            if let Some(id) = client_id.clone() {
+                if id != topic_split[0] {
+                    return Err(Error::new(
+                        std::io::ErrorKind::Other,
+                        "Server - Cliente de los topics no coinciden",
+                    ));
+                }
+            } else {
+                client_id = Some(topic_split[0].clone());
+            }
+
+            *t = topic_split[1..].join("/");
+        }
+
+        if let Some(id) = client_id.clone() {
+            Ok(id)
+        } else {
+            Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - referencia al cliente no encontrada",
+            ))
+        }
+    }
+
+    fn remove_subscriptions(
+        &mut self,
+        mut stream: TcpStream,
+        mut unsub_packet: Unsubscribe,
+    ) -> Result<MqttServerActions, Error> {
+        let client_id =
+            MqttServer::get_unsub_id_and_topics(&mut unsub_packet.properties.topic_filters)?;
+
+        let logger = create_logger(&self.config.general.log_path)?;
+
+        if let Some(session) = self.sessions.get_mut(&client_id) {
+            session.subscriptions.retain(|t| {
+                !unsub_packet
+                    .properties
+                    .topic_filters
+                    .iter()
+                    .any(|u| u == &t.topic_filter)
+            });
+        } else {
+            return Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - Cliente no encontrado",
+            ));
+        }
+        MqttServerActions::ReceiveUnsubscribe(
+            client_id.clone(),
+            unsub_packet.properties.topic_filters.clone(),
+        )
+        .log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+
+        let unsuback = Unsuback::new(self.determinate_unsubscribe_acknowledge(unsub_packet)?);
+        unsuback.send(&mut stream)?;
+
+        Ok(MqttServerActions::SendUnsuback(client_id.clone()))
     }
 
     fn stablish_connection(
@@ -376,12 +459,9 @@ impl MqttServer {
         &mut self,
         publish: Publish,
     ) -> Result<PubackProperties, Error> {
-        let return_string = "Respuesta del mensaje enviado".to_string();
-
         let puback_properties = PubackProperties {
             packet_id: publish.properties.packet_identifier,
             puback_reason_code: ReasonCode::Success.get_id(),
-            reason_string: Some(return_string),
             ..Default::default()
         };
 
@@ -402,6 +482,19 @@ impl MqttServer {
         };
 
         Ok(suback_properties)
+    }
+
+    fn determinate_unsubscribe_acknowledge(
+        &mut self,
+        unsubscribe: Unsubscribe,
+    ) -> Result<UnsubackProperties, Error> {
+        let unsuback_properties = UnsubackProperties {
+            packet_identifier: unsubscribe.properties.packet_identifier,
+            reason_codes: vec![ReasonCode::Success.get_id()],
+            ..Default::default()
+        };
+
+        Ok(unsuback_properties)
     }
 
     fn open_new_session(&mut self, connect: Connect, stream_connection: TcpStream) -> u8 {
@@ -451,6 +544,52 @@ impl MqttServer {
             return ReasonCode::ClientIdentifierNotValid.get_id();
         }
         ReasonCode::Success.get_id()
+    }
+
+    fn receive_disconnect(
+        stream_connection: TcpStream,
+        packet: Disconnect,
+    ) -> Result<MqttServerActions, Error> {
+        // search session and disconnect ?
+        stream_connection.shutdown(std::net::Shutdown::Both)?;
+        Ok(MqttServerActions::ReceiveDisconnect(ReasonCode::new(
+            packet.properties.disconnect_reason_code,
+        )))
+    }
+
+    fn send_disconnect(
+        stream_connection: &mut TcpStream,
+        reason_code: ReasonCode,
+    ) -> Result<MqttServerActions, Error> {
+        let disconnect = Disconnect::new(DisconnectProperties {
+            disconnect_reason_code: reason_code.get_id(),
+            ..Default::default()
+        });
+        disconnect.send(stream_connection)?;
+        Ok(MqttServerActions::SendDisconnect(reason_code))
+    }
+}
+
+impl Drop for MqttServer {
+    fn drop(&mut self) {
+        let logger = create_logger(&self.config.general.log_path).unwrap();
+        for (_, session) in self.sessions.iter_mut() {
+            match Self::send_disconnect(&mut session.stream_connection, ReasonCode::Success) {
+                Ok(a) => a.log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                ),
+                Err(e) => eprintln!("Error al enviar el paquete de desconexión: {}", e),
+            };
+            let _ = session.disconnect();
+        }
+        MqttServerActions::CloseServer.log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+        logger.close_logger();
     }
 }
 

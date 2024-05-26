@@ -100,3 +100,9 @@ impl PacketProperties for UnsubscribeProperties {
         })
     }
 }
+
+impl UnsubscribeProperties {
+    pub fn add_topic_filter(&mut self, topic_filter: String) {
+        self.topic_filters.push(topic_filter);
+    }
+}
