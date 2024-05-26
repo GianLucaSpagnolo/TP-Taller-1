@@ -22,9 +22,6 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
                         String::from_utf8(msg.data).unwrap()
                     );
                 }
-                "dron" => {
-                    // cambiar estado
-                }
                 _ => {}
             }
         }
@@ -107,7 +104,7 @@ fn main() -> Result<(), Error> {
 
     match listener.handler.join().unwrap(){
         Ok(_) => {},
-        Err(_) => return Ok(()),
+        Err(_) => return Ok(())
     }
     process_message_handler.join().unwrap();
 

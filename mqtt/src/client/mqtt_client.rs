@@ -165,7 +165,7 @@ impl MqttClient {
             Ok(r) => r,
             Err(e) => {
                 logger.log_event(
-                    &("Error al leer el header: ".to_string() + &e.to_string()),
+                    &(ReasonCode::MalformedPacket.to_string()),
                     &self.config.general.id,
                 );
                 logger.close_logger();
