@@ -12,6 +12,7 @@ nohash-hasher = "0.2.0"
 parking_lot = "0.12.3"
 eframe = "0.27.2"
 walkers = "0.22.0"
+egui_extras = "0.27.2"
 
 mqtt = { path = "../mqtt" }
 
