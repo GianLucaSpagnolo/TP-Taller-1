@@ -47,11 +47,7 @@ fn main() -> Result<(), Error> {
     let range_alert = 0.1;
     let range_alert_between_cameras = 10.0;
 
-    let cam_system = CamsSystem::init(
-        10,
-        range_alert,
-        range_alert_between_cameras,
-    );
+    let cam_system = CamsSystem::init(10, range_alert, range_alert_between_cameras);
 
     show_start(&cam_system);
 
@@ -61,22 +57,19 @@ fn main() -> Result<(), Error> {
 
     let mut client = MqttClient::init(config)?;
 
-    client.publish(
-        cam_system.system.as_bytes(),
-        "camaras".to_string(),
-    )?;
+    client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
     client.subscribe(vec!["inc"])?;
-    
+
     let cams_system_ref = Arc::new(Mutex::new(cam_system));
     let cam_system_clone = cams_system_ref.clone();
-    
+
     let mut client_clone = client.clone();
     let handle = thread::spawn(move || {
         process_standard_input(&mut client_clone, cam_system_clone);
     });
-    
+
     let listener = client.run_listener(log_path)?;
-    
+
     let process_message_handler: JoinHandle<()> =
         process_messages(&mut client, listener.receiver, cams_system_ref)?;
 

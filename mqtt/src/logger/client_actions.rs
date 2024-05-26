@@ -22,6 +22,7 @@ pub enum MqttClientActions {
     SendPinreq,
     AcknowledgePublish(String, u8),
     AcknowledgeSubscribe(String, Vec<u8>),
+    AcknowledgeUnsubscribe(String, Vec<u8>),
 }
 
 impl fmt::Display for MqttClientActions {
@@ -96,23 +97,38 @@ impl fmt::Display for MqttClientActions {
                 )
             }
             MqttClientActions::AcknowledgeSubscribe(id, codes) => {
-                let mut msg = "SUBACK - Cliente ".to_string();
+                let mut msg = "SUBACK - Cliente '".to_string();
                 msg = msg + id;
-                msg += " recibió confirmacion de subscripcion - reason codes: [";
+                msg += "' recibió confirmacion de subscripcion - reason codes: [";
 
-                let mut i = 0;
-                for code in codes {
+                for (i, code) in codes.iter().enumerate() {
                     if i > 0 {
                         msg += ", ";
                     }
                     msg = msg + &ReasonCode::new(*code).to_string();
-                    i += 1;
                 }
                 msg += "]";
 
                 write!(f, "{}", msg)
             }
-            MqttClientActions::ReceivePinresp => write!(f, "PINGRESP - Cliente recibió respuesta de ping"),
+            MqttClientActions::AcknowledgeUnsubscribe(id, codes) => {
+                let mut msg = "UNSUBACK - Cliente '".to_string();
+                msg = msg + id;
+                msg += "' recibió confirmacion de desubscripcion - reason codes: [";
+
+                for (i, code) in codes.iter().enumerate() {
+                    if i > 0 {
+                        msg += ", ";
+                    }
+                    msg = msg + &ReasonCode::new(*code).to_string();
+                }
+                msg += "]";
+
+                write!(f, "{}", msg)
+            }
+            MqttClientActions::ReceivePinresp => {
+                write!(f, "PINGRESP - Cliente recibió respuesta de ping")
+            }
             MqttClientActions::SendPinreq => write!(f, "PINGREQ - Cliente envió ping"),
         }
     }

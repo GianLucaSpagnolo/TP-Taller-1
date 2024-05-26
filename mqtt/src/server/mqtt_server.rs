@@ -184,7 +184,7 @@ impl MqttServer {
         receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>,
     ) -> Result<MqttServerActions, Error> {
         let (pack, mut stream) = receiver.lock().unwrap().recv().unwrap();
-        let logger  = create_logger(&self.config.general.log_path)?;
+        let logger = create_logger(&self.config.general.log_path)?;
         let result = match pack {
             PacketReceived::Connect(connect_pack) => {
                 self.stablish_connection(stream, *connect_pack)
@@ -207,7 +207,7 @@ impl MqttServer {
                 );
                 PingResp.send(&mut stream)?;
                 Ok(MqttServerActions::SendPingResp)
-            },
+            }
             _ => Err(Error::new(
                 std::io::ErrorKind::Other,
                 "Server - Paquete recibido no es válido",
@@ -292,7 +292,7 @@ impl MqttServer {
     fn add_subscriptions(
         &mut self,
         mut stream: TcpStream,
-        mut sub_packet: Subscribe
+        mut sub_packet: Subscribe,
     ) -> Result<MqttServerActions, Error> {
         let client_id =
             MqttServer::get_sub_id_and_topics(&mut sub_packet.properties.topic_filters)?;
@@ -384,7 +384,8 @@ impl MqttServer {
         MqttServerActions::ReceiveUnsubscribe(
             client_id.clone(),
             unsub_packet.properties.topic_filters.clone(),
-        ).log_action(
+        )
+        .log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
