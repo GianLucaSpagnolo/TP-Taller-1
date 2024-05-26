@@ -11,9 +11,14 @@ use crate::{
     control_packets::{
         mqtt_connack::connack::Connack,
         mqtt_connect::{connect::Connect, payload},
-        mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
+        mqtt_disconnect,
+        mqtt_packet::{
+            fixed_header::PacketFixedHeader, packet::generic_packet::*, reason_codes::ReasonCode,
+        },
+        mqtt_pingreq::pingreq::PingReq,
         mqtt_publish::{publish::Publish, publish_properties},
         mqtt_subscribe::{subscribe::Subscribe, subscribe_properties},
+        mqtt_unsubscribe::{unsubscribe::Unsubscribe, unsubscribe_properties},
     },
     logger::{actions::MqttActions, client_actions::MqttClientActions},
 };
@@ -34,17 +39,21 @@ pub struct MqttClientListener {
     pub handler: JoinHandle<Result<(), Error>>,
 }
 
-fn receive_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
+fn receive_packet(mut stream: &mut TcpStream) -> Result<PacketReceived, Error> {
     let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
 
-    let packet_recived = get_packet(
+    get_packet(
         stream,
         fixed_header.get_package_type(),
         fixed_header.remaining_length,
-    )?;
+    )
+}
+
+fn receive_connack_packet(stream: &mut TcpStream) -> Result<Connack, Error> {
+    let packet_recived = receive_packet(stream)?;
 
     match packet_recived {
-        PacketReceived::Connack(ack) => Ok(*ack),
+        PacketReceived::Connack(connack) => Ok(*connack),
         _ => Err(Error::new(
             std::io::ErrorKind::Other,
             "ClientReceive - Paquete desconocido",
@@ -132,8 +141,6 @@ impl MqttClient {
     }
 
     pub fn run_listener(&mut self, log_path: String) -> Result<MqttClientListener, Error> {
-        let mut counter = 0;
-
         let client = self.clone();
 
         let (sender, receiver) = mpsc::channel();
@@ -145,32 +152,17 @@ impl MqttClient {
                     sender.clone(),
                     &log_path.to_string(),
                 ) {
-                    Ok(_) => {
-                        counter = 0;
-                    }
-                    Err(_) => {
-                        if let Some(expiry_interval) =
-                            client.config.connect_properties.session_expiry_interval
-                        {
-                            MqttClient::session_timer(&mut counter, expiry_interval)?;
-                        }
+                    Ok(_) => {}
+                    Err(e) => {
+                        // Disconnect
+                        // Handle session expity interval
+                        return Err(e);
                     }
                 };
             }
         });
 
         Ok(MqttClientListener { receiver, handler })
-    }
-
-    fn session_timer(counter: &mut u32, expiry_interval: u32) -> Result<(), Error> {
-        thread::sleep(std::time::Duration::from_millis(1000));
-        *counter += 1;
-        //println!("Counter: {}", *counter);
-        if expiry_interval != 0 && *counter > expiry_interval {
-            //disconnect
-            return Err(Error::new(std::io::ErrorKind::Other, "Session expired"));
-        }
-        Ok(())
     }
 
     pub fn listen_message(
@@ -185,7 +177,7 @@ impl MqttClient {
             Ok(r) => r,
             Err(e) => {
                 logger.log_event(
-                    &("Error al leer el header: ".to_string() + &e.to_string()),
+                    &(ReasonCode::MalformedPacket.to_string()),
                     &self.config.general.id,
                 );
                 logger.close_logger();
@@ -193,8 +185,15 @@ impl MqttClient {
             }
         };
 
-        let data = match self.messages_handler(&mut stream, header, log_path) {
-            Ok(dat) => dat,
+        let msg = match self.messages_handler(&mut stream, header, log_path) {
+            Ok(res) => {
+                if let Some(res) = res {
+                    res
+                } else {
+                    logger.close_logger();
+                    return Ok(());
+                }
+            }
             Err(e) => {
                 logger.log_event(
                     &("Error al manejar el mensaje: ".to_string() + &e.to_string()),
@@ -205,10 +204,10 @@ impl MqttClient {
             }
         };
 
-        match sender.send(data) {
+        match sender.send(msg) {
             Ok(_) => (),
             Err(e) => {
-                let msg = "Error al enviar mensaje al servidor: ".to_string() + &e.to_string();
+                let msg = "Error al recibir mensaje del servidor: ".to_string() + &e.to_string();
                 logger.log_event(&msg, &self.config.general.id);
                 logger.close_logger();
                 return Err(Error::new(std::io::ErrorKind::Other, msg));
@@ -225,7 +224,7 @@ impl MqttClient {
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
         log_path: &String,
-    ) -> Result<MqttClientMessage, Error> {
+    ) -> Result<Option<MqttClientMessage>, Error> {
         let logger = create_logger(log_path)?;
 
         let packet_recived = get_packet(
@@ -240,12 +239,72 @@ impl MqttClient {
             PacketReceived::Publish(publish) => {
                 topic = publish.properties.topic_name.clone();
                 data = publish.properties.application_message.clone();
-                println!("Client id: {}", self.config.general.id);
                 MqttClientActions::ReceivePublish(topic.clone()).log_action(
                     &self.config.general.id,
                     &logger,
                     &self.config.general.log_in_term,
                 );
+            }
+            PacketReceived::Puback(puback) => {
+                MqttClientActions::AcknowledgePublish(
+                    self.config.general.id.clone(),
+                    puback.properties.puback_reason_code,
+                )
+                .log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                );
+                logger.close_logger();
+                return Ok(None);
+            }
+            PacketReceived::Suback(suback) => {
+                MqttClientActions::AcknowledgeSubscribe(
+                    self.config.general.id.clone(),
+                    suback.properties.reason_codes,
+                )
+                .log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                );
+                logger.close_logger();
+                return Ok(None);
+            }
+            PacketReceived::Unsuback(unsuback) => {
+                MqttClientActions::AcknowledgeUnsubscribe(
+                    self.config.general.id.clone(),
+                    unsuback.properties.reason_codes,
+                )
+                .log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                );
+                logger.close_logger();
+                return Ok(None);
+            }
+            PacketReceived::PingResp(_) => {
+                MqttClientActions::ReceivePinresp.log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                );
+                logger.close_logger();
+                return Ok(None);
+            }
+            PacketReceived::Disconnect(disconnect) => {
+                let reason_code = disconnect.properties.disconnect_reason_code;
+                MqttClientActions::ReceiveDisconnect(ReasonCode::new(reason_code)).log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                );
+                logger.close_logger();
+                return Err(Error::new(
+                    std::io::ErrorKind::Other,
+                    "Cliente desconectado por el servidor",
+                ));
             }
             _ => {
                 logger.log_event(
@@ -258,7 +317,7 @@ impl MqttClient {
         }
 
         logger.close_logger();
-        Ok(MqttClientMessage { topic, data })
+        Ok(Some(MqttClientMessage { topic, data }))
     }
 
     pub fn publish(&mut self, message: Vec<u8>, topic: String) -> Result<(), Error> {
@@ -274,32 +333,24 @@ impl MqttClient {
         };
 
         Publish::new(
-            self.config.publish_dup_flag,
-            self.config.publish_qos,
-            self.config.publish_retain,
+            self.config.pub_dup_flag,
+            self.config.pub_qos,
+            self.config.pub_retain,
             properties,
         )
         .send(&mut self.stream)?;
-
-        //recibir puback o reenviar publish
 
         MqttClientActions::SendPublish(topic).log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
         );
+
         logger.close_logger();
         Ok(())
     }
 
-    pub fn subscribe(
-        &mut self,
-        topics: Vec<&str>,
-        max_qos: u8,
-        no_local_option: bool,
-        retain_as_published: bool,
-        retain_handling: u8,
-    ) -> Result<(), Error> {
+    pub fn subscribe(&mut self, topics: Vec<&str>) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
 
         let mut properties = subscribe_properties::SubscribeProperties {
@@ -311,10 +362,10 @@ impl MqttClient {
             let topic_filter = [self.config.general.id.clone(), topic.to_string()].join("/");
             properties.add_topic_filter(
                 topic_filter,
-                max_qos,
-                no_local_option,
-                retain_as_published,
-                retain_handling,
+                self.config.sub_max_qos,
+                self.config.sub_no_local,
+                self.config.sub_retain_as_published,
+                self.config.sub_retain_handling,
             );
         });
 
@@ -322,9 +373,35 @@ impl MqttClient {
 
         Subscribe::new(properties).send(&mut self.stream)?;
 
-        //recibir suback o reenviar subscribe
-
         MqttClientActions::SendSubscribe(prop_topics).log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+
+        logger.close_logger();
+        Ok(())
+    }
+
+    pub fn unsubscribe(&mut self, topics: Vec<&str>, packet_id: u16) -> Result<(), Error> {
+        let logger = create_logger(&self.config.general.log_path)?;
+
+        let mut properties = unsubscribe_properties::UnsubscribeProperties {
+            packet_identifier: packet_id,
+            ..Default::default()
+        };
+
+        topics.iter().for_each(|topic| {
+            properties.add_topic_filter(
+                [self.config.general.id.to_string(), topic.to_string()].join("/"),
+            );
+        });
+
+        let prop_topics = properties.topic_filters.clone();
+
+        Unsubscribe::new(properties).send(&mut self.stream)?;
+
+        MqttClientActions::SendUnsubscribe(prop_topics).log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
@@ -333,16 +410,49 @@ impl MqttClient {
         Ok(())
     }
 
-    pub fn unsubscribe() {
-        todo!()
+    pub fn disconnect(&mut self, reason_code: ReasonCode) -> Result<(), Error> {
+        let logger = create_logger(&self.config.general.log_path)?;
+
+        if !reason_code.is_valid_disconnect_code_from_client() {
+            let msg = "Código de desconexión inválido".to_string();
+            logger.log_event(&msg, &self.config.general.id);
+            logger.close_logger();
+            return Err(Error::new(std::io::ErrorKind::Other, msg));
+        }
+
+        let properties = mqtt_disconnect::disconnect_properties::DisconnectProperties {
+            disconnect_reason_code: reason_code.get_id(),
+            session_expiry_interval: None,
+            reason_string: None,
+            user_property: None,
+            server_reference: None,
+        };
+
+        mqtt_disconnect::disconnect::Disconnect::new(properties).send(&mut self.stream)?;
+
+        MqttClientActions::SendDisconnect(
+            self.config.get_socket_address().to_string(),
+            reason_code,
+        )
+        .log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+        logger.close_logger();
+        Ok(())
     }
 
-    pub fn disconnect() {
-        todo!()
-    }
-
-    pub fn pin_request() {
-        todo!()
+    pub fn pin_request(&mut self) -> Result<(), Error> {
+        let logger = create_logger(&self.config.general.log_path)?;
+        PingReq.send(&mut self.stream)?;
+        MqttClientActions::SendPinreq.log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+        logger.close_logger();
+        Ok(())
     }
 }
 

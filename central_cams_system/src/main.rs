@@ -22,19 +22,20 @@ pub fn process_messages(
 ) -> Result<JoinHandle<()>, Error> {
     let mut client = client.clone();
     let handler = thread::spawn(move || loop {
-        let message_received = receiver.recv().unwrap();
-        if message_received.topic.as_str() == "inc" {
-            let incident = Incident::from_be_bytes(message_received.data);
-            println!("Mensaje recibido: {:?}", incident);
-            match incident.state {
-                IncidentState::InProgess => cams_system
-                    .lock()
-                    .unwrap()
-                    .process_incident_in_progress(&mut client, incident),
-                IncidentState::Resolved => cams_system
-                    .lock()
-                    .unwrap()
-                    .process_incident_resolved(&mut client, incident),
+        for message_received in receiver.try_iter() {
+            if message_received.topic.as_str() == "inc" {
+                let incident = Incident::from_be_bytes(message_received.data);
+                println!("Mensaje recibido: {:?}", incident);
+                match incident.state {
+                    IncidentState::InProgess => cams_system
+                        .lock()
+                        .unwrap()
+                        .process_incident_in_progress(&mut client, incident),
+                    IncidentState::Resolved => cams_system
+                        .lock()
+                        .unwrap()
+                        .process_incident_resolved(&mut client, incident),
+                }
             }
         }
     });
@@ -46,13 +47,10 @@ fn main() -> Result<(), Error> {
     let config_path = "central_cams_system/config/cams_config.txt";
     let range_alert = 0.1;
     let range_alert_between_cameras = 10.0;
-    let cam_system = Arc::new(Mutex::new(CamsSystem::init(
-        10,
-        range_alert,
-        range_alert_between_cameras,
-    )));
 
-    show_start(&cam_system.lock().unwrap());
+    let cam_system = CamsSystem::init(10, range_alert, range_alert_between_cameras);
+
+    show_start(&cam_system);
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
@@ -60,12 +58,11 @@ fn main() -> Result<(), Error> {
 
     let mut client = MqttClient::init(config)?;
 
-    let cam_system_clone = Arc::clone(&cam_system);
-    client.publish(
-        cam_system_clone.lock().unwrap().system.as_bytes(),
-        "camaras".to_string(),
-    )?;
-    client.subscribe(vec!["inc"], 1, false, false, 0)?;
+    client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
+    client.subscribe(vec!["inc"])?;
+
+    let cams_system_ref = Arc::new(Mutex::new(cam_system));
+    let cam_system_clone = cams_system_ref.clone();
 
     let mut client_clone = client.clone();
     let handle = thread::spawn(move || {
@@ -75,7 +72,7 @@ fn main() -> Result<(), Error> {
     let listener = client.run_listener(log_path)?;
 
     let process_message_handler: JoinHandle<()> =
-        process_messages(&mut client, listener.receiver, cam_system)?;
+        process_messages(&mut client, listener.receiver, cams_system_ref)?;
 
     handle.join().unwrap();
     listener.handler.join().unwrap()?;

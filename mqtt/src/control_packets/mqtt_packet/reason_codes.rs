@@ -280,6 +280,60 @@ impl ReasonCode {
             _ => ReasonCode::UnspecifiedError,
         }
     }
+
+    pub fn is_valid_disconnect_code_from_server(&self) -> bool {
+        matches!(
+            *self,
+            ReasonCode::NormalDisconnection
+                | ReasonCode::UnspecifiedError
+                | ReasonCode::MalformedPacket
+                | ReasonCode::ProtocolError
+                | ReasonCode::ImplementationSpecificError
+                | ReasonCode::NotAuthorized
+                | ReasonCode::ServerBusy
+                | ReasonCode::ServerShuttingDown
+                | ReasonCode::KeepAliveTimeout
+                | ReasonCode::SessionTakenOver
+                | ReasonCode::TopicFilterInvalid
+                | ReasonCode::TopicNameInvalid
+                | ReasonCode::ReceiveMaximumExceeded
+                | ReasonCode::TopicAliasInvalid
+                | ReasonCode::PacketTooLarge
+                | ReasonCode::MessageRateTooHigh
+                | ReasonCode::QuotaExceeded
+                | ReasonCode::AdministrativeAction
+                | ReasonCode::PayloadFormatInvalid
+                | ReasonCode::RetainNotSupported
+                | ReasonCode::QoSNotSupported
+                | ReasonCode::UseAnotherServer
+                | ReasonCode::ServerMoved
+                | ReasonCode::SharedSubscriptionsNotSupported
+                | ReasonCode::ConnectionRateExceeded
+                | ReasonCode::MaximumConnectTime
+                | ReasonCode::SubscriptionIdentifiersNotSupported
+                | ReasonCode::WildcardSubscriptionsNotSupported
+        )
+    }
+
+    pub fn is_valid_disconnect_code_from_client(&self) -> bool {
+        matches!(
+            *self,
+            ReasonCode::NormalDisconnection
+                | ReasonCode::DisconnectWithWillMessage
+                | ReasonCode::UnspecifiedError
+                | ReasonCode::MalformedPacket
+                | ReasonCode::ProtocolError
+                | ReasonCode::ImplementationSpecificError
+                | ReasonCode::TopicNameInvalid
+                | ReasonCode::ReceiveMaximumExceeded
+                | ReasonCode::TopicAliasInvalid
+                | ReasonCode::PacketTooLarge
+                | ReasonCode::MessageRateTooHigh
+                | ReasonCode::QuotaExceeded
+                | ReasonCode::AdministrativeAction
+                | ReasonCode::PayloadFormatInvalid
+        )
+    }
 }
 
 impl Display for ReasonCode {

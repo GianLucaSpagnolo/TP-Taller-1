@@ -1,4 +1,7 @@
-use std::net::TcpStream;
+use std::{
+    io::Error,
+    net::{Shutdown, TcpStream},
+};
 
 use crate::control_packets::{
     mqtt_connect::connect::Connect, mqtt_packet::flags::flags_handler,
@@ -64,6 +67,11 @@ impl Session {
 
     pub fn reconnect(&mut self) {
         self.active = true;
+    }
+
+    pub fn disconnect(&mut self) -> Result<(), Error> {
+        self.active = false;
+        self.stream_connection.shutdown(Shutdown::Both)
     }
 }
 

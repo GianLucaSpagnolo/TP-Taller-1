@@ -13,3 +13,12 @@ pub trait MqttActions<Role = Self> {
         logger.log_event(&self.to_string(), id);
     }
 }
+
+pub fn add_topics_names(msg: &mut String, topic: &String, i: &mut usize) {
+    if *i == 0 {
+        *msg = msg.to_string() + topic;
+    } else {
+        *msg = msg.to_string() + " - " + topic;
+    }
+    *i += 1;
+}
