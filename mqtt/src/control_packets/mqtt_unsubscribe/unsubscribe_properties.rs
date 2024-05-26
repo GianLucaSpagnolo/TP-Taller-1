@@ -9,7 +9,6 @@ use crate::{
 };
 
 #[derive(Default)]
-#[allow(dead_code)]
 pub struct UnsubscribeProperties {
     pub packet_identifier: u16,
     pub user_property: Option<(String, String)>,

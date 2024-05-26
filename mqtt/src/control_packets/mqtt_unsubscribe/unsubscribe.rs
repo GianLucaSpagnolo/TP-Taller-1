@@ -8,44 +8,46 @@ use crate::control_packets::{
     mqtt_unsubscribe::unsubscribe_properties::UnsubscribeProperties,
 };
 
-/// ## UNSUBSCRIBE PACKET (Enviado del cliente al servidor)
+/// ## UNSUBSCRIBE PACKET
 ///
-/// ### FIXED HEADER: 2 BYTES
+/// ### FIXED HEADER
 ///
-/// Primer Byte:
-/// 4 bits mas significativos: MQTT Control Packet Type
+/// FIRST BYTE:
+/// 4 most significant bits: MQTT Control Packet type
+/// UNSUBSCRIBE: 1010
 ///
-/// Segundo Byte:
+/// 4 less significant bits: Flags
+/// 0010: Reserved
+///
+/// SECOND BYTE ONWARDS:
 /// Remaining Length
-/// El Remaining Length es el número de bytes que quedan en el paquete después del Fixed Header y
-/// contiene el Variable Header y el Payload.
+/// This is the length of Variable Header plus the length of the Payload, encoded as a Variable Byte Integer.
 ///
-/// ### VARIABLE HEADER:
+/// ### VARIABLE HEADER
+///
 /// PACKER IDENTIFIER: 2 BYTES
 ///
 /// Property lenght: Variable Byte Integer
 ///
-/// Properties: Unsubcribe
+/// #### Properties
 ///
 /// 38 - 0x26: User Property - UTF-8 String Pair
 ///
-/// ### PAYLOAD:
+/// ### PAYLOAD
 ///
-/// Contiene una lista de Topic Filters de los cuales el cliente se quiere
-/// desuscribir. El Topic Filter DEBEN ser Strings UTF-8 válidos.
+/// The UNSUBSCRIBE packet contains a list of Topic Filters. Each Topic Filter is a UTF-8 encoded string.
+/// The Topic Filters in an UNSUBSCRIBE packet MUST be UTF-8 Encoded Strings as defined in the MQTT v5.0 specification.
 ///
-/// El packet unsubscribe DEBE contener AL MENOS un Topic Filter.
-/// Un unsubscribe packet sin PAYLOAD es un Protocol Error.
+/// The UNSUBSCRIBE packet MUST contain at least one Topic Filter.
+/// A UNSUBSCRIBE packet with no Topic Filters is a Protocol Error.
 ///
+/// ### Considerations
 ///
-/// ### Consideraciones
-/// El topic filter incluido en un unsubscribe packet DEBE ser comparado caracter a
-/// caracter con el set actual de Topic Filters guardado por el Servidor
-/// para el Cliente. Si cualquier filtro matchea exactamanete con un Topic Filter que el servidor
-/// contenga, entonces esa subscripción DEBE ser eliminada. Caso contrario,
-/// no ocurre procesamiento adicional
+/// The topic filter included in an unsubscribe packet MUST be compared character by character with the current set of
+/// Topic Filters saved by the Server.
+/// If any filter matches exactly with a Topic Filter that the server contains, then that subscription MUST be removed.
+/// Otherwise, no further processing occurs. Otherwise, no further processing occurs.
 ///
-#[allow(dead_code)]
 pub struct Unsubscribe {
     pub properties: UnsubscribeProperties,
 }
@@ -81,7 +83,6 @@ impl Serialization for Unsubscribe {
 }
 
 impl Unsubscribe {
-    #[allow(dead_code)]
     pub fn new(properties: UnsubscribeProperties) -> Self {
         Unsubscribe { properties }
     }

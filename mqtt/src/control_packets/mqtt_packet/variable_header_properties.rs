@@ -23,7 +23,6 @@ impl Default for VariableHeaderProperties {
 }
 
 impl VariableHeaderProperties {
-    #[allow(dead_code)]
     pub fn get_property(&self, id: u8) -> Option<&PacketProperty> {
         self.properties.iter().find(|&property| property.id() == id)
     }

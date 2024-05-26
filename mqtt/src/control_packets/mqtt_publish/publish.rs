@@ -7,17 +7,20 @@ use crate::control_packets::mqtt_publish::publish_properties::*;
 
 /// ## PUBLISH PACKET
 ///
-/// ### FIXED HEADER: 2 BYTES
-/// Primer byte:
-/// 4 bits mas significativos: MQTT Control Packet type
-/// Bit en posicion 3: DUP Flag
-/// Bits en posicion 2-1: QoS Level
-/// Bit en posicion 0: Retain
+/// ### FIXED HEADER
+///
+/// FIRST BYTE:
+/// 4 most significant bits: MQTT Control Packet type
+/// PUBLISH: 0011
+///
+/// Bit in position 3: DUP Flag
+/// Bits in position 2-1: QoS Level
+/// Bit in position 0: Retain
 ///
 /// DUP Flag:
 /// 0 == This is the first attempt to send this PUBLISH packet
 /// 1 == This might be a re-delivery of an earlier attempt to send the packet
-/// Si QoS == 0, DUP siempre es 0
+/// If QoS == 0, DUP must be set to 0
 ///
 /// QoS Level:
 /// 00 == At most once delivery
@@ -25,49 +28,49 @@ use crate::control_packets::mqtt_publish::publish_properties::*;
 /// 10 == Exactly once delivery
 /// 11 == Reserved. Must not be used
 ///
-/// Retain: (Hay mucha interaccion con el servidor)
+/// Retain:
 /// 0 == The message is not to be retained by the Server
 /// 1 == The message is to be retained by the Server
 ///
-/// Segundo byte:
+/// SECOND BYTE ONWARDS:
 /// Remaining Length
-/// El Remaining Length es el numero de bytes que quedan en el paquete despues del Fixed Header y que contienen el Variable Header y el Payload
+/// This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 ///
-///
-/// ### VARIABLE HEADER:
+/// ### VARIABLE HEADER
 /// Length Topic Name: 2 bytes
-/// Topic Name (obligatorio): UTF-8 encoded string
-/// Packet Identifier (unicamente en paquetes con QoS 1 o 2): 2 bytes
+/// Topic Name (obligatory): UTF-8 encoded string
+/// Packet Identifier (only on packets with QoS 1 or 2): 2 bytes
 ///
 /// Property Length: Variable Byte Integer
+///
 /// PROPERTIES: Publish
-/// 1 - 0x01 - Payload Format Indicator - puede ser 0 o 1
+/// 1 - 0x01 - Payload Format Indicator - One bit
 /// 2 - 0x02 - Message Expiry Interval - 4 bytes
 /// 35 - 0x23 - Topic Alias - 2 bytes
 /// 8 - 0x08 - Response Topic - UTF-8 encoded string
 /// 9 - 0x09 - Correlation Data - Binary Data (String)
 /// 38 - 0x26 - User Property - UTF-8 String Pair
-/// 11 - 0x0B - Subscription Identifier - Variable Byte Integer (valor entre 1 y 268,435,455)
+/// 11 - 0x0B - Subscription Identifier - Variable Byte Integer (between 1 y 268,435,455)
 /// 3 - 0x03 - Content Type - UTF-8 Encoded String
 ///
+/// ### PAYLOAD
+///
 /// ### PAYLOAD:
-/// Contiene el mensaje de la aplicacion que esta siendo publicado.
-/// El contenido y el formato depende de la aplicacion
-/// Largo del Payload: Remaining Length - Variable Header Length
-/// Un packet publish puede contener un payload vacio
+/// The Application Message is the Application Message that is being published.
+/// The content and format of the Application Message are specific to the application and is not defined by this specification.
+/// The length of the Application Message can be calculated as the Remaining Length minus the length of the Variable Header.
+/// A PUBLISH packet can contain an empty payload.
 ///
+/// Considerations:
 ///
-/// Consiredaciones:
-///
-/// El receptor de un PUBLISH PACKET puede responder con:
-/// QoS 0: Nada
+/// The receiver of a PUBLISH PACKET can respond with:
+/// QoS 0: Nothing
 /// QoS 1: PUBACK
 /// QoS 2: PUBREC
 ///
-/// El PUBLISH PACKET contiene el Subscription Identifier llevado por el SUBSCRIBE PACKET
-/// Pero un PUBLISH PACKET enviado desde un cliente a un servidor no debe contener ese Subscription Identifier
+/// The PUBLISH PACKET contains the Subscription Identifier carried by the SUBSCRIBE PACKET
+/// But a PUBLISH PACKET sent from a client to a server must not contain that Subscription Identifier
 ///
-#[allow(dead_code)]
 pub struct Publish {
     pub fixed_header_flags: u8, // Fixed Header Flags
     pub properties: PublishProperties,
@@ -133,7 +136,6 @@ impl Publish {
     /// retenido. Si el bit Retain es 1, el Servidor DEBE retener el mensaje como un mensaje retenido y lo debe
     /// entregar a los suscriptores con un Topic Name que coincida cuando sea posible.
     ///
-    #[allow(dead_code)]
     pub fn new(dup_flag: u8, qos_level: u8, retain: u8, properties: PublishProperties) -> Self {
         let mut fixed_header_flags = 0;
         fixed_header_flags |= dup_flag << 3;

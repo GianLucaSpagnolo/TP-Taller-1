@@ -12,7 +12,6 @@ use crate::{
 };
 
 #[derive(Default)]
-#[allow(dead_code)]
 pub struct DisconnectProperties {
     pub disconnect_reason_code: u8,
     pub session_expiry_interval: Option<u32>,

@@ -10,21 +10,22 @@ use crate::control_packets::mqtt_unsuback::unsuback_properties::UnsubackProperti
 ///
 /// The Unsuback Packet is sent by the Server to the Client to confirm receipt and processing of an UNSUBSCRIBE Packet.
 ///
-/// ### Fixed Header
+/// ### FIXED HEADER
 ///
-/// PRIMER BYTE
-/// 4 bits mas significativos: MQTT Control Packet type
-/// 1011: UNSUBACK
+/// FIRST BYTE:
 ///
-/// 4 bits menos significativos: Flags
+/// 4 most significant bits: MQTT Control Packet type
+/// UNSUBACK: 1011
+///
+/// 4 less significant bits: Flags
 /// 0000: Reserved
 ///
-/// SEGUNDO BYTE
+/// SECOND BYTE ONWARDS:
 ///
 /// Remaining Length
 /// This is the length of Variable Header plus the length of the Payload, encoded as a Variable Byte Integer.
 ///
-/// ### Variable Header
+/// ### VARIABLE HEADER
 ///
 /// The Variable Header of the UNSUBACK packet contains the following fields in the order: Packet Identifier from
 /// the UNSUBSCRIBE packet that is being acknowledged, and Properties.
@@ -42,13 +43,12 @@ use crate::control_packets::mqtt_unsuback::unsuback_properties::UnsubackProperti
 /// ID: 38 (0x26)
 /// User Property (UTF-8 String Pair)
 ///
-/// ### Payload
+/// ### PAYLOAD
 ///
 /// The Payload of the UNSUBACK packet contains a list of Reason Codes. Each Reason Code corresponds to a Topic Filter
 /// in the UNSUBSCRIBE packet that is being acknowledged.
 /// The order of the Reason Codes in the UNSUBACK packet MUST match the order of Topic Filters in the UNSUBSCRIBE packet.
 ///
-#[allow(dead_code)]
 pub struct Unsuback {
     pub properties: UnsubackProperties,
 }
@@ -84,7 +84,6 @@ impl Serialization for Unsuback {
 }
 
 impl Unsuback {
-    #[allow(dead_code)]
     pub fn new(properties: UnsubackProperties) -> Self {
         Unsuback { properties }
     }

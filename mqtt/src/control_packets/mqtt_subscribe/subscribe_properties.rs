@@ -15,7 +15,6 @@ pub struct TopicFilter {
 }
 
 #[derive(Default)]
-#[allow(dead_code)]
 pub struct SubscribeProperties {
     pub packet_identifier: u16,
     pub subscription_identifier: Option<u32>,
@@ -155,7 +154,6 @@ impl SubscribeProperties {
     ///
     /// Bits 6 y 7 son reservados. Deben ser 0.
     ///
-    #[allow(dead_code)]
     pub fn add_topic_filter(
         &mut self,
         topic_filter: String,

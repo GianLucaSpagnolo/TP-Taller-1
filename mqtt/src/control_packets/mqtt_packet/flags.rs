@@ -7,92 +7,77 @@ pub mod flags_handler {
     }
 
     /// CONNECT FLAG: RESERVED
-    #[allow(dead_code)]
     pub fn get_connect_flag_reserved(flags: u8) -> u8 {
         apply_mask_to_n_bits(flags, 0, 1)
     }
 
     /// CONNECT FLAG: CLEAN START
-    #[allow(dead_code)]
     pub fn get_connect_flag_clean_start(flags: u8) -> u8 {
         apply_mask_to_n_bits(flags, 1, 1)
     }
 
     /// CONNECT FLAG: WILL FLAG
-    #[allow(dead_code)]
     pub fn get_connect_flag_will_flag(flags: u8) -> u8 {
         apply_mask_to_n_bits(flags, 2, 1)
     }
 
     /// CONNECT FLAG: WILL QoS
-    #[allow(dead_code)]
     pub fn get_connect_flag_will_qos(flags: u8) -> u8 {
         apply_mask_to_n_bits(flags, 3, 2)
     }
 
     /// CONNECT FLAG: WILL RETAIN
-    #[allow(dead_code)]
     pub fn get_connect_flag_will_retain(flags: u8) -> u8 {
         apply_mask_to_n_bits(flags, 5, 1)
     }
 
     /// CONNECT FLAG: PASSWORD
-    #[allow(dead_code)]
     pub fn get_connect_flag_password(flags: u8) -> u8 {
         apply_mask_to_n_bits(flags, 6, 1)
     }
 
     /// CONNECT FLAG: USERNAME
-    #[allow(dead_code)]
     pub fn get_connect_flag_username(flags: u8) -> u8 {
         apply_mask_to_n_bits(flags, 7, 1)
     }
 
     /// CONNECT FLAG: SESSION PRESENT
     /// This flag is used in the CONNACK packet to indicate if a session is already present
-    #[allow(dead_code)]
     pub fn get_connect_acknowledge_flag_session_present(flags: u8) -> u8 {
         apply_mask_to_n_bits(flags, 0, 1)
     }
 
     /// PUBLISH FLAG: DUP
-    #[allow(dead_code)]
     pub fn get_publish_dup_flag(flags: u8) -> u8 {
         apply_mask_to_n_bits(flags, 3, 1)
     }
 
     /// PUBLISH FLAG: QoS
-    #[allow(dead_code)]
     pub fn get_publish_qos_level(flags: u8) -> u8 {
         apply_mask_to_n_bits(flags, 1, 2)
     }
 
     /// PUBLISH FLAG: RETAIN
-    #[allow(dead_code)]
     pub fn get_publish_retain(flags: u8) -> u8 {
         apply_mask_to_n_bits(flags, 0, 1)
     }
 
     /// SUBSCRIBE FLAG: MAX QoS
-    #[allow(dead_code)]
     pub fn get_subscribe_max_qos(subscription_options: u8) -> u8 {
         apply_mask_to_n_bits(subscription_options, 0, 2)
     }
 
     /// SUBSCRIBE FLAG: NO LOCAL Option
-    #[allow(dead_code)]
     pub fn get_subscribe_no_local_option(subscription_options: u8) -> u8 {
         apply_mask_to_n_bits(subscription_options, 2, 1)
     }
 
     /// SUBSCRIBE FLAG: RETAIN AS PUBLISHED
-    #[allow(dead_code)]
     pub fn get_subscribe_retain_as_published(subscription_options: u8) -> u8 {
         apply_mask_to_n_bits(subscription_options, 3, 1)
     }
 
     /// SUBSCRIBE FLAG: RETAIN HANDLING
-    #[allow(dead_code)]
     pub fn get_subscribe_retain_handling(subscription_options: u8) -> u8 {
         apply_mask_to_n_bits(subscription_options, 4, 2)
     }

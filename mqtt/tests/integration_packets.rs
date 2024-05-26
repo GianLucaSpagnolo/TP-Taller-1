@@ -4,9 +4,7 @@ mod test {
         mqtt_auth::{auth::Auth, auth_properties::AuthProperties},
         mqtt_connack::{connack::Connack, connack_properties::ConnackProperties},
         mqtt_connect::{
-            connect::Connect,
-            connect_properties::ConnectProperties,
-            payload::ConnectPayload,
+            connect::Connect, connect_properties::ConnectProperties, payload::ConnectPayload,
         },
         mqtt_disconnect::{disconnect::Disconnect, disconnect_properties::DisconnectProperties},
         mqtt_packet::{
@@ -22,15 +20,9 @@ mod test {
         mqtt_pingreq::pingreq::PingReq,
         mqtt_pingresp::pingresp::PingResp,
         mqtt_puback::{puback::Puback, puback_properties::PubackProperties},
-        mqtt_publish::{
-            publish::Publish,
-            publish_properties::PublishProperties,
-        },
+        mqtt_publish::{publish::Publish, publish_properties::PublishProperties},
         mqtt_suback::{suback::Suback, suback_properties::SubackProperties},
-        mqtt_subscribe::{
-            subscribe::Subscribe,
-            subscribe_properties::SubscribeProperties,
-        },
+        mqtt_subscribe::{subscribe::Subscribe, subscribe_properties::SubscribeProperties},
         mqtt_unsuback::{unsuback::Unsuback, unsuback_properties::UnsubackProperties},
         mqtt_unsubscribe::{
             unsubscribe::Unsubscribe, unsubscribe_properties::UnsubscribeProperties,

@@ -8,25 +8,26 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 
 /// ## PUBACK PACKET
 ///
-/// The PUBACK packet is the response to a PUBLISH packet with QoS level 1. A PUBACK packet is sent by the server to the client to confirm receipt and processing of a PUBLISH packet.
+/// The PUBACK packet is the response to a PUBLISH packet with QoS level 1. A PUBACK packet is sent by the server to the
+/// client to confirm receipt and processing of a PUBLISH packet.
 ///
-/// ### Fixed Header
+/// ### FIXED HEADER
+///
 /// The Fixed Header of the PUBACK packet contains the following fields in the order: Control Packet Type, Remaining Length.
 ///
-/// PRIMER BYTE
-/// 4 bits mas significativos: MQTT Control Packet type
-/// 0100: PUBACK
+/// FIRST BYTE:
+/// 4 most significant bits: MQTT Control Packet type
+/// PUBACK: 0100
 ///
-/// 4 bits menos significativos: Flags
+/// 4 less significant bits: Flags
 /// 0000: Reserved
 ///
-/// 01000000 PUBACK 64
-///
-/// SEGUNDO BYTE
+/// SECOND BYTE ONWARDS:
 /// Remaining Length
 /// This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 ///
-/// ### Variable Header
+/// ### VARIABLE HEADER
+///
 /// The Variable Header of the PUBACK packet contains the following fields in the order: Packet Identifier, PUBACK Reason Code, and Properties.
 ///
 /// #### Packet Identifier
@@ -65,7 +66,6 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 /// BYTE n: User Property (UTF-8 string pair)
 /// ...
 ///
-#[allow(dead_code)]
 pub struct Puback {
     pub properties: PubackProperties,
 }
@@ -99,7 +99,6 @@ impl Serialization for Puback {
 }
 
 impl Puback {
-    #[allow(dead_code)]
     pub fn new(properties: PubackProperties) -> Self {
         Puback { properties }
     }
@@ -126,7 +125,6 @@ mod test {
         // LEE EL PACKET DEL BUFFER
         let mut buf = buf.as_slice();
         let puback_fixed_header = PacketFixedHeader::read_from(&mut buf).unwrap();
-        //let puback_fixed_header = PacketFixedHeader::read_from_buffer(&mut buf).unwrap();
 
         let puback = Puback::read_from(&mut buf, puback_fixed_header.remaining_length).unwrap();
 

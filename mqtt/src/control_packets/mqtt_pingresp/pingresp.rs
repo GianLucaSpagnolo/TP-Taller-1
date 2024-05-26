@@ -5,7 +5,24 @@ use crate::control_packets::mqtt_packet::{
     packet::generic_packet::{PacketReceived, Serialization},
 };
 
-#[allow(dead_code)]
+/// ## PINGRESP PACKET
+///
+/// The PINGRESP Packet is sent by the Server to the Client in response to a PINGREQ Packet.
+/// It indicates that the Server is alive.
+///
+/// ### FIXED HEADER
+///
+/// FIRST BYTE:
+/// 4 most significant bits: MQTT Control Packet type
+/// PINGRESP: 1101
+///
+/// 4 less significant bits: Flags
+/// 0000: Reserved
+///
+/// SECOND BYTE ONWARDS:
+/// Remaining Length
+/// This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
+///
 pub struct PingResp;
 
 impl Serialization for PingResp {

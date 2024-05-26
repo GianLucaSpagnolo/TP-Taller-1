@@ -9,7 +9,6 @@ use crate::{
 };
 
 #[derive(Default)]
-#[allow(dead_code)]
 pub struct UnsubackProperties {
     pub packet_identifier: u16,
     pub reason_string: Option<String>,

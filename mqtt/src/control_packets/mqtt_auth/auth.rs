@@ -6,7 +6,25 @@ use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 
 use super::auth_properties::AuthProperties;
 
-#[allow(dead_code)]
+/// ## AUTH PACKET
+///
+/// An AUTH packet is sent from Client to Server or Server to Client as part of an extended authentication
+/// exchange, such as challenge / response authentication. It is a Protocol Error for the Client or Server
+/// to send an AUTH packet if the CONNECT packet did not contain the same Authentication Method.
+///
+/// ### FIXED HEADER
+///
+/// FIRST BYTE:
+/// 4 most significant bits: MQTT Control Packet type
+/// AUTH: 1111
+///
+/// 4 less significant bits: Flags
+/// 0000: Reserved
+///
+/// SECOND BYTE ONWARDS:
+/// Remaining Length
+/// This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
+///
 pub struct Auth {
     pub properties: AuthProperties,
 }
@@ -41,15 +59,6 @@ impl Serialization for Auth {
 }
 
 impl Auth {
-    /// ## AUTH PACKET
-    ///
-    /// El primer byte del Variable Header del paquete AUTH es el Authenticate Reason Code.
-    /// El reason code debe ser uno de los siguientes:
-    /// - 0x00: Success
-    /// - 0x18: Continue Authentication
-    /// - 0x19: Re-authenticate
-    ///
-    #[allow(dead_code)]
     pub fn new(properties: AuthProperties) -> Auth {
         Auth { properties }
     }

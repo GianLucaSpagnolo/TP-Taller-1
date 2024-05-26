@@ -135,7 +135,6 @@ use std::fmt::Display;
 /// #### 162 - 0xA2 - Wildcard subscriptions not supported
 /// The Server does not support Wildcard Subscriptions; the subscription is not accepted.
 ///
-#[allow(dead_code)]
 pub enum ReasonCode {
     Success,
     NormalDisconnection,

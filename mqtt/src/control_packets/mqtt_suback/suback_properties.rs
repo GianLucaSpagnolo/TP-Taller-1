@@ -7,7 +7,6 @@ use crate::control_packets::mqtt_packet::{
 };
 
 #[derive(Default)]
-#[allow(dead_code)]
 pub struct SubackProperties {
     pub packet_identifier: u16,
     pub reason_string: Option<String>,
