@@ -8,8 +8,10 @@ use super::actions::MqttActions;
 pub enum MqttServerActions {
     Connection(String),
     ReceivePublish(String),
+    SendPuback(String),
     SendPublish(String, Vec<String>),
-    SubscribeReceive(String, Vec<TopicFilter>),
+    ReceiveSubscribe(String, Vec<TopicFilter>),
+    SendSuback(String),
     DisconnectClient,
 }
 
@@ -27,6 +29,13 @@ impl fmt::Display for MqttServerActions {
                     topic
                 )
             }
+            MqttServerActions::SendPuback(id) => {
+                write!(
+                    f,
+                    "PUBACK - Servidor envió confirmación de publicacion del topico '{}'",
+                    id
+                )
+            }
             MqttServerActions::SendPublish(topic, receivers) => {
                 write!(
                     f,
@@ -34,7 +43,7 @@ impl fmt::Display for MqttServerActions {
                     topic, receivers
                 )
             }
-            MqttServerActions::SubscribeReceive(id, topics) => {
+            MqttServerActions::ReceiveSubscribe(id, topics) => {
                 let mut msg = "SUBSCRIBE - Servidor recibió una subscripción del cliente '"
                     .to_string()
                     + id
@@ -45,6 +54,13 @@ impl fmt::Display for MqttServerActions {
                 }
 
                 write!(f, "{}", msg)
+            }
+            MqttServerActions::SendSuback(id) => {
+                write!(
+                    f,
+                    "SUBACK - Servidor envió confirmación de suscripcion al cliente '{}'",
+                    id
+                )
             }
             MqttServerActions::DisconnectClient => write!(f, "Desconectando cliente"),
         }

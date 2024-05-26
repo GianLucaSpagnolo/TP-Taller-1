@@ -14,7 +14,11 @@ use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 use crate::control_packets::mqtt_packet::reason_codes::ReasonCode;
+use crate::control_packets::mqtt_puback::puback::Puback;
+use crate::control_packets::mqtt_puback::puback_properties::PubackProperties;
 use crate::control_packets::mqtt_publish::publish::Publish;
+use crate::control_packets::mqtt_suback::suback::Suback;
+use crate::control_packets::mqtt_suback::suback_properties::SubackProperties;
 use crate::control_packets::mqtt_subscribe::subscribe::Subscribe;
 use crate::control_packets::mqtt_subscribe::subscribe_properties::TopicFilter;
 use crate::logger::actions::MqttActions;
@@ -196,8 +200,8 @@ impl MqttServer {
     }
 
     fn resend_publish_to_subscribers(
-        &self,
-        _stream_connection: TcpStream,
+        &mut self,
+        mut stream: TcpStream,
         pub_packet: Publish,
     ) -> Result<MqttServerActions, Error> {
         let topic = pub_packet.properties.topic_name.clone();
@@ -219,9 +223,18 @@ impl MqttServer {
                     receivers.push(id.clone());
                 }
             });
-        // send puback to stream
+
+        MqttServerActions::SendPublish(topic.clone(), receivers).log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+
+        let puback = Puback::new(self.determinate_publish_acknowledge(pub_packet)?);
+        puback.send(&mut stream)?;
+
         logger.close_logger();
-        Ok(MqttServerActions::SendPublish(topic.clone(), receivers))
+        Ok(MqttServerActions::SendPuback(topic.clone()))
     }
 
     fn get_sub_id_and_topics(topics: &mut Vec<TopicFilter>) -> Result<String, Error> {
@@ -260,11 +273,13 @@ impl MqttServer {
 
     fn add_subscriptions(
         &mut self,
-        _stream_connection: TcpStream,
+        mut stream: TcpStream,
         mut sub_packet: Subscribe,
     ) -> Result<MqttServerActions, Error> {
         let client_id =
             MqttServer::get_sub_id_and_topics(&mut sub_packet.properties.topic_filters)?;
+
+        let logger = create_logger(&self.config.general.log_path)?;
 
         if let Some(session) = self.sessions.get_mut(&client_id) {
             session
@@ -276,11 +291,22 @@ impl MqttServer {
                 "Server - Cliente no encontrado",
             ));
         }
-        // send suback to stream
-        Ok(MqttServerActions::SubscribeReceive(
+
+        MqttServerActions::ReceiveSubscribe(
             client_id.clone(),
-            sub_packet.properties.topic_filters,
-        ))
+            sub_packet.properties.topic_filters.clone(),
+        )
+        .log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+
+        let suback = Suback::new(self.determinate_subscribe_acknowledge(sub_packet)?);
+        suback.send(&mut stream)?;
+
+        logger.close_logger();
+        Ok(MqttServerActions::SendSuback(client_id.clone()))
     }
 
     fn disconnect(&mut self) -> Result<MqttServerActions, Error> {
@@ -295,12 +321,12 @@ impl MqttServer {
     ) -> Result<MqttServerActions, Error> {
         let client = connect.payload.client_id.clone();
         let connack_properties: ConnackProperties =
-            self.determinate_acknowledge(connect, stream.try_clone()?)?;
+            self.determinate_connect_acknowledge(connect, stream.try_clone()?)?;
         Connack::new(connack_properties).send(&mut stream)?;
         Ok(MqttServerActions::Connection(client))
     }
 
-    fn determinate_acknowledge(
+    fn determinate_connect_acknowledge(
         &mut self,
         connect: Connect,
         stream_connection: TcpStream,
@@ -344,6 +370,38 @@ impl MqttServer {
             self.open_new_session(connect, stream_connection);
 
         Ok(connack_properties)
+    }
+
+    fn determinate_publish_acknowledge(
+        &mut self,
+        publish: Publish,
+    ) -> Result<PubackProperties, Error> {
+        let return_string = "Respuesta del mensaje enviado".to_string();
+
+        let puback_properties = PubackProperties {
+            packet_id: publish.properties.packet_identifier,
+            puback_reason_code: ReasonCode::Success.get_id(),
+            reason_string: Some(return_string),
+            ..Default::default()
+        };
+
+        Ok(puback_properties)
+    }
+
+    fn determinate_subscribe_acknowledge(
+        &mut self,
+        subscribe: Subscribe,
+    ) -> Result<SubackProperties, Error> {
+        let suback_properties = SubackProperties {
+            packet_identifier: subscribe.properties.packet_identifier,
+            reason_codes: vec![
+                ReasonCode::Success.get_id(),
+                ReasonCode::NotAuthorized.get_id(),
+            ],
+            ..Default::default()
+        };
+
+        Ok(suback_properties)
     }
 
     fn open_new_session(&mut self, connect: Connect, stream_connection: TcpStream) -> u8 {
