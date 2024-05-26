@@ -16,6 +16,7 @@ use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
 use crate::control_packets::mqtt_packet::reason_codes::ReasonCode;
+use crate::control_packets::mqtt_pingresp::pingresp::PingResp;
 use crate::control_packets::mqtt_puback::puback::Puback;
 use crate::control_packets::mqtt_puback::puback_properties::PubackProperties;
 use crate::control_packets::mqtt_publish::publish::Publish;
@@ -23,6 +24,8 @@ use crate::control_packets::mqtt_suback::suback::Suback;
 use crate::control_packets::mqtt_suback::suback_properties::SubackProperties;
 use crate::control_packets::mqtt_subscribe::subscribe::Subscribe;
 use crate::control_packets::mqtt_subscribe::subscribe_properties::TopicFilter;
+use crate::control_packets::mqtt_unsuback::unsuback::Unsuback;
+use crate::control_packets::mqtt_unsuback::unsuback_properties::UnsubackProperties;
 use crate::control_packets::mqtt_unsubscribe::unsubscribe::Unsubscribe;
 use crate::logger::actions::MqttActions;
 use crate::logger::server_actions::MqttServerActions;
@@ -180,9 +183,9 @@ impl MqttServer {
         &mut self,
         receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>,
     ) -> Result<MqttServerActions, Error> {
-        let (pack, stream) = receiver.lock().unwrap().recv().unwrap();
-
-        match pack {
+        let (pack, mut stream) = receiver.lock().unwrap().recv().unwrap();
+        let logger  = create_logger(&self.config.general.log_path)?;
+        let result = match pack {
             PacketReceived::Connect(connect_pack) => {
                 self.stablish_connection(stream, *connect_pack)
             }
@@ -196,11 +199,22 @@ impl MqttServer {
             PacketReceived::Unsubscribe(unsub_packet) => {
                 self.remove_subscriptions(stream, *unsub_packet)
             }
+            PacketReceived::PingReq(_) => {
+                MqttServerActions::ReceivePingReq.log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                );
+                PingResp.send(&mut stream)?;
+                Ok(MqttServerActions::SendPingResp)
+            },
             _ => Err(Error::new(
                 std::io::ErrorKind::Other,
                 "Server - Paquete recibido no es válido",
             )),
-        }
+        };
+        logger.close_logger();
+        result
     }
 
     fn resend_publish_to_subscribers(
@@ -278,7 +292,7 @@ impl MqttServer {
     fn add_subscriptions(
         &mut self,
         mut stream: TcpStream,
-        mut sub_packet: Subscribe,
+        mut sub_packet: Subscribe
     ) -> Result<MqttServerActions, Error> {
         let client_id =
             MqttServer::get_sub_id_and_topics(&mut sub_packet.properties.topic_filters)?;
@@ -345,11 +359,13 @@ impl MqttServer {
 
     fn remove_subscriptions(
         &mut self,
-        _stream_connection: TcpStream,
+        mut stream: TcpStream,
         mut unsub_packet: Unsubscribe,
     ) -> Result<MqttServerActions, Error> {
         let client_id =
             MqttServer::get_unsub_id_and_topics(&mut unsub_packet.properties.topic_filters)?;
+
+        let logger = create_logger(&self.config.general.log_path)?;
 
         if let Some(session) = self.sessions.get_mut(&client_id) {
             session.subscriptions.retain(|t| {
@@ -365,11 +381,19 @@ impl MqttServer {
                 "Server - Cliente no encontrado",
             ));
         }
-        // send unsuback to stream
-        Ok(MqttServerActions::ReceiveUnsubscribe(
+        MqttServerActions::ReceiveUnsubscribe(
             client_id.clone(),
-            unsub_packet.properties.topic_filters,
-        ))
+            unsub_packet.properties.topic_filters.clone(),
+        ).log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+
+        let unsuback = Unsuback::new(self.determinate_unsubscribe_acknowledge(unsub_packet)?);
+        unsuback.send(&mut stream)?;
+
+        Ok(MqttServerActions::SendUnsuback(client_id.clone()))
     }
 
     fn stablish_connection(
@@ -457,6 +481,19 @@ impl MqttServer {
         };
 
         Ok(suback_properties)
+    }
+
+    fn determinate_unsubscribe_acknowledge(
+        &mut self,
+        unsubscribe: Unsubscribe,
+    ) -> Result<UnsubackProperties, Error> {
+        let unsuback_properties = UnsubackProperties {
+            packet_identifier: unsubscribe.properties.packet_identifier,
+            reason_codes: vec![ReasonCode::Success.get_id()],
+            ..Default::default()
+        };
+
+        Ok(unsuback_properties)
     }
 
     fn open_new_session(&mut self, connect: Connect, stream_connection: TcpStream) -> u8 {

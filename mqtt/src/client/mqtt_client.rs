@@ -1,25 +1,14 @@
 use std::{
-    io::Error,
-    net::TcpStream,
-    sync::mpsc::{self, Receiver, Sender},
-    thread::{self, JoinHandle},
+    io::Error, net::TcpStream, sync::mpsc::{self, Receiver, Sender}, thread::{self, JoinHandle}
 };
 
 use crate::{
     common::utils::create_logger,
     config::{client_config::ClientConfig, mqtt_config::Config},
     control_packets::{
-        mqtt_connack::connack::Connack,
-        mqtt_connect::{connect::Connect, payload},
-        mqtt_disconnect,
-        mqtt_packet::{
+        mqtt_connack::connack::Connack, mqtt_connect::{connect::Connect, payload}, mqtt_disconnect, mqtt_packet::{
             fixed_header::PacketFixedHeader, packet::generic_packet::*, reason_codes::ReasonCode,
-        },
-        mqtt_puback::puback::Puback,
-        mqtt_publish::{publish::Publish, publish_properties},
-        mqtt_suback::suback::Suback,
-        mqtt_subscribe::{subscribe::Subscribe, subscribe_properties},
-        mqtt_unsubscribe::{unsubscribe::Unsubscribe, unsubscribe_properties},
+        }, mqtt_pingreq::pingreq::PingReq, mqtt_puback::puback::Puback, mqtt_publish::{publish::Publish, publish_properties}, mqtt_suback::suback::Suback, mqtt_subscribe::{subscribe::Subscribe, subscribe_properties}, mqtt_unsubscribe::{unsubscribe::Unsubscribe, unsubscribe_properties}
     },
     logger::{actions::MqttActions, client_actions::MqttClientActions},
 };
@@ -209,8 +198,13 @@ impl MqttClient {
             }
         };
 
-        let data = match self.messages_handler(&mut stream, header, log_path) {
-            Ok(dat) => dat,
+        let msg = match self.messages_handler(&mut stream, header, log_path) {
+            Ok(res) => if let Some(res) = res {
+                res
+            } else {
+                logger.close_logger();
+                return Ok(());
+            },  
             Err(e) => {
                 logger.log_event(
                     &("Error al manejar el mensaje: ".to_string() + &e.to_string()),
@@ -221,7 +215,7 @@ impl MqttClient {
             }
         };
 
-        match sender.send(data) {
+        match sender.send(msg) {
             Ok(_) => (),
             Err(e) => {
                 let msg = "Error al recibir mensaje del servidor: ".to_string() + &e.to_string();
@@ -241,7 +235,7 @@ impl MqttClient {
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
         log_path: &String,
-    ) -> Result<MqttClientMessage, Error> {
+    ) -> Result<Option<MqttClientMessage>, Error> {
         let logger = create_logger(log_path)?;
 
         let packet_recived = get_packet(
@@ -261,6 +255,15 @@ impl MqttClient {
                     &logger,
                     &self.config.general.log_in_term,
                 );
+            }
+            PacketReceived::PingResp(_) => {
+                MqttClientActions::ReceivePinresp.log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                );
+                logger.close_logger();
+                return Ok(None);
             }
             PacketReceived::Disconnect(disconnect) => {
                 let reason_code = disconnect.properties.disconnect_reason_code;
@@ -286,7 +289,7 @@ impl MqttClient {
         }
 
         logger.close_logger();
-        Ok(MqttClientMessage { topic, data })
+        Ok(Some(MqttClientMessage { topic, data }))
     }
 
     pub fn publish(&mut self, message: Vec<u8>, topic: String) -> Result<(), Error> {
@@ -433,8 +436,16 @@ impl MqttClient {
         Ok(())
     }
 
-    pub fn pin_request() {
-        todo!()
+    pub fn pin_request(&mut self) -> Result<(), Error>{
+        let logger = create_logger(&self.config.general.log_path)?;
+        PingReq.send(&mut self.stream)?;
+        MqttClientActions::SendPinreq.log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+        logger.close_logger();
+        Ok(())
     }
 }
 

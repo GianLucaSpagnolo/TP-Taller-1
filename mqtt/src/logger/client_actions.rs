@@ -13,12 +13,14 @@ pub enum MqttClientActions {
     Connection(String, u8),
     ReceivePublish(String),
     ReceiveDisconnect(ReasonCode),
+    ReceivePinresp,
     SendConnect(String),
     SendPublish(String),
-    AcknowledgePublish(String, u8),
     SendSubscribe(Vec<TopicFilter>),
     SendUnsubscribe(Vec<String>),
     SendDisconnect(String, ReasonCode),
+    SendPinreq,
+    AcknowledgePublish(String, u8),
     AcknowledgeSubscribe(String, Vec<u8>),
 }
 
@@ -110,6 +112,8 @@ impl fmt::Display for MqttClientActions {
 
                 write!(f, "{}", msg)
             }
+            MqttClientActions::ReceivePinresp => write!(f, "PINGRESP - Cliente recibió respuesta de ping"),
+            MqttClientActions::SendPinreq => write!(f, "PINGREQ - Cliente envió ping"),
         }
     }
 }

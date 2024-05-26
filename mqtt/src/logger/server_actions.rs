@@ -11,14 +11,17 @@ use super::actions::MqttActions;
 
 pub enum MqttServerActions {
     Connection(String),
-    SendPuback(String),
-    SendPublish(String, Vec<String>),
     SendDisconnect(ReasonCode),
+    SendPublish(String, Vec<String>),
+    SendPuback(String),
+    SendUnsuback(String),
     SendSuback(String),
+    SendPingResp,
     ReceivePublish(String),
     ReceiveSubscribe(String, Vec<TopicFilter>),
     ReceiveUnsubscribe(String, Vec<String>),
     ReceiveDisconnect(ReasonCode),
+    ReceivePingReq,
     CloseServer,
 }
 
@@ -40,6 +43,13 @@ impl fmt::Display for MqttServerActions {
                 write!(
                     f,
                     "PUBACK - Servidor envió confirmación de publicacion del topico '{}'",
+                    id
+                )
+            }
+            MqttServerActions::SendUnsuback(id) => {
+                write!(
+                    f,
+                    "UNSUBACK - Servidor envió confirmación de desubscripción del cliente '{}'",
                     id
                 )
             }
@@ -89,6 +99,8 @@ impl fmt::Display for MqttServerActions {
                 reason_code
             ),
             MqttServerActions::CloseServer => write!(f, "SHUTDOWN - Servidor apagandose"),
+            MqttServerActions::SendPingResp => write!(f, "PINGRESP - Servidor envió respuesta de ping"),
+            MqttServerActions::ReceivePingReq => write!(f, "PINGREQ - Servidor recibió ping"),
             MqttServerActions::SendSuback(id) => {
                 write!(
                     f,
