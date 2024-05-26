@@ -21,7 +21,7 @@ pub mod config {
     pub mod server_config;
 }
 
-mod control_packets {
+pub mod control_packets {
     pub mod mqtt_packet {
         pub mod fixed_header;
         pub mod flags;

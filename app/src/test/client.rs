@@ -8,24 +8,26 @@ use std::{
 use mqtt::{
     client::mqtt_client::{MqttClient, MqttClientMessage},
     config::{client_config::ClientConfig, mqtt_config::Config},
+    control_packets::mqtt_packet::reason_codes::ReasonCode,
 };
+
 
 fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<()>, Error> {
     let handler = thread::spawn(move || loop {
-        let message_received = receiver.recv().unwrap();
-        match message_received.topic.as_str() {
-            "cams" => {
-                println!(
-                    "Mensaje recibido y procesado del topic 'cams': {}",
-                    String::from_utf8(message_received.data).unwrap()
-                );
+        for msg in receiver.try_iter() {
+            match msg.topic.as_str() {
+                "cams" => {
+                    println!(
+                        "Mensaje recibido y procesado del topic 'cams': {}",
+                        String::from_utf8(msg.data).unwrap()
+                    );
+                }
+                "dron" => {
+                    // cambiar estado
+                }
+                _ => {}
             }
-            "dron" => {
-                // cambiar estado
-            }
-            _ => {}
         }
-        // leer el mensaje recibido y cambiar estados según corresponda
     });
 
     Ok(handler)
@@ -34,9 +36,11 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
 fn sub_client(client: &mut MqttClient) -> Result<(), Error> {
     client.subscribe(vec!["cams"])?;
 
-    thread::sleep(std::time::Duration::from_secs(3));
+    thread::sleep(std::time::Duration::from_secs(5));
 
-    client.unsubscribe(vec!["cams"], 1)?;
+    client.disconnect(ReasonCode::NormalDisconnection)?;
+
+    //client.unsubscribe(vec!["cams"], 1)?;
 
     //client.publish("mensaje del cliente".to_string(), "cams".to_string())?;
 
@@ -49,7 +53,7 @@ fn pub_client(client: &mut MqttClient) -> Result<(), Error> {
         "cams".to_string(),
     )?;
 
-    thread::sleep(std::time::Duration::from_secs(3));
+    thread::sleep(std::time::Duration::from_secs(10));
 
     client.publish(
         "2do mensaje del cliente".to_string().as_bytes().to_vec(),
@@ -101,7 +105,10 @@ fn main() -> Result<(), Error> {
         _ => {}
     }
 
-    listener.handler.join().unwrap()?;
+    match listener.handler.join().unwrap(){
+        Ok(_) => {},
+        Err(_) => return Ok(()),
+    }
     process_message_handler.join().unwrap();
 
     Ok(())

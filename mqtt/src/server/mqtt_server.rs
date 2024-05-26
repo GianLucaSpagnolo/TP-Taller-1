@@ -10,6 +10,8 @@ use crate::config::{mqtt_config::Config, server_config::ServerConfig};
 use crate::control_packets::mqtt_connack::connack::*;
 use crate::control_packets::mqtt_connack::connack_properties::ConnackProperties;
 use crate::control_packets::mqtt_connect::connect::*;
+use crate::control_packets::mqtt_disconnect::disconnect::Disconnect;
+use crate::control_packets::mqtt_disconnect::disconnect_properties::DisconnectProperties;
 use crate::control_packets::mqtt_packet::fixed_header::PacketFixedHeader;
 use crate::control_packets::mqtt_packet::flags::flags_handler;
 use crate::control_packets::mqtt_packet::packet::generic_packet::*;
@@ -126,24 +128,19 @@ impl MqttServer {
 
         thread::spawn(move || -> Result<(), Error> {
             loop {
+                let logger_handler = match create_logger(&log_path) {
+                    Ok(log) => log,
+                    Err(e) => return Err(e),
+                };
                 match self.process_messages(Arc::clone(&receiver)) {
                     Ok(a) => {
-                        let logger_handler = match create_logger(&log_path) {
-                            Ok(log) => log,
-                            Err(e) => return Err(e),
-                        };
                         a.log_action(
                             &self.config.general.id,
                             &logger_handler,
                             &self.config.general.log_in_term,
                         );
-                        logger_handler.close_logger();
                     }
                     Err(e) => {
-                        let logger_handler = match create_logger(&log_path) {
-                            Ok(log) => log,
-                            Err(e) => return Err(e),
-                        };
                         logger_handler.log_event(
                             &("Error al procesar el mensaje: ".to_string() + &e.to_string()),
                             &self.config.general.id,
@@ -152,6 +149,7 @@ impl MqttServer {
                         return Err(e);
                     }
                 };
+                logger_handler.close_logger();
             }
         });
 
@@ -179,12 +177,14 @@ impl MqttServer {
         receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>,
     ) -> Result<MqttServerActions, Error> {
         let (pack, stream) = receiver.lock().unwrap().recv().unwrap();
-
+        
         match pack {
             PacketReceived::Connect(connect_pack) => {
                 self.stablish_connection(stream, *connect_pack)
             }
-            PacketReceived::Disconnect(_pack) => self.disconnect(),
+            PacketReceived::Disconnect(disconnect_pack) => {
+                Self::receive_disconnect(stream, *disconnect_pack)
+            }
             PacketReceived::Publish(pub_packet) => {
                 self.resend_publish_to_subscribers(stream, *pub_packet)
             }
@@ -281,7 +281,7 @@ impl MqttServer {
             ));
         }
         // send suback to stream
-        Ok(MqttServerActions::SubscribeReceive(
+        Ok(MqttServerActions::SubscribeReceived(
             client_id.clone(),
             sub_packet.properties.topic_filters,
         ))
@@ -340,15 +340,10 @@ impl MqttServer {
             ));
         }
         // send unsuback to stream
-        Ok(MqttServerActions::UnsubscribeReceive(
+        Ok(MqttServerActions::UnsubscribeReceived(
             client_id.clone(),
             unsub_packet.properties.topic_filters,
         ))
-    }
-
-    fn disconnect(&mut self) -> Result<MqttServerActions, Error> {
-        // Cerrar la conexion
-        Ok(MqttServerActions::DisconnectClient)
     }
 
     fn stablish_connection(
@@ -456,6 +451,52 @@ impl MqttServer {
             return ReasonCode::ClientIdentifierNotValid.get_id();
         }
         ReasonCode::Success.get_id()
+    }
+
+    fn receive_disconnect(
+        stream_connection: TcpStream,
+        packet: Disconnect,
+    ) -> Result<MqttServerActions, Error> {
+        // search session and disconnect ?
+        stream_connection.shutdown(std::net::Shutdown::Both)?;
+        Ok(MqttServerActions::DisconnectReceived(ReasonCode::new(
+            packet.properties.disconnect_reason_code,
+        )))
+    }
+
+    fn send_disconnect(
+        mut stream_connection: &mut TcpStream,
+        reason_code: ReasonCode,
+    ) -> Result<MqttServerActions, Error> {
+        let disconnect = Disconnect::new(DisconnectProperties {
+            disconnect_reason_code: reason_code.get_id(),
+            ..Default::default()
+        });
+        disconnect.send(&mut stream_connection)?;
+        Ok(MqttServerActions::SendDisconnect(reason_code))
+    }
+}
+
+impl Drop for MqttServer {
+    fn drop(&mut self) {
+        let logger = create_logger(&self.config.general.log_path).unwrap();
+        for (_, session) in self.sessions.iter_mut() {
+            match Self::send_disconnect(&mut session.stream_connection, ReasonCode::Success) {
+                Ok(a) => a.log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                ),
+                Err(e) => eprintln!("Error al enviar el paquete de desconexión: {}", e),
+            };
+            let _ = session.disconnect();
+        }
+        MqttServerActions::CloseServer.log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+        logger.close_logger();
     }
 }
 

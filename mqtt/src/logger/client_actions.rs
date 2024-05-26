@@ -9,14 +9,15 @@ use crate::{
 
 use super::actions::MqttActions;
 
-#[derive(Debug)]
 pub enum MqttClientActions {
     Connection(String, u8),
     ReceivePublish(String),
+    ReceiveDisconnect(ReasonCode),
     SendConnect(String),
     SendPublish(String),
     SendSubscribe(Vec<TopicFilter>),
     SendUnsubscribe(Vec<String>),
+    SendDisconnect(String, ReasonCode),
 }
 
 impl fmt::Display for MqttClientActions {
@@ -67,6 +68,20 @@ impl fmt::Display for MqttClientActions {
                 msg += " ] ";
 
                 write!(f, "UNSUBSCRIBE - {}", msg)
+            }
+            MqttClientActions::SendDisconnect(addrs, reason_code) => {
+                write!(
+                    f,
+                    "DISCONNECT - Cliente se desconectó de '{}' por: {}",
+                    addrs, reason_code
+                )
+            }
+            MqttClientActions::ReceiveDisconnect(reason_code) => {
+                write!(
+                    f,
+                    "DISCONNECT - Server desconectó al Cliente por: {}",
+                    reason_code
+                )
             }
         }
     }

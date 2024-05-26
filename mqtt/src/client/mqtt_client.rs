@@ -11,7 +11,10 @@ use crate::{
     control_packets::{
         mqtt_connack::connack::Connack,
         mqtt_connect::{connect::Connect, payload},
-        mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
+        mqtt_disconnect,
+        mqtt_packet::{
+            fixed_header::PacketFixedHeader, packet::generic_packet::*, reason_codes::ReasonCode,
+        },
         mqtt_publish::{publish::Publish, publish_properties},
         mqtt_subscribe::{subscribe::Subscribe, subscribe_properties},
         mqtt_unsubscribe::{unsubscribe::Unsubscribe, unsubscribe_properties},
@@ -217,12 +220,24 @@ impl MqttClient {
             PacketReceived::Publish(publish) => {
                 topic = publish.properties.topic_name.clone();
                 data = publish.properties.application_message.clone();
-                println!("Client id: {}", self.config.general.id);
                 MqttClientActions::ReceivePublish(topic.clone()).log_action(
                     &self.config.general.id,
                     &logger,
                     &self.config.general.log_in_term,
                 );
+            }
+            PacketReceived::Disconnect(disconnect) => {
+                let reason_code = disconnect.properties.disconnect_reason_code;
+                MqttClientActions::ReceiveDisconnect(ReasonCode::new(reason_code)).log_action(
+                    &self.config.general.id,
+                    &logger,
+                    &self.config.general.log_in_term,
+                );
+                logger.close_logger();
+                return Err(Error::new(
+                    std::io::ErrorKind::Other,
+                    "Cliente desconectado por el servidor",
+                ));
             }
             _ => {
                 logger.log_event(
@@ -332,8 +347,37 @@ impl MqttClient {
         Ok(())
     }
 
-    pub fn disconnect() {
-        todo!()
+    pub fn disconnect(&mut self, reason_code: ReasonCode) -> Result<(), Error> {
+        let logger = create_logger(&self.config.general.log_path)?;
+
+        if !reason_code.is_valid_disconnect_code_from_client() {
+            let msg = "Código de desconexión inválido".to_string();
+            logger.log_event(&msg, &self.config.general.id);
+            logger.close_logger();
+            return Err(Error::new(std::io::ErrorKind::Other, msg));
+        }
+
+        let properties = mqtt_disconnect::disconnect_properties::DisconnectProperties {
+            disconnect_reason_code: reason_code.get_id(),
+            session_expiry_interval: None,
+            reason_string: None,
+            user_property: None,
+            server_reference: None,
+        };
+
+        mqtt_disconnect::disconnect::Disconnect::new(properties).send(&mut self.stream)?;
+
+        MqttClientActions::SendDisconnect(
+            self.config.get_socket_address().to_string(),
+            reason_code,
+        )
+        .log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+        logger.close_logger();
+        Ok(())
     }
 
     pub fn pin_request() {
