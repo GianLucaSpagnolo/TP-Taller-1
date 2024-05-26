@@ -17,7 +17,7 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
             "cams" => {
                 println!(
                     "Mensaje recibido y procesado del topic 'cams': {}",
-                    message_received.data
+                    String::from_utf8(message_received.data).unwrap()
                 );
             }
             "dron" => {
@@ -31,6 +31,34 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
     Ok(handler)
 }
 
+fn sub_client(client: &mut MqttClient) -> Result<(), Error> {
+    client.subscribe(vec!["cams"])?;
+
+    thread::sleep(std::time::Duration::from_secs(3));
+
+    client.unsubscribe(vec!["cams"], 1)?;
+
+    //client.publish("mensaje del cliente".to_string(), "cams".to_string())?;
+
+    Ok(())
+}
+
+fn pub_client(client: &mut MqttClient) -> Result<(), Error> {
+    client.publish(
+        "mensaje del cliente".as_bytes().to_vec(),
+        "cams".to_string(),
+    )?;
+
+    thread::sleep(std::time::Duration::from_secs(3));
+
+    client.publish(
+        "2do mensaje del cliente".to_string().as_bytes().to_vec(),
+        "cams".to_string(),
+    )?;
+
+    Ok(())
+}
+
 fn main() -> Result<(), Error> {
     let args: Vec<String> = env::args().collect();
 
@@ -41,7 +69,22 @@ fn main() -> Result<(), Error> {
         ));
     }
 
-    let config_path = &args[1];
+    let binding = args[1].parse::<u8>();
+    let config_type = match &binding {
+        Ok(p) => p,
+        Err(e) => return Err(Error::new(std::io::ErrorKind::InvalidInput, e.to_string())),
+    };
+
+    let config_path = match config_type {
+        1 => "app/config/aux/client_sub.txt",
+        2 => "app/config/aux/client_pub.txt",
+        _ => {
+            return Err(Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Tipo de configuracion invalida",
+            ))
+        }
+    };
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
@@ -52,9 +95,11 @@ fn main() -> Result<(), Error> {
 
     let process_message_handler = process_messages(listener.receiver)?;
 
-    client.subscribe(vec!["cams", "dron"], 1, false, false, 0)?;
-
-    //client.publish("mensaje del cliente".to_string(), "cams".to_string())?;
+    match config_type {
+        1 => sub_client(&mut client)?,
+        2 => pub_client(&mut client)?,
+        _ => {}
+    }
 
     listener.handler.join().unwrap()?;
     process_message_handler.join().unwrap();

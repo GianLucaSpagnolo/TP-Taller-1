@@ -41,7 +41,7 @@ fn main() -> Result<(), Error> {
 
     let listener = client.run_listener(log_path)?;
 
-    client.subscribe(vec!["camaras"], 1, false, false, 0)?;
+    client.subscribe(vec!["camaras"])?;
 
     let process_message_handler = process_messages(listener.receiver)?;
 

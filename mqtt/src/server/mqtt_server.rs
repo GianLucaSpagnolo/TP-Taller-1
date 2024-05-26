@@ -17,6 +17,7 @@ use crate::control_packets::mqtt_packet::reason_codes::ReasonCode;
 use crate::control_packets::mqtt_publish::publish::Publish;
 use crate::control_packets::mqtt_subscribe::subscribe::Subscribe;
 use crate::control_packets::mqtt_subscribe::subscribe_properties::TopicFilter;
+use crate::control_packets::mqtt_unsubscribe::unsubscribe::Unsubscribe;
 use crate::logger::actions::MqttActions;
 use crate::logger::server_actions::MqttServerActions;
 
@@ -188,6 +189,9 @@ impl MqttServer {
                 self.resend_publish_to_subscribers(stream, *pub_packet)
             }
             PacketReceived::Subscribe(sub_packet) => self.add_subscriptions(stream, *sub_packet),
+            PacketReceived::Unsubscribe(unsub_packet) => {
+                self.remove_subscriptions(stream, *unsub_packet)
+            }
             _ => Err(Error::new(
                 std::io::ErrorKind::Other,
                 "Server - Paquete recibido no es válido",
@@ -280,6 +284,65 @@ impl MqttServer {
         Ok(MqttServerActions::SubscribeReceive(
             client_id.clone(),
             sub_packet.properties.topic_filters,
+        ))
+    }
+
+    fn get_unsub_id_and_topics(topics: &mut Vec<String>) -> Result<String, Error> {
+        let mut client_id = None;
+
+        for t in topics {
+            let topic_split = t.split('/').map(|s| s.to_string()).collect::<Vec<String>>();
+
+            if let Some(id) = client_id.clone() {
+                if id != topic_split[0] {
+                    return Err(Error::new(
+                        std::io::ErrorKind::Other,
+                        "Server - Cliente de los topics no coinciden",
+                    ));
+                }
+            } else {
+                client_id = Some(topic_split[0].clone());
+            }
+
+            *t = topic_split[1..].join("/");
+        }
+
+        if let Some(id) = client_id.clone() {
+            Ok(id)
+        } else {
+            Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - referencia al cliente no encontrada",
+            ))
+        }
+    }
+
+    fn remove_subscriptions(
+        &mut self,
+        _stream_connection: TcpStream,
+        mut unsub_packet: Unsubscribe,
+    ) -> Result<MqttServerActions, Error> {
+        let client_id =
+            MqttServer::get_unsub_id_and_topics(&mut unsub_packet.properties.topic_filters)?;
+
+        if let Some(session) = self.sessions.get_mut(&client_id) {
+            session.subscriptions.retain(|t| {
+                !unsub_packet
+                    .properties
+                    .topic_filters
+                    .iter()
+                    .any(|u| u == &t.topic_filter)
+            });
+        } else {
+            return Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - Cliente no encontrado",
+            ));
+        }
+        // send unsuback to stream
+        Ok(MqttServerActions::UnsubscribeReceive(
+            client_id.clone(),
+            unsub_packet.properties.topic_filters,
         ))
     }
 

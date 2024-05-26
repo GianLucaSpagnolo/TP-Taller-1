@@ -14,6 +14,7 @@ use crate::{
         mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
         mqtt_publish::{publish::Publish, publish_properties},
         mqtt_subscribe::{subscribe::Subscribe, subscribe_properties},
+        mqtt_unsubscribe::{unsubscribe::Unsubscribe, unsubscribe_properties},
     },
     logger::{actions::MqttActions, client_actions::MqttClientActions},
 };
@@ -132,7 +133,6 @@ impl MqttClient {
     }
 
     pub fn run_listener(&mut self, log_path: String) -> Result<MqttClientListener, Error> {
-
         let client = self.clone();
 
         let (sender, receiver) = mpsc::channel();
@@ -251,9 +251,9 @@ impl MqttClient {
         };
 
         Publish::new(
-            self.config.publish_dup_flag,
-            self.config.publish_qos,
-            self.config.publish_retain,
+            self.config.pub_dup_flag,
+            self.config.pub_qos,
+            self.config.pub_retain,
             properties,
         )
         .send(&mut self.stream)?;
@@ -269,14 +269,7 @@ impl MqttClient {
         Ok(())
     }
 
-    pub fn subscribe(
-        &mut self,
-        topics: Vec<&str>,
-        max_qos: u8,
-        no_local_option: bool,
-        retain_as_published: bool,
-        retain_handling: u8,
-    ) -> Result<(), Error> {
+    pub fn subscribe(&mut self, topics: Vec<&str>) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
 
         let mut properties = subscribe_properties::SubscribeProperties {
@@ -288,10 +281,10 @@ impl MqttClient {
             let topic_filter = [self.config.general.id.clone(), topic.to_string()].join("/");
             properties.add_topic_filter(
                 topic_filter,
-                max_qos,
-                no_local_option,
-                retain_as_published,
-                retain_handling,
+                self.config.sub_max_qos,
+                self.config.sub_no_local,
+                self.config.sub_retain_as_published,
+                self.config.sub_retain_handling,
             );
         });
 
@@ -310,8 +303,33 @@ impl MqttClient {
         Ok(())
     }
 
-    pub fn unsubscribe() {
-        todo!()
+    pub fn unsubscribe(&mut self, topics: Vec<&str>, packet_id: u16) -> Result<(), Error> {
+        let logger = create_logger(&self.config.general.log_path)?;
+
+        let mut properties = unsubscribe_properties::UnsubscribeProperties {
+            packet_identifier: packet_id,
+            ..Default::default()
+        };
+
+        topics.iter().for_each(|topic| {
+            properties.add_topic_filter(
+                [self.config.general.id.to_string(), topic.to_string()].join("/"),
+            );
+        });
+
+        let prop_topics = properties.topic_filters.clone();
+
+        Unsubscribe::new(properties).send(&mut self.stream)?;
+
+        //recibir unsuback o reenviar unsubscribe
+
+        MqttClientActions::SendUnsubscribe(prop_topics).log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+        logger.close_logger();
+        Ok(())
     }
 
     pub fn disconnect() {

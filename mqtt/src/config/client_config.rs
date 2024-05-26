@@ -9,9 +9,13 @@ use super::mqtt_config::{Config, MqttConfig};
 pub struct ClientConfig {
     pub general: MqttConfig,
     pub connect_properties: ConnectProperties,
-    pub publish_dup_flag: u8,
-    pub publish_qos: u8,
-    pub publish_retain: u8,
+    pub pub_dup_flag: u8,
+    pub pub_qos: u8,
+    pub pub_retain: u8,
+    pub sub_max_qos: u8,
+    pub sub_no_local: bool,
+    pub sub_retain_as_published: bool,
+    pub sub_retain_handling: u8,
 }
 
 impl Clone for ClientConfig {
@@ -19,9 +23,13 @@ impl Clone for ClientConfig {
         ClientConfig {
             general: self.general.clone(),
             connect_properties: self.connect_properties.clone(),
-            publish_dup_flag: self.publish_dup_flag,
-            publish_qos: self.publish_qos,
-            publish_retain: self.publish_retain,
+            pub_dup_flag: self.pub_dup_flag,
+            pub_qos: self.pub_qos,
+            pub_retain: self.pub_retain,
+            sub_max_qos: self.sub_max_qos,
+            sub_no_local: self.sub_no_local,
+            sub_retain_as_published: self.sub_retain_as_published,
+            sub_retain_handling: self.sub_retain_handling,
         }
     }
 }
@@ -37,9 +45,13 @@ impl Config for ClientConfig {
 
         // Corroborar que le pasen los campos obligatorios
         let mut connect_properties = ConnectProperties::default();
-        let mut publish_dup_flag = 0;
-        let mut publish_qos = 0;
-        let mut publish_retain = 0;
+        let mut pub_dup_flag = 0;
+        let mut pub_qos = 0;
+        let mut pub_retain = 0;
+        let mut sub_max_qos = 0;
+        let mut sub_no_local = false;
+        let mut sub_retain_as_published = false;
+        let mut sub_retain_handling = 0;
 
         for param in params.iter() {
             match param.0.as_str() {
@@ -165,18 +177,33 @@ impl Config for ClientConfig {
                     }
                 }
                 "request_response_information" => {
-                    connect_properties.request_response_information =
-                        match catch_true_false(&param.1) {
-                            Ok(p) => Some(p),
-                            Err(e) => return Err(e),
+                    connect_properties.request_response_information = match param.1.parse::<bool>()
+                    {
+                        Ok(p) => {
+                            if p {
+                                Some(1)
+                            } else {
+                                Some(0)
+                            }
                         }
+                        Err(e) => {
+                            return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
+                        }
+                    };
                 }
                 "request_problem_information" => {
-                    connect_properties.request_problem_information =
-                        match catch_true_false(&param.1) {
-                            Ok(p) => Some(p),
-                            Err(e) => return Err(e),
+                    connect_properties.request_problem_information = match param.1.parse::<bool>() {
+                        Ok(p) => {
+                            if p {
+                                Some(1)
+                            } else {
+                                Some(0)
+                            }
                         }
+                        Err(e) => {
+                            return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
+                        }
+                    };
                 }
                 "authentication_method" => {
                     connect_properties.authentication_method = Some(param.1.clone())
@@ -187,13 +214,21 @@ impl Config for ClientConfig {
                     connect_properties.authentication_data = Some(bytes)
                 }
                 "publish_dup" => {
-                    publish_dup_flag = match catch_true_false(&param.1) {
-                        Ok(p) => p,
-                        Err(e) => return Err(e),
+                    pub_dup_flag = match param.1.parse::<bool>() {
+                        Ok(p) => {
+                            if p {
+                                1
+                            } else {
+                                0
+                            }
+                        }
+                        Err(e) => {
+                            return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
+                        }
                     };
                 }
                 "publish_qos" => {
-                    publish_qos = match param.1.parse::<u8>() {
+                    pub_qos = match param.1.parse::<u8>() {
                         Ok(p) => p,
                         Err(e) => {
                             return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
@@ -201,10 +236,59 @@ impl Config for ClientConfig {
                     };
                 }
                 "publish_retain" => {
-                    publish_retain = match catch_true_false(&param.1) {
-                        Ok(p) => p,
-                        Err(e) => return Err(e),
+                    pub_retain = match param.1.parse::<bool>() {
+                        Ok(p) => {
+                            if p {
+                                1
+                            } else {
+                                0
+                            }
+                        }
+                        Err(e) => {
+                            return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
+                        }
                     };
+                }
+
+                "subscribe_max_qos" => {
+                    sub_max_qos = match param.1.parse::<u8>() {
+                        Ok(p) => p,
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter: Subscribe Max QoS",
+                            ))
+                        }
+                    }
+                }
+                "subscribe_no_local" => {
+                    sub_no_local = match param.1.parse::<bool>() {
+                        Ok(p) => p,
+                        Err(e) => {
+                            return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
+                        }
+                    };
+                }
+
+                "subscribe_retain_as_published" => {
+                    sub_retain_as_published = match param.1.parse::<bool>() {
+                        Ok(p) => p,
+                        Err(e) => {
+                            return Err(Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
+                        }
+                    };
+                }
+
+                "subscribe_retain_handling" => {
+                    sub_retain_handling = match param.1.parse::<u8>() {
+                        Ok(p) => p,
+                        Err(_) => {
+                            return Err(Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Invalid parameter: Subscribe Retain Handling",
+                            ))
+                        }
+                    }
                 }
 
                 "id" | "ip" | "port" | "log_path" | "log_in_terminal" => {}
@@ -221,9 +305,13 @@ impl Config for ClientConfig {
         Ok(ClientConfig {
             general,
             connect_properties,
-            publish_dup_flag,
-            publish_qos,
-            publish_retain,
+            pub_dup_flag,
+            pub_qos,
+            pub_retain,
+            sub_max_qos,
+            sub_no_local,
+            sub_retain_as_published,
+            sub_retain_handling,
         })
     }
 }

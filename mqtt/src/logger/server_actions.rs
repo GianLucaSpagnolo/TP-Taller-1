@@ -1,6 +1,9 @@
 use std::fmt;
 
-use crate::control_packets::mqtt_subscribe::subscribe_properties::TopicFilter;
+use crate::{
+    control_packets::mqtt_subscribe::subscribe_properties::TopicFilter,
+    logger::actions::add_topics_names,
+};
 
 use super::actions::MqttActions;
 
@@ -10,6 +13,7 @@ pub enum MqttServerActions {
     ReceivePublish(String),
     SendPublish(String, Vec<String>),
     SubscribeReceive(String, Vec<TopicFilter>),
+    UnsubscribeReceive(String, Vec<String>),
     DisconnectClient,
 }
 
@@ -38,11 +42,27 @@ impl fmt::Display for MqttServerActions {
                 let mut msg = "SUBSCRIBE - Servidor recibió una subscripción del cliente '"
                     .to_string()
                     + id
-                    + "' a los topicos:";
+                    + "' a los topicos: [ ";
 
+                let mut iter = 0;
                 for top in topics {
-                    msg = msg + " - " + &top.topic_filter;
+                    add_topics_names(&mut msg, &top.topic_filter, &mut iter);
                 }
+                msg += " ]";
+
+                write!(f, "{}", msg)
+            }
+            MqttServerActions::UnsubscribeReceive(id, topics) => {
+                let mut msg = "UNSUBSCRIBE - Servidor recibió una desubscripción del cliente '"
+                    .to_string()
+                    + id
+                    + "' de los topicos: [ ";
+
+                let mut iter = 0;
+                for top in topics {
+                    add_topics_names(&mut msg, top, &mut iter)
+                }
+                msg += " ]";
 
                 write!(f, "{}", msg)
             }

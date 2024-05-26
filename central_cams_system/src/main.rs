@@ -65,7 +65,7 @@ fn main() -> Result<(), Error> {
         cam_system_clone.lock().unwrap().system.as_bytes(),
         "camaras".to_string(),
     )?;
-    client.subscribe(vec!["inc"], 1, false, false, 0)?;
+    client.subscribe(vec!["inc"])?;
 
     let mut client_clone = client.clone();
     let handle = thread::spawn(move || {

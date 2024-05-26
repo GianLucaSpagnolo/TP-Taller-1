@@ -1,7 +1,10 @@
 use std::fmt;
 
-use crate::control_packets::{
-    mqtt_packet::reason_codes::ReasonCode, mqtt_subscribe::subscribe_properties::TopicFilter,
+use crate::{
+    control_packets::{
+        mqtt_packet::reason_codes::ReasonCode, mqtt_subscribe::subscribe_properties::TopicFilter,
+    },
+    logger::actions::add_topics_names,
 };
 
 use super::actions::MqttActions;
@@ -13,6 +16,7 @@ pub enum MqttClientActions {
     SendConnect(String),
     SendPublish(String),
     SendSubscribe(Vec<TopicFilter>),
+    SendUnsubscribe(Vec<String>),
 }
 
 impl fmt::Display for MqttClientActions {
@@ -42,13 +46,27 @@ impl fmt::Display for MqttClientActions {
                 )
             }
             MqttClientActions::SendSubscribe(topics) => {
-                let mut msg = "Cliente se subscribió a el/los topicos: ".to_string();
+                let mut msg = "Cliente se subscribió a el/los topicos: [ ".to_string();
 
+                let mut iter = 0;
                 for top in topics {
-                    msg = msg + " - " + &top.topic_filter;
+                    add_topics_names(&mut msg, &top.topic_filter, &mut iter);
                 }
+                msg += " ] ";
 
                 write!(f, "SUBSCRIBE - {}", msg)
+            }
+            MqttClientActions::SendUnsubscribe(topics) => {
+                let mut msg = "Cliente se desubscribió de el/los topicos: [ ".to_string();
+
+                let mut iter = 0;
+
+                for top in topics {
+                    add_topics_names(&mut msg, top, &mut iter);
+                }
+                msg += " ] ";
+
+                write!(f, "UNSUBSCRIBE - {}", msg)
             }
         }
     }
