@@ -13,19 +13,20 @@ use mqtt::{
 
 fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<()>, Error> {
     let handler = thread::spawn(move || loop {
-        let message_received = receiver.recv().unwrap();
-        match message_received.topic.as_str() {
-            "camaras" => {
-                let data = CamList::from_be_bytes(message_received.data);
-                println!("Actualización de cámaras:");
-                println!("{}", data)
+        for message_received in receiver.try_iter() {
+            match message_received.topic.as_str() {
+                "camaras" => {
+                    let data = CamList::from_be_bytes(message_received.data);
+                    println!("Actualización de cámaras:");
+                    println!("{}", data)
+                }
+                "dron" => {
+                    // cambiar estado
+                }
+                _ => {}
             }
-            "dron" => {
-                // cambiar estado
-            }
-            _ => {}
+            // leer el mensaje recibido y cambiar estados según corresponda
         }
-        // leer el mensaje recibido y cambiar estados según corresponda
     });
 
     Ok(handler)

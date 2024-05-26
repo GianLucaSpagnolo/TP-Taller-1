@@ -22,19 +22,20 @@ pub fn process_messages(
 ) -> Result<JoinHandle<()>, Error> {
     let mut client = client.clone();
     let handler = thread::spawn(move || loop {
-        let message_received = receiver.recv().unwrap();
-        if message_received.topic.as_str() == "inc" {
-            let incident = Incident::from_be_bytes(message_received.data);
-            println!("Mensaje recibido: {:?}", incident);
-            match incident.state {
-                IncidentState::InProgess => cams_system
-                    .lock()
-                    .unwrap()
-                    .process_incident_in_progress(&mut client, incident),
-                IncidentState::Resolved => cams_system
-                    .lock()
-                    .unwrap()
-                    .process_incident_resolved(&mut client, incident),
+        for message_received in receiver.try_iter() {
+            if message_received.topic.as_str() == "inc" {
+                let incident = Incident::from_be_bytes(message_received.data);
+                println!("Mensaje recibido: {:?}", incident);
+                match incident.state {
+                    IncidentState::InProgess => cams_system
+                        .lock()
+                        .unwrap()
+                        .process_incident_in_progress(&mut client, incident),
+                    IncidentState::Resolved => cams_system
+                        .lock()
+                        .unwrap()
+                        .process_incident_resolved(&mut client, incident),
+                }
             }
         }
     });
