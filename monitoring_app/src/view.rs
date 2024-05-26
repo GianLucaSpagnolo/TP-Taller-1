@@ -1,11 +1,14 @@
 pub mod view{
+    use std::sync::mpsc::Sender;
+
     use app::shared::{cam_list::{Cam, CamList, CamState}, coordenates::Coordenates, incident::{Incident, IncidentState}};
     use eframe::egui::{self, Margin};
     use egui_extras::{Column, TableBuilder};
     /* use walkers::{Tiles, MapMemory, sources::OpenStreetMap}; */
 
-    #[derive(Default)]
+    //#[derive(Default)]
     pub struct MyApp {
+        pub sender: Sender<Vec<u8>>,
         pub system: CamList,
         pub incident: Vec<Incident>,
         pub coordenates: Coordenates,
@@ -14,11 +17,11 @@ pub mod view{
     }
     
     impl MyApp {
-
-        fn new() -> Self {
+        fn new(sender: Sender<Vec<u8>>) -> Self {
             let system = CamList::generate_ramdoms_cams(10);
 
             Self {
+                sender,
                 system,
                 incident: Vec::new(),
                 coordenates: Coordenates::default(),
@@ -29,12 +32,14 @@ pub mod view{
         pub fn add_incident(&mut self, location: Coordenates) {
             
             println!("Incidente agregado en latitud: {}, longitud: {}", location.latitude, location.longitude);
-            
-            self.incident.push(Incident {
+            let incident = Incident {
                 id: self.incident.len().to_string(),
                 location,
                 state: IncidentState::InProgess,
-            });
+            };
+
+            let _ = &self.send_incident(incident.clone());
+            self.incident.push(incident.clone());
         }
 
         pub fn add_cam(&mut self) {
@@ -43,6 +48,10 @@ pub mod view{
                 location: Coordenates::default(),
                 state: CamState::Alert,
             });
+        }
+
+        fn send_incident(&self, incident: Incident){
+            let _ = self.sender.send(incident.as_bytes());
         }
     }
 
@@ -146,7 +155,7 @@ pub mod view{
             
     }
 
-    pub fn run_interface() -> Result<(), eframe::Error> {
+    pub fn run_interface(sender: Sender<Vec<u8>>) -> Result<(), eframe::Error> {
 
         let mut options = eframe::NativeOptions::default();
 
@@ -156,7 +165,7 @@ pub mod view{
             "Apliación de monitoreo",
             options,
             Box::new(|_cc|
-                Box::new(MyApp::new()
+                Box::new(MyApp::new(sender)
             )),
         )
     }

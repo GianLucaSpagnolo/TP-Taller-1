@@ -1,6 +1,6 @@
 use std::{
     io::Error,
-    sync::mpsc::Receiver,
+    sync::mpsc::{channel, Receiver},
     thread::{self, JoinHandle},
 };
 
@@ -62,11 +62,26 @@ fn main() -> Result<(), Error> {
     println!("Mensaje publicado en el topic 'inc': {:?}", incident);
     */
 
-    match run_interface(){
-        Ok(_) => println!("Interfaz cerrada"),
-        Err(e) => println!("Error al ejecutar la interfaz: {:?}", e),
-    }
+    let (sender, receiver) = channel::<Vec<u8>>();
+    let mut client_clone = client.clone();
+    let receiver_t = std::thread::spawn(move ||{
+        loop{ 
+            match receiver.recv() {
+                Ok(incident_received) =>{
+                    println!("monitor recibe: {:?}", incident_received);
+                    
+                    // se publica el incidente:
+                    let _ = client_clone.publish(incident_received.clone(), "inc".to_string());
+                    println!("Mensaje publicado en el topic 'inc': {:?}", incident_received);
+                },
+                Err(_) => todo!(),
+            }
+        } 
+    } );
 
+    let _ = run_interface(sender);
+
+    receiver_t.join().unwrap();
     listener.handler.join().unwrap()?;
     process_message_handler.join().unwrap();
 
