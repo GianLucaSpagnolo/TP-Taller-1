@@ -15,9 +15,11 @@ pub enum MqttClientActions {
     ReceiveDisconnect(ReasonCode),
     SendConnect(String),
     SendPublish(String),
+    AcknowledgePublish(String, String),
     SendSubscribe(Vec<TopicFilter>),
     SendUnsubscribe(Vec<String>),
     SendDisconnect(String, ReasonCode),
+    AcknowledgeSubscribe(String, Vec<u8>),
 }
 
 impl fmt::Display for MqttClientActions {
@@ -44,6 +46,13 @@ impl fmt::Display for MqttClientActions {
                     f,
                     "PUBLISH - Cliente envió un mensaje al topico '{}'",
                     topic
+                )
+            }
+            MqttClientActions::AcknowledgePublish(id, message) => {
+                write!(
+                    f,
+                    "PUBACK - Cliente '{}' recibió confirmacion de envio del publish. \nMensaje: <{}>",
+                    id, message
                 )
             }
             MqttClientActions::SendSubscribe(topics) => {
@@ -82,6 +91,18 @@ impl fmt::Display for MqttClientActions {
                     "DISCONNECT - Server desconectó al Cliente por: {}",
                     reason_code
                 )
+            }
+            MqttClientActions::AcknowledgeSubscribe(id, codes) => {
+                let mut msg = "SUBACK - Cliente ".to_string();
+                msg = msg + id;
+                msg += " recibió confirmacion de subscripcion. \nReason codes: [";
+
+                for code in codes {
+                    msg = msg + " - " + &ReasonCode::new(*code).to_string();
+                }
+                msg += "]";
+
+                write!(f, "{}", msg)
             }
         }
     }

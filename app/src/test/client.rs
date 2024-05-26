@@ -11,18 +11,14 @@ use mqtt::{
     control_packets::mqtt_packet::reason_codes::ReasonCode,
 };
 
-
 fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<()>, Error> {
     let handler = thread::spawn(move || loop {
         for msg in receiver.try_iter() {
-            match msg.topic.as_str() {
-                "cams" => {
-                    println!(
-                        "Mensaje recibido y procesado del topic 'cams': {}",
-                        String::from_utf8(msg.data).unwrap()
-                    );
-                }
-                _ => {}
+            if msg.topic.as_str() == "cams" {
+                println!(
+                    "Mensaje recibido y procesado del topic 'cams': {}",
+                    String::from_utf8(msg.data).unwrap()
+                );
             }
         }
     });
@@ -102,9 +98,9 @@ fn main() -> Result<(), Error> {
         _ => {}
     }
 
-    match listener.handler.join().unwrap(){
-        Ok(_) => {},
-        Err(_) => return Ok(())
+    match listener.handler.join().unwrap() {
+        Ok(_) => {}
+        Err(_) => return Ok(()),
     }
     process_message_handler.join().unwrap();
 

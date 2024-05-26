@@ -11,12 +11,14 @@ use super::actions::MqttActions;
 
 pub enum MqttServerActions {
     Connection(String),
-    ReceivePublish(String),
+    SendPuback(String),
     SendPublish(String, Vec<String>),
-    SubscribeReceived(String, Vec<TopicFilter>),
-    UnsubscribeReceived(String, Vec<String>),
-    DisconnectReceived(ReasonCode),
     SendDisconnect(ReasonCode),
+    SendSuback(String),
+    ReceivePublish(String),
+    ReceiveSubscribe(String, Vec<TopicFilter>),
+    ReceiveUnsubscribe(String, Vec<String>),
+    ReceiveDisconnect(ReasonCode),
     CloseServer,
 }
 
@@ -34,6 +36,13 @@ impl fmt::Display for MqttServerActions {
                     topic
                 )
             }
+            MqttServerActions::SendPuback(id) => {
+                write!(
+                    f,
+                    "PUBACK - Servidor envió confirmación de publicacion del topico '{}'",
+                    id
+                )
+            }
             MqttServerActions::SendPublish(topic, receivers) => {
                 write!(
                     f,
@@ -41,7 +50,7 @@ impl fmt::Display for MqttServerActions {
                     topic, receivers
                 )
             }
-            MqttServerActions::SubscribeReceived(id, topics) => {
+            MqttServerActions::ReceiveSubscribe(id, topics) => {
                 let mut msg = "SUBSCRIBE - Servidor recibió una subscripción del cliente '"
                     .to_string()
                     + id
@@ -55,7 +64,7 @@ impl fmt::Display for MqttServerActions {
 
                 write!(f, "{}", msg)
             }
-            MqttServerActions::UnsubscribeReceived(id, topics) => {
+            MqttServerActions::ReceiveUnsubscribe(id, topics) => {
                 let mut msg = "UNSUBSCRIBE - Servidor recibió una desubscripción del cliente '"
                     .to_string()
                     + id
@@ -74,12 +83,19 @@ impl fmt::Display for MqttServerActions {
                 "DISCONNECT - Desconectando cliente del servidor debido a: [{}]",
                 reason_code
             ),
-            MqttServerActions::DisconnectReceived(reason_code) => write!(
+            MqttServerActions::ReceiveDisconnect(reason_code) => write!(
                 f,
                 "DISCONNECT - Servido recibió una desconección debido a: [{}]",
                 reason_code
             ),
             MqttServerActions::CloseServer => write!(f, "SHUTDOWN - Servidor apagandose"),
+            MqttServerActions::SendSuback(id) => {
+                write!(
+                    f,
+                    "SUBACK - Servidor envió confirmación de suscripcion al cliente '{}'",
+                    id
+                )
+            }
         }
     }
 }

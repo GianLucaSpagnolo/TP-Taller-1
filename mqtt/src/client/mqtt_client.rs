@@ -15,7 +15,9 @@ use crate::{
         mqtt_packet::{
             fixed_header::PacketFixedHeader, packet::generic_packet::*, reason_codes::ReasonCode,
         },
+        mqtt_puback::puback::Puback,
         mqtt_publish::{publish::Publish, publish_properties},
+        mqtt_suback::suback::Suback,
         mqtt_subscribe::{subscribe::Subscribe, subscribe_properties},
         mqtt_unsubscribe::{unsubscribe::Unsubscribe, unsubscribe_properties},
     },
@@ -38,17 +40,45 @@ pub struct MqttClientListener {
     pub handler: JoinHandle<Result<(), Error>>,
 }
 
-fn receive_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
+fn receive_packet(mut stream: &mut TcpStream) -> Result<PacketReceived, Error> {
     let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
 
-    let packet_recived = get_packet(
+    get_packet(
         stream,
         fixed_header.get_package_type(),
         fixed_header.remaining_length,
-    )?;
+    )
+}
+
+fn receive_connack_packet(stream: &mut TcpStream) -> Result<Connack, Error> {
+    let packet_recived = receive_packet(stream)?;
 
     match packet_recived {
-        PacketReceived::Connack(ack) => Ok(*ack),
+        PacketReceived::Connack(connack) => Ok(*connack),
+        _ => Err(Error::new(
+            std::io::ErrorKind::Other,
+            "ClientReceive - Paquete desconocido",
+        )),
+    }
+}
+
+fn receive_puback_packet(stream: &mut TcpStream) -> Result<Puback, Error> {
+    let packet_recived = receive_packet(stream)?;
+
+    match packet_recived {
+        PacketReceived::Puback(puback) => Ok(*puback),
+        _ => Err(Error::new(
+            std::io::ErrorKind::Other,
+            "ClientReceive - Paquete desconocido",
+        )),
+    }
+}
+
+fn receive_suback_packet(stream: &mut TcpStream) -> Result<Suback, Error> {
+    let packet_recived = receive_packet(stream)?;
+
+    match packet_recived {
+        PacketReceived::Suback(suback) => Ok(*suback),
         _ => Err(Error::new(
             std::io::ErrorKind::Other,
             "ClientReceive - Paquete desconocido",
@@ -142,11 +172,17 @@ impl MqttClient {
 
         let handler = thread::spawn(move || -> Result<(), Error> {
             loop {
-                client.listen_message(
+                match client.listen_message(
                     client.stream.try_clone()?,
                     sender.clone(),
                     &log_path.to_string(),
-                )?
+                ) {
+                    Ok(_) => {}
+                    Err(_) => {
+                        // Disconnect
+                        // Handle session expity interval
+                    }
+                };
             }
         });
 
@@ -273,13 +309,23 @@ impl MqttClient {
         )
         .send(&mut self.stream)?;
 
-        //recibir puback o reenviar publish
-
         MqttClientActions::SendPublish(topic).log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
         );
+
+        let puback = receive_puback_packet(&mut self.stream)?;
+        MqttClientActions::AcknowledgePublish(
+            self.config.general.id.clone(),
+            puback.properties.reason_string.unwrap_or("".to_string()),
+        )
+        .log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+
         logger.close_logger();
         Ok(())
     }
@@ -307,13 +353,23 @@ impl MqttClient {
 
         Subscribe::new(properties).send(&mut self.stream)?;
 
-        //recibir suback o reenviar subscribe
-
         MqttClientActions::SendSubscribe(prop_topics).log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
         );
+
+        let suback = receive_suback_packet(&mut self.stream)?;
+        MqttClientActions::AcknowledgeSubscribe(
+            self.config.general.id.clone(),
+            suback.properties.reason_codes,
+        )
+        .log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+
         logger.close_logger();
         Ok(())
     }
