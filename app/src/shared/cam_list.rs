@@ -38,6 +38,7 @@ impl Display for Cam {
     }
 }
 
+#[derive(Default)]
 pub struct CamList {
     pub cams: Vec<Cam>,
 }
