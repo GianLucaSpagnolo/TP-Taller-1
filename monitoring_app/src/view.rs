@@ -1,5 +1,5 @@
 pub mod view{
-    use app::shared::{cam_list::{CamList, CamState}, coordenates::Coordenates, incident::{Incident, IncidentState}};
+    use app::shared::{cam_list::{Cam, CamList, CamState}, coordenates::Coordenates, incident::{Incident, IncidentState}};
     use eframe::egui::{self, Margin};
     use egui_extras::{Column, TableBuilder};
     /* use walkers::{Tiles, MapMemory, sources::OpenStreetMap}; */
@@ -34,6 +34,14 @@ pub mod view{
                 id: self.incident.len().to_string(),
                 location,
                 state: IncidentState::InProgess,
+            });
+        }
+
+        pub fn add_cam(&mut self) {
+            self.system.cams.push(Cam {
+                id: self.system.cams.len() as u8,
+                location: Coordenates::default(),
+                state: CamState::Alert,
             });
         }
     }
@@ -75,6 +83,9 @@ pub mod view{
                 });
                 if ui.button("Agregar incidente").clicked() {
                     self.add_incident(self.coordenates.clone());
+                }
+                if ui.button("Agregar camara").clicked() {
+                    self.add_cam();
                 }
                 ui.separator();
                 
