@@ -12,7 +12,9 @@ use crate::{
         mqtt_connack::connack::Connack,
         mqtt_connect::{connect::Connect, payload},
         mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::*},
+        mqtt_puback::puback::Puback,
         mqtt_publish::{publish::Publish, publish_properties},
+        mqtt_suback::suback::Suback,
         mqtt_subscribe::{subscribe::Subscribe, subscribe_properties},
     },
     logger::{actions::MqttActions, client_actions::MqttClientActions},
@@ -34,17 +36,45 @@ pub struct MqttClientListener {
     pub handler: JoinHandle<Result<(), Error>>,
 }
 
-fn receive_connack_packet(mut stream: &mut TcpStream) -> Result<Connack, Error> {
+fn receive_packet(mut stream: &mut TcpStream) -> Result<PacketReceived, Error> {
     let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
 
-    let packet_recived = get_packet(
+    get_packet(
         stream,
         fixed_header.get_package_type(),
         fixed_header.remaining_length,
-    )?;
+    )
+}
+
+fn receive_connack_packet(stream: &mut TcpStream) -> Result<Connack, Error> {
+    let packet_recived = receive_packet(stream)?;
 
     match packet_recived {
-        PacketReceived::Connack(ack) => Ok(*ack),
+        PacketReceived::Connack(connack) => Ok(*connack),
+        _ => Err(Error::new(
+            std::io::ErrorKind::Other,
+            "ClientReceive - Paquete desconocido",
+        )),
+    }
+}
+
+fn receive_puback_packet(stream: &mut TcpStream) -> Result<Puback, Error> {
+    let packet_recived = receive_packet(stream)?;
+
+    match packet_recived {
+        PacketReceived::Puback(puback) => Ok(*puback),
+        _ => Err(Error::new(
+            std::io::ErrorKind::Other,
+            "ClientReceive - Paquete desconocido",
+        )),
+    }
+}
+
+fn receive_suback_packet(stream: &mut TcpStream) -> Result<Suback, Error> {
+    let packet_recived = receive_packet(stream)?;
+
+    match packet_recived {
+        PacketReceived::Suback(suback) => Ok(*suback),
         _ => Err(Error::new(
             std::io::ErrorKind::Other,
             "ClientReceive - Paquete desconocido",
@@ -132,8 +162,6 @@ impl MqttClient {
     }
 
     pub fn run_listener(&mut self, log_path: String) -> Result<MqttClientListener, Error> {
-        let mut counter = 0;
-
         let client = self.clone();
 
         let (sender, receiver) = mpsc::channel();
@@ -145,15 +173,10 @@ impl MqttClient {
                     sender.clone(),
                     &log_path.to_string(),
                 ) {
-                    Ok(_) => {
-                        counter = 0;
-                    }
+                    Ok(_) => {}
                     Err(_) => {
-                        if let Some(expiry_interval) =
-                            client.config.connect_properties.session_expiry_interval
-                        {
-                            MqttClient::session_timer(&mut counter, expiry_interval)?;
-                        }
+                        // Disconnect
+                        // Handle session expity interval
                     }
                 };
             }
@@ -162,16 +185,17 @@ impl MqttClient {
         Ok(MqttClientListener { receiver, handler })
     }
 
+    /*
     fn session_timer(counter: &mut u32, expiry_interval: u32) -> Result<(), Error> {
         thread::sleep(std::time::Duration::from_millis(1000));
         *counter += 1;
-        //println!("Counter: {}", *counter);
         if expiry_interval != 0 && *counter > expiry_interval {
             //disconnect
             return Err(Error::new(std::io::ErrorKind::Other, "Session expired"));
         }
         Ok(())
     }
+    */
 
     pub fn listen_message(
         &self,
@@ -281,13 +305,23 @@ impl MqttClient {
         )
         .send(&mut self.stream)?;
 
-        //recibir puback o reenviar publish
-
         MqttClientActions::SendPublish(topic).log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
         );
+
+        let puback = receive_puback_packet(&mut self.stream)?;
+        MqttClientActions::AcknowledgePublish(
+            self.config.general.id.clone(),
+            puback.properties.reason_string.unwrap_or("".to_string()),
+        )
+        .log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+
         logger.close_logger();
         Ok(())
     }
@@ -322,13 +356,23 @@ impl MqttClient {
 
         Subscribe::new(properties).send(&mut self.stream)?;
 
-        //recibir suback o reenviar subscribe
-
         MqttClientActions::SendSubscribe(prop_topics).log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
         );
+
+        let suback = receive_suback_packet(&mut self.stream)?;
+        MqttClientActions::AcknowledgeSubscribe(
+            self.config.general.id.clone(),
+            suback.properties.reason_codes,
+        )
+        .log_action(
+            &self.config.general.id,
+            &logger,
+            &self.config.general.log_in_term,
+        );
+
         logger.close_logger();
         Ok(())
     }

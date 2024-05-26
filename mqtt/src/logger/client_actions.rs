@@ -12,7 +12,9 @@ pub enum MqttClientActions {
     ReceivePublish(String),
     SendConnect(String),
     SendPublish(String),
+    AcknowledgePublish(String, String),
     SendSubscribe(Vec<TopicFilter>),
+    AcknowledgeSubscribe(String, Vec<u8>),
 }
 
 impl fmt::Display for MqttClientActions {
@@ -41,6 +43,13 @@ impl fmt::Display for MqttClientActions {
                     topic
                 )
             }
+            MqttClientActions::AcknowledgePublish(id, message) => {
+                write!(
+                    f,
+                    "PUBACK - Cliente '{}' recibió confirmacion de envio del publish. \nMensaje: <{}>",
+                    id, message
+                )
+            }
             MqttClientActions::SendSubscribe(topics) => {
                 let mut msg = "Cliente se subscribió a el/los topicos: ".to_string();
 
@@ -49,6 +58,18 @@ impl fmt::Display for MqttClientActions {
                 }
 
                 write!(f, "SUBSCRIBE - {}", msg)
+            }
+            MqttClientActions::AcknowledgeSubscribe(id, codes) => {
+                let mut msg = "SUBACK - Cliente ".to_string();
+                msg = msg + id;
+                msg += " recibió confirmacion de subscripcion. \nReason codes: [";
+
+                for code in codes {
+                    msg = msg + " - " + &ReasonCode::new(*code).to_string();
+                }
+                msg += "]";
+
+                write!(f, "{}", msg)
             }
         }
     }

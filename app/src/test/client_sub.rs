@@ -16,7 +16,7 @@ fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<
         match message_received.topic.as_str() {
             "cams" => {
                 println!(
-                    "Mensaje recibido y procesado del topic 'cams': {}",
+                    "Mensaje recibido y procesado del topic 'cams': <{}>",
                     message_received.data
                 );
             }
