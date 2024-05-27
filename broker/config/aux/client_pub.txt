@@ -1,7 +1,7 @@
-id: subscriber
+id: publisher
 ip: 127.0.0.1
 port: 5000
-log_path: app/logs/sub_log.csv
+log_path: broker/logs/pub_log.csv
 log_in_terminal: true
 protocol_name: MQTT
 protocol_version: 5

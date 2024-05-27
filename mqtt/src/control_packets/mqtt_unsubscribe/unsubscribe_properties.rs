@@ -40,7 +40,7 @@ impl PacketProperties for UnsubscribeProperties {
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
-        let mut variable_props = VariableHeaderProperties::new();
+        let mut variable_props = VariableHeaderProperties::default();
 
         if let Some(user_property) = self.user_property.clone() {
             variable_props.add_utf8_pair_string_property(

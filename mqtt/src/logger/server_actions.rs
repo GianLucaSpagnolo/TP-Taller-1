@@ -9,6 +9,25 @@ use crate::{
 
 use super::actions::MqttActions;
 
+/// ## MqttServerActions
+/// 
+/// Enum que representa las acciones de un servidor MQTT
+/// 
+/// ### Variantes
+/// - `Connection`: Conexion establecida
+/// - `ReceivePublish`: Servidor recibe un mensaje
+/// - `ReceiveSubscribe`: Servidor recibe subscripción
+/// - `ReceiveUnsubscribe`: Servidor recibe desubscripción
+/// - `ReceiveDisconnect`: Servidor recibe un mensaje de desconexión
+/// - `ReceivePingReq`: Servidor recibe ping
+/// - `SendDisconnect`: Servidor envia mensaje de desconexión
+/// - `SendPingResp`: Servidor envia respuesta de ping
+/// - `SendPublish`: Servidor envia mensaje
+/// - `SendPuback`: Servidor envia confirmación de publicación
+/// - `SendSuback`: Servidor envia confirmación de subscripción
+/// - `SendUnsuback`: Servidor envia confirmación de desubscripción
+/// - `CloseServer`: Servidor apaga
+/// 
 pub enum MqttServerActions {
     Connection(String),
     SendDisconnect(ReasonCode),

@@ -35,7 +35,7 @@ impl PacketProperties for AuthProperties {
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
-        let mut variable_props = VariableHeaderProperties::new();
+        let mut variable_props = VariableHeaderProperties::default();
 
         if let Some(auth_method) = self.authentication_method.clone() {
             variable_props.add_utf8_string_property(AUTHENTICATION_METHOD, auth_method)?;

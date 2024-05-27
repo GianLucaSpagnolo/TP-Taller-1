@@ -48,7 +48,7 @@ impl PacketProperties for SubscribeProperties {
         fixed_props_size as u32 + variable_props.size_of() + topic_filters_size as u32
     }
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
-        let mut variable_props = VariableHeaderProperties::new();
+        let mut variable_props = VariableHeaderProperties::default();
 
         if let Some(subscription_identifier) = self.subscription_identifier {
             variable_props.add_variable_byte_integer_property(

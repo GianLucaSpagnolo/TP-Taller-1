@@ -9,7 +9,7 @@ fn main() -> ExitCode {
     const CONFIGERROR: u8 = 3;
     const SERVER_LISTENERERROR: u8 = 4;
 
-    let config_path = "app/config/broker_config.txt";
+    let config_path = "broker/config/broker_config.txt";
     let config = match ServerConfig::from_file(String::from(config_path)) {
         Ok(conf) => conf,
         Err(e) => {
