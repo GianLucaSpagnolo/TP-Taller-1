@@ -45,7 +45,7 @@ pub fn process_messages(
 
 fn main() -> Result<(), Error> {
     let config_path = "central_cams_system/config/cams_config.txt";
-    let range_alert = 0.1;
+    let range_alert = 2.0;
     let range_alert_between_cameras = 10.0;
 
     let cam_system = CamsSystem::init(10, range_alert, range_alert_between_cameras);
