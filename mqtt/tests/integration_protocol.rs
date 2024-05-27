@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod test {
     use mqtt::{
+        client::mqtt_client::{MqttClient, MqttClientMessage},
         config::{client_config::ClientConfig, mqtt_config::Config, server_config::ServerConfig},
         server::mqtt_server::MqttServer,
-        client::mqtt_client::{MqttClient, MqttClientMessage},
     };
     use std::{
         io::Error,
@@ -61,11 +61,7 @@ mod test {
                 _ => panic!("Invalid state"),
             };
 
-            Message {
-                id,
-                content,
-                state,
-            }
+            Message { id, content, state }
         }
     }
 
@@ -119,14 +115,13 @@ mod test {
                 }
             }
         });
-    
+
         Ok(handler)
     }
 
     #[test]
     fn test_interaction_between_client_and_server() {
-
-        // SERVER   
+        // SERVER
         let server_handle = thread::spawn(move || {
             let server_config_path = "mqtt/tests/config/server_config.txt";
             let server_config = match ServerConfig::from_file(String::from(server_config_path)) {
@@ -144,7 +139,8 @@ mod test {
         // CLIENT 1
         let client1_handle = thread::spawn(move || {
             let client_1_config_path = "mqtt/tests/config/app_1_config.txt";
-            let client_1_config = ClientConfig::from_file(String::from(client_1_config_path)).unwrap();
+            let client_1_config =
+                ClientConfig::from_file(String::from(client_1_config_path)).unwrap();
 
             let log_path = client_1_config.general.log_path.to_string();
 
@@ -157,23 +153,41 @@ mod test {
 
             thread::sleep(Duration::from_millis(1000));
 
-            client1.publish(Message {
-                id: 1,
-                content: String::from("Hello, world!"),
-                state: State::Happy,
-            }.as_bytes() , "good messages".to_string()).unwrap();
+            client1
+                .publish(
+                    Message {
+                        id: 1,
+                        content: String::from("Hello, world!"),
+                        state: State::Happy,
+                    }
+                    .as_bytes(),
+                    "good messages".to_string(),
+                )
+                .unwrap();
 
-            client1.publish(Message {
-                id: 3,
-                content: String::from("What a good day to be alive!"),
-                state: State::Happy,
-            }.as_bytes() , "good messages".to_string()).unwrap();
+            client1
+                .publish(
+                    Message {
+                        id: 3,
+                        content: String::from("What a good day to be alive!"),
+                        state: State::Happy,
+                    }
+                    .as_bytes(),
+                    "good messages".to_string(),
+                )
+                .unwrap();
 
-            client1.publish(Message {
-                id: 5,
-                content: String::from("Hey! How are you?"),
-                state: State::Normal,
-            }.as_bytes() , "good messages".to_string()).unwrap();
+            client1
+                .publish(
+                    Message {
+                        id: 5,
+                        content: String::from("Hey! How are you?"),
+                        state: State::Normal,
+                    }
+                    .as_bytes(),
+                    "good messages".to_string(),
+                )
+                .unwrap();
 
             client_1_listener.handler.join().unwrap().unwrap();
             client_1_handler.join().unwrap();
@@ -182,7 +196,8 @@ mod test {
         // CLIENT 2
         let client2_handle = thread::spawn(move || {
             let client_2_config_path = "mqtt/tests/config/app_2_config.txt";
-            let client_2_config = ClientConfig::from_file(String::from(client_2_config_path)).unwrap();
+            let client_2_config =
+                ClientConfig::from_file(String::from(client_2_config_path)).unwrap();
 
             let log_path = client_2_config.general.log_path.to_string();
 
@@ -195,29 +210,53 @@ mod test {
 
             thread::sleep(Duration::from_millis(1000));
 
-            client2.publish(Message {
-                id: 2,
-                content: String::from("I'm feeling bad today"),
-                state: State::Sad,
-            }.as_bytes() , "bad messages".to_string()).unwrap();
+            client2
+                .publish(
+                    Message {
+                        id: 2,
+                        content: String::from("I'm feeling bad today"),
+                        state: State::Sad,
+                    }
+                    .as_bytes(),
+                    "bad messages".to_string(),
+                )
+                .unwrap();
 
-            client2.publish(Message {
-                id: 4,
-                content: String::from("I'm not feeling well"),
-                state: State::Sad,
-            }.as_bytes() , "bad messages".to_string()).unwrap();
+            client2
+                .publish(
+                    Message {
+                        id: 4,
+                        content: String::from("I'm not feeling well"),
+                        state: State::Sad,
+                    }
+                    .as_bytes(),
+                    "bad messages".to_string(),
+                )
+                .unwrap();
 
-            client2.publish(Message {
-                id: 6,
-                content: String::from("River agosto 2023 - mayo 2024"),
-                state: State::Sad,
-            }.as_bytes() , "bad messages".to_string()).unwrap();
+            client2
+                .publish(
+                    Message {
+                        id: 6,
+                        content: String::from("River agosto 2023 - mayo 2024"),
+                        state: State::Sad,
+                    }
+                    .as_bytes(),
+                    "bad messages".to_string(),
+                )
+                .unwrap();
 
-            client2.publish(Message {
-                id: 7,
-                content: String::from("Lo mejor esta por venir"),
-                state: State::Normal,
-            }.as_bytes() , "bad messages".to_string()).unwrap();
+            client2
+                .publish(
+                    Message {
+                        id: 7,
+                        content: String::from("Lo mejor esta por venir"),
+                        state: State::Normal,
+                    }
+                    .as_bytes(),
+                    "bad messages".to_string(),
+                )
+                .unwrap();
 
             client_2_listener.handler.join().unwrap().unwrap();
             client_2_handler.join().unwrap();
