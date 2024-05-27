@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 mqtt = { path = "../mqtt" }
 
-broker = { path = "../app" }
+broker = { path = "../broker" }
 
 [[bin]]
 name = "cams_system"

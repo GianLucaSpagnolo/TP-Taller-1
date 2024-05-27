@@ -16,7 +16,7 @@ egui_extras = "0.27.2"
 
 mqtt = { path = "../mqtt" }
 
-broker = { path = "../app"}
+broker = { path = "../broker"}
 
 [[bin]]
 name = "monitoring_app"

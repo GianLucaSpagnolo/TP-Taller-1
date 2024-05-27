@@ -73,8 +73,8 @@ fn main() -> Result<(), Error> {
     };
 
     let config_path = match config_type {
-        1 => "app/config/aux/client_sub.txt",
-        2 => "app/config/aux/client_pub.txt",
+        1 => "broker/config/aux/client_sub.txt",
+        2 => "broker/config/aux/client_pub.txt",
         _ => {
             return Err(Error::new(
                 std::io::ErrorKind::InvalidInput,
