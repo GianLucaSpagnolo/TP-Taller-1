@@ -1,6 +1,6 @@
 use std::{fmt::Display, io::Error};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Default, Clone, PartialEq, Debug)]
 
 pub struct Coordenates {
     pub latitude: f64,
