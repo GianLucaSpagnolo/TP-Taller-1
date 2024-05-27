@@ -1,6 +1,0 @@
-id: server
-ip: 130.0.0.1
-port: 5000
-maximum_threads: 4
-log_path: mqtt/tests/logs/server_log.csv
-log_in_terminal: false

@@ -92,7 +92,7 @@ pub mod control_packets {
     }
 }
 
-mod common {
+pub mod common {
     pub mod data_types;
     pub mod utils;
 }
