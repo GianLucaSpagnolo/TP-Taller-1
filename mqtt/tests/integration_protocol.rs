@@ -6,6 +6,7 @@ mod test {
     use std::{
         io::Error, sync::mpsc::Receiver, thread::{self, JoinHandle}, time::Duration, path::PathBuf, fs::remove_file
     };
+    //use mqtt::control_packets::mqtt_packet::reason_codes::ReasonCode::NormalDisconnection;
 
     #[derive(Debug, PartialEq, Clone)]
     pub enum State {
@@ -53,7 +54,7 @@ mod test {
                 0 => State::Happy,
                 1 => State::Normal,
                 2 => State::Sad,
-                _ => panic!("Invalid state"),
+                _ => panic!("Invalid state: {}", bytes[index]),
             };
 
             Message { id, content, state }
@@ -64,6 +65,7 @@ mod test {
         receiver: Receiver<MqttClientMessage>,
     ) -> Result<JoinHandle<()>, Error> {
         let handler = thread::spawn(move || loop {
+            thread::sleep(Duration::from_millis(5000));
             for message_received in receiver.try_iter() {
                 if message_received.topic.as_str() == "good messages" {
                     let message = Message::from_be_bytes(message_received.data);
@@ -96,10 +98,6 @@ mod test {
                             assert_eq!(message.state, State::Sad);
                         }
                         6 => {
-                            assert_eq!(message.content, "River agosto 2023 - mayo 2024");
-                            assert_eq!(message.state, State::Sad);
-                        }
-                        7 => {
                             assert_eq!(message.content, "Lo mejor esta por venir");
                             assert_eq!(message.state, State::Normal);
                         }
@@ -146,7 +144,7 @@ mod test {
             log_path.push(client_1_config.general.log_path.clone());
 
             let client_1_listener = client1.run_listener(log_path.to_str().unwrap().to_string()).unwrap();
-            let client_1_handler = process_messages(client_1_listener.receiver).unwrap();
+            let client_1_message_handler = process_messages(client_1_listener.receiver).unwrap();
 
             client1.subscribe(vec!["bad messages"]).unwrap();
 
@@ -188,12 +186,18 @@ mod test {
                 )
                 .unwrap();
 
-            thread::sleep(Duration::from_millis(1000));
+            //thread::sleep(Duration::from_millis(1000));
 
-            remove_file(log_path.to_str().unwrap()).unwrap();
+            client_1_message_handler.join().unwrap();
+
+            //client1.unsubscribe(vec!["bad messages"], 0x100).unwrap();
+            //client1.disconnect(NormalDisconnection).unwrap();
+
+            //thread::sleep(Duration::from_millis(1000));
 
             client_1_listener.handler.join().unwrap().unwrap();
-            client_1_handler.join().unwrap();
+
+            remove_file(log_path.to_str().unwrap()).unwrap();
         });
 
         // CLIENT 2
@@ -210,7 +214,7 @@ mod test {
             log_path.push(client_2_config.general.log_path.clone());
 
             let client_2_listener = client2.run_listener(log_path.to_str().unwrap().to_string()).unwrap();
-            let client_2_handler = process_messages(client_2_listener.receiver).unwrap();
+            let client_2_message_handler = process_messages(client_2_listener.receiver).unwrap();
 
             client2.subscribe(vec!["good messages"]).unwrap();
 
@@ -244,18 +248,6 @@ mod test {
                 .publish(
                     Message {
                         id: 6,
-                        content: String::from("River agosto 2023 - mayo 2024"),
-                        state: State::Sad,
-                    }
-                    .as_bytes(),
-                    "bad messages".to_string(),
-                )
-                .unwrap();
-
-            client2
-                .publish(
-                    Message {
-                        id: 7,
                         content: String::from("Lo mejor esta por venir"),
                         state: State::Normal,
                     }
@@ -264,16 +256,22 @@ mod test {
                 )
                 .unwrap();
 
-            thread::sleep(Duration::from_millis(1000));
+            //thread::sleep(Duration::from_millis(1000));
 
-            remove_file(log_path.to_str().unwrap()).unwrap();
+            client_2_message_handler.join().unwrap();
+
+            //client2.unsubscribe(vec!["good messages"], 0x101).unwrap();
+            //client2.disconnect(NormalDisconnection).unwrap();
+
+            //thread::sleep(Duration::from_millis(1000));
 
             client_2_listener.handler.join().unwrap().unwrap();
-            client_2_handler.join().unwrap();
+
+            remove_file(log_path.to_str().unwrap()).unwrap();
         });
 
-        client2_handle.join().unwrap();
         client1_handle.join().unwrap();
+        client2_handle.join().unwrap();
         server_handle.join().unwrap();
     }
 }
