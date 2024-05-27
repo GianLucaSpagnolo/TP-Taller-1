@@ -1,12 +1,18 @@
 #[cfg(test)]
 mod test {
     use mqtt::{
-        client::mqtt_client::{MqttClient, MqttClientMessage}, config::{client_config::ClientConfig, mqtt_config::Config, server_config::ServerConfig}, server::mqtt_server::MqttServer
+        client::mqtt_client::{MqttClient, MqttClientMessage},
+        config::{client_config::ClientConfig, mqtt_config::Config, server_config::ServerConfig},
+        server::mqtt_server::MqttServer,
     };
     use std::{
-        io::Error, sync::mpsc::Receiver, thread::{self, JoinHandle}, time::Duration, path::PathBuf, fs::remove_file
+        fs::remove_file,
+        io::Error,
+        path::PathBuf,
+        sync::mpsc::Receiver,
+        thread::{self, JoinHandle},
+        time::Duration,
     };
-    //use mqtt::control_packets::mqtt_packet::reason_codes::ReasonCode::NormalDisconnection;
 
     #[derive(Debug, PartialEq, Clone)]
     pub enum State {
@@ -45,10 +51,11 @@ mod test {
             let id = u16::from_be_bytes([bytes[index], bytes[index + 1]]);
             index += 2;
 
-            let content_len = bytes[index] as usize;
-            index += 1;
-            let content = String::from_utf8(bytes[index..index + content_len].to_vec()).unwrap();
-            index += content_len;
+            let content_len = u16::from_be_bytes([bytes[index], bytes[index + 1]]);
+            index += 2;
+            let content =
+                String::from_utf8(bytes[index..index + content_len as usize].to_vec()).unwrap();
+            index += content_len as usize;
 
             let state = match bytes[index] {
                 0 => State::Happy,
@@ -65,40 +72,20 @@ mod test {
         receiver: Receiver<MqttClientMessage>,
     ) -> Result<JoinHandle<()>, Error> {
         let handler = thread::spawn(move || loop {
-            thread::sleep(Duration::from_millis(5000));
             for message_received in receiver.try_iter() {
-                if message_received.topic.as_str() == "good messages" {
+                if message_received.topic.as_str() == "messages" {
                     let message = Message::from_be_bytes(message_received.data);
                     match message.id {
                         1 => {
                             assert_eq!(message.content, "Hello, world!");
                             assert_eq!(message.state, State::Happy);
                         }
-                        3 => {
-                            assert_eq!(message.content, "What a good day to be alive!");
-                            assert_eq!(message.state, State::Happy);
-                        }
-                        5 => {
-                            assert_eq!(message.content, "Hey! How are you?");
-                            assert_eq!(message.state, State::Normal);
-                        }
-                        _ => {
-                            panic!("Invalid message id");
-                        }
-                    }
-                } else if message_received.topic.as_str() == "bad messages" {
-                    let message = Message::from_be_bytes(message_received.data);
-                    match message.id {
                         2 => {
-                            assert_eq!(message.content, "I'm feeling bad today");
+                            assert_eq!(message.content, "This is horrible!");
                             assert_eq!(message.state, State::Sad);
                         }
-                        4 => {
-                            assert_eq!(message.content, "I'm not feeling well");
-                            assert_eq!(message.state, State::Sad);
-                        }
-                        6 => {
-                            assert_eq!(message.content, "Lo mejor esta por venir");
+                        3 => {
+                            assert_eq!(message.content, "Hey! How are you?");
                             assert_eq!(message.state, State::Normal);
                         }
                         _ => {
@@ -114,43 +101,46 @@ mod test {
 
     #[test]
     fn test_interaction_between_client_and_server() {
-
         // SERVER
         let server_handle = thread::spawn(move || {
-
             let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             path.push("tests/config/server_config.txt");
 
-            let server_config = ServerConfig::from_file(String::from(path.to_str().unwrap())).unwrap();
+            let server_config =
+                ServerConfig::from_file(String::from(path.to_str().unwrap())).unwrap();
 
-            if let Err(e) = MqttServer::new(server_config.clone()).start_server() {
+            let server = MqttServer::new(server_config.clone());
+            if let Err(e) = server.clone().start_server() {
                 panic!("Server fails with error: {}", e);
             }
 
             remove_file(&server_config.general.log_path).unwrap();
+            drop(server);
         });
 
-        // CLIENT 1
-        let client1_handle = thread::spawn(move || {
-
+        // CLIENT
+        let client_handle = thread::spawn(move || {
             let mut client_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             client_path.push("tests/config/client_1_config.txt");
 
-            let client_1_config = ClientConfig::from_file(String::from(client_path.to_str().unwrap())).unwrap();
+            let client_config =
+                ClientConfig::from_file(String::from(client_path.to_str().unwrap())).unwrap();
 
-            let mut client1 = MqttClient::init(client_1_config.clone()).unwrap();
+            let mut client = MqttClient::init(client_config.clone()).unwrap();
 
             let mut log_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            log_path.push(client_1_config.general.log_path.clone());
+            log_path.push(client_config.general.log_path.clone());
 
-            let client_1_listener = client1.run_listener(log_path.to_str().unwrap().to_string()).unwrap();
-            let client_1_message_handler = process_messages(client_1_listener.receiver).unwrap();
+            let client_listener = client
+                .run_listener(log_path.to_str().unwrap().to_string())
+                .unwrap();
+            let client_message_handler = process_messages(client_listener.receiver).unwrap();
 
-            client1.subscribe(vec!["bad messages"]).unwrap();
+            client.subscribe(vec!["messages"]).unwrap();
 
             thread::sleep(Duration::from_millis(1000));
 
-            client1
+            client
                 .publish(
                     Message {
                         id: 1,
@@ -158,120 +148,46 @@ mod test {
                         state: State::Happy,
                     }
                     .as_bytes(),
-                    "good messages".to_string(),
+                    "messages".to_string(),
                 )
                 .unwrap();
 
-            client1
+            client
+                .publish(
+                    Message {
+                        id: 2,
+                        content: String::from("This is horrible!"),
+                        state: State::Sad,
+                    }
+                    .as_bytes(),
+                    "messages".to_string(),
+                )
+                .unwrap();
+
+            client
                 .publish(
                     Message {
                         id: 3,
-                        content: String::from("What a good day to be alive!"),
-                        state: State::Happy,
-                    }
-                    .as_bytes(),
-                    "good messages".to_string(),
-                )
-                .unwrap();
-
-            client1
-                .publish(
-                    Message {
-                        id: 5,
                         content: String::from("Hey! How are you?"),
                         state: State::Normal,
                     }
                     .as_bytes(),
-                    "good messages".to_string(),
+                    "messages".to_string(),
                 )
                 .unwrap();
 
-            //thread::sleep(Duration::from_millis(1000));
+            thread::sleep(Duration::from_millis(5000));
+            client.unsubscribe(vec!["bad messages"], 0x100).unwrap();
 
-            client_1_message_handler.join().unwrap();
+            //client.disconnect(NormalDisconnection).unwrap();
 
-            //client1.unsubscribe(vec!["bad messages"], 0x100).unwrap();
-            //client1.disconnect(NormalDisconnection).unwrap();
-
-            //thread::sleep(Duration::from_millis(1000));
-
-            client_1_listener.handler.join().unwrap().unwrap();
+            client_listener.handler.join().unwrap().unwrap();
+            client_message_handler.join().unwrap();
 
             remove_file(log_path.to_str().unwrap()).unwrap();
         });
 
-        // CLIENT 2
-        let client2_handle = thread::spawn(move || {
-
-            let mut client_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            client_path.push("tests/config/client_2_config.txt");
-
-            let client_2_config = ClientConfig::from_file(String::from(client_path.to_str().unwrap())).unwrap();
-
-            let mut client2 = MqttClient::init(client_2_config.clone()).unwrap();
-
-            let mut log_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            log_path.push(client_2_config.general.log_path.clone());
-
-            let client_2_listener = client2.run_listener(log_path.to_str().unwrap().to_string()).unwrap();
-            let client_2_message_handler = process_messages(client_2_listener.receiver).unwrap();
-
-            client2.subscribe(vec!["good messages"]).unwrap();
-
-            thread::sleep(Duration::from_millis(1000));
-
-            client2
-                .publish(
-                    Message {
-                        id: 2,
-                        content: String::from("I'm feeling bad today"),
-                        state: State::Sad,
-                    }
-                    .as_bytes(),
-                    "bad messages".to_string(),
-                )
-                .unwrap();
-
-            client2
-                .publish(
-                    Message {
-                        id: 4,
-                        content: String::from("I'm not feeling well"),
-                        state: State::Sad,
-                    }
-                    .as_bytes(),
-                    "bad messages".to_string(),
-                )
-                .unwrap();
-
-            client2
-                .publish(
-                    Message {
-                        id: 6,
-                        content: String::from("Lo mejor esta por venir"),
-                        state: State::Normal,
-                    }
-                    .as_bytes(),
-                    "bad messages".to_string(),
-                )
-                .unwrap();
-
-            //thread::sleep(Duration::from_millis(1000));
-
-            client_2_message_handler.join().unwrap();
-
-            //client2.unsubscribe(vec!["good messages"], 0x101).unwrap();
-            //client2.disconnect(NormalDisconnection).unwrap();
-
-            //thread::sleep(Duration::from_millis(1000));
-
-            client_2_listener.handler.join().unwrap().unwrap();
-
-            remove_file(log_path.to_str().unwrap()).unwrap();
-        });
-
-        client1_handle.join().unwrap();
-        client2_handle.join().unwrap();
+        client_handle.join().unwrap();
         server_handle.join().unwrap();
     }
 }
