@@ -1,7 +1,8 @@
 use std::io::Error;
 
 use app::shared::{
-    cam_list::{Cam, CamList, CamState},
+    cam::{Cam, CamState},
+    cam_list::CamList,
     coordenates::Coordenates,
     incident::Incident,
 };

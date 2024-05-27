@@ -5,7 +5,7 @@ pub mod interface {
     };
 
     use app::shared::{
-        cam_list::{Cam, CamState},
+        cam::{Cam, CamState},
         coordenates::Coordenates,
     };
     use mqtt::client::mqtt_client::MqttClient;

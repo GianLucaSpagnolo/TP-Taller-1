@@ -1,5 +1,13 @@
-pub mod view;
+pub mod app;
 
-pub mod model{
-    pub mod monitoring_app;
+pub mod views{
+    pub mod common;
+    pub mod incidents;
+    pub mod cams;
+    pub mod view;
+}
+
+pub mod controllers{
+    pub mod incident;
+    pub mod run;
 }
