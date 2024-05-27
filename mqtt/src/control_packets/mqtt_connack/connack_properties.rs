@@ -65,7 +65,7 @@ impl PacketProperties for ConnackProperties {
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
-        let mut variable_props = VariableHeaderProperties::new();
+        let mut variable_props = VariableHeaderProperties::default();
 
         if let Some(value) = self.session_expiry_interval {
             variable_props.add_u32_property(SESSION_EXPIRY_INTERVAL, value)?;
