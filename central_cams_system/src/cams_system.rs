@@ -8,7 +8,6 @@ use app::shared::{
 };
 use mqtt::client::mqtt_client::MqttClient;
 
-
 pub struct CamsSystem {
     pub system: CamList,
     pub range_alert: f64,
@@ -21,7 +20,6 @@ impl CamsSystem {
         range_alert: f64,
         range_alert_between_cameras: f64,
     ) -> Self {
-        
         let system = CamList::generate_ramdoms_cams(number_of_camaras);
 
         CamsSystem {

@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
-use super::{cam::{Cam, CamState}, coordenates::Coordenates};
+use super::{
+    cam::{Cam, CamState},
+    coordenates::Coordenates,
+};
 
 use rand::Rng;
 

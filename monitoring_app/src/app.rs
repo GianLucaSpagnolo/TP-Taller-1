@@ -1,4 +1,8 @@
-use std::{io::Error, sync::{mpsc::Receiver, Arc, Mutex}, thread::{self, JoinHandle}};
+use std::{
+    io::Error,
+    sync::{mpsc::Receiver, Arc, Mutex},
+    thread::{self, JoinHandle},
+};
 
 use app::shared::{cam_list::CamList, coordenates::Coordenates, incident_list::IncidentList};
 use mqtt::client::mqtt_client::{MqttClient, MqttClientMessage};
@@ -15,7 +19,15 @@ pub struct MonitoringApp {
     map_memory: MapMemory, */
 }
 
-fn process_messages(receiver: Receiver<MqttClientMessage>, system: Arc<Mutex<CamList>>) -> Result<JoinHandle<()>, Error> {
+pub struct MonitoringHandler {
+    pub broker_listener: JoinHandle<Result<(), Error>>,
+    pub message_handler: JoinHandle<()>,
+}
+
+fn process_messages(
+    receiver: Receiver<MqttClientMessage>,
+    system: Arc<Mutex<CamList>>,
+) -> Result<JoinHandle<()>, Error> {
     let handler = thread::spawn(move || loop {
         for message_received in receiver.try_iter() {
             match message_received.topic.as_str() {
@@ -37,7 +49,6 @@ fn process_messages(receiver: Receiver<MqttClientMessage>, system: Arc<Mutex<Cam
 
 impl MonitoringApp {
     pub fn new(client: MqttClient, log_path: String) -> Self {
-        
         let system = Arc::new(Mutex::new(CamList::default()));
 
         let historial = IncidentList::default();
@@ -47,24 +58,25 @@ impl MonitoringApp {
             system,
             historial,
             new_coordenates: Coordenates::default(),
-            log_path:log_path.to_string(),
+            log_path: log_path.to_string(),
             /* tiles: Tiles::new(OpenStreetMap, egui_ctx),
             map_memory: MapMemory::default(), */
         }
-    }     
+    }
 
-    pub fn init(mut self) -> Result<(JoinHandle<Result<(), Error>>, JoinHandle<()>), Error> {
+    pub fn init(mut self) -> Result<MonitoringHandler, Error> {
         let listener = self.client.run_listener(self.log_path.to_string())?;
-        
+
         let handler = process_messages(listener.receiver, self.system.clone())?;
-        
+
         self.client.subscribe(vec!["camaras"])?;
 
-        match run_interface(self){
-            Ok(_) => Ok((listener.handler, handler)),
+        match run_interface(self) {
+            Ok(_) => Ok(MonitoringHandler {
+                broker_listener: listener.handler,
+                message_handler: handler,
+            }),
             Err(e) => Err(Error::new(std::io::ErrorKind::Other, e.to_string())),
         }
     }
-    
-    
 }

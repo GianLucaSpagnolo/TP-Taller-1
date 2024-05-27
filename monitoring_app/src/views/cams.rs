@@ -4,9 +4,28 @@ use egui_extras::{Column, TableBuilder};
 
 use crate::app::MonitoringApp;
 
-pub fn cams_table(ui: &mut Ui, app: &mut MonitoringApp) {
+pub fn cam_row(mut row: egui_extras::TableRow, cam: &app::shared::cam::Cam) {
+    row.col(|ui| {
+        ui.label(&format!("{}", cam.id));
+    });
+    row.col(|ui| {
+        if CamState::Alert == cam.state {
+            ui.label(egui::RichText::new("Alerta").color(egui::Color32::RED));
+        } else {
+            ui.label(egui::RichText::new("Ahorro de energía").color(egui::Color32::GREEN));
+        }
+    });
+    row.col(|ui| {
+        ui.label(&format!("{}", cam.location.latitude.round()));
+    });
+    row.col(|ui| {
+        ui.label(&format!("{}", cam.location.longitude.round()));
+    });
+}
+
+pub fn cams_list(ui: &mut Ui, app: &mut MonitoringApp) {
     TableBuilder::new(ui)
-        .column(Column::exact(50.0))
+        .column(Column::exact(100.0))
         .column(Column::exact(250.0))
         .column(Column::exact(250.0))
         .column(Column::exact(250.0))
@@ -25,25 +44,25 @@ pub fn cams_table(ui: &mut Ui, app: &mut MonitoringApp) {
             });
         })
         .body(|mut body| {
-            for cam in &app.system.lock().unwrap().cams {
+            if app.system.lock().unwrap().cams.is_empty() {
                 body.row(20.0, |mut row| {
                     row.col(|ui| {
-                        ui.label(&format!("{}", cam.id));
-                    });
-                    row.col(|ui| {
-                        if CamState::Alert == cam.state {
-                            ui.label(egui::RichText::new("Alerta").color(egui::Color32::RED));
-                        } else {
-                            ui.label(egui::RichText::new("Ahorro de energía").color(egui::Color32::GREEN));
-                        }
-                    });
-                    row.col(|ui| {
-                        ui.label(&format!("{}", cam.location.latitude));
-                    });
-                    row.col(|ui| {
-                        ui.label(&format!("{}", cam.location.longitude));
+                        ui.label("No hay camaras");
                     });
                 });
+            } else {
+                for cam in &app.system.lock().unwrap().cams {
+                    body.row(20.0, |row| {
+                        cam_row(row, cam);
+                    });
+                }
             }
         });
+}
+
+pub fn show_cams_list(ui: &mut Ui, app: &mut MonitoringApp) {
+    ui.heading("Listado de cámaras");
+    ui.separator();
+    ui.add_space(10.0);
+    cams_list(ui, app);
 }

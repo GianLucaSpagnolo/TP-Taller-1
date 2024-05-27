@@ -16,10 +16,10 @@ fn main() -> Result<(), Error> {
 
     let app = MonitoringApp::new(client, log_path);
 
-    let (client_handler, listener_handler) = app.init()?;
+    let threads_handlers = app.init()?;
 
-    client_handler.join().unwrap()?;
-    listener_handler.join().unwrap();
+    threads_handlers.broker_listener.join().unwrap()?;
+    threads_handlers.message_handler.join().unwrap();
 
     Ok(())
 }

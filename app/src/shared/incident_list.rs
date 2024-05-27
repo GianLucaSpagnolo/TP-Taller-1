@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use super::{coordenates::Coordenates, incident::{Incident, IncidentState}};
+use super::{
+    coordenates::Coordenates,
+    incident::{Incident, IncidentState},
+};
 
 #[derive(Default)]
 pub struct IncidentList {
@@ -8,7 +11,7 @@ pub struct IncidentList {
 }
 
 impl IncidentList {
-    pub fn add(&mut self, location: Coordenates) -> Incident{
+    pub fn add(&mut self, location: Coordenates) -> Incident {
         let incident = Incident {
             id: self.incidents.len().to_string(),
             location,
