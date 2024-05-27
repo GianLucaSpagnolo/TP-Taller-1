@@ -33,16 +33,15 @@ use crate::logger::server_actions::MqttServerActions;
 use super::server_pool::ServerPool;
 use super::server_session::Session;
 
-
 /// ## MqttServer
-/// 
+///
 /// Estructura que representa un servidor MQTT
-/// 
+///
 /// ### Atributos
 /// - `config`: Configuración del servidor
 /// - `sessions`: Sesiones del servidor
 /// - `connect_received`: Bandera que indica si se recibió un paquete de conexión
-/// 
+///
 pub struct MqttServer {
     pub config: ServerConfig,
     sessions: HashMap<String, Session>,
@@ -60,16 +59,16 @@ impl Clone for MqttServer {
 }
 
 /// ## packet_handler
-/// 
+///
 /// Función que maneja los paquetes recibidos por el servidor
-/// 
+///
 /// ### Parametros
 /// - `stream`: Stream de la conexión
 /// - `sender`: Sender del servidor
-/// 
+///
 /// ### Retorno
 /// - `Result<(), Error>`: Resultado de la operación
-/// 
+///
 pub fn packet_handler(
     mut stream: TcpStream,
     sender: Arc<Mutex<Sender<(PacketReceived, TcpStream)>>>,
@@ -96,14 +95,13 @@ pub fn packet_handler(
 }
 
 impl MqttServer {
-
     /// ### new
-    /// 
+    ///
     /// Crea un nuevo servidor MQTT
-    /// 
+    ///
     /// ### Parametros
     /// - `config`: Configuración del servidor
-    /// 
+    ///
     pub fn new(config: ServerConfig) -> Self {
         MqttServer {
             config,
@@ -113,12 +111,12 @@ impl MqttServer {
     }
 
     /// ### start_server
-    /// 
+    ///
     /// Inicia el servidor MQTT
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<(), Error>`: Resultado de la operación
-    /// 
+    ///
     pub fn start_server(mut self) -> Result<(), Error> {
         let id = self.config.general.id.clone();
         let log_path = self.config.general.log_path.to_string();
@@ -216,12 +214,12 @@ impl MqttServer {
     }
 
     /// ### process_messages
-    /// 
+    ///
     /// Procesa los mensajes recibidos por el servidor
-    /// 
+    ///
     /// ### Parametros
     /// - `receiver`: Receiver de los mensajes
-    /// 
+    ///
     fn process_messages(
         &mut self,
         receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>,
@@ -261,16 +259,16 @@ impl MqttServer {
     }
 
     /// ### resend_publish_to_subscribers
-    /// 
+    ///
     /// Reenvia un mensaje a los suscriptores
-    /// 
+    ///
     /// ### Parametros
     /// - `stream`: Stream de la conexión
     /// - `pub_packet`: Paquete de publicación
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<MqttServerActions, Error>`: Resultado de la operación
-    /// 
+    ///
     fn resend_publish_to_subscribers(
         &mut self,
         mut stream: TcpStream,
@@ -310,12 +308,12 @@ impl MqttServer {
     }
 
     /// ### get_sub_id_and_topics
-    /// 
+    ///
     /// Obtiene el id del cliente y los topics de un paquete de subscripción
-    /// 
+    ///
     /// ### Parametros
     /// - `topics`: Vector de topics de subscripción (TopicFilter)
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<String, Error>`:
     ///     - Ok: id del cliente
@@ -355,16 +353,16 @@ impl MqttServer {
     }
 
     /// ### add_subscriptions
-    /// 
+    ///
     /// Agrega subscripciones. Retorna un paquete SUBACK
-    /// 
+    ///
     /// ### Parametros
     /// - `stream`: Stream de la conexión
     /// - `sub_packet`: Paquete de subscripción
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<MqttServerActions, Error>`: Resultado de la operación
-    /// 
+    ///
     fn add_subscriptions(
         &mut self,
         mut stream: TcpStream,
@@ -404,12 +402,12 @@ impl MqttServer {
     }
 
     /// ### get_unsub_id_and_topics
-    /// 
+    ///
     /// Obtiene el id del cliente y los topics de un paquete de desubscripción
-    /// 
+    ///
     /// ### Parametros
     /// - `topics`: Vector de topics de desubscripción (string)
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<String, Error>`:
     ///    - Ok: id del cliente
@@ -444,18 +442,17 @@ impl MqttServer {
         }
     }
 
-
     /// ### remove_subscriptions
-    /// 
+    ///
     /// Elimina subscripciones. Retorna un paquete UNSUBACK
-    /// 
+    ///
     /// ### Parametros
     /// - `stream`: Stream de la conexión
     /// - `unsub_packet`: Paquete de desubscripción
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<MqttServerActions, Error>`: Resultado de la operación
-    /// 
+    ///
     fn remove_subscriptions(
         &mut self,
         mut stream: TcpStream,
@@ -497,13 +494,13 @@ impl MqttServer {
     }
 
     /// ### stablish_connection
-    /// 
+    ///
     /// Establece una conexión. Retorna un paquete CONNACK
-    /// 
+    ///
     /// ### Parametros
     /// - `stream`: Stream de la conexión
     /// - `connect`: Paquete de conexión
-    /// 
+    ///
     fn stablish_connection(
         &mut self,
         mut stream: TcpStream,
@@ -562,14 +559,13 @@ impl MqttServer {
         Ok(connack_properties)
     }
 
-
     /// ### determinate_publish_acknowledge
-    /// 
+    ///
     /// Determina la respuesta a un paquete de publicación
-    /// 
+    ///
     /// ### Parametros
     /// - `publish`: Paquete de publicación
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<PubackProperties, Error>`: Resultado de la operación
     ///     
@@ -587,15 +583,15 @@ impl MqttServer {
     }
 
     /// ### determinate_subscribe_acknowledge
-    /// 
+    ///
     /// Determina la respuesta a un paquete de subscripción
-    /// 
+    ///
     /// ### Parametros
     /// - `subscribe`: Paquete de subscripción
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<SubackProperties, Error>`: Resultado de la operación
-    /// 
+    ///
     fn determinate_subscribe_acknowledge(
         &mut self,
         subscribe: Subscribe,
@@ -613,15 +609,15 @@ impl MqttServer {
     }
 
     /// ### determinate_unsubscribe_acknowledge
-    /// 
+    ///
     /// Determina la respuesta a un paquete de desubscripción
-    /// 
+    ///
     /// ### Parametros
     /// - `unsubscribe`: Paquete de desubscripción
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<UnsubackProperties, Error>`: Resultado de la operación
-    /// 
+    ///
     fn determinate_unsubscribe_acknowledge(
         &mut self,
         unsubscribe: Unsubscribe,
@@ -636,16 +632,16 @@ impl MqttServer {
     }
 
     /// ### open_new_session
-    /// 
+    ///
     /// Abre una nueva sesión
-    /// 
+    ///
     /// ### Parametros
     /// - `connect`: Paquete de conexión
     /// - `stream_connection`: Stream de la conexión
-    /// 
+    ///
     /// ### Retorno
     /// - `u8`: Resultado de la operación
-    /// 
+    ///
     fn open_new_session(&mut self, connect: Connect, stream_connection: TcpStream) -> u8 {
         if let Some(session) = self.sessions.get_mut(&connect.payload.client_id) {
             // Resumes session
@@ -661,15 +657,15 @@ impl MqttServer {
     }
 
     /// ### determinate_reason_code
-    /// 
+    ///
     /// Determina el reason code de un paquete de conexión
-    /// 
+    ///
     /// ### Parametros
     /// - `connect_packet`: Paquete de conexión
-    /// 
+    ///
     /// ### Retorno
     /// - `u8`: Resultado de la operación
-    /// 
+    ///
     fn determinate_reason_code(&self, connect_packet: &Connect) -> u8 {
         // Si ya se recibió un CONNECT packet, se debe procesar como un Protocol Error (reason code 130) y cerrar la conexion.
         if self.connect_received {
@@ -706,16 +702,16 @@ impl MqttServer {
     }
 
     /// ### receive_disconnect
-    /// 
+    ///
     /// Recibe un paquete de desconexión
-    /// 
+    ///
     /// ### Parametros
     /// - `stream_connection`: Stream de la conexión
     /// - `packet`: Paquete de desconexión
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<MqttServerActions, Error>`: Resultado de la operación
-    /// 
+    ///
     fn receive_disconnect(
         stream_connection: TcpStream,
         packet: Disconnect,
@@ -734,16 +730,16 @@ impl MqttServer {
     }
 
     /// ### send_disconnect
-    /// 
+    ///
     /// Envía un paquete de desconexión
-    /// 
+    ///
     /// ### Parametros
     /// - `stream_connection`: Stream de la conexión
     /// - `reason_code`: Reason code
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<MqttServerActions, Error>`: Resultado de la operación
-    /// 
+    ///
     fn send_disconnect(
         stream_connection: &mut TcpStream,
         reason_code: ReasonCode,

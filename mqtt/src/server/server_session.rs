@@ -9,30 +9,29 @@ use crate::control_packets::{
 };
 
 /// ## WillMessage
-/// 
+///
 /// Estructura que representa el mensaje de voluntad
 /// de un cliente MQTT
-/// 
+///
 /// ### Atributos
 /// - `will_topic`: topico del mensaje
 /// - `will_payload`: payload del mensaje
-/// 
+///
 pub struct WillMessage {
     pub will_topic: String,
     pub will_payload: Vec<u8>,
 }
 
 impl WillMessage {
-
     /// ### new
-    /// 
+    ///
     /// Crea un nuevo mensaje de voluntad
-    /// 
+    ///
     /// #### Parametros
     /// - `will_flag`: bandera de voluntad
     /// - `will_topic`: topico del mensaje
     /// - `will_payload`: payload del mensaje
-    /// 
+    ///
     /// #### Retorno
     /// - `Option<WillMessage>`:
     ///    - Some: mensaje de voluntad
@@ -66,16 +65,16 @@ impl Clone for WillMessage {
 }
 
 /// ## Session
-/// 
+///
 /// Estructura que representa la sesión de un cliente MQTT
-/// 
+///
 /// ### Atributos
 /// - `active`: estado de la sesión
 /// - `stream_connection`: conexión del cliente
 /// - `session_expiry_interval`: intervalo de expiración de la sesión
 /// - `subscriptions`: subscripciones del cliente
 /// - `will_message`: mensaje de voluntad
-/// 
+///
 pub struct Session {
     pub active: bool,
     pub stream_connection: TcpStream,
@@ -85,15 +84,14 @@ pub struct Session {
 }
 
 impl Session {
-
     /// ### new
-    /// 
+    ///
     /// Crea una nueva sesión
-    /// 
+    ///
     /// #### Parametros
     /// - `connection`: paquete de conexión del cliente
     /// - `stream_connection`: conexión del cliente
-    /// 
+    ///
     /// #### Retorno
     /// - `Session`: sesión
     pub fn new(connection: &Connect, stream_connection: TcpStream) -> Self {
@@ -111,22 +109,22 @@ impl Session {
     }
 
     /// ### reconnect
-    /// 
+    ///
     /// Reestablece la sesión del cliente
-    /// 
+    ///
     pub fn reconnect(&mut self) {
         self.active = true;
     }
 
     /// ### disconnect
-    /// 
+    ///
     /// Desconecta al cliente
-    /// 
+    ///
     /// #### Retorno
     /// - `Result<(), Error>`:
     ///   - Ok: cliente desconectado
     ///   - Err: error al desconectar al cliente (std::io::Error)
-    /// 
+    ///
     pub fn disconnect(&mut self) -> Result<(), Error> {
         self.active = false;
         self.stream_connection.shutdown(Shutdown::Both)

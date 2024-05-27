@@ -5,44 +5,41 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 
-
 /// ## Message
-/// 
+///
 /// Enumeracion de mensajes que se pueden enviar a los workers
-/// 
+///
 /// ### Variantes
 /// - `NewJob`: nuevo trabajo
 /// - `Terminate`: terminar el worker
-/// 
+///
 enum Message {
     NewJob(Job),
     Terminate,
 }
 
 /// ## ServerPool
-/// 
+///
 /// Estructura que representa un pool de workers
-/// 
+///
 /// ### Atributos
 /// - `workers`: threads workers
 /// - `sender`: canal de comunicacion
-/// 
+///
 pub struct ServerPool {
     workers: Vec<WorkerThread>,
     sender: mpsc::Sender<Message>,
 }
 
 trait FnBox {
-
     /// ## call_box
-    /// 
+    ///
     /// Ejecuta la funcion
-    /// 
+    ///
     fn call_box(self: Box<Self>) -> Result<(), Error>;
 }
 
 impl<F: FnOnce() -> Result<(), Error>> FnBox for F {
- 
     fn call_box(self: Box<F>) -> Result<(), Error> {
         (*self)()
     }
@@ -51,19 +48,18 @@ impl<F: FnOnce() -> Result<(), Error>> FnBox for F {
 type Job = Box<dyn FnBox + Send + 'static>;
 
 impl ServerPool {
-
     /// ## build
-    /// 
+    ///
     /// Construye un pool de workers
-    /// 
+    ///
     /// ### Parametros
     /// - `size`: cantidad de workers
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<ServerPool, Error>`:
     ///   - Ok: pool de workers
     ///   - Err: error al construir el pool de workers
-    /// 
+    ///
     pub fn build(size: usize) -> Result<Self, Error> {
         if size == 0 {
             return Err(Error::new(
@@ -86,17 +82,17 @@ impl ServerPool {
     }
 
     /// ## execute
-    /// 
+    ///
     /// Ejecuta una funcion en un worker
-    /// 
+    ///
     /// ### Parametros
     /// - `f`: funcion a ejecutar
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<(), Error>`:
     ///     - Ok: funcion ejecutada
     ///     - Err: error al ejecutar la funcion
-    /// 
+    ///
     pub fn execute<F>(&self, f: F) -> Result<(), Error>
     where
         F: FnOnce() -> Result<(), Error> + Send + 'static,
@@ -146,9 +142,9 @@ impl Clone for ServerPool {
 }
 
 /// ## WorkerThread
-/// 
+///
 /// Estructura que representa un worker
-/// 
+///
 /// ### Atributos
 /// - `thread`: thread del worker
 struct WorkerThread {
@@ -156,17 +152,16 @@ struct WorkerThread {
 }
 
 impl WorkerThread {
-
     /// ## new
-    /// 
+    ///
     /// Crea un nuevo worker
-    /// 
+    ///
     /// ### Parametros
     /// - `receiver`: receptor de mensajes
-    /// 
+    ///
     /// ### Retorno
     /// - `WorkerThread`: worker creado
-    /// 
+    ///
     fn new(receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> WorkerThread {
         let thread = thread::spawn(move || loop {
             let message = receiver.lock().unwrap().recv().unwrap();

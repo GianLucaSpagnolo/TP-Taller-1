@@ -7,23 +7,22 @@ use std::{
 use crate::common::utils::*;
 
 /// ## Config
-/// 
+///
 /// Trait que define la configuracion de un servidor o cliente MQTT
-/// 
+///
 /// ### Metodos
 /// - `set_params`: Setea los parametros de la configuracion
 /// - `from_file`: Lee la configuracion desde un archivo
 /// - `get_socket_address`: Devuelve la direccion del servidor
-/// 
+///
 pub trait Config<Config = Self> {
-
     /// ## set_params
-    /// 
+    ///
     /// Setea los parametros de la configuracion
-    /// 
+    ///
     /// ### Parametros
     /// - `params`: parametros de la configuracion
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<Config, Error>`:
     ///   - Ok: configuracion seteada
@@ -33,17 +32,17 @@ pub trait Config<Config = Self> {
         Self: Sized;
 
     /// ## from_file
-    /// 
+    ///
     /// Lee la configuracion desde un archivo
-    /// 
+    ///
     /// ### Parametros
     /// - `file_path`: ruta del archivo
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<Config, Error>`:
     ///     - Ok: configuracion leida
     ///     - Err: error al leer la configuracion (std::io::Error)
-    /// 
+    ///
     fn from_file(file_path: String) -> Result<Self, Error>
     where
         Self: Sized,
@@ -63,28 +62,26 @@ pub trait Config<Config = Self> {
     }
 
     /// ## get_socket_address
-    /// 
+    ///
     /// Devuelve la direccion del servidor
-    /// 
+    ///
     /// ### Retorno
     /// - `SocketAddr`: direccion del servidor
-    /// 
+    ///
     fn get_socket_address(&self) -> SocketAddr;
-
 }
 
-
 /// ## MqttConfig
-/// 
+///
 /// Estructura que define la configuracion general de un usuario MQTT
-/// 
+///
 /// ### Atributos
 /// - `id`: identificador del usuario
 /// - `ip`: direccion ip del servidor
 /// - `port`: puerto del servidor
 /// - `log_path`: ruta del archivo de log
 /// - `log_in_term`: loguear en terminal
-/// 
+///
 pub struct MqttConfig {
     pub id: String,
     pub ip: IpAddr,

@@ -14,10 +14,10 @@ pub mod generic_packet {
     };
 
     /// ## PacketType
-    /// 
+    ///
     /// Enum que representa los tipos de paquetes
     /// del protocolo MQTT
-    /// 
+    ///
     pub enum PacketType {
         ConnectType,
         ConnackType,
@@ -35,7 +35,7 @@ pub mod generic_packet {
     }
 
     /// ## PacketReceived
-    /// 
+    ///
     /// Enum que encapsula los paquetes
     /// recibidos por el servidor o cliente MQTT
     pub enum PacketReceived {
@@ -55,44 +55,43 @@ pub mod generic_packet {
     }
 
     /// ## Serializacion de paquetes
-    /// 
+    ///
     /// Implementar para cada paquete
     /// la serializacion y deserializacion
     /// de los bytes correspondientes
     /// para su correcto envio y recepcion
     /// en el protocolo MQTT
-    /// 
+    ///
     /// ### Metodos
     /// - `read_from`: Lee los bytes del stream y los convierte en un paquete
     /// - `write_to`: Escribe los bytes del paquete en el stream
     /// - `packed_package`: Devuelve el paquete encapsulado en un enum interpretable por el protocolo
     /// - `send`: Envia el paquete a traves del stream
-    /// 
+    ///
     pub trait Serialization<Packet = Self> {
-
         /// ## read_from
-        /// 
+        ///
         /// Lee los bytes del stream y los
         /// convierte en un paquete
-        /// 
+        ///
         /// ### Parametros
         /// - `stream`: stream de bytes
         /// - `remaining_length`: longitud restante de lectura
-        /// 
+        ///
         /// ### Retorno
-        /// - `Result<Packet, Error>`: 
+        /// - `Result<Packet, Error>`:
         ///     - Ok: paquete leido
         ///     - Err: error de lectura (std::io::Error)
         fn read_from(stream: &mut dyn Read, remaining_length: u32) -> Result<Packet, Error>;
 
         /// ## write_to
-        /// 
+        ///
         /// Escribe los bytes del paquete
         /// en el stream
-        /// 
+        ///
         /// ### Parametros
         /// - `stream`: stream de bytes
-        /// 
+        ///
         /// ### Retorno
         /// - `Result<(), Error>`:
         ///    - Ok: escritura correcta
@@ -100,13 +99,13 @@ pub mod generic_packet {
         fn write_to(&self, stream: &mut dyn Write) -> Result<(), Error>;
 
         /// ## packed_package
-        /// 
+        ///
         /// Devuelve el paquete encapsulado
         /// en un enum interpretable por el protocolo
-        /// 
+        ///
         /// ### Parametros
         /// - `package`: paquete a encapsular
-        /// 
+        ///
         /// ### Retorno
         /// - `PacketReceived`: paquete encapsulado
         fn packed_package(_package: Packet) -> PacketReceived {
@@ -114,12 +113,12 @@ pub mod generic_packet {
         }
 
         /// ## send
-        /// 
+        ///
         /// Envia el paquete a traves del stream
-        /// 
+        ///
         /// ### Parametros
         /// - `stream`: stream de bytes
-        /// 
+        ///
         /// ### Retorno
         /// - `Result<(), Error>`:
         ///   - Ok: envio correcto
@@ -131,15 +130,15 @@ pub mod generic_packet {
     }
 
     /// ## get_packet
-    /// 
+    ///
     /// Devuelve el paquete correspondiente
     /// al tipo de paquete recibido
-    /// 
+    ///
     /// ### Parametros
     /// - `stream`: stream de bytes
     /// - `package_type`: tipo de paquete
     /// - `remaining_length`: longitud restante de lectura
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<PacketReceived, Error>`:
     ///     - Ok: paquete leido
@@ -170,15 +169,15 @@ pub mod generic_packet {
     }
 
     /// ## pack_bytes
-    /// 
+    ///
     /// Lee la cantidad de bytes correspondiente,
     /// lo interpreta como un paquete  
     /// y lo empaqueta en un enum interpretable por el protocolo
-    /// 
+    ///
     /// ### Parametros
     /// - `stream`: stream de bytes
     /// - `remaining_length`: longitud restante de lectura
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<PacketReceived, Error>`:
     ///     - Ok: paquete leido

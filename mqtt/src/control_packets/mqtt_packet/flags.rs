@@ -2,9 +2,9 @@ pub mod flags_handler {
     use std::io::Error;
 
     /// ## apply_mask_to_n_bits
-    /// 
+    ///
     /// Aplica una mascara a un byte y devuelve los bits
-    /// 
+    ///
     fn apply_mask_to_n_bits(flags: u8, shifts: u8, len: u8) -> u8 {
         let mask = (1 << len) - 1;
         (flags >> shifts) & mask
@@ -87,18 +87,18 @@ pub mod flags_handler {
     }
 
     /// ## add_connect_flag_clean_start
-    /// 
+    ///
     /// Agrega un flag de tipo CLEAN START al byte de flags
-    /// 
+    ///
     /// ### Parametros
     /// - `connect_flags`: byte de flags
     /// - `clean_start`: valor del flag CLEAN START (string booleano)
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<u8, Error>`:
     ///   - Ok: byte de flags actualizado
     ///   - Err: error al agregar el flag (std::io::Error)
-    /// 
+    ///
     pub fn add_connect_flag_clean_start(
         mut connect_flags: u8,
         clean_start: String,
@@ -118,18 +118,18 @@ pub mod flags_handler {
     }
 
     /// ## add_connect_flag_will_flag
-    /// 
+    ///
     /// Agrega un flag de tipo WILL FLAG al byte de flags
-    /// 
+    ///
     /// ### Parametros
     /// - `connect_flags`: byte de flags
     /// - `will_flag`: valor del flag WILL FLAG (string booleano)
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<u8, Error>`:
     ///    - Ok: byte de flags actualizado
     ///    - Err: error al agregar el flag (std::io::Error)
-    /// 
+    ///
     pub fn add_connect_flag_will_flag(
         mut connect_flags: u8,
         will_flag: String,
@@ -149,18 +149,18 @@ pub mod flags_handler {
     }
 
     /// ## add_connect_flag_will_qos
-    /// 
+    ///
     /// Agrega un flag de tipo WILL QoS al byte de flags
-    /// 
+    ///
     /// ### Parametros
     /// - `connect_flags`: byte de flags
     /// - `will_qos`: valor del flag WILL QoS (u8)
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<u8, Error>`:
     ///     - Ok: byte de flags actualizado
     ///     - Err: error al agregar el flag (std::io::Error)
-    /// 
+    ///
     pub fn add_connect_flag_will_qos(mut connect_flags: u8, will_qos: String) -> Result<u8, Error> {
         let will_qos = match will_qos.parse::<u8>() {
             Ok(p) => p,
@@ -173,16 +173,16 @@ pub mod flags_handler {
     /// ## add_connect_flag_will_retain
     ///
     /// Agrega un flag de tipo WILL RETAIN al byte de flags
-    /// 
+    ///
     /// ### Parametros
     /// - `connect_flags`: byte de flags
     /// - `will_retain`: valor del flag WILL RETAIN (string booleano)
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<u8, Error>`:
     ///   - Ok: byte de flags actualizado
     ///   - Err: error al agregar el flag (std::io::Error)
-    /// 
+    ///
     pub fn add_connect_flag_will_retain(
         mut connect_flags: u8,
         will_retain: String,
@@ -202,18 +202,18 @@ pub mod flags_handler {
     }
 
     /// ## add_connect_flag_password
-    /// 
+    ///
     /// Agrega un flag de tipo PASSWORD al byte de flags
-    /// 
+    ///
     /// ### Parametros
     /// - `connect_flags`: byte de flags
     /// - `password`: valor del flag PASSWORD (string booleano)
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<u8, Error>`:
     ///     - Ok: byte de flags actualizado
     ///     - Err: error al agregar el flag (std::io::Error)
-    /// 
+    ///
     pub fn add_connect_flag_password(mut connect_flags: u8, password: String) -> Result<u8, Error> {
         let password = match password.parse::<bool>() {
             Ok(p) => {
@@ -230,18 +230,18 @@ pub mod flags_handler {
     }
 
     /// ## add_connect_flag_username
-    /// 
+    ///
     /// Agrega un flag de tipo USERNAME al byte de flags
-    /// 
+    ///
     /// ### Parametros
     /// - `connect_flags`: byte de flags
     /// - `username`: valor del flag USERNAME (string booleano)
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<u8, Error>`:
     ///   - Ok: byte de flags actualizado
     ///   - Err: error al agregar el flag (std::io::Error)
-    /// 
+    ///
     pub fn add_connect_flag_username(mut connect_flags: u8, username: String) -> Result<u8, Error> {
         let username = match username.parse::<bool>() {
             Ok(p) => {

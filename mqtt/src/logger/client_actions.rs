@@ -10,9 +10,9 @@ use crate::{
 use super::actions::MqttActions;
 
 /// ## MqttClientActions
-/// 
+///
 /// Enum que representa las acciones de un cliente MQTT
-/// 
+///
 /// ### Variantes
 /// - `Connection`: Conexion establecida
 /// - `ReceivePublish`: Cliente recibe un mensaje
@@ -24,10 +24,10 @@ use super::actions::MqttActions;
 /// - `SendUnsubscribe`: Cliente envia mensaje de desubscripción
 /// - `SendDisconnect`: Cliente envia mensaje de desconexión
 /// - `SendPinreq`: Cliente envia ping
-/// - `AcknowledgePublish`: Cliente recibe confirmación de envio de mensaje 
+/// - `AcknowledgePublish`: Cliente recibe confirmación de envio de mensaje
 /// - `AcknowledgeSubscribe`: Cliente recibe confirmación de subscripción
 /// - `AcknowledgeUnsubscribe`: Cliente recibe confirmación de desubscripción
-/// 
+///
 pub enum MqttClientActions {
     Connection(String, u8),
     ReceivePublish(String),

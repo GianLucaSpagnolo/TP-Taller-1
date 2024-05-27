@@ -3,18 +3,18 @@ use std::{io::Error, net::SocketAddr};
 use super::mqtt_config::{Config, MqttConfig};
 
 /// ## ServerConfig
-/// 
+///
 /// Estructura que representa la configuracion
 /// de un servidor MQTT
-/// 
+///
 /// ### Atributos
 /// - `general`: configuracion general del servidor
 /// - `maximum_threads`: cantidad maxima de threads
-/// 
+///
 /// ### Implementa
 /// - `Clone`: clonar la configuracion
 /// - `Config`: configuracion abstracta
-/// 
+///
 pub struct ServerConfig {
     pub general: MqttConfig,
     pub maximum_threads: usize,
