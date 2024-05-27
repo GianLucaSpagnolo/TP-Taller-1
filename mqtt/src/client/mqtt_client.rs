@@ -23,22 +23,70 @@ use crate::{
     logger::{actions::MqttActions, client_actions::MqttClientActions},
 };
 
+
+/// ## MqttClient
+/// 
+/// Estructura que representa un cliente MQTT.
+/// 
+/// ### Atributos
+/// - config: Configuración del cliente.
+/// - stream: Stream de conexión con el servidor.
+/// - current_packet_id: ID del paquete actual.
+/// 
+/// ### Métodos
+/// - init: Inicializa un cliente MQTT.
+/// - run_listener: Inicializa un listener para el cliente.
+/// - listen_message: Escucha los mensajes del servidor.
+/// - messages_handler: Maneja los mensajes recibidos.
+/// - publish: Publica un mensaje en un tópico.
+/// - subscribe: Se suscribe a un tópico.
+/// - unsubscribe: Se desuscribe de un tópico.
+/// - disconnect: Se desconecta del servidor.
+/// - pin_request: Realiza un ping request al servidor.
+/// 
 pub struct MqttClient {
     config: ClientConfig,
     stream: TcpStream,
     current_packet_id: u16,
 }
 
+
+/// ## MqttClientMessage
+/// 
+/// Estructura que representa un mensaje recibido por el cliente MQTT.
+/// 
+/// ### Atributos
+/// - topic: Tópico del mensaje.
+/// - data: Datos del mensaje.
+/// 
 pub struct MqttClientMessage {
     pub topic: String,
     pub data: Vec<u8>,
 }
 
+/// ## MqttClientListener
+/// 
+/// Estructura que representa un listener para el cliente MQTT.
+/// 
+/// ### Atributos
+/// - receiver: Receptor de mensajes.
+/// - handler: Handler del listener.
+/// 
 pub struct MqttClientListener {
     pub receiver: Receiver<MqttClientMessage>,
     pub handler: JoinHandle<Result<(), Error>>,
 }
 
+/// ## receive_packet
+/// 
+/// Función que recibe un paquete del servidor.
+/// 
+/// ### Parámetros
+/// - stream: Stream de conexión con el servidor.
+/// 
+/// ### Retorno
+/// Resultado de la operación con el paquete recibido.
+/// 
 fn receive_packet(mut stream: &mut TcpStream) -> Result<PacketReceived, Error> {
     let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
 
@@ -49,6 +97,17 @@ fn receive_packet(mut stream: &mut TcpStream) -> Result<PacketReceived, Error> {
     )
 }
 
+
+/// ## receive_connack_packet
+/// 
+/// Función que recibe un paquete CONNACK del servidor.
+/// 
+/// ### Parámetros
+/// - stream: Stream de conexión con el servidor.
+/// 
+/// ### Retorno
+/// Resultado de la operación con el paquete CONNACK recibido.
+/// 
 fn receive_connack_packet(stream: &mut TcpStream) -> Result<Connack, Error> {
     let packet_recived = receive_packet(stream)?;
 
@@ -62,6 +121,19 @@ fn receive_connack_packet(stream: &mut TcpStream) -> Result<Connack, Error> {
 }
 
 impl MqttClient {
+
+    /// ## init
+    /// 
+    /// Inicializa un cliente MQTT. 
+    /// Establece la conexión con el servidor y envía un paquete CONNECT.
+    /// Debe recibir un paquete CONNACK del servidor.
+    /// 
+    /// ### Parámetros
+    /// - config: Configuración del cliente.
+    /// 
+    /// ### Retorno
+    /// Resultado de la operación con el cliente MQTT.
+    /// 
     pub fn init(config: ClientConfig) -> Result<Self, Error> {
         let log_path = config.general.log_path.to_string();
         let client_id = config.general.id.to_string();
@@ -140,6 +212,16 @@ impl MqttClient {
         Ok(client)
     }
 
+    /// ## run_listener
+    /// 
+    /// Inicializa un listener para el cliente MQTT.
+    /// 
+    /// ### Parámetros
+    /// - log_path: Path del log.
+    /// 
+    /// ### Retorno
+    /// Resultado de la operación con el listener.
+    /// 
     pub fn run_listener(&mut self, log_path: String) -> Result<MqttClientListener, Error> {
         let client = self.clone();
 
@@ -165,6 +247,19 @@ impl MqttClient {
         Ok(MqttClientListener { receiver, handler })
     }
 
+    /// ## listen_message
+    /// 
+    /// Escucha los mensajes del servidor. 
+    /// Envia los mensajes al sender para que lo procese el cliente como considere necesario,
+    /// 
+    /// ### Parámetros
+    /// - stream: Stream de conexión con el servidor.
+    /// - sender: Emisor de mensajes.
+    /// - log_path: Path del log.
+    /// 
+    /// ### Retorno
+    /// Resultado de la operación.
+    /// 
     pub fn listen_message(
         &self,
         mut stream: TcpStream,
@@ -185,7 +280,7 @@ impl MqttClient {
             }
         };
 
-        let msg = match self.messages_handler(&mut stream, header, log_path) {
+        let msg = match self.packet_handler(&mut stream, header, log_path) {
             Ok(res) => {
                 if let Some(res) = res {
                     res
@@ -219,7 +314,19 @@ impl MqttClient {
         Ok(())
     }
 
-    pub fn messages_handler(
+    /// ## packet_handler
+    /// 
+    /// Maneja los mensajes recibidos.
+    /// 
+    /// ### Parámetros
+    /// - stream: Stream de conexión con el servidor.
+    /// - fixed_header: Cabecera del paquete.
+    /// - log_path: Path del log.
+    /// 
+    /// ### Retorno
+    /// Resultado de la operación con el mensaje.
+    /// 
+    pub fn packet_handler(
         &self,
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
@@ -320,6 +427,17 @@ impl MqttClient {
         Ok(Some(MqttClientMessage { topic, data }))
     }
 
+    /// ## publish
+    /// 
+    /// Publica un mensaje en un tópico.
+    /// 
+    /// ### Parámetros
+    /// - message: Mensaje a publicar. (bytes)
+    /// - topic: Tópico del mensaje.
+    /// 
+    /// ### Retorno
+    /// Resultado de la operación.
+    /// 
     pub fn publish(&mut self, message: Vec<u8>, topic: String) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
 
@@ -350,6 +468,16 @@ impl MqttClient {
         Ok(())
     }
 
+    /// ## subscribe
+    /// 
+    /// Se suscribe a un tópico.
+    /// 
+    /// ### Parámetros
+    /// - topics: Lista de tópicos a los que se suscribe.
+    /// 
+    /// ### Retorno
+    /// Resultado de la operación.
+    /// 
     pub fn subscribe(&mut self, topics: Vec<&str>) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
 
@@ -383,6 +511,17 @@ impl MqttClient {
         Ok(())
     }
 
+    /// ## unsubscribe
+    /// 
+    /// Se desuscribe de un tópico.
+    /// 
+    /// ### Parámetros
+    /// - topics: Lista de tópicos de los que se desuscribe.
+    /// - packet_id: ID del paquete.
+    /// 
+    /// ### Retorno
+    /// Resultado de la operación.
+    /// 
     pub fn unsubscribe(&mut self, topics: Vec<&str>, packet_id: u16) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
 
@@ -410,6 +549,16 @@ impl MqttClient {
         Ok(())
     }
 
+    /// ## disconnect
+    /// 
+    /// Se desconecta del servidor.
+    /// 
+    /// ### Parámetros
+    /// - reason_code: Código de desconexión (valido para el cliente)
+    /// 
+    /// ### Retorno
+    /// Resultado de la operación.
+    /// 
     pub fn disconnect(&mut self, reason_code: ReasonCode) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
 
@@ -443,6 +592,13 @@ impl MqttClient {
         Ok(())
     }
 
+    /// ## pin_request
+    /// 
+    /// Realiza un ping request al servidor.
+    /// 
+    /// ### Retorno
+    /// Resultado de la operación.
+    /// 
     pub fn pin_request(&mut self) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
         PingReq.send(&mut self.stream)?;
