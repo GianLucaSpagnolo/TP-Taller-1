@@ -95,7 +95,7 @@ impl fmt::Display for MqttServerActions {
             ),
             MqttServerActions::ReceiveDisconnect(reason_code) => write!(
                 f,
-                "DISCONNECT - Servido recibió una desconección debido a: [{}]",
+                "DISCONNECT - Servidor recibió una desconección debido a: [{}]",
                 reason_code
             ),
             MqttServerActions::CloseServer => write!(f, "SHUTDOWN - Servidor apagandose"),

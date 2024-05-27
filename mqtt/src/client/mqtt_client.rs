@@ -11,7 +11,7 @@ use crate::{
     control_packets::{
         mqtt_connack::connack::Connack,
         mqtt_connect::{connect::Connect, payload},
-        mqtt_disconnect,
+        mqtt_disconnect::{self},
         mqtt_packet::{
             fixed_header::PacketFixedHeader, packet::generic_packet::*, reason_codes::ReasonCode,
         },
@@ -420,8 +420,15 @@ impl MqttClient {
             return Err(Error::new(std::io::ErrorKind::Other, msg));
         }
 
+        let disconnect_reason_code;
+        if let ReasonCode::Success = reason_code {
+            disconnect_reason_code = ReasonCode::NormalDisconnection.get_id();
+        } else {
+            disconnect_reason_code = reason_code.get_id();
+        }
+
         let properties = mqtt_disconnect::disconnect_properties::DisconnectProperties {
-            disconnect_reason_code: reason_code.get_id(),
+            disconnect_reason_code,
             session_expiry_interval: None,
             reason_string: None,
             user_property: None,

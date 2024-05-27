@@ -552,9 +552,15 @@ impl MqttServer {
     ) -> Result<MqttServerActions, Error> {
         // search session and disconnect ?
         stream_connection.shutdown(std::net::Shutdown::Both)?;
-        Ok(MqttServerActions::ReceiveDisconnect(ReasonCode::new(
-            packet.properties.disconnect_reason_code,
-        )))
+
+        let reason_code =
+            if packet.properties.disconnect_reason_code == ReasonCode::Success.get_id() {
+                ReasonCode::NormalDisconnection
+            } else {
+                ReasonCode::new(packet.properties.disconnect_reason_code)
+            };
+
+        Ok(MqttServerActions::ReceiveDisconnect(reason_code))
     }
 
     fn send_disconnect(
