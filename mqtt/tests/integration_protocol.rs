@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod test {
+    use mqtt::control_packets::mqtt_packet::reason_codes::ReasonCode::NormalDisconnection;
     use mqtt::{
         client::mqtt_client::{MqttClient, MqttClientMessage},
         config::{client_config::ClientConfig, mqtt_config::Config, server_config::ServerConfig},
@@ -101,6 +102,17 @@ mod test {
 
     #[test]
     fn test_interaction_between_client_and_server() {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("tests/config/server_config.txt");
+
+        let server_config = ServerConfig::from_file(String::from(path.to_str().unwrap())).unwrap();
+
+        let mut client_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        client_path.push("tests/config/client_1_config.txt");
+
+        let client_config =
+            ClientConfig::from_file(String::from(client_path.to_str().unwrap())).unwrap();
+
         // SERVER
         let server_handle = thread::spawn(move || {
             let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -113,13 +125,11 @@ mod test {
             if let Err(e) = server.clone().start_server() {
                 panic!("Server fails with error: {}", e);
             }
-
-            remove_file(&server_config.general.log_path).unwrap();
-            drop(server);
         });
 
         // CLIENT
         let client_handle = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(1000));
             let mut client_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             client_path.push("tests/config/client_1_config.txt");
 
@@ -179,15 +189,17 @@ mod test {
             thread::sleep(Duration::from_millis(5000));
             client.unsubscribe(vec!["bad messages"], 0x100).unwrap();
 
-            //client.disconnect(NormalDisconnection).unwrap();
+            thread::sleep(Duration::from_millis(500));
+            client.disconnect(NormalDisconnection).unwrap();
 
             client_listener.handler.join().unwrap().unwrap();
             client_message_handler.join().unwrap();
-
-            remove_file(log_path.to_str().unwrap()).unwrap();
         });
 
-        client_handle.join().unwrap();
-        server_handle.join().unwrap();
+        thread::sleep(Duration::from_millis(10000));
+        remove_file(server_config.general.log_path).unwrap();
+        remove_file(client_config.general.log_path).unwrap();
+        drop(client_handle);
+        drop(server_handle);
     }
 }
