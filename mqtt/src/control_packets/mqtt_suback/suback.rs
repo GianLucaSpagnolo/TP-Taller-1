@@ -6,28 +6,27 @@ use crate::control_packets::mqtt_packet::packet::generic_packet::Serialization;
 use crate::control_packets::mqtt_packet::packet_properties::PacketProperties;
 use crate::control_packets::mqtt_suback::suback_properties::SubackProperties;
 
-/// ## Suback packet
+/// ## SUBACK PACKET
 ///
 /// The SUBACK Packet is sent by the Server to the Client to confirm receipt and processing of a SUBSCRIBE Packet.
 ///
 /// A SUBACK packet contais a list of reason codes, that specify the maximun QoS level that was granted or the error
 /// which was found for each Subscription that was requested by the SUBSCRIBE.
 ///
-/// ### Fixed Header
+/// ### FIXED HEADER
 ///
-/// PRIMER BYTE
-/// 4 bits mas significativos: MQTT Control Packet type
-/// 1001: SUBACK
+/// FIRST BYTE:
+/// 4 most significant bits: MQTT Control Packet type
+/// SUBACK: 1001
 ///
-/// 4 bits menos significativos: Flags
+/// 4 less significant bits: Flags
 /// 0000: Reserved
 ///
-/// SEGUNDO BYTE
-///
+/// SECOND BYTE ONWARDS:
 /// Remaining Length
 /// This is the length of Variable Header plus the length of the Payload, encoded as a Variable Byte Integer.
 ///
-/// ### Variable Header
+/// ### VARIABLE HEADER
 ///
 /// The Variable Header of the SUBACK packet contains the following fields in the order: Packet Identifier from
 /// the SUBSCRIBE packet that is being acknowledged, and Properties.
@@ -52,13 +51,12 @@ use crate::control_packets::mqtt_suback::suback_properties::SubackProperties;
 /// ID: 38 (0x26)
 /// Byte n: User Property (UTF-8 String Pair)
 ///
-/// ### Payload
+/// ### PAYLOAD
 ///
 /// The Payload of the SUBACK packet contains a list of Reason Codes. Each Reason Code corresponds to a Topic Filter
 /// in the SUBSCRIBE packet that is being acknowledged.
 /// The order of the Reason Codes in the SUBACK packet MUST match the order of Topic Filters in the SUBSCRIBE packet.
 ///
-#[allow(dead_code)]
 pub struct Suback {
     pub properties: SubackProperties,
 }
@@ -94,7 +92,6 @@ impl Serialization for Suback {
 }
 
 impl Suback {
-    #[allow(dead_code)]
     pub fn new(properties: SubackProperties) -> Self {
         Suback { properties }
     }

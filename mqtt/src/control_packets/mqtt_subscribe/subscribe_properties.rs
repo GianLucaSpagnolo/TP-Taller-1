@@ -15,7 +15,6 @@ pub struct TopicFilter {
 }
 
 #[derive(Default)]
-#[allow(dead_code)]
 pub struct SubscribeProperties {
     pub packet_identifier: u16,
     pub subscription_identifier: Option<u32>,
@@ -49,7 +48,7 @@ impl PacketProperties for SubscribeProperties {
         fixed_props_size as u32 + variable_props.size_of() + topic_filters_size as u32
     }
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
-        let mut variable_props = VariableHeaderProperties::new();
+        let mut variable_props = VariableHeaderProperties::default();
 
         if let Some(subscription_identifier) = self.subscription_identifier {
             variable_props.add_variable_byte_integer_property(
@@ -155,7 +154,6 @@ impl SubscribeProperties {
     ///
     /// Bits 6 y 7 son reservados. Deben ser 0.
     ///
-    #[allow(dead_code)]
     pub fn add_topic_filter(
         &mut self,
         topic_filter: String,

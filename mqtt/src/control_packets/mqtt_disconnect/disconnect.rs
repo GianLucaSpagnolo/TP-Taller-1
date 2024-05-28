@@ -9,7 +9,26 @@ use crate::control_packets::mqtt_packet::{
     packet::generic_packet::Serialization,
 };
 
-#[allow(dead_code)]
+/// ## DISCONNECT PACKET
+///
+/// The DISCONNECT Packet is the final Control Packet sent in the connection between the Client and the Server.
+/// It indicates that the Client is disconnecting cleanly.
+///
+/// It can be sent by the Client or Server.
+///
+/// ### FIXED HEADER
+///
+/// FIRST BYTE:
+/// 4 most significant bits: MQTT Control Packet type
+/// DISCONNECT: 1110
+///
+/// 4 less significant bits: Flags
+/// 0000: Reserved
+///
+/// SECOND BYTE ONWARDS:
+/// Remaining Length
+/// This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
+///
 pub struct Disconnect {
     pub properties: DisconnectProperties,
 }
@@ -46,7 +65,6 @@ impl Serialization for Disconnect {
 }
 
 impl Disconnect {
-    #[allow(dead_code)]
     pub fn new(properties: DisconnectProperties) -> Self {
         Disconnect { properties }
     }

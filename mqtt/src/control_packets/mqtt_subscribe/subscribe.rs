@@ -9,18 +9,25 @@ use crate::control_packets::{
     mqtt_subscribe::subscribe_properties::SubscribeProperties,
 };
 
-/// ## SUBSCRIBE PACKET (Enviado por el cliente al servidor)
+/// ## SUBSCRIBE PACKET
 ///
-/// ### FIXED HEADER: 2 BYTES
-/// Primer Byte:
-/// 4 bits mas significativos: MQTT Control Packet type
+/// Always sent by a client to the server to create one or more subscriptions.
 ///
-/// Segundo Byte:
+/// ### FIXED HEADER
+///
+/// FIRST BYTE:
+/// 4 most significant bits: MQTT Control Packet type
+/// 1000: SUBSCRIBE
+///
+/// 4 less significant bits: Flags
+/// 0010: Reserved
+///
+/// SECOND BYTE ONWARDS:
 /// Remaining Length
-/// El remaining length es el numero de bytes que quedan en el paquete despues del Fixed Header y que contienen el Variable Header y el Payload
+/// The remaining length is the number of bytes remaining in the packet, after the Fixed Header, and up to the end of the packet.
 ///
+/// ### VARIABLE HEADER
 ///
-/// ### VARIABLE HEADER:
 /// Packet Identifier: 2 bytes
 ///
 /// Property Length: Variable Byte Integer
@@ -28,31 +35,30 @@ use crate::control_packets::{
 /// 11 - 0x0B - Subscription Identifier - Variable Byte Integer (valor entre 1 y 268,435,455)
 /// 38 - 0x26 - User Property - UTF-8 String Pair
 ///
+/// ### PAYLOAD
 ///
-/// ### PAYLOAD:
-/// Contiene una lista de Topic Filters indicando los Topics a los cuales el cliente se quiere subscribir
-/// Los Topic Filters DEBEN ser Strings UTF-8 validos
-/// Cada Topic Filter debe ser seguido por el Subscriptions Options Byte
+/// Contains a list of Topic Filters indicating the Topics to which the client wants to subscribe.
+/// Topic Filters MUST be valid UTF-8 strings.
+/// Each Topic Filter must be followed by the Subscriptions Options Byte.
 ///
-/// El packet SUBSCRIBE debe contener al menos un par Topic Filter + Subscriptions Options
+/// The packet SUBSCRIBE must contain at least one Topic Filter + Subscriptions Options pair.
 ///
-/// El byte de Subscription Options contiene los siguientes bits:
-/// Bits 0 y 1: QoS Level (Maximo QoS level el cual el server puede enviar mensajes de aplicacion al cliente)
-/// Bit 2: No Local (Si es 1, mensajes de aplicacion no deben ser enviados a una conexion con el client ID igual al client ID de la conexion que publica)
-/// Bit 3: Retain As Published (Si es 1, mensajes de aplicacion enviados mediante esta subscripcion mantienen el RETAIN flag con el que fueron publicados)
-///     (Si es 0, el RETAIN flag es seteado a 0)
-/// Bits 4 y 5: Retain Handling (Esta opcion especifica el envio de los mensajes de aplicacion retenidos cuando *se establece la subscripcion*)
-///     0 - Send retained messages at the time of the subscribe
-///     1 - Send retained messages at subscribe only if the subscription does not already exist
-///     2 - Do not send retained messages at the time of the subscribe
-/// Bits 6 y 7: Reserved (deben ser 0)
+/// The Subscription Options Byte contains the following bits:
+/// Bits 0 and 1: QoS Level (Maximum QoS level at which the server can send Application Messages to the client)
+/// Bit 2: No Local (If 1, Application Messages MUST NOT be sent to a connection with a ClientID equal to the ClientID of the publishing connection)
+/// Bit 3: Retain As Published (If 1, Application Messages sent using this subscription keep the RETAIN flag they were published with)
+/// (If 0, the RETAIN flag is set to 0)
+/// Bits 4 and 5: Retain Handling (This option specifies the sending of retained Application Messages when *the subscription is established*)
+/// 0 - Send retained messages at the time of the subscribe
+/// 1 - Send retained messages at subscribe only if the subscription does not already exist
+/// 2 - Do not send retained messages at the time of the subscribe
+/// Bits 6 and 7: Reserved (must be 0)
 ///
+/// #### Considerations
 ///
-/// ### Consideraciones:
-/// Cuando el servidor recibe un SUBSCRIBE PACKET, debe responder con un SUBACK PACKET con el mismo packet identifier
-/// El servidor puede enviar PUBLISH PACKETS a los clientes antes de enviar el SUBACK PACKET
+/// When the server receives a SUBSCRIBE PACKET, it must respond with a SUBACK PACKET with the same packet identifier.
+/// The server can send PUBLISH PACKETS to the clients before sending the SUBACK PACKET.
 ///
-#[allow(dead_code)]
 pub struct Subscribe {
     pub properties: SubscribeProperties,
 }
@@ -88,7 +94,6 @@ impl Serialization for Subscribe {
 }
 
 impl Subscribe {
-    #[allow(dead_code)]
     pub fn new(properties: SubscribeProperties) -> Subscribe {
         Subscribe { properties }
     }

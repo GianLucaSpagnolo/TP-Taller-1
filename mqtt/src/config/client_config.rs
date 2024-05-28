@@ -6,6 +6,25 @@ use crate::control_packets::{
 
 use super::mqtt_config::{Config, MqttConfig};
 
+/// ## ClientConfig
+///
+/// Estructura que representa la configuracion de un cliente MQTT
+///
+/// ### Atributos
+/// - `general`: configuracion general del cliente
+/// - `connect_properties`: propiedades de la conexion
+/// - `pub_dup_flag`: flag de duplicacion de publicacion
+/// - `pub_qos`: QoS de publicacion
+/// - `pub_retain`: flag de retencion de publicacion
+/// - `sub_max_qos`: QoS maximo de suscripcion
+/// - `sub_no_local`: flag de no local
+/// - `sub_retain_as_published`: flag de retencion de publicacion
+/// - `sub_retain_handling`: manejo de retencion de publicacion
+///
+/// ### Implementa
+/// - `Clone`: clonar la configuracion
+/// - `Config`: configuracion abstracta
+///
 pub struct ClientConfig {
     pub general: MqttConfig,
     pub connect_properties: ConnectProperties,

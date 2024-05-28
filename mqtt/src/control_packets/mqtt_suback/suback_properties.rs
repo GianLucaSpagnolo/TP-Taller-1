@@ -7,7 +7,6 @@ use crate::control_packets::mqtt_packet::{
 };
 
 #[derive(Default)]
-#[allow(dead_code)]
 pub struct SubackProperties {
     pub packet_identifier: u16,
     pub reason_string: Option<String>,
@@ -42,7 +41,7 @@ impl PacketProperties for SubackProperties {
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
-        let mut variable_props = VariableHeaderProperties::new();
+        let mut variable_props = VariableHeaderProperties::default();
 
         if let Some(value) = self.reason_string.clone() {
             variable_props.add_utf8_string_property(REASON_STRING, value)?;

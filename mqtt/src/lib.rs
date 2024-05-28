@@ -8,7 +8,7 @@ pub mod server {
     pub mod server_session;
 }
 
-mod logger {
+pub mod logger {
     pub mod actions;
     pub mod client_actions;
     pub mod logger_handler;
@@ -92,7 +92,7 @@ pub mod control_packets {
     }
 }
 
-mod common {
+pub mod common {
     pub mod data_types;
     pub mod utils;
 }

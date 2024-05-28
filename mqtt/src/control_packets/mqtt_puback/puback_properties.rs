@@ -10,7 +10,6 @@ use crate::{
 };
 
 #[derive(Default)]
-#[allow(dead_code)]
 pub struct PubackProperties {
     pub packet_id: u16,
     pub puback_reason_code: u8,
@@ -38,7 +37,7 @@ impl PacketProperties for PubackProperties {
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
-        let mut variable_props = VariableHeaderProperties::new();
+        let mut variable_props = VariableHeaderProperties::default();
 
         if let Some(value) = self.reason_string.clone() {
             variable_props.add_utf8_string_property(REASON_STRING, value)?;

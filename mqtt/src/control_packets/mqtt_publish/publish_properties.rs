@@ -7,7 +7,6 @@ use crate::control_packets::mqtt_packet::{
 };
 
 #[derive(Default)]
-#[allow(dead_code)]
 pub struct PublishProperties {
     pub topic_name: String,
     pub packet_identifier: u16,
@@ -54,7 +53,7 @@ impl PacketProperties for PublishProperties {
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
-        let mut variable_props = VariableHeaderProperties::new();
+        let mut variable_props = VariableHeaderProperties::default();
 
         if let Some(payload_format_indicator) = self.payload_format_indicator {
             variable_props.add_u8_property(PAYLOAD_FORMAT_INDICATOR, payload_format_indicator)?;

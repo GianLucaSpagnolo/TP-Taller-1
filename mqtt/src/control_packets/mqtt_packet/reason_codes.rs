@@ -135,7 +135,6 @@ use std::fmt::Display;
 /// #### 162 - 0xA2 - Wildcard subscriptions not supported
 /// The Server does not support Wildcard Subscriptions; the subscription is not accepted.
 ///
-#[allow(dead_code)]
 pub enum ReasonCode {
     Success,
     NormalDisconnection,
@@ -184,6 +183,13 @@ pub enum ReasonCode {
 }
 
 impl ReasonCode {
+    /// ## get_id
+    ///
+    /// Devuelve el id del Reason Code
+    ///
+    /// ### Retorno
+    /// - `u8`: id del Reason Code
+    ///
     pub fn get_id(&self) -> u8 {
         match *self {
             ReasonCode::Success => 0,             // CONNACK, PUBACK, UNSUBACK, AUTH
@@ -233,6 +239,15 @@ impl ReasonCode {
         }
     }
 
+    /// ## new
+    ///
+    /// Devuelve un nuevo Reason Code
+    ///
+    /// ### Parametros
+    /// - `id`: id del Reason Code
+    ///
+    /// ### Retorno
+    /// - `ReasonCode`: nuevo Reason Code
     pub fn new(id: u8) -> Self {
         match id {
             0 => ReasonCode::Success,
@@ -281,6 +296,14 @@ impl ReasonCode {
         }
     }
 
+    /// ## is_valid_disconnect_code_from_server
+    ///
+    /// Verifica si el Reason Code es valido
+    /// para ser enviado por el servidor
+    ///
+    /// ### Retorno
+    /// - `bool`: true si es valido, false si no
+    ///     
     pub fn is_valid_disconnect_code_from_server(&self) -> bool {
         matches!(
             *self,
@@ -315,6 +338,14 @@ impl ReasonCode {
         )
     }
 
+    /// ## is_valid_disconnect_code_from_client
+    ///
+    /// Verifica si el Reason Code es valido
+    /// para ser enviado por el cliente
+    ///
+    /// ### Retorno
+    /// - `bool`: true si es valido, false si no
+    ///
     pub fn is_valid_disconnect_code_from_client(&self) -> bool {
         matches!(
             *self,

@@ -64,7 +64,7 @@ impl PacketProperties for ConnectPayload {
     }
 
     fn as_variable_header_properties(&self) -> Result<VariableHeaderProperties, Error> {
-        let mut payload_props = VariableHeaderProperties::new();
+        let mut payload_props = VariableHeaderProperties::default();
 
         if let Some(will_delay_interval) = self.will_delay_interval {
             payload_props.add_u32_property(WILL_DELAY_INTERVAL, will_delay_interval)?;

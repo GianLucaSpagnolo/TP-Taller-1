@@ -5,7 +5,26 @@ use crate::control_packets::mqtt_packet::{
     packet::generic_packet::{PacketReceived, Serialization},
 };
 
-#[allow(dead_code)]
+/// ## PINGREQ PACKET
+///
+/// The PINGREQ Packet is sent from a Client to the Server. It can be used to:
+/// - Indicate to the Server that the Client is alive in the absence of any other Control Packets being sent from the Client to the Server.
+/// - Request that the Server responds to confirm that it is alive.
+/// - Exercise the network to indicate that the Network Connection is active.
+///
+/// ### FIXED HEADER
+///
+/// FIRST BYTE:
+/// 4 most significant bits: MQTT Control Packet type
+/// PINGREQ: 1100
+///
+/// 4 less significant bits: Flags
+/// 0000: Reserved
+///
+/// SECOND BYTE ONWARDS:
+/// Remaining Length
+/// This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
+///
 pub struct PingReq;
 
 impl Serialization for PingReq {

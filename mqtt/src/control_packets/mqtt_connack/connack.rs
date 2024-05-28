@@ -9,21 +9,21 @@ use crate::control_packets::mqtt_packet::{
 
 /// ## CONNACK PACKET
 ///
-/// ### FIXED HEADER: 2 BYTES
-/// PRIMER BYTE
-/// 4 bits mas significativos: MQTT Control Packet type
+/// ### FIXED HEADER
+///
+/// FIRST BYTE:
+/// 4 most significant bits: MQTT Control Packet type
 /// 0010: CONNACK
 ///
-/// 4 bits menos significativos: Flags
+/// 4 less significant bits: Flags
 /// 0000: Reserved
 ///
-/// 00100000 CONNACK 32
-///
-/// SEGUNDO BYTE
+/// SECOND BYTE ONWARDS:
 /// Remaining Length
 /// This is the length of the Variable Header. It is encoded as a Variable Byte Integer.
 ///
 /// ### VARIBALE HEADER
+///
 /// Connect Acknowledge Flags, Connect Reason Code, and Properties
 ///
 /// #### Connect Acknowledge Flags
@@ -39,8 +39,8 @@ use crate::control_packets::mqtt_packet::{
 ///
 /// #### Properties
 /// byte 3
-/// Length (suma de todas las properties)
-/// byte 4 en adelante:
+/// Length (size of all the properties in bytes)
+/// byte 4 onwards:
 /// PROPERTIES: Connect
 ///
 /// 18 - 0x12 - Assigned Client Identifier - UTF-8 string - NEW

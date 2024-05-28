@@ -9,34 +9,22 @@ use super::payload::ConnectPayload;
 
 /// ## CONNECT PACKET
 ///
-/// ### FIXED HEADER: 2 BYTES
-/// PRIMER BYTE
-/// 4 bits mas significativos: MQTT Control Packet type
+/// ### FIXED HEADER
+///
+/// FIRST BYTE:
+/// 4 most significant bits: MQTT Control Packet type
 /// 0001: CONNECT
 ///
-/// 4 bits menos significativos: Flags
+/// 4 less significant bits: Flags
 /// 0000: Reserved
 ///
-/// 00010000 CONNECT 16
-///
-/// SEGUNDO BYTE
+/// SECOND BYTE ONWARDS:
 /// Remaining Length
 /// This is the length of the Variable Header plus the length of the Payload. It is encoded as a Variable Byte Integer.
 ///
-/// ### VARIABLE HEADER: Packet Identifier de 2 BYTES
+/// ### VARIABLE HEADER
 ///
-/// CONNECT no necesita el Package Identifier
-///
-///
-/// Ejemplo no normativo:
-///
-/// Protocol Name
-/// byte 1 - Length MSB (0)
-/// byte 2 - Length LSB (4)
-/// byte 3 - ‘M’
-/// byte 4 - ‘Q’
-/// byte 5 - ‘T’
-/// byte 6 - ‘T’
+/// CONNECT doesnt need a Packet Identifier
 ///
 /// Protocol Version
 /// Description
@@ -60,8 +48,8 @@ use super::payload::ConnectPayload;
 ///
 /// #### Properties
 /// byte 11
-/// Length (suma de todas las properties)
-/// byte 12 en adelante:
+/// Length (size of all the properties in bytes)
+/// byte 12 onwards:
 /// PROPERTIES: Connect
 /// 17 - 0x11 - Session Expiry Interval - Four Byte Integer
 /// 21 - 0x15 - Authentication Method - UTF-8 Encoded String
@@ -74,6 +62,7 @@ use super::payload::ConnectPayload;
 /// 39 - 0x27 - Maximum Packet Size - Four Byte Integer
 ///
 /// ### PAYLOAD
+///
 /// The Payload of the CONNECT packet contains one or more length-prefixed fields, whose presence is determined by the flags in the Variable Header.
 /// The Payload contains one or more encoded fields. They specify a unique Client identifier for the Client, a Will Topic, Will Payload, User Name and
 /// Password. All but the Client identifier can be omitted and their presence is determined based on flags in the Variable Header.
@@ -94,8 +83,6 @@ use super::payload::ConnectPayload;
 /// Username (Connect Flag - Username = 1)
 /// Password (Connect Flag - Password = 1)
 ///
-///
-
 pub struct Connect {
     pub properties: ConnectProperties,
     pub payload: ConnectPayload,
