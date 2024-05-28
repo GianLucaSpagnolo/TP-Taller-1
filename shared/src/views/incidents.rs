@@ -1,29 +1,28 @@
-use app::shared::incident::{Incident, IncidentState};
 use eframe::egui::{self, Ui};
 use egui_extras::{Column, TableBuilder, TableRow};
+use mqtt::client::mqtt_client::MqttClient;
 
 use crate::{
-    app::MonitoringApp,
-    controllers::incident::incident_controller::{add_incident, resolve_incident},
+    controllers::incident::incident_controller::{add_incident, resolve_incident}, model::{coordenates::Coordenates, incident::{Incident, IncidentState}, incident_list::IncidentList},
 };
 
 use super::common::integer_edit_field;
 
-fn incident_manager(ui: &mut Ui, app: &mut MonitoringApp) {
+fn incident_manager(ui: &mut Ui, client: &mut MqttClient, inc_historial: &mut IncidentList, field: &mut Coordenates) {
     ui.horizontal(|ui| {
         let name_label = ui.label("Nueva latitud: ");
-        integer_edit_field(ui, &mut app.new_coordenates.latitude).labelled_by(name_label.id);
+        integer_edit_field(ui, &mut field.latitude).labelled_by(name_label.id);
     });
     ui.horizontal(|ui| {
         let name_label = ui.label("Nueva longitud: ");
-        integer_edit_field(ui, &mut app.new_coordenates.longitude).labelled_by(name_label.id);
+        integer_edit_field(ui, &mut field.longitude).labelled_by(name_label.id);
     });
     if ui.button("Agregar incidente").clicked() {
-        add_incident(app, app.new_coordenates.clone());
+        add_incident(client, inc_historial, field.clone());
     }
 }
 
-fn incident_row(mut row: TableRow, app: &mut MonitoringApp, incident: &Incident, id: String) {
+fn incident_row(mut row: TableRow, client: &mut MqttClient, inc_historial: &mut IncidentList ,incident: &Incident, id: String) {
     row.col(|ui| {
         ui.label(incident.id.to_string());
     });
@@ -42,12 +41,12 @@ fn incident_row(mut row: TableRow, app: &mut MonitoringApp, incident: &Incident,
     });
     row.col(|ui| {
         if ui.button("Resolver").clicked() {
-            resolve_incident(app, &id);
+            resolve_incident(client, inc_historial,  &id);
         }
     });
 }
 
-pub fn incident_list(ui: &mut Ui, app: &mut MonitoringApp) {
+pub fn incident_list(ui: &mut Ui, client: &mut MqttClient, inc_historial: &mut IncidentList ) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
         .column(Column::exact(200.0))
@@ -69,30 +68,30 @@ pub fn incident_list(ui: &mut Ui, app: &mut MonitoringApp) {
             });
         })
         .body(|mut body| {
-            if app.historial.incidents.is_empty() {
+            if inc_historial.incidents.is_empty() {
                 body.row(20.0, |mut row| {
                     row.col(|ui| {
                         ui.label("No hay incidentes");
                     });
                 });
             } else {
-                for (id, incident) in &app.historial.incidents.clone() {
+                for (id, incident) in &inc_historial.incidents.clone() {
                     body.row(20.0, |row| {
-                        incident_row(row, app, incident, id.clone());
+                        incident_row(row, client, inc_historial, incident, id.clone());
                     });
                 }
             }
         });
 }
 
-pub fn show_incidents_menu(ui: &mut Ui, app: &mut MonitoringApp) {
+pub fn show_incidents_menu(ui: &mut Ui, client: &mut MqttClient, inc_historial: &mut IncidentList, field: &mut Coordenates) {
     ui.heading("Gestor de incidentes");
     ui.separator();
     ui.add_space(10.0);
-    incident_manager(ui, app);
+    incident_manager(ui , client, inc_historial, field);
     ui.add_space(10.0);
     ui.heading("Historial de incidentes");
     ui.separator();
     ui.add_space(10.0);
-    incident_list(ui, app);
+    incident_list(ui, client, inc_historial);
 }

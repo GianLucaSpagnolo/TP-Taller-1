@@ -1,10 +1,11 @@
-use app::shared::cam::CamState;
+use std::sync::{Arc, Mutex};
+
 use eframe::egui::{self, Ui};
 use egui_extras::{Column, TableBuilder};
 
-use crate::app::MonitoringApp;
+use crate::model::{cam::{Cam, CamState}, cam_list::CamList};
 
-pub fn cam_row(mut row: egui_extras::TableRow, cam: &app::shared::cam::Cam) {
+pub fn cam_row(mut row: egui_extras::TableRow, cam: &Cam) {
     row.col(|ui| {
         ui.label(&format!("{}", cam.id));
     });
@@ -23,7 +24,7 @@ pub fn cam_row(mut row: egui_extras::TableRow, cam: &app::shared::cam::Cam) {
     });
 }
 
-pub fn cams_list(ui: &mut Ui, app: &mut MonitoringApp) {
+pub fn cams_list(ui: &mut Ui, cam_list: &Arc<Mutex<CamList>>) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
         .column(Column::exact(250.0))
@@ -44,14 +45,14 @@ pub fn cams_list(ui: &mut Ui, app: &mut MonitoringApp) {
             });
         })
         .body(|mut body| {
-            if app.system.lock().unwrap().cams.is_empty() {
+            if cam_list.lock().unwrap().cams.is_empty() {
                 body.row(20.0, |mut row| {
                     row.col(|ui| {
                         ui.label("No hay camaras");
                     });
                 });
             } else {
-                for cam in &app.system.lock().unwrap().cams {
+                for cam in &cam_list.lock().unwrap().cams {
                     body.row(20.0, |row| {
                         cam_row(row, cam);
                     });
@@ -60,9 +61,9 @@ pub fn cams_list(ui: &mut Ui, app: &mut MonitoringApp) {
         });
 }
 
-pub fn show_cams_list(ui: &mut Ui, app: &mut MonitoringApp) {
+pub fn show_cams_list(ui: &mut Ui, cam_list: &Arc<Mutex<CamList>>) {
     ui.heading("Listado de cámaras");
     ui.separator();
     ui.add_space(10.0);
-    cams_list(ui, app);
+    cams_list(ui, cam_list);
 }

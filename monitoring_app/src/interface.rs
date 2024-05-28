@@ -1,9 +1,10 @@
+use eframe::egui::ViewportBuilder;
+use shared::views::{cams::show_cams_list, incidents::show_incidents_menu};
+
+use crate::app::MonitoringApp;
+
 use eframe::egui::{self, Margin};
 
-use crate::{
-    app::MonitoringApp,
-    views::{cams::show_cams_list, incidents::show_incidents_menu},
-};
 /* use walkers::{Tiles, MapMemory, sources::OpenStreetMap}; */
 
 impl eframe::App for MonitoringApp {
@@ -22,13 +23,13 @@ impl eframe::App for MonitoringApp {
             .resizable(false)
             .frame(frame)
             .show(ctx, |ui| {
-                show_incidents_menu(ui, self);
+                show_incidents_menu(ui, &mut self.client, &mut self.inc_historial, &mut self.inc_field);
             });
         egui::SidePanel::right("list")
             .resizable(false)
             .frame(frame)
             .show(ctx, |ui| {
-                show_cams_list(ui, self);
+                show_cams_list(ui, &self.cam_list);
             });
 
         /*
@@ -42,4 +43,19 @@ impl eframe::App for MonitoringApp {
         });
         */
     }
+}
+
+
+pub fn run_interface(app: MonitoringApp) -> Result<(), eframe::Error> {
+    let options = eframe::NativeOptions {
+        centered: true,
+        viewport: ViewportBuilder::default().with_fullscreen(true),
+        ..Default::default()
+    };
+
+    eframe::run_native(
+        "Apliación de monitoreo",
+        options,
+        Box::new(|_cc| Box::new(app)),
+    )
 }

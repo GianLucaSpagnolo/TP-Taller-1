@@ -7,7 +7,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use app::shared::incident::{Incident, IncidentState};
+use shared::model::{incident::Incident, incident::IncidentState};
 use cams_system::CamsSystem;
 use mqtt::{
     client::mqtt_client::{MqttClient, MqttClientMessage},

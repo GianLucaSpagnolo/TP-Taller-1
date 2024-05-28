@@ -4,16 +4,16 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use app::shared::{cam_list::CamList, coordenates::Coordenates, incident_list::IncidentList};
 use mqtt::client::mqtt_client::{MqttClient, MqttClientMessage};
+use shared::model::{cam_list::CamList, coordenates::Coordenates, incident_list::IncidentList};
 
-use crate::controllers::run::run_interface;
+use crate::interface::run_interface;
 
 pub struct MonitoringApp {
     pub client: MqttClient,
-    pub system: Arc<Mutex<CamList>>,
-    pub historial: IncidentList,
-    pub new_coordenates: Coordenates,
+    pub cam_list: Arc<Mutex<CamList>>,
+    pub inc_historial: IncidentList,
+    pub inc_field: Coordenates,
     pub log_path: String,
     /* tiles: Tiles,
     map_memory: MapMemory, */
@@ -49,15 +49,15 @@ fn process_messages(
 
 impl MonitoringApp {
     pub fn new(client: MqttClient, log_path: String) -> Self {
-        let system = Arc::new(Mutex::new(CamList::default()));
+        let cam_list = Arc::new(Mutex::new(CamList::default()));
 
-        let historial = IncidentList::default();
+        let inc_historial = IncidentList::default();
 
         Self {
             client,
-            system,
-            historial,
-            new_coordenates: Coordenates::default(),
+            cam_list,
+            inc_historial,
+            inc_field: Coordenates::default(),
             log_path: log_path.to_string(),
             /* tiles: Tiles::new(OpenStreetMap, egui_ctx),
             map_memory: MapMemory::default(), */
@@ -67,7 +67,7 @@ impl MonitoringApp {
     pub fn init(mut self) -> Result<MonitoringHandler, Error> {
         let listener = self.client.run_listener(self.log_path.to_string())?;
 
-        let handler = process_messages(listener.receiver, self.system.clone())?;
+        let handler = process_messages(listener.receiver, self.cam_list.clone())?;
 
         self.client.subscribe(vec!["camaras"])?;
 

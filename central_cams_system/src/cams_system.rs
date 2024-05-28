@@ -1,11 +1,6 @@
 use std::io::Error;
 
-use app::shared::{
-    cam::{Cam, CamState},
-    cam_list::CamList,
-    coordenates::Coordenates,
-    incident::Incident,
-};
+use shared::model::{cam::{Cam, CamState}, cam_list::CamList, coordenates::Coordenates, incident::Incident};
 use mqtt::client::mqtt_client::MqttClient;
 
 pub struct CamsSystem {
