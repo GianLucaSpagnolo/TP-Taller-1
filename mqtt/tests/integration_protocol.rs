@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod test {
+    use mqtt::client::client_message::MqttClientMessage;
     use mqtt::control_packets::mqtt_packet::reason_codes::ReasonCode::NormalDisconnection;
     use mqtt::{
-        client::mqtt_client::{MqttClient, MqttClientMessage},
+        client::mqtt_client::MqttClient,
         config::{client_config::ClientConfig, mqtt_config::Config, server_config::ServerConfig},
         server::mqtt_server::MqttServer,
     };
@@ -142,7 +143,7 @@ mod test {
             log_path.push(client_config.general.log_path.clone());
 
             let client_listener = client
-                .run_listener(log_path.to_str().unwrap().to_string())
+                .run_listener()
                 .unwrap();
             let client_message_handler = process_messages(client_listener.receiver).unwrap();
 

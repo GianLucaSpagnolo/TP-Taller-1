@@ -4,7 +4,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use mqtt::client::mqtt_client::{MqttClient, MqttClientMessage};
+use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::model::{cam_list::CamList, incident_interface::IncidentInterface};
 
 use crate::interface::run_interface;
@@ -64,7 +64,7 @@ impl MonitoringApp {
     }
 
     pub fn init(mut self) -> Result<MonitoringHandler, Error> {
-        let listener = self.client.run_listener(self.log_path.to_string())?;
+        let listener = self.client.run_listener()?;
 
         let handler = process_messages(listener.receiver, self.cam_list.clone())?;
 

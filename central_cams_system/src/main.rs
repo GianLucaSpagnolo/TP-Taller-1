@@ -9,7 +9,7 @@ use std::{
 
 use cams_system::CamsSystem;
 use mqtt::{
-    client::mqtt_client::{MqttClient, MqttClientMessage},
+    client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
     config::{client_config::ClientConfig, mqtt_config::Config},
 };
 use shared::model::{incident::Incident, incident::IncidentState};
@@ -54,8 +54,6 @@ fn main() -> Result<(), Error> {
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
-    let log_path = config.general.log_path.to_string();
-
     let mut client = MqttClient::init(config)?;
 
     client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
@@ -69,7 +67,7 @@ fn main() -> Result<(), Error> {
         process_standard_input(&mut client_clone, cam_system_clone);
     });
 
-    let listener = client.run_listener(log_path)?;
+    let listener = client.run_listener()?;
 
     let process_message_handler: JoinHandle<()> =
         process_messages(&mut client, listener.receiver, cams_system_ref)?;

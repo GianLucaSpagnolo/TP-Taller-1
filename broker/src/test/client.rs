@@ -6,7 +6,7 @@ use std::{
 };
 
 use mqtt::{
-    client::mqtt_client::{MqttClient, MqttClientMessage},
+    client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
     config::{client_config::ClientConfig, mqtt_config::Config},
     control_packets::mqtt_packet::reason_codes::ReasonCode,
 };
@@ -85,10 +85,9 @@ fn main() -> Result<(), Error> {
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
-    let log_path = config.general.log_path.to_string();
     let mut client = MqttClient::init(config)?;
 
-    let listener = client.run_listener(log_path)?;
+    let listener = client.run_listener()?;
 
     let process_message_handler = process_messages(listener.receiver)?;
 

@@ -1,5 +1,7 @@
 pub mod client {
     pub mod mqtt_client;
+    pub mod client_listener;
+    pub mod client_message;
 }
 
 pub mod server {
