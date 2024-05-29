@@ -4,12 +4,20 @@ pub mod model {
     pub mod coordenates;
     pub mod incident;
     pub mod incident_list;
+    pub mod incident_interface;
 }
 
 pub mod views {
-    pub mod cams;
-    pub mod common;
-    pub mod incidents;
+    pub mod cams{
+        pub mod cams;
+        pub mod cams_list;
+    }
+    pub mod incidents{
+        pub mod incidents;
+        pub mod incidents_editor;
+        pub mod incidents_list;
+    }
+    pub mod dialog_alert;
 }
 
 pub mod controllers {

@@ -1,5 +1,5 @@
 use eframe::egui::ViewportBuilder;
-use shared::views::{cams::show_cams_list, incidents::show_incidents_menu};
+use shared::views::{cams::cams::show_cams, dialog_alert::dialog_alert, incidents::incidents::show_incidents};
 
 use crate::app::MonitoringApp;
 
@@ -23,14 +23,18 @@ impl eframe::App for MonitoringApp {
             .resizable(false)
             .frame(frame)
             .show(ctx, |ui| {
-                show_incidents_menu(ui, &mut self.client, &mut self.inc_historial, &mut self.inc_field);
+                show_incidents(ui, &mut self.client, &mut self.inc_interface );
             });
         egui::SidePanel::right("list")
             .resizable(false)
             .frame(frame)
             .show(ctx, |ui| {
-                show_cams_list(ui, &self.cam_list);
+                show_cams(ui, &self.cam_list);
             });
+        
+        let alert_description = "La latitud o longitud no son números válidos.";
+        
+        dialog_alert(ctx, &mut self.inc_interface.show_data_alert, alert_description);
 
         /*
         egui::CentralPanel::default().frame(central_frame).show(ctx, |ui| {

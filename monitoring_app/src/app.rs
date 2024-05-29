@@ -5,15 +5,14 @@ use std::{
 };
 
 use mqtt::client::mqtt_client::{MqttClient, MqttClientMessage};
-use shared::model::{cam_list::CamList, coordenates::Coordenates, incident_list::IncidentList};
+use shared::model::{cam_list::CamList, incident_interface::IncidentInterface};
 
 use crate::interface::run_interface;
 
 pub struct MonitoringApp {
     pub client: MqttClient,
     pub cam_list: Arc<Mutex<CamList>>,
-    pub inc_historial: IncidentList,
-    pub inc_field: Coordenates,
+    pub inc_interface: IncidentInterface,
     pub log_path: String,
     /* tiles: Tiles,
     map_memory: MapMemory, */
@@ -49,15 +48,16 @@ fn process_messages(
 
 impl MonitoringApp {
     pub fn new(client: MqttClient, log_path: String) -> Self {
-        let cam_list = Arc::new(Mutex::new(CamList::default()));
 
-        let inc_historial = IncidentList::default();
+        let cam_list = Arc::new(Mutex::new(CamList::default()));
 
         Self {
             client,
             cam_list,
-            inc_historial,
-            inc_field: Coordenates::default(),
+            inc_interface: IncidentInterface {
+                editable: true,
+                ..Default::default()
+            },
             log_path: log_path.to_string(),
             /* tiles: Tiles::new(OpenStreetMap, egui_ctx),
             map_memory: MapMemory::default(), */
