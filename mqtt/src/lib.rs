@@ -4,7 +4,6 @@ pub mod client {
 
 pub mod server {
     pub mod mqtt_server;
-    pub mod server_pool;
     pub mod server_session;
 }
 

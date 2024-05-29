@@ -30,7 +30,6 @@ use crate::control_packets::mqtt_unsubscribe::unsubscribe::Unsubscribe;
 use crate::logger::actions::MqttActions;
 use crate::logger::server_actions::MqttServerActions;
 
-use super::server_pool::ServerPool;
 use super::server_session::Session;
 
 /// ## MqttServer
@@ -58,7 +57,7 @@ impl Clone for MqttServer {
     }
 }
 
-/// ## packet_handler
+/// ## message_catcher
 ///
 /// Función que maneja los paquetes recibidos por el servidor
 ///
@@ -69,7 +68,7 @@ impl Clone for MqttServer {
 /// ### Retorno
 /// - `Result<(), Error>`: Resultado de la operación
 ///
-pub fn packet_handler(
+pub fn message_catcher(
     mut stream: TcpStream,
     sender: Arc<Mutex<Sender<(PacketReceived, TcpStream)>>>,
 ) -> Result<(), Error> {
@@ -146,18 +145,6 @@ impl MqttServer {
             }
         };
 
-        let pool = match ServerPool::build(self.config.maximum_threads) {
-            Ok(p) => p,
-            Err(e) => {
-                logger.log_event(
-                    &("Error al crear serverpool: ".to_string() + &e.to_string()),
-                    &self.config.general.id,
-                );
-                logger.close_logger();
-                return Err(e);
-            }
-        };
-
         let (sender, receiver) = mpsc::channel();
 
         let sender = Arc::new(Mutex::new(sender));
@@ -196,10 +183,12 @@ impl MqttServer {
         for client_stream in listener.incoming() {
             let stream = client_stream?.try_clone()?;
             let sender_clone = Arc::clone(&sender);
-            pool.execute(move || loop {
-                // Manejo de paquetes, cuando se recibe un paquete se envia al procesador de mensajes
-                packet_handler(stream.try_clone()?, sender_clone.clone())?
-            })?;
+            thread::spawn(move || -> Result<(), Error>  {
+                loop {
+                    // Manejo de paquetes, cuando se recibe un paquete se envia al procesador de mensajes
+                    message_catcher(stream.try_clone()?, sender_clone.clone())?;
+                }
+            });
         }
 
         logger.log_event(
