@@ -24,7 +24,6 @@ pub fn add_incident_button(
 
         if latitude.is_none() || longitude.is_none() {
             inc_interface.show_data_alert = true;
-            return;
         } else {
             let field = Coordenates {
                 latitude: latitude.unwrap(),

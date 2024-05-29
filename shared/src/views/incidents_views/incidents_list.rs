@@ -44,7 +44,7 @@ fn incident_row(
     if inc_interface.editable {
         row.col(|ui| {
             if ui.button("Resolver").clicked() {
-                resolve_incident(client, &mut inc_interface.historial, &id);
+                resolve_incident(client, &mut inc_interface.historial, id);
             }
         });
     }
@@ -81,7 +81,7 @@ pub fn incident_list(ui: &mut Ui, client: &mut MqttClient, inc_interface: &mut I
             } else {
                 for (id, incident) in &inc_interface.historial.incidents.clone() {
                     body.row(20.0, |row| {
-                        incident_row(row, client, inc_interface, incident, &id);
+                        incident_row(row, client, inc_interface, incident, id);
                     });
                 }
             }

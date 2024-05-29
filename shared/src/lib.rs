@@ -8,11 +8,11 @@ pub mod model {
 }
 
 pub mod views {
-    pub mod cams {
+    pub mod cams_views {
         pub mod cams;
         pub mod cams_list;
     }
-    pub mod incidents {
+    pub mod incidents_views {
         pub mod incidents;
         pub mod incidents_editor;
         pub mod incidents_list;
