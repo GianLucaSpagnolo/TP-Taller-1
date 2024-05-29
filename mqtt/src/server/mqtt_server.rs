@@ -183,7 +183,7 @@ impl MqttServer {
         for client_stream in listener.incoming() {
             let stream = client_stream?.try_clone()?;
             let sender_clone = Arc::clone(&sender);
-            thread::spawn(move || -> Result<(), Error>  {
+            thread::spawn(move || -> Result<(), Error> {
                 loop {
                     // Manejo de paquetes, cuando se recibe un paquete se envia al procesador de mensajes
                     message_catcher(stream.try_clone()?, sender_clone.clone())?;

@@ -2,11 +2,23 @@ use egui::Ui;
 use egui_extras::{Column, TableBuilder, TableRow};
 use mqtt::client::mqtt_client::MqttClient;
 
-use crate::{controllers::incident::incident_controller::resolve_incident, model::{incident::{Incident, IncidentState}, incident_interface::IncidentInterface}};
+use crate::{
+    controllers::incident::incident_controller::resolve_incident,
+    model::{
+        incident::{Incident, IncidentState},
+        incident_interface::IncidentInterface,
+    },
+};
 
 static COORDENATE_PRECISION: usize = 4;
 
-fn incident_row(mut row: TableRow, client: &mut MqttClient, inc_interface: &mut IncidentInterface, incident: &Incident, id: &String) {
+fn incident_row(
+    mut row: TableRow,
+    client: &mut MqttClient,
+    inc_interface: &mut IncidentInterface,
+    incident: &Incident,
+    id: &String,
+) {
     row.col(|ui| {
         ui.label(incident.id.to_string());
     });
@@ -18,10 +30,16 @@ fn incident_row(mut row: TableRow, client: &mut MqttClient, inc_interface: &mut 
         }
     });
     row.col(|ui| {
-        ui.label(&format!("{:.1$}", incident.location.latitude, COORDENATE_PRECISION));
+        ui.label(&format!(
+            "{:.1$}",
+            incident.location.latitude, COORDENATE_PRECISION
+        ));
     });
     row.col(|ui| {
-        ui.label(&format!("{:.1$}", incident.location.longitude, COORDENATE_PRECISION));
+        ui.label(&format!(
+            "{:.1$}",
+            incident.location.longitude, COORDENATE_PRECISION
+        ));
     });
     if inc_interface.editable {
         row.col(|ui| {
@@ -30,10 +48,9 @@ fn incident_row(mut row: TableRow, client: &mut MqttClient, inc_interface: &mut 
             }
         });
     }
-    
 }
 
-pub fn incident_list(ui: &mut Ui, client: &mut MqttClient, inc_interface: &mut IncidentInterface ) {
+pub fn incident_list(ui: &mut Ui, client: &mut MqttClient, inc_interface: &mut IncidentInterface) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
         .column(Column::exact(200.0))

@@ -1,5 +1,7 @@
 use eframe::egui::ViewportBuilder;
-use shared::views::{cams::cams::show_cams, dialog_alert::dialog_alert, incidents::incidents::show_incidents};
+use shared::views::{
+    cams::cams::show_cams, dialog_alert::dialog_alert, incidents::incidents::show_incidents,
+};
 
 use crate::app::MonitoringApp;
 
@@ -23,7 +25,7 @@ impl eframe::App for MonitoringApp {
             .resizable(false)
             .frame(frame)
             .show(ctx, |ui| {
-                show_incidents(ui, &mut self.client, &mut self.inc_interface );
+                show_incidents(ui, &mut self.client, &mut self.inc_interface);
             });
         egui::SidePanel::right("list")
             .resizable(false)
@@ -31,10 +33,14 @@ impl eframe::App for MonitoringApp {
             .show(ctx, |ui| {
                 show_cams(ui, &self.cam_list);
             });
-        
+
         let alert_description = "La latitud o longitud no son números válidos.";
-        
-        dialog_alert(ctx, &mut self.inc_interface.show_data_alert, alert_description);
+
+        dialog_alert(
+            ctx,
+            &mut self.inc_interface.show_data_alert,
+            alert_description,
+        );
 
         /*
         egui::CentralPanel::default().frame(central_frame).show(ctx, |ui| {
@@ -48,7 +54,6 @@ impl eframe::App for MonitoringApp {
         */
     }
 }
-
 
 pub fn run_interface(app: MonitoringApp) -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {

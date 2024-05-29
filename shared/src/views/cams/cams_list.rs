@@ -3,7 +3,10 @@ use std::sync::{Arc, Mutex};
 use egui::Ui;
 use egui_extras::{Column, TableBuilder};
 
-use crate::model::{cam::{Cam, CamState}, cam_list::CamList};
+use crate::model::{
+    cam::{Cam, CamState},
+    cam_list::CamList,
+};
 
 static COORDENATE_PRECISION: usize = 4;
 
@@ -19,10 +22,16 @@ fn cam_row(mut row: egui_extras::TableRow, cam: &Cam) {
         }
     });
     row.col(|ui| {
-        ui.label(&format!("{:.1$}", cam.location.latitude, COORDENATE_PRECISION));
+        ui.label(&format!(
+            "{:.1$}",
+            cam.location.latitude, COORDENATE_PRECISION
+        ));
     });
     row.col(|ui| {
-        ui.label(&format!("{:.1$}", cam.location.longitude, COORDENATE_PRECISION));
+        ui.label(&format!(
+            "{:.1$}",
+            cam.location.longitude, COORDENATE_PRECISION
+        ));
     });
 }
 

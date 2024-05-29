@@ -16,7 +16,7 @@ use super::mqtt_config::{Config, MqttConfig};
 /// - `Config`: configuracion abstracta
 ///
 pub struct ServerConfig {
-    pub general: MqttConfig
+    pub general: MqttConfig,
 }
 
 impl Clone for ServerConfig {
@@ -37,8 +37,6 @@ impl Config for ServerConfig {
 
         let general = MqttConfig::set_params(params)?;
 
-        Ok(ServerConfig {
-            general,
-        })
+        Ok(ServerConfig { general })
     }
 }

@@ -48,7 +48,6 @@ fn process_messages(
 
 impl MonitoringApp {
     pub fn new(client: MqttClient, log_path: String) -> Self {
-
         let cam_list = Arc::new(Mutex::new(CamList::default()));
 
         Self {

@@ -7,12 +7,12 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use shared::model::{incident::Incident, incident::IncidentState};
 use cams_system::CamsSystem;
 use mqtt::{
     client::mqtt_client::{MqttClient, MqttClientMessage},
     config::{client_config::ClientConfig, mqtt_config::Config},
 };
+use shared::model::{incident::Incident, incident::IncidentState};
 use system_interface::interface::{process_standard_input, show_start};
 
 pub fn process_messages(
