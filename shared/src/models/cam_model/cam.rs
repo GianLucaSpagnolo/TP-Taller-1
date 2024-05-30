@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::coordenates::Coordenates;
+use crate::models::coordenates::Coordenates;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum CamState {

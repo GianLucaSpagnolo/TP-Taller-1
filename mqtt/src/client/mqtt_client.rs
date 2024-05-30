@@ -1,7 +1,4 @@
-use std::{
-    io::Error,
-    net::TcpStream,
-};
+use std::{io::Error, net::TcpStream};
 
 use crate::{
     common::utils::create_logger,
@@ -183,12 +180,12 @@ impl MqttClient {
     }
 
     /// ## run_listener
-    /// 
+    ///
     /// Inicializa un listener para el cliente.
-    /// 
+    ///
     /// ### Retorno
     /// Resultado de la operación con el listener.
-    /// 
+    ///
     pub fn run_listener(&mut self) -> Result<MqttClientListener, Error> {
         MqttClientListener::run(self)
     }

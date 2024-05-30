@@ -12,7 +12,7 @@ use mqtt::{
     client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
     config::{client_config::ClientConfig, mqtt_config::Config},
 };
-use shared::model::{incident::Incident, incident::IncidentState};
+use shared::models::inc_model::incident::{Incident, IncidentState};
 use system_interface::interface::{process_standard_input, show_start};
 
 pub fn process_messages(

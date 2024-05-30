@@ -1,7 +1,7 @@
 use egui::Ui;
 use mqtt::client::mqtt_client::MqttClient;
 
-use crate::model::incident_interface::IncidentInterface;
+use crate::interfaces::incident_interface::IncidentInterface;
 
 use super::{incidents_editor::incident_editor, incidents_list::incident_list};
 

@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use super::{
-    coordenates::Coordenates,
-    incident::{Incident, IncidentState},
-};
+use crate::models::coordenates::Coordenates;
+
+use super::incident::{Incident, IncidentState};
 
 #[derive(Default)]
 pub struct IncidentList {

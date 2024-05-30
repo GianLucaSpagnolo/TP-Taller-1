@@ -5,7 +5,9 @@ use std::{
 };
 
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
-use shared::model::{cam_list::CamList, incident_interface::IncidentInterface};
+use shared::{
+    interfaces::incident_interface::IncidentInterface, models::cam_model::cam_list::CamList,
+};
 
 use crate::interface::run_interface;
 

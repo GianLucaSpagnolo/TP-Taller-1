@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use egui::Ui;
 use egui_extras::{Column, TableBuilder};
 
-use crate::model::{
+use crate::models::cam_model::{
     cam::{Cam, CamState},
     cam_list::CamList,
 };

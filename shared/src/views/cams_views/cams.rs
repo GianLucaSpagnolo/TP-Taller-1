@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use eframe::egui::Ui;
 
-use crate::model::cam_list::CamList;
+use crate::models::cam_model::cam_list::CamList;
 
 use super::cams_list::cams_list;
 

@@ -4,10 +4,8 @@ use mqtt::client::mqtt_client::MqttClient;
 
 use crate::{
     controllers::incident::incident_controller::resolve_incident,
-    model::{
-        incident::{Incident, IncidentState},
-        incident_interface::IncidentInterface,
-    },
+    interfaces::incident_interface::IncidentInterface,
+    models::inc_model::incident::{Incident, IncidentState},
 };
 
 static COORDENATE_PRECISION: usize = 4;

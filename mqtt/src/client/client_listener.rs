@@ -1,6 +1,19 @@
-use std::{io::Error, net::TcpStream, sync::mpsc::{self, Receiver, Sender}, thread::{self, JoinHandle}};
+use std::{
+    io::Error,
+    net::TcpStream,
+    sync::mpsc::{self, Receiver, Sender},
+    thread::{self, JoinHandle},
+};
 
-use crate::{common::utils::create_logger, control_packets::mqtt_packet::{fixed_header::PacketFixedHeader, packet::generic_packet::{get_packet, PacketReceived}, reason_codes::ReasonCode}, logger::{actions::MqttActions, client_actions::MqttClientActions}};
+use crate::{
+    common::utils::create_logger,
+    control_packets::mqtt_packet::{
+        fixed_header::PacketFixedHeader,
+        packet::generic_packet::{get_packet, PacketReceived},
+        reason_codes::ReasonCode,
+    },
+    logger::{actions::MqttActions, client_actions::MqttClientActions},
+};
 
 use super::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 
@@ -18,7 +31,6 @@ pub struct MqttClientListener {
 }
 
 impl MqttClientListener {
-    
     /// ## run_listener
     ///
     /// Inicializa un listener para el cliente MQTT.
@@ -137,7 +149,7 @@ impl MqttClientListener {
     /// Resultado de la operación con el mensaje.
     ///
     pub fn packet_handler(
-        client: & MqttClient,
+        client: &MqttClient,
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
         log_path: &String,
@@ -158,27 +170,19 @@ impl MqttClientListener {
                 data = publish.properties.application_message.clone();
                 MqttClientActions::ReceivePublish(topic.clone())
             }
-            PacketReceived::Puback(puback) => {
-                MqttClientActions::AcknowledgePublish(
-                    client.config.general.id.clone(),
-                    puback.properties.puback_reason_code,
-                )
-            }
-            PacketReceived::Suback(suback) => {
-                MqttClientActions::AcknowledgeSubscribe(
-                    client.config.general.id.clone(),
-                    suback.properties.reason_codes,
-                )
-            }
-            PacketReceived::Unsuback(unsuback) => {
-                MqttClientActions::AcknowledgeUnsubscribe(
-                    client.config.general.id.clone(),
-                    unsuback.properties.reason_codes,
-                )
-            }
-            PacketReceived::PingResp(_) => {
-                MqttClientActions::ReceivePinresp
-            }
+            PacketReceived::Puback(puback) => MqttClientActions::AcknowledgePublish(
+                client.config.general.id.clone(),
+                puback.properties.puback_reason_code,
+            ),
+            PacketReceived::Suback(suback) => MqttClientActions::AcknowledgeSubscribe(
+                client.config.general.id.clone(),
+                suback.properties.reason_codes,
+            ),
+            PacketReceived::Unsuback(unsuback) => MqttClientActions::AcknowledgeUnsubscribe(
+                client.config.general.id.clone(),
+                unsuback.properties.reason_codes,
+            ),
+            PacketReceived::PingResp(_) => MqttClientActions::ReceivePinresp,
             PacketReceived::Disconnect(disconnect) => {
                 let reason_code = disconnect.properties.disconnect_reason_code;
                 MqttClientActions::ReceiveDisconnect(ReasonCode::new(reason_code))
@@ -204,6 +208,5 @@ impl MqttClientListener {
             return Ok(Some(MqttClientMessage { topic, data }));
         }
         Ok(None)
-        
     }
 }

@@ -2,10 +2,12 @@ pub mod incident_controller {
 
     use mqtt::client::mqtt_client::MqttClient;
 
-    use crate::model::{
+    use crate::models::{
         coordenates::Coordenates,
-        incident::{Incident, IncidentState},
-        incident_list::IncidentList,
+        inc_model::{
+            incident::{Incident, IncidentState},
+            incident_list::IncidentList,
+        },
     };
 
     fn send_incident(client: &mut MqttClient, incident_received: Incident) {

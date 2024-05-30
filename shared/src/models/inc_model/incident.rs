@@ -1,4 +1,4 @@
-use super::coordenates::Coordenates;
+use crate::models::coordenates::Coordenates;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum IncidentState {

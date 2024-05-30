@@ -1,6 +1,6 @@
 use eframe::egui::ViewportBuilder;
 use shared::views::{
-    cams_views::cams::show_cams, dialog_alert::dialog_alert, incidents_views::incidents::show_incidents,
+    cams_views::cams::show_cams, dialog_alert::dialog_alert, incs_views::incidents::show_incidents,
 };
 
 use crate::app::MonitoringApp;

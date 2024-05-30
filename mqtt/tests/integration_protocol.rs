@@ -142,9 +142,7 @@ mod test {
             let mut log_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             log_path.push(client_config.general.log_path.clone());
 
-            let client_listener = client
-                .run_listener()
-                .unwrap();
+            let client_listener = client.run_listener().unwrap();
             let client_message_handler = process_messages(client_listener.receiver).unwrap();
 
             client.subscribe(vec!["messages"]).unwrap();

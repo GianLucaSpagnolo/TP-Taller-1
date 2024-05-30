@@ -4,9 +4,11 @@ pub mod interface {
         sync::{Arc, Mutex},
     };
 
-    use shared::model::{cam::Cam, cam::CamState, coordenates::Coordenates};
-
     use mqtt::client::mqtt_client::MqttClient;
+    use shared::models::{
+        cam_model::cam::{Cam, CamState},
+        coordenates::Coordenates,
+    };
 
     use crate::cams_system::CamsSystem;
 

@@ -3,7 +3,7 @@ use mqtt::client::mqtt_client::MqttClient;
 
 use crate::{
     controllers::incident::incident_controller::add_incident,
-    model::{coordenates::Coordenates, incident_interface::IncidentInterface},
+    interfaces::incident_interface::IncidentInterface, models::coordenates::Coordenates,
 };
 
 pub fn add_incident_button(

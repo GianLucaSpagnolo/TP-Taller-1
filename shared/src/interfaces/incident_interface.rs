@@ -1,4 +1,4 @@
-use super::incident_list::IncidentList;
+use crate::models::inc_model::incident_list::IncidentList;
 
 #[derive(Default)]
 pub struct IncidentInterface {
