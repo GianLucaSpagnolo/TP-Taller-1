@@ -12,6 +12,7 @@ fn main() -> Result<(), Error> {
     let config = ClientConfig::from_file(String::from(config_path))?;
 
     let log_path = config.general.log_path.to_string();
+
     let client = MqttClient::init(config)?;
 
     let app = MonitoringApp::new(client, log_path);

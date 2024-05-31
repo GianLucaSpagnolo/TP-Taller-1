@@ -1,9 +1,7 @@
 use std::fmt;
 
 use crate::{
-    control_packets::{
-        mqtt_packet::reason_codes::ReasonCode, mqtt_subscribe::subscribe_properties::TopicFilter,
-    },
+    common::{reason_codes::ReasonCode, topic_filter::TopicFilter},
     logger::actions::add_topics_names,
 };
 

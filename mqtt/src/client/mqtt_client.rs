@@ -1,27 +1,25 @@
-use std::{
-    io::Error,
-    net::TcpStream,
-    sync::mpsc::{self, Receiver, Sender},
-    thread::{self, JoinHandle},
-};
+use std::{io::Error, net::TcpStream};
 
 use crate::{
-    common::utils::create_logger,
+    common::{reason_codes::ReasonCode, utils::create_logger},
     config::{client_config::ClientConfig, mqtt_config::Config},
-    control_packets::{
-        mqtt_connack::connack::Connack,
-        mqtt_connect::{connect::Connect, payload},
-        mqtt_disconnect::{self},
-        mqtt_packet::{
-            fixed_header::PacketFixedHeader, packet::generic_packet::*, reason_codes::ReasonCode,
-        },
-        mqtt_pingreq::pingreq::PingReq,
-        mqtt_publish::{publish::Publish, publish_properties},
-        mqtt_subscribe::{subscribe::Subscribe, subscribe_properties},
-        mqtt_unsubscribe::{unsubscribe::Unsubscribe, unsubscribe_properties},
-    },
     logger::{actions::MqttActions, client_actions::MqttClientActions},
+    mqtt_packets::{
+        headers::fixed_header::PacketFixedHeader,
+        packet::generic_packet::{get_packet, PacketReceived, Serialization},
+        packets::{
+            connack::Connack, connect::Connect, disconnect::Disconnect, pingreq::PingReq,
+            publish::Publish, subscribe::Subscribe, unsubscribe::Unsubscribe,
+        },
+        properties::{
+            connect_payload::ConnectPayload, disconnect_properties::DisconnectProperties,
+            publish_properties::PublishProperties, subscribe_properties::SubscribeProperties,
+            unsubscribe_properties::UnsubscribeProperties,
+        },
+    },
 };
+
+use super::client_listener::MqttClientListener;
 
 /// ## MqttClient
 ///
@@ -44,35 +42,9 @@ use crate::{
 /// - pin_request: Realiza un ping request al servidor.
 ///
 pub struct MqttClient {
-    config: ClientConfig,
-    stream: TcpStream,
-    current_packet_id: u16,
-}
-
-/// ## MqttClientMessage
-///
-/// Estructura que representa un mensaje recibido por el cliente MQTT.
-///
-/// ### Atributos
-/// - topic: Tópico del mensaje.
-/// - data: Datos del mensaje.
-///
-pub struct MqttClientMessage {
-    pub topic: String,
-    pub data: Vec<u8>,
-}
-
-/// ## MqttClientListener
-///
-/// Estructura que representa un listener para el cliente MQTT.
-///
-/// ### Atributos
-/// - receiver: Receptor de mensajes.
-/// - handler: Handler del listener.
-///
-pub struct MqttClientListener {
-    pub receiver: Receiver<MqttClientMessage>,
-    pub handler: JoinHandle<Result<(), Error>>,
+    pub config: ClientConfig,
+    pub stream: TcpStream,
+    pub current_packet_id: u16,
 }
 
 /// ## receive_packet
@@ -85,7 +57,7 @@ pub struct MqttClientListener {
 /// ### Retorno
 /// Resultado de la operación con el paquete recibido.
 ///
-fn receive_packet(mut stream: &mut TcpStream) -> Result<PacketReceived, Error> {
+pub fn receive_packet(mut stream: &mut TcpStream) -> Result<PacketReceived, Error> {
     let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
 
     get_packet(
@@ -117,6 +89,103 @@ fn receive_connack_packet(stream: &mut TcpStream) -> Result<Connack, Error> {
     }
 }
 
+/// ## stablish_tcp_connection
+///
+/// Establece una conexión TCP con el servidor.
+///
+/// ### Parámetros
+/// - log_path: Ruta del archivo de log.
+/// - config: Configuración del cliente.
+/// - client_id: ID del cliente.
+///
+/// ### Retorno
+/// Resultado de la operación.
+///
+fn stablish_tcp_connection(
+    log_path: String,
+    config: &ClientConfig,
+    client_id: &String,
+) -> Result<TcpStream, Error> {
+    let logger = create_logger(&log_path)?;
+
+    let stream = match TcpStream::connect(config.get_socket_address()) {
+        Ok(stream) => stream,
+        Err(e) => {
+            logger.log_event(
+                &("Error al conectar con servidor: ".to_string() + &e.to_string()),
+                client_id,
+            );
+            logger.close_logger();
+            return Err(e);
+        }
+    };
+    logger.close_logger();
+    Ok(stream)
+}
+
+/// ## send_connect_packet
+///
+/// Envía un paquete CONNECT al servidor.
+/// Debe recibir un paquete CONNACK del servidor.
+///
+/// ### Parámetros
+/// - client_id: ID del cliente.
+/// - log_path: Ruta del archivo de log.
+/// - stream: Stream de conexión con el servidor.
+/// - payload: Payload del paquete CONNECT.
+/// - config: Configuración del cliente.
+///
+/// ### Retorno
+/// Resultado de la operación.
+
+fn send_connect_packet(
+    client_id: &String,
+    log_path: String,
+    stream: &mut TcpStream,
+    payload: ConnectPayload,
+    config: &ClientConfig,
+) -> Result<(), Error> {
+    let logger = create_logger(&log_path)?;
+
+    match Connect::new(config.connect_properties.clone(), payload).send(stream) {
+        Ok(_) => (),
+        Err(e) => {
+            logger.log_event(
+                &("Error al conectar con servidor: ".to_string() + &e.to_string()),
+                client_id,
+            );
+            logger.close_logger();
+            return Err(e);
+        }
+    };
+
+    MqttClientActions::SendConnect(config.get_socket_address().to_string()).log_action(
+        client_id,
+        &logger,
+        &config.general.log_in_term,
+    );
+
+    match receive_connack_packet(stream) {
+        Ok(connack) => {
+            MqttClientActions::Connection(
+                config.get_socket_address().to_string(),
+                connack.properties.connect_reason_code,
+            )
+            .log_action(client_id, &logger, &config.general.log_in_term);
+        }
+        Err(e) => {
+            logger.log_event(
+                &("Error al procesar connack: ".to_string() + &e.to_string()),
+                client_id,
+            );
+            logger.close_logger();
+            return Err(e);
+        }
+    };
+    logger.close_logger();
+    Ok(())
+}
+
 impl MqttClient {
     /// ## init
     ///
@@ -134,67 +203,14 @@ impl MqttClient {
         let log_path = config.general.log_path.to_string();
         let client_id = config.general.id.to_string();
 
-        let logger = match create_logger(&log_path) {
-            Ok(log) => {
-                // si se configura el mismo path del server, sacar este mensaje.
-                log.log_event(&"Logger del cliente inicializado".to_string(), &client_id);
-                log
-            }
-            Err(e) => return Err(e),
-        };
-
-        let mut stream = match TcpStream::connect(config.get_socket_address()) {
-            Ok(stream) => stream,
-            Err(e) => {
-                logger.log_event(
-                    &("Error al conectar con servidor: ".to_string() + &e.to_string()),
-                    &client_id,
-                );
-                logger.close_logger();
-                return Err(e);
-            }
-        };
-
-        let payload = payload::ConnectPayload {
+        let payload = ConnectPayload {
             client_id: config.general.id.clone(),
             ..Default::default()
         };
 
-        match Connect::new(config.connect_properties.clone(), payload).send(&mut stream) {
-            Ok(_) => (),
-            Err(e) => {
-                logger.log_event(
-                    &("Error al conectar con servidor: ".to_string() + &e.to_string()),
-                    &client_id,
-                );
-                logger.close_logger();
-                return Err(e);
-            }
-        };
+        let mut stream = stablish_tcp_connection(log_path.to_string(), &config, &client_id)?;
 
-        MqttClientActions::SendConnect(config.get_socket_address().to_string()).log_action(
-            &client_id,
-            &logger,
-            &config.general.log_in_term,
-        );
-
-        match receive_connack_packet(&mut stream) {
-            Ok(connack) => {
-                MqttClientActions::Connection(
-                    config.get_socket_address().to_string(),
-                    connack.properties.connect_reason_code,
-                )
-                .log_action(&client_id, &logger, &config.general.log_in_term);
-            }
-            Err(e) => {
-                logger.log_event(
-                    &("Error al procesar connack: ".to_string() + &e.to_string()),
-                    &client_id,
-                );
-                logger.close_logger();
-                return Err(e);
-            }
-        };
+        send_connect_packet(&client_id, log_path, &mut stream, payload, &config)?;
 
         let current_packet_id = 0;
 
@@ -204,223 +220,18 @@ impl MqttClient {
             current_packet_id,
         };
 
-        logger.close_logger();
         Ok(client)
     }
 
     /// ## run_listener
     ///
-    /// Inicializa un listener para el cliente MQTT.
-    ///
-    /// ### Parámetros
-    /// - log_path: Path del log.
+    /// Inicializa un listener para el cliente.
     ///
     /// ### Retorno
     /// Resultado de la operación con el listener.
     ///
-    pub fn run_listener(&mut self, log_path: String) -> Result<MqttClientListener, Error> {
-        let client = self.clone();
-
-        let (sender, receiver) = mpsc::channel();
-
-        let handler = thread::spawn(move || -> Result<(), Error> {
-            loop {
-                match client.listen_message(
-                    client.stream.try_clone()?,
-                    sender.clone(),
-                    &log_path.to_string(),
-                ) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        // Disconnect
-                        // Handle session expity interval
-                        return Err(e);
-                    }
-                };
-            }
-        });
-
-        Ok(MqttClientListener { receiver, handler })
-    }
-
-    /// ## listen_message
-    ///
-    /// Escucha los mensajes del servidor.
-    /// Envia los mensajes al sender para que lo procese el cliente como considere necesario,
-    ///
-    /// ### Parámetros
-    /// - stream: Stream de conexión con el servidor.
-    /// - sender: Emisor de mensajes.
-    /// - log_path: Path del log.
-    ///
-    /// ### Retorno
-    /// Resultado de la operación.
-    ///
-    pub fn listen_message(
-        &self,
-        mut stream: TcpStream,
-        sender: Sender<MqttClientMessage>,
-        log_path: &String,
-    ) -> Result<(), Error> {
-        let logger = create_logger(log_path)?;
-
-        let header = match PacketFixedHeader::read_from(&mut stream) {
-            Ok(r) => r,
-            Err(e) => {
-                logger.log_event(
-                    &(ReasonCode::MalformedPacket.to_string()),
-                    &self.config.general.id,
-                );
-                logger.close_logger();
-                return Err(e);
-            }
-        };
-
-        let msg = match self.packet_handler(&mut stream, header, log_path) {
-            Ok(res) => {
-                if let Some(res) = res {
-                    res
-                } else {
-                    logger.close_logger();
-                    return Ok(());
-                }
-            }
-            Err(e) => {
-                logger.log_event(
-                    &("Error al manejar el mensaje: ".to_string() + &e.to_string()),
-                    &self.config.general.id,
-                );
-                logger.close_logger();
-                return Err(e);
-            }
-        };
-
-        match sender.send(msg) {
-            Ok(_) => (),
-            Err(e) => {
-                let msg = "Error al recibir mensaje del servidor: ".to_string() + &e.to_string();
-                logger.log_event(&msg, &self.config.general.id);
-                logger.close_logger();
-                return Err(Error::new(std::io::ErrorKind::Other, msg));
-            }
-        };
-
-        thread::sleep(std::time::Duration::from_millis(1000));
-        logger.close_logger();
-        Ok(())
-    }
-
-    /// ## packet_handler
-    ///
-    /// Maneja los mensajes recibidos.
-    ///
-    /// ### Parámetros
-    /// - stream: Stream de conexión con el servidor.
-    /// - fixed_header: Cabecera del paquete.
-    /// - log_path: Path del log.
-    ///
-    /// ### Retorno
-    /// Resultado de la operación con el mensaje.
-    ///
-    pub fn packet_handler(
-        &self,
-        mut stream: &mut TcpStream,
-        fixed_header: PacketFixedHeader,
-        log_path: &String,
-    ) -> Result<Option<MqttClientMessage>, Error> {
-        let logger = create_logger(log_path)?;
-
-        let packet_recived = get_packet(
-            &mut stream,
-            fixed_header.get_package_type(),
-            fixed_header.remaining_length,
-        )?;
-
-        let data;
-        let topic;
-        match packet_recived {
-            PacketReceived::Publish(publish) => {
-                topic = publish.properties.topic_name.clone();
-                data = publish.properties.application_message.clone();
-                MqttClientActions::ReceivePublish(topic.clone()).log_action(
-                    &self.config.general.id,
-                    &logger,
-                    &self.config.general.log_in_term,
-                );
-            }
-            PacketReceived::Puback(puback) => {
-                MqttClientActions::AcknowledgePublish(
-                    self.config.general.id.clone(),
-                    puback.properties.puback_reason_code,
-                )
-                .log_action(
-                    &self.config.general.id,
-                    &logger,
-                    &self.config.general.log_in_term,
-                );
-                logger.close_logger();
-                return Ok(None);
-            }
-            PacketReceived::Suback(suback) => {
-                MqttClientActions::AcknowledgeSubscribe(
-                    self.config.general.id.clone(),
-                    suback.properties.reason_codes,
-                )
-                .log_action(
-                    &self.config.general.id,
-                    &logger,
-                    &self.config.general.log_in_term,
-                );
-                logger.close_logger();
-                return Ok(None);
-            }
-            PacketReceived::Unsuback(unsuback) => {
-                MqttClientActions::AcknowledgeUnsubscribe(
-                    self.config.general.id.clone(),
-                    unsuback.properties.reason_codes,
-                )
-                .log_action(
-                    &self.config.general.id,
-                    &logger,
-                    &self.config.general.log_in_term,
-                );
-                logger.close_logger();
-                return Ok(None);
-            }
-            PacketReceived::PingResp(_) => {
-                MqttClientActions::ReceivePinresp.log_action(
-                    &self.config.general.id,
-                    &logger,
-                    &self.config.general.log_in_term,
-                );
-                logger.close_logger();
-                return Ok(None);
-            }
-            PacketReceived::Disconnect(disconnect) => {
-                let reason_code = disconnect.properties.disconnect_reason_code;
-                MqttClientActions::ReceiveDisconnect(ReasonCode::new(reason_code)).log_action(
-                    &self.config.general.id,
-                    &logger,
-                    &self.config.general.log_in_term,
-                );
-                logger.close_logger();
-                return Err(Error::new(
-                    std::io::ErrorKind::Other,
-                    "Cliente desconectado por el servidor",
-                ));
-            }
-            _ => {
-                logger.log_event(
-                    &"Paquete desconocido recibido".to_string(),
-                    &self.config.general.id,
-                );
-                logger.close_logger();
-                return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido"));
-            }
-        }
-
-        logger.close_logger();
-        Ok(Some(MqttClientMessage { topic, data }))
+    pub fn run_listener(&mut self) -> Result<MqttClientListener, Error> {
+        MqttClientListener::run(self)
     }
 
     /// ## publish
@@ -438,7 +249,7 @@ impl MqttClient {
         let logger = create_logger(&self.config.general.log_path)?;
 
         self.current_packet_id += 1;
-        let properties = publish_properties::PublishProperties {
+        let properties = PublishProperties {
             topic_name: topic.clone(),
             packet_identifier: self.current_packet_id,
             payload_format_indicator: Some(1),
@@ -477,7 +288,7 @@ impl MqttClient {
     pub fn subscribe(&mut self, topics: Vec<&str>) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
 
-        let mut properties = subscribe_properties::SubscribeProperties {
+        let mut properties = SubscribeProperties {
             packet_identifier: 0,
             ..Default::default()
         };
@@ -521,7 +332,7 @@ impl MqttClient {
     pub fn unsubscribe(&mut self, topics: Vec<&str>, packet_id: u16) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
 
-        let mut properties = unsubscribe_properties::UnsubscribeProperties {
+        let mut properties = UnsubscribeProperties {
             packet_identifier: packet_id,
             ..Default::default()
         };
@@ -572,7 +383,7 @@ impl MqttClient {
             disconnect_reason_code = reason_code.get_id();
         }
 
-        let properties = mqtt_disconnect::disconnect_properties::DisconnectProperties {
+        let properties = DisconnectProperties {
             disconnect_reason_code,
             session_expiry_interval: None,
             reason_string: None,
@@ -580,7 +391,7 @@ impl MqttClient {
             server_reference: None,
         };
 
-        mqtt_disconnect::disconnect::Disconnect::new(properties).send(&mut self.stream)?;
+        Disconnect::new(properties).send(&mut self.stream)?;
 
         MqttClientActions::SendDisconnect(
             self.config.get_socket_address().to_string(),

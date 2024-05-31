@@ -1,6 +1,6 @@
 [workspace]
 
 members = [ "broker", "central_cams_system", "monitoring_app",
-	"mqtt",
+	"mqtt", "shared",
 ]
 resolver = "2"

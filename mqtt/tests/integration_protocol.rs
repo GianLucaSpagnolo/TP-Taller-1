@@ -1,11 +1,12 @@
 #[cfg(test)]
 mod test {
-    use mqtt::control_packets::mqtt_packet::reason_codes::ReasonCode::NormalDisconnection;
     use mqtt::{
-        client::mqtt_client::{MqttClient, MqttClientMessage},
+        client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
+        common::reason_codes::ReasonCode,
         config::{client_config::ClientConfig, mqtt_config::Config, server_config::ServerConfig},
         server::mqtt_server::MqttServer,
     };
+
     use std::{
         fs::remove_file,
         io::Error,
@@ -141,9 +142,7 @@ mod test {
             let mut log_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             log_path.push(client_config.general.log_path.clone());
 
-            let client_listener = client
-                .run_listener(log_path.to_str().unwrap().to_string())
-                .unwrap();
+            let client_listener = client.run_listener().unwrap();
             let client_message_handler = process_messages(client_listener.receiver).unwrap();
 
             client.subscribe(vec!["messages"]).unwrap();
@@ -190,7 +189,7 @@ mod test {
             client.unsubscribe(vec!["bad messages"], 0x100).unwrap();
 
             thread::sleep(Duration::from_millis(500));
-            client.disconnect(NormalDisconnection).unwrap();
+            client.disconnect(ReasonCode::NormalDisconnection).unwrap();
 
             client_listener.handler.join().unwrap().unwrap();
             client_message_handler.join().unwrap();

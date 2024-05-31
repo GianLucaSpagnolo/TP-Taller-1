@@ -6,17 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ab_glyph = "0.2.26"
-ahash = "0.8.11"
-nohash-hasher = "0.2.0"
-parking_lot = "0.12.3"
-eframe = "0.27.2"
-walkers = "0.22.0"
-egui_extras = "0.27.2"
-
 mqtt = { path = "../mqtt" }
+shared = { path = "../shared" }
 
-broker = { path = "../broker"}
+eframe = "0.27.2"
+egui = "0.27.2"
 
 [[bin]]
 name = "monitoring_app"

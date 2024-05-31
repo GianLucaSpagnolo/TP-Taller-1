@@ -8,12 +8,6 @@ edition = "2021"
 [dependencies]
 mqtt = { path = "../mqtt" }
 
-rand = "0.8.4"
-
-[lib]
-name = "app"
-path = "src/lib.rs"
-
 [[bin]]
 name = "broker"
 path = "src/broker.rs"

@@ -6,9 +6,9 @@ use std::{
 };
 
 use mqtt::{
-    client::mqtt_client::{MqttClient, MqttClientMessage},
+    client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
+    common::reason_codes::ReasonCode,
     config::{client_config::ClientConfig, mqtt_config::Config},
-    control_packets::mqtt_packet::reason_codes::ReasonCode,
 };
 
 fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<()>, Error> {
@@ -73,8 +73,8 @@ fn main() -> Result<(), Error> {
     };
 
     let config_path = match config_type {
-        1 => "broker/config/aux/client_sub.txt",
-        2 => "broker/config/aux/client_pub.txt",
+        1 => "data/config/aux/client_sub.txt",
+        2 => "data/config/aux/client_pub.txt",
         _ => {
             return Err(Error::new(
                 std::io::ErrorKind::InvalidInput,
@@ -85,10 +85,9 @@ fn main() -> Result<(), Error> {
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
-    let log_path = config.general.log_path.to_string();
     let mut client = MqttClient::init(config)?;
 
-    let listener = client.run_listener(log_path)?;
+    let listener = client.run_listener()?;
 
     let process_message_handler = process_messages(listener.receiver)?;
 
