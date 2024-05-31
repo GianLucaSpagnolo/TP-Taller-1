@@ -11,13 +11,13 @@ use crate::models::cam_model::{
 static COORDENATE_PRECISION: usize = 4;
 
 /// ## cam_row
-/// 
+///
 /// Muestra una fila de la tabla de cámaras
-/// 
+///
 /// ### Parametros
 /// - `row`: Fila de la tabla
 /// - `cam`: Cámara
-/// 
+///
 fn cam_row(mut row: egui_extras::TableRow, cam: &Cam) {
     row.col(|ui| {
         ui.label(&format!("{}", cam.id));
@@ -44,13 +44,13 @@ fn cam_row(mut row: egui_extras::TableRow, cam: &Cam) {
 }
 
 /// ## cams_list
-/// 
+///
 /// Muestra la lista de cámaras
-/// 
+///
 /// ### Parametros
 /// - `ui`: Interfaz de usuario
 /// - `cam_list`: Lista de cámaras
-/// 
+///
 pub fn cams_list(ui: &mut Ui, cam_list: &Arc<Mutex<CamList>>) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))

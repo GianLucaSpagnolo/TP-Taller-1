@@ -5,12 +5,12 @@ use crate::models::coordenates::Coordenates;
 use super::incident::{Incident, IncidentState};
 
 /// ## IncidentList
-/// 
+///
 /// Estructura que representa una lista de incidentes
-/// 
+///
 /// ### Atributos
 /// - `incidents`: HashMap de incidentes
-/// 
+///
 #[derive(Default)]
 pub struct IncidentList {
     pub incidents: HashMap<String, Incident>,

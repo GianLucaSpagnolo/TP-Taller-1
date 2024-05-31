@@ -12,15 +12,15 @@ use shared::{
 use crate::interface::run_interface;
 
 /// ## MonitoringApp
-/// 
+///
 /// Estructura que representa la aplicación de monitoreo
-/// 
+///
 /// ### Atributos
 /// - `client`: cliente MQTT
 /// - `cam_list`: lista de cámaras
 /// - `inc_interface`: interfaz de incidentes
 /// - `log_path`: ruta del archivo de log
-/// 
+///
 pub struct MonitoringApp {
     pub client: MqttClient,
     pub cam_list: Arc<Mutex<CamList>>,
@@ -30,28 +30,27 @@ pub struct MonitoringApp {
     map_memory: MapMemory, */
 }
 
-
 /// ## MonitoringHandler
-/// 
+///
 /// Estructura que representa los manejadores de la aplicación de monitoreo
-/// 
+///
 /// ### Atributos
 /// - `broker_listener`: manejador del broker
 /// - `message_handler`: manejador de mensajes
-/// 
+///
 pub struct MonitoringHandler {
     pub broker_listener: JoinHandle<Result<(), Error>>,
     pub message_handler: JoinHandle<()>,
 }
 
 /// ### process_messages
-/// 
+///
 /// Procesa los mensajes recibidos por el cliente MQTT
-/// 
+///
 /// ### Parametros
 /// - `receiver`: receptor de mensajes
 /// - `system`: sistema de cámaras del monitoreo
-/// 
+///
 fn process_messages(
     receiver: Receiver<MqttClientMessage>,
     system: Arc<Mutex<CamList>>,
@@ -76,11 +75,10 @@ fn process_messages(
 }
 
 impl MonitoringApp {
-
     /// ### new
     ///    
     /// Crea una nueva aplicación de monitoreo
-    /// 
+    ///
     /// #### Parametros
     /// - `client`: cliente MQTT
     /// - `log_path`: ruta del archivo de log
@@ -102,12 +100,12 @@ impl MonitoringApp {
     }
 
     /// ### init
-    /// 
+    ///
     /// Inicializa la aplicación de monitoreo
-    /// 
+    ///
     /// #### Retorno
     /// Resultado de la inicialización
-    /// 
+    ///
     pub fn init(mut self) -> Result<MonitoringHandler, Error> {
         let listener = self.client.run_listener()?;
 

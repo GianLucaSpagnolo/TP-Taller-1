@@ -6,17 +6,17 @@ pub mod data_representation {
     };
 
     /// ## read_byte
-    /// 
+    ///
     /// Lee un byte de un stream
-    /// 
+    ///
     /// ### Parametros
     /// - `stream`: stream de lectura
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<u8, Error>`:
     ///     - Ok: byte leido
     ///     - Err: error al leer el byte (std::io::Error)
-    /// 
+    ///
     pub fn read_byte(stream: &mut dyn Read) -> Result<u8, Error> {
         let mut read_buff = [0u8; 1];
         stream.read_exact(&mut read_buff)?;
@@ -24,17 +24,17 @@ pub mod data_representation {
     }
 
     /// ## read_two_byte_integer
-    /// 
+    ///
     /// Lee un entero de dos bytes de un stream
-    /// 
+    ///
     /// ### Parametros
     /// - `stream`: stream de lectura
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<u16, Error>`:
     ///    - Ok: entero leido
     ///    - Err: error al leer el entero (std::io::Error)
-    /// 
+    ///
     pub fn read_two_byte_integer(stream: &mut dyn Read) -> Result<u16, Error> {
         let mut read_buff = [0u8; 2];
 
@@ -44,33 +44,32 @@ pub mod data_representation {
         Ok(u16::from_be_bytes(read_buff))
     }
 
-
     /// ## read_four_byte_integer
-    /// 
+    ///
     /// Lee un entero de cuatro bytes de un stream
-    /// 
+    ///
     /// ### Parametros
     /// - `stream`: stream de lectura
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<u32, Error>`:
     ///    - Ok: entero leido
     ///    - Err: error al leer el entero (std::io::Error)
-    /// 
+    ///
     #[allow(dead_code)]
     pub fn read_four_byte_integer(stream: &mut dyn Read) -> Result<u32, Error> {
         let mut read_buff = [0u8; 4];
         stream.read_exact(&mut read_buff)?;
         Ok(u32::from_be_bytes(read_buff))
     }
-    
+
     /// ## read_utf8_encoded_string
-    /// 
+    ///
     /// Lee un string UTF-8 de un stream
-    /// 
+    ///
     /// ### Parametros
     /// - `stream`: stream de lectura
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<String, Error>`:
     ///    - Ok: string leido
@@ -87,16 +86,16 @@ pub mod data_representation {
     }
 
     /// ## variable_byte_integer_from_be_bytes
-    /// 
+    ///
     /// Convierte un vector de bytes en un entero variable byte
-    /// 
+    ///
     /// ### Parametros
     /// - `buff`: vector de bytes
     /// - `buff_size`: tamaño del vector de bytes
-    /// 
+    ///
     /// ### Retorno
     /// - `u32`: entero variable byte
-    /// 
+    ///
     pub fn variable_byte_integer_from_be_bytes(buff: &[u8], buff_size: &mut usize) -> u32 {
         let mut multiplier = 1;
         let mut value = 0;
@@ -120,16 +119,16 @@ pub mod data_representation {
     }
 
     /// ## four_byte_integer_from_be_bytes
-    /// 
+    ///
     /// Convierte un vector de bytes en un entero de cuatro bytes
-    /// 
+    ///
     /// ### Parametros
     /// - `buff`: vector de bytes
     /// - `buff_size`: tamaño del vector de bytes
-    /// 
+    ///
     /// ### Retorno
     /// - `u32`: entero de cuatro bytes
-    /// 
+    ///
     pub fn four_byte_integer_from_be_bytes(buff: &[u8], buff_size: &mut usize) -> u32 {
         let mut local_buff: [u8; 4] = [0; 4];
         local_buff.copy_from_slice(&buff[*buff_size..*buff_size + 4]);
@@ -138,16 +137,16 @@ pub mod data_representation {
     }
 
     /// ## two_byte_integer_from_be_bytes
-    /// 
+    ///
     /// Convierte un vector de bytes en un entero de dos bytes
-    /// 
+    ///
     /// ### Parametros
     /// - `buff`: vector de bytes
     /// - `buff_size`: tamaño del vector de bytes
-    /// 
+    ///
     /// ### Retorno
     /// - `u16`: entero de dos bytes
-    /// 
+    ///
     pub fn two_byte_integer_from_be_bytes(buff: &[u8], buff_size: &mut usize) -> u16 {
         let mut local_buff: [u8; 2] = [0; 2];
         local_buff.copy_from_slice(&buff[*buff_size..*buff_size + 2]);
@@ -156,16 +155,16 @@ pub mod data_representation {
     }
 
     /// ## byte_integer_from_be_bytes
-    /// 
+    ///
     /// Convierte un vector de bytes en un entero de un byte
-    /// 
+    ///
     /// ### Parametros
     /// - `buff`: vector de bytes
     /// - `buff_size`: tamaño del vector de bytes
-    /// 
+    ///
     /// ### Retorno
     /// - `u8`: entero de un byte
-    /// 
+    ///
     pub fn byte_integer_from_be_bytes(buff: &[u8], buff_size: &mut usize) -> u8 {
         let value = buff[*buff_size];
         *buff_size += size_of::<u8>();
@@ -173,17 +172,17 @@ pub mod data_representation {
     }
 
     /// ## binary_data_from_be_bytes
-    /// 
+    ///
     /// Convierte un vector de bytes en un vector de bytes
-    /// 
+    ///
     /// ### Parametros
     /// - `buff`: vector de bytes
     /// - `length`: tamaño del vector de bytes
     /// - `buff_size`: tamaño del vector de bytes
-    /// 
+    ///
     /// ### Retorno
     /// - `Vec<u8>`: vector de bytes
-    /// 
+    ///
     pub fn binary_data_from_be_bytes(buff: &[u8], length: u16, buff_size: &mut usize) -> Vec<u8> {
         let mut local_buff: Vec<u8> = vec![0; length as usize];
         local_buff.copy_from_slice(&buff[*buff_size..*buff_size + length as usize]);
@@ -194,15 +193,15 @@ pub mod data_representation {
     /// ## utf8_string_from_be_bytes
     ///
     /// Convierte un vector de bytes en un string UTF-8
-    /// 
+    ///
     /// ### Parametros
     /// - `buff`: vector de bytes
     /// - `length`: tamaño del vector de bytes
     /// - `buff_size`: tamaño del vector de bytes
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<String, FromUtf8Error>`: string UTF-8
-    /// 
+    ///
     pub fn utf8_string_from_be_bytes(
         buff: &[u8],
         length: u16,
@@ -215,13 +214,13 @@ pub mod data_representation {
     }
 
     /// ## variable_byte_integer_encode
-    /// 
+    ///
     /// Codifica un entero variable byte en un vector de bytes
-    /// 
+    ///
     /// ### Parametros
     /// - `bytes`: vector de bytes
     /// - `value`: entero variable byte
-    /// 
+    ///
     pub fn variable_byte_integer_encode(bytes: &mut Vec<u8>, value: u32) {
         if value == 0 {
             bytes.push(0);
@@ -243,12 +242,12 @@ pub mod data_representation {
     }
 
     /// ## variable_byte_integer_decode
-    /// 
+    ///
     /// Decodifica un entero variable byte de un stream
-    /// 
+    ///
     /// ### Parametros
     /// - `stream`: stream de lectura
-    /// 
+    ///
     /// ### Retorno
     /// - `Result<u32, Error>`:
     ///   - Ok: entero variable byte
@@ -278,15 +277,15 @@ pub mod data_representation {
     }
 
     /// ## variable_byte_integer_length
-    /// 
+    ///
     /// Devuelve la longitud de un entero variable byte
-    /// 
+    ///
     /// ### Parametros
     /// - `value`: entero variable byte
-    /// 
+    ///
     /// - `u32`: longitud del entero variable byte
     /// ### Retorno
-    /// 
+    ///
     pub fn variable_byte_integer_length(value: u32) -> u32 {
         if value == 0 {
             return 1;

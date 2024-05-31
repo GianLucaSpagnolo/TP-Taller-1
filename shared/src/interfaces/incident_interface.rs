@@ -1,9 +1,9 @@
 use crate::models::inc_model::incident_list::IncidentList;
 
 /// ## IncidentInterface
-/// 
+///
 /// Interaz de incidentes para la vista
-/// 
+///
 /// ### Atributos
 /// - `historial`: Historial de incidentes
 /// - `latitude_field`: Campo de latitud para crear un nuevo incidente
@@ -11,7 +11,7 @@ use crate::models::inc_model::incident_list::IncidentList;
 /// - `wrong_data`: Indica si los datos ingresados son incorrectos
 /// - `show_data_alert`: Indica si se debe mostrar un alerta de datos incorrectos
 /// - `editable`: Indica si los datos son editables
-/// 
+///
 #[derive(Default)]
 pub struct IncidentInterface {
     pub historial: IncidentList,

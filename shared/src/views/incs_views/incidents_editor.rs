@@ -7,17 +7,17 @@ use crate::{
 };
 
 /// ## add_incident_button
-/// 
+///
 /// Botón para agregar un incidente
-/// 
+///
 /// ### Parametros
 /// - `ui`: Interfaz de usuario
 /// - `client`: Cliente MQTT
 /// - `inc_interface`: Interfaz de incidente
-/// 
+///
 /// ### Consideraciones
 /// - Si se presiona el botón, se intentará agregar un incidente (si los datos son válidos)
-/// 
+///
 pub fn add_incident_button(
     ui: &mut Ui,
     client: &mut MqttClient,
@@ -47,14 +47,14 @@ pub fn add_incident_button(
 }
 
 /// ## incident_editor
-/// 
+///
 /// Editor de incidentes
-/// 
+///
 /// ### Parametros
 /// - `ui`: Interfaz de usuario
 /// - `client`: Cliente MQTT
 /// - `inc_interface`: Interfaz de incidente
-/// 
+///
 pub fn incident_editor(
     ui: &mut Ui,
     client: &mut MqttClient,
