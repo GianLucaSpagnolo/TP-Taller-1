@@ -6,6 +6,13 @@ use super::cam::{Cam, CamState};
 
 use rand::Rng;
 
+/// ## CamList
+/// 
+/// Estructura que representa una lista de cámaras
+/// 
+/// ### Atributos
+/// - `cams`: Vector de cámaras
+/// 
 #[derive(Default)]
 pub struct CamList {
     pub cams: Vec<Cam>,
@@ -22,6 +29,14 @@ impl Display for CamList {
 }
 
 impl CamList {
+
+    /// ## as_bytes
+    /// 
+    /// Convierte la lista de cámaras a un vector de bytes
+    /// 
+    /// ### Retorno
+    /// - `Vec<u8>`: Vector de bytes
+    /// 
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
@@ -43,6 +58,16 @@ impl CamList {
         bytes
     }
 
+    /// ## from_be_bytes
+    /// 
+    /// Convierte un vector de bytes en una lista de cámaras
+    /// 
+    /// ### Parametros
+    /// - `bytes`: Vector de bytes
+    /// 
+    /// ### Retorno
+    /// - `CamList`: Lista de cámaras creada
+    /// 
     pub fn from_be_bytes(bytes: Vec<u8>) -> Self {
         let mut cams = Vec::new();
         let mut index = 0;

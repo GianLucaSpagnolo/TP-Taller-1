@@ -55,6 +55,14 @@ impl eframe::App for MonitoringApp {
     }
 }
 
+
+/// ### run_interface
+/// 
+/// Ejecuta la interfaz de usuario
+/// 
+/// ### Parametros
+/// - `app`: Aplicación de monitoreo
+/// 
 pub fn run_interface(app: MonitoringApp) -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         centered: true,

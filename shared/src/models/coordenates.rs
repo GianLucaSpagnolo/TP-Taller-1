@@ -1,5 +1,13 @@
 use std::{fmt::Display, io::Error};
 
+/// ## Coordenates
+/// 
+/// Estructura que representa las coordenadas de un punto
+/// 
+/// ### Atributos
+/// - `latitude`: Latitud
+/// - `longitude`: Longitud
+/// 
 #[derive(Default, Clone, PartialEq, Debug)]
 
 pub struct Coordenates {

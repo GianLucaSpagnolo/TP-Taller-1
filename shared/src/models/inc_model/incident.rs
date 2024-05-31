@@ -14,6 +14,14 @@ pub struct Incident {
 }
 
 impl Incident {
+
+    /// ## as_bytes
+    /// 
+    /// Convierte el incidente a un vector de bytes
+    /// 
+    /// ### Retorno
+    /// - `Vec<u8>`: Vector de bytes
+    /// 
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
@@ -34,6 +42,16 @@ impl Incident {
         bytes
     }
 
+    /// ## from_be_bytes
+    /// 
+    /// Convierte un vector de bytes en un incidente
+    /// 
+    /// ### Parametros
+    /// - `bytes`: Vector de bytes
+    /// 
+    /// ### Retorno
+    /// - `Incident`: Incidente creado
+    /// 
     pub fn from_be_bytes(bytes: Vec<u8>) -> Self {
         let mut index = 0;
 

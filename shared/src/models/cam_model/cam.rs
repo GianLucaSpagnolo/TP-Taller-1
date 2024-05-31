@@ -2,6 +2,14 @@ use std::fmt::Display;
 
 use crate::models::coordenates::Coordenates;
 
+/// ## CamState
+/// 
+/// Enumeración que representa el estado de una cámara
+/// 
+/// ### Valores
+/// - `SavingEnergy`: Ahorro de energía
+/// - `Alert`: Alerta
+/// 
 #[derive(Debug, PartialEq, Clone)]
 pub enum CamState {
     SavingEnergy,
@@ -18,6 +26,15 @@ impl Display for CamState {
     }
 }
 
+/// ## Cam
+/// 
+/// Estructura que representa una cámara
+/// 
+/// ### Atributos
+/// - `id`: Identificador de la cámara
+/// - `location`: Coordenadas de la cámara
+/// - `state`: Estado de la cámara
+/// 
 #[derive(Debug, PartialEq, Clone)]
 
 pub struct Cam {

@@ -88,6 +88,7 @@ pub fn get_file_parameters(lines: Vec<String>, param_qty: usize) -> Vec<(String,
     params
 }
 
+/// Crea un logger y devuelve un handler para manejarlo
 pub fn create_logger(log_file_path: &String) -> Result<LoggerHandler, Error> {
     let (tw, tr) = channel();
     let mut logger_handler = LoggerHandler::create_logger_handler(tw, log_file_path);
@@ -101,6 +102,8 @@ pub fn create_logger(log_file_path: &String) -> Result<LoggerHandler, Error> {
     }
 }
 
+/// Abre un archivo en modo lectura y escritura, si no existe lo crea
+/// y devuelve el archivo abierto
 pub fn open_file(route: &String) -> Result<File, Error> {
     let open_result = OpenOptions::new().read(true).append(true).open(route);
 
@@ -124,7 +127,7 @@ pub fn open_file(route: &String) -> Result<File, Error> {
     }
 }
 
-// debe ser thread-safe
+/// Escribe una linea en el archivo
 pub fn write_line(action: &mut String, file: &mut File) -> Result<(), Error> {
     let lock_file = Arc::new(RwLock::new(file));
     let result = lock_file.write().unwrap().write_all(action.as_bytes());

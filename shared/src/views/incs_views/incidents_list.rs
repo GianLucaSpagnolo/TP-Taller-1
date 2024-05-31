@@ -10,6 +10,20 @@ use crate::{
 
 static COORDENATE_PRECISION: usize = 4;
 
+/// ## incident_row
+/// 
+/// Muestra una fila de la tabla de incidentes
+/// 
+/// ### Parametros
+/// - `row`: Fila de la tabla
+/// - `client`: Cliente MQTT
+/// - `inc_interface`: Interfaz de incidente
+/// - `incident`: Incidente
+/// - `id`: ID del incidente
+/// 
+/// ### Consideraciones
+/// - Si el incidente es editable, se mostrará un botón para resolverlo
+/// 
 fn incident_row(
     mut row: TableRow,
     client: &mut MqttClient,
@@ -48,6 +62,15 @@ fn incident_row(
     }
 }
 
+/// ## incident_list
+/// 
+/// Muestra la lista de incidentes
+/// 
+/// ### Parametros
+/// - `ui`: Interfaz de usuario
+/// - `client`: Cliente MQTT
+/// - `inc_interface`: Interfaz de incidente
+/// 
 pub fn incident_list(ui: &mut Ui, client: &mut MqttClient, inc_interface: &mut IncidentInterface) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
