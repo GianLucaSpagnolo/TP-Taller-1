@@ -5,7 +5,9 @@ pub mod client {
 }
 
 pub mod server {
+    pub mod acknowledge_handler;
     pub mod mqtt_server;
+    pub mod server_handlers;
     pub mod server_session;
 }
 

@@ -89,6 +89,103 @@ fn receive_connack_packet(stream: &mut TcpStream) -> Result<Connack, Error> {
     }
 }
 
+/// ## stablish_tcp_connection
+///
+/// Establece una conexión TCP con el servidor.
+///
+/// ### Parámetros
+/// - log_path: Ruta del archivo de log.
+/// - config: Configuración del cliente.
+/// - client_id: ID del cliente.
+///
+/// ### Retorno
+/// Resultado de la operación.
+///
+fn stablish_tcp_connection(
+    log_path: String,
+    config: &ClientConfig,
+    client_id: &String,
+) -> Result<TcpStream, Error> {
+    let logger = create_logger(&log_path)?;
+
+    let stream = match TcpStream::connect(config.get_socket_address()) {
+        Ok(stream) => stream,
+        Err(e) => {
+            logger.log_event(
+                &("Error al conectar con servidor: ".to_string() + &e.to_string()),
+                client_id,
+            );
+            logger.close_logger();
+            return Err(e);
+        }
+    };
+    logger.close_logger();
+    Ok(stream)
+}
+
+/// ## send_connect_packet
+///
+/// Envía un paquete CONNECT al servidor.
+/// Debe recibir un paquete CONNACK del servidor.
+///
+/// ### Parámetros
+/// - client_id: ID del cliente.
+/// - log_path: Ruta del archivo de log.
+/// - stream: Stream de conexión con el servidor.
+/// - payload: Payload del paquete CONNECT.
+/// - config: Configuración del cliente.
+///
+/// ### Retorno
+/// Resultado de la operación.
+
+fn send_connect_packet(
+    client_id: &String,
+    log_path: String,
+    stream: &mut TcpStream,
+    payload: ConnectPayload,
+    config: &ClientConfig,
+) -> Result<(), Error> {
+    let logger = create_logger(&log_path)?;
+
+    match Connect::new(config.connect_properties.clone(), payload).send(stream) {
+        Ok(_) => (),
+        Err(e) => {
+            logger.log_event(
+                &("Error al conectar con servidor: ".to_string() + &e.to_string()),
+                client_id,
+            );
+            logger.close_logger();
+            return Err(e);
+        }
+    };
+
+    MqttClientActions::SendConnect(config.get_socket_address().to_string()).log_action(
+        client_id,
+        &logger,
+        &config.general.log_in_term,
+    );
+
+    match receive_connack_packet(stream) {
+        Ok(connack) => {
+            MqttClientActions::Connection(
+                config.get_socket_address().to_string(),
+                connack.properties.connect_reason_code,
+            )
+            .log_action(client_id, &logger, &config.general.log_in_term);
+        }
+        Err(e) => {
+            logger.log_event(
+                &("Error al procesar connack: ".to_string() + &e.to_string()),
+                client_id,
+            );
+            logger.close_logger();
+            return Err(e);
+        }
+    };
+    logger.close_logger();
+    Ok(())
+}
+
 impl MqttClient {
     /// ## init
     ///
@@ -106,67 +203,14 @@ impl MqttClient {
         let log_path = config.general.log_path.to_string();
         let client_id = config.general.id.to_string();
 
-        let logger = match create_logger(&log_path) {
-            Ok(log) => {
-                // si se configura el mismo path del server, sacar este mensaje.
-                log.log_event(&"Logger del cliente inicializado".to_string(), &client_id);
-                log
-            }
-            Err(e) => return Err(e),
-        };
-
-        let mut stream = match TcpStream::connect(config.get_socket_address()) {
-            Ok(stream) => stream,
-            Err(e) => {
-                logger.log_event(
-                    &("Error al conectar con servidor: ".to_string() + &e.to_string()),
-                    &client_id,
-                );
-                logger.close_logger();
-                return Err(e);
-            }
-        };
-
         let payload = ConnectPayload {
             client_id: config.general.id.clone(),
             ..Default::default()
         };
 
-        match Connect::new(config.connect_properties.clone(), payload).send(&mut stream) {
-            Ok(_) => (),
-            Err(e) => {
-                logger.log_event(
-                    &("Error al conectar con servidor: ".to_string() + &e.to_string()),
-                    &client_id,
-                );
-                logger.close_logger();
-                return Err(e);
-            }
-        };
+        let mut stream = stablish_tcp_connection(log_path.to_string(), &config, &client_id)?;
 
-        MqttClientActions::SendConnect(config.get_socket_address().to_string()).log_action(
-            &client_id,
-            &logger,
-            &config.general.log_in_term,
-        );
-
-        match receive_connack_packet(&mut stream) {
-            Ok(connack) => {
-                MqttClientActions::Connection(
-                    config.get_socket_address().to_string(),
-                    connack.properties.connect_reason_code,
-                )
-                .log_action(&client_id, &logger, &config.general.log_in_term);
-            }
-            Err(e) => {
-                logger.log_event(
-                    &("Error al procesar connack: ".to_string() + &e.to_string()),
-                    &client_id,
-                );
-                logger.close_logger();
-                return Err(e);
-            }
-        };
+        send_connect_packet(&client_id, log_path, &mut stream, payload, &config)?;
 
         let current_packet_id = 0;
 
@@ -176,7 +220,6 @@ impl MqttClient {
             current_packet_id,
         };
 
-        logger.close_logger();
         Ok(client)
     }
 

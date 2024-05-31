@@ -8,6 +8,8 @@ use crate::{
     mqtt_packets::packets::connect::Connect,
 };
 
+use super::mqtt_server::MqttServer;
+
 /// ## WillMessage
 ///
 /// Estructura que representa el mensaje de voluntad
@@ -128,6 +130,35 @@ impl Session {
     pub fn disconnect(&mut self) -> Result<(), Error> {
         self.active = false;
         self.stream_connection.shutdown(Shutdown::Both)
+    }
+}
+
+/// ### open_new_session
+///
+/// Abre una nueva sesión
+///
+/// ### Parametros
+/// - `connect`: Paquete de conexión
+/// - `stream_connection`: Stream de la conexión
+///
+/// ### Retorno
+/// - `u8`: Resultado de la operación
+///
+pub fn open_new_session(
+    server: &mut MqttServer,
+    connect: Connect,
+    stream_connection: TcpStream,
+) -> u8 {
+    if let Some(session) = server.sessions.get_mut(&connect.payload.client_id) {
+        // Resumes session
+        session.reconnect();
+        1
+    } else {
+        // New session
+        let session = Session::new(&connect, stream_connection);
+
+        server.sessions.insert(connect.payload.client_id, session);
+        0
     }
 }
 
