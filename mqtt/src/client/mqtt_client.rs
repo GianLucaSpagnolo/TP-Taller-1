@@ -1,21 +1,22 @@
 use std::{io::Error, net::TcpStream};
 
 use crate::{
-    common::utils::create_logger,
+    common::{reason_codes::ReasonCode, utils::create_logger},
     config::{client_config::ClientConfig, mqtt_config::Config},
-    control_packets::{
-        mqtt_connack::connack::Connack,
-        mqtt_connect::{connect::Connect, payload},
-        mqtt_disconnect::{self},
-        mqtt_packet::{
-            fixed_header::PacketFixedHeader, packet::generic_packet::*, reason_codes::ReasonCode,
-        },
-        mqtt_pingreq::pingreq::PingReq,
-        mqtt_publish::{publish::Publish, publish_properties},
-        mqtt_subscribe::{subscribe::Subscribe, subscribe_properties},
-        mqtt_unsubscribe::{unsubscribe::Unsubscribe, unsubscribe_properties},
-    },
     logger::{actions::MqttActions, client_actions::MqttClientActions},
+    mqtt_packets::{
+        headers::fixed_header::PacketFixedHeader,
+        packet::generic_packet::{get_packet, PacketReceived, Serialization},
+        packets::{
+            connack::Connack, connect::Connect, disconnect::Disconnect, pingreq::PingReq,
+            publish::Publish, subscribe::Subscribe, unsubscribe::Unsubscribe,
+        },
+        properties::{
+            connect_payload::ConnectPayload, disconnect_properties::DisconnectProperties,
+            publish_properties::PublishProperties, subscribe_properties::SubscribeProperties,
+            unsubscribe_properties::UnsubscribeProperties,
+        },
+    },
 };
 
 use super::client_listener::MqttClientListener;
@@ -126,7 +127,7 @@ impl MqttClient {
             }
         };
 
-        let payload = payload::ConnectPayload {
+        let payload = ConnectPayload {
             client_id: config.general.id.clone(),
             ..Default::default()
         };
@@ -205,7 +206,7 @@ impl MqttClient {
         let logger = create_logger(&self.config.general.log_path)?;
 
         self.current_packet_id += 1;
-        let properties = publish_properties::PublishProperties {
+        let properties = PublishProperties {
             topic_name: topic.clone(),
             packet_identifier: self.current_packet_id,
             payload_format_indicator: Some(1),
@@ -244,7 +245,7 @@ impl MqttClient {
     pub fn subscribe(&mut self, topics: Vec<&str>) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
 
-        let mut properties = subscribe_properties::SubscribeProperties {
+        let mut properties = SubscribeProperties {
             packet_identifier: 0,
             ..Default::default()
         };
@@ -288,7 +289,7 @@ impl MqttClient {
     pub fn unsubscribe(&mut self, topics: Vec<&str>, packet_id: u16) -> Result<(), Error> {
         let logger = create_logger(&self.config.general.log_path)?;
 
-        let mut properties = unsubscribe_properties::UnsubscribeProperties {
+        let mut properties = UnsubscribeProperties {
             packet_identifier: packet_id,
             ..Default::default()
         };
@@ -339,7 +340,7 @@ impl MqttClient {
             disconnect_reason_code = reason_code.get_id();
         }
 
-        let properties = mqtt_disconnect::disconnect_properties::DisconnectProperties {
+        let properties = DisconnectProperties {
             disconnect_reason_code,
             session_expiry_interval: None,
             reason_string: None,
@@ -347,7 +348,7 @@ impl MqttClient {
             server_reference: None,
         };
 
-        mqtt_disconnect::disconnect::Disconnect::new(properties).send(&mut self.stream)?;
+        Disconnect::new(properties).send(&mut self.stream)?;
 
         MqttClientActions::SendDisconnect(
             self.config.get_socket_address().to_string(),

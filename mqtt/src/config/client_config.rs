@@ -1,7 +1,8 @@
 use std::{io::Error, net::SocketAddr};
 
-use crate::control_packets::{
-    mqtt_connect::connect_properties::ConnectProperties, mqtt_packet::flags::flags_handler::*,
+use crate::{
+    common::flags::flags_handler::*,
+    mqtt_packets::properties::connect_properties::ConnectProperties,
 };
 
 use super::mqtt_config::{Config, MqttConfig};

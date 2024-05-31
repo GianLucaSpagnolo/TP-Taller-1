@@ -7,8 +7,8 @@ use std::{
 
 use mqtt::{
     client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
+    common::reason_codes::ReasonCode,
     config::{client_config::ClientConfig, mqtt_config::Config},
-    control_packets::mqtt_packet::reason_codes::ReasonCode,
 };
 
 fn process_messages(receiver: Receiver<MqttClientMessage>) -> Result<JoinHandle<()>, Error> {

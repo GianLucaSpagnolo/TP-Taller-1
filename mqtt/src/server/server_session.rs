@@ -3,9 +3,9 @@ use std::{
     net::{Shutdown, TcpStream},
 };
 
-use crate::control_packets::{
-    mqtt_connect::connect::Connect, mqtt_packet::flags::flags_handler,
-    mqtt_subscribe::subscribe_properties::TopicFilter,
+use crate::{
+    common::{flags::flags_handler, topic_filter::TopicFilter},
+    mqtt_packets::packets::connect::Connect,
 };
 
 /// ## WillMessage

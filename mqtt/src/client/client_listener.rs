@@ -6,13 +6,12 @@ use std::{
 };
 
 use crate::{
-    common::utils::create_logger,
-    control_packets::mqtt_packet::{
-        fixed_header::PacketFixedHeader,
-        packet::generic_packet::{get_packet, PacketReceived},
-        reason_codes::ReasonCode,
-    },
+    common::{reason_codes::ReasonCode, utils::create_logger},
     logger::{actions::MqttActions, client_actions::MqttClientActions},
+    mqtt_packets::{
+        headers::fixed_header::PacketFixedHeader,
+        packet::generic_packet::{get_packet, PacketReceived},
+    },
 };
 
 use super::{client_message::MqttClientMessage, mqtt_client::MqttClient};

@@ -1,31 +1,23 @@
 #[cfg(test)]
 mod test {
-    use mqtt::control_packets::{
-        mqtt_auth::{auth::Auth, auth_properties::AuthProperties},
-        mqtt_connack::{connack::Connack, connack_properties::ConnackProperties},
-        mqtt_connect::{
-            connect::Connect, connect_properties::ConnectProperties, payload::ConnectPayload,
-        },
-        mqtt_disconnect::{disconnect::Disconnect, disconnect_properties::DisconnectProperties},
-        mqtt_packet::{
-            fixed_header::{
-                PacketFixedHeader, AUTH_PACKET, CONNACK_PACKET, CONNECT_PACKET, DISCONNECT_PACKET,
-                PINGREQ_PACKET, PINGRESP_PACKET, PUBACK_PACKET, PUBLISH_PACKET, SUBACK_PACKET,
-                SUBSCRIBE_PACKET, UNSUBACK_PACKET, UNSUBSCRIBE_PACKET,
+    use mqtt::{
+        common::{flags::flags_handler, reason_codes::ReasonCode},
+        mqtt_packets::{
+            headers::fixed_header::*,
+            packet::generic_packet::{get_packet, PacketReceived, Serialization},
+            packets::{
+                auth::Auth, connack::Connack, connect::Connect, disconnect::Disconnect,
+                pingreq::PingReq, pingresp::PingResp, puback::Puback, publish::Publish,
+                suback::Suback, subscribe::Subscribe, unsuback::Unsuback, unsubscribe::Unsubscribe,
             },
-            flags::flags_handler,
-            packet::generic_packet::*,
-            reason_codes::ReasonCode,
-        },
-        mqtt_pingreq::pingreq::PingReq,
-        mqtt_pingresp::pingresp::PingResp,
-        mqtt_puback::{puback::Puback, puback_properties::PubackProperties},
-        mqtt_publish::{publish::Publish, publish_properties::PublishProperties},
-        mqtt_suback::{suback::Suback, suback_properties::SubackProperties},
-        mqtt_subscribe::{subscribe::Subscribe, subscribe_properties::SubscribeProperties},
-        mqtt_unsuback::{unsuback::Unsuback, unsuback_properties::UnsubackProperties},
-        mqtt_unsubscribe::{
-            unsubscribe::Unsubscribe, unsubscribe_properties::UnsubscribeProperties,
+            properties::{
+                auth_properties::AuthProperties, connack_properties::ConnackProperties,
+                connect_payload::ConnectPayload, connect_properties::ConnectProperties,
+                disconnect_properties::DisconnectProperties, puback_properties::PubackProperties,
+                publish_properties::PublishProperties, suback_properties::SubackProperties,
+                subscribe_properties::SubscribeProperties, unsuback_properties::UnsubackProperties,
+                unsubscribe_properties::UnsubscribeProperties,
+            },
         },
     };
 
