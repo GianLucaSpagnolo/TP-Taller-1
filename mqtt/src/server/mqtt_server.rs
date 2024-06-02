@@ -5,7 +5,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use logger::logger_handler::create_logger;
+use logger::logger_handler::create_logger_handler;
 
 use crate::common::reason_codes::ReasonCode;
 use crate::config::{mqtt_config::Config, server_config::ServerConfig};
@@ -132,7 +132,7 @@ impl MqttServer {
     pub fn start_server(self) -> Result<(), Error> {
         let id = self.config.general.id.clone();
         let log_path = self.config.general.log_path.to_string();
-        let logger = match create_logger(&log_path) {
+        let logger = match create_logger_handler(&log_path) {
             Ok(log) => {
                 log.log_event(
                     &"Logger del servidor inicializado".to_string(),
@@ -193,7 +193,7 @@ impl MqttServer {
         receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>,
     ) -> Result<MqttServerActions, Error> {
         let (pack, mut stream) = receiver.lock().unwrap().recv().unwrap();
-        let logger = create_logger(&self.config.general.log_path)?;
+        let logger = create_logger_handler(&self.config.general.log_path)?;
         let result = match pack {
             PacketReceived::Connect(connect_pack) => {
                 connect_handler::stablish_connection(self, stream, *connect_pack)
@@ -243,7 +243,7 @@ impl MqttServer {
     ) {
         thread::spawn(move || -> Result<(), Error> {
             loop {
-                let logger_handler = match create_logger(&log_path) {
+                let logger_handler = match create_logger_handler(&log_path) {
                     Ok(log) => log,
                     Err(e) => return Err(e),
                 };
@@ -272,7 +272,7 @@ impl MqttServer {
 
 impl Drop for MqttServer {
     fn drop(&mut self) {
-        let logger = create_logger(&self.config.general.log_path).unwrap();
+        let logger = create_logger_handler(&self.config.general.log_path).unwrap();
         for (_, session) in self.sessions.iter_mut() {
             match disconnect_handler::send_disconnect(
                 &mut session.stream_connection,

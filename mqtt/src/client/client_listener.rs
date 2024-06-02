@@ -5,7 +5,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use logger::logger_handler::create_logger;
+use logger::logger_handler::create_logger_handler;
 
 use crate::{
     common::reason_codes::ReasonCode,
@@ -89,7 +89,7 @@ impl MqttClientListener {
         sender: Sender<MqttClientMessage>,
         log_path: &String,
     ) -> Result<(), Error> {
-        let logger = create_logger(log_path)?;
+        let logger = create_logger_handler(log_path)?;
 
         let header = match PacketFixedHeader::read_from(&mut stream) {
             Ok(r) => r,
@@ -155,7 +155,7 @@ impl MqttClientListener {
         fixed_header: PacketFixedHeader,
         log_path: &String,
     ) -> Result<Option<MqttClientMessage>, Error> {
-        let logger = create_logger(log_path)?;
+        let logger = create_logger_handler(log_path)?;
 
         let packet_recived = get_packet(
             &mut stream,

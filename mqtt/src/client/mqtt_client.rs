@@ -1,6 +1,6 @@
 use std::{io::Error, net::TcpStream};
 
-use logger::logger_handler::create_logger;
+use logger::logger_handler::create_logger_handler;
 
 use crate::{
     common::reason_codes::ReasonCode,
@@ -108,7 +108,7 @@ fn stablish_tcp_connection(
     config: &ClientConfig,
     client_id: &String,
 ) -> Result<TcpStream, Error> {
-    let logger = create_logger(&log_path)?;
+    let logger = create_logger_handler(&log_path)?;
 
     let stream = match TcpStream::connect(config.get_socket_address()) {
         Ok(stream) => stream,
@@ -147,7 +147,7 @@ fn send_connect_packet(
     payload: ConnectPayload,
     config: &ClientConfig,
 ) -> Result<(), Error> {
-    let logger = create_logger(&log_path)?;
+    let logger = create_logger_handler(&log_path)?;
 
     match Connect::new(config.connect_properties.clone(), payload).send(stream) {
         Ok(_) => (),
@@ -248,7 +248,7 @@ impl MqttClient {
     /// Resultado de la operación.
     ///
     pub fn publish(&mut self, message: Vec<u8>, topic: String) -> Result<(), Error> {
-        let logger = create_logger(&self.config.general.log_path)?;
+        let logger = create_logger_handler(&self.config.general.log_path)?;
 
         self.current_packet_id += 1;
         let properties = PublishProperties {
@@ -288,7 +288,7 @@ impl MqttClient {
     /// Resultado de la operación.
     ///
     pub fn subscribe(&mut self, topics: Vec<&str>) -> Result<(), Error> {
-        let logger = create_logger(&self.config.general.log_path)?;
+        let logger = create_logger_handler(&self.config.general.log_path)?;
 
         let mut properties = SubscribeProperties {
             packet_identifier: 0,
@@ -332,7 +332,7 @@ impl MqttClient {
     /// Resultado de la operación.
     ///
     pub fn unsubscribe(&mut self, topics: Vec<&str>, packet_id: u16) -> Result<(), Error> {
-        let logger = create_logger(&self.config.general.log_path)?;
+        let logger = create_logger_handler(&self.config.general.log_path)?;
 
         let mut properties = UnsubscribeProperties {
             packet_identifier: packet_id,
@@ -369,7 +369,7 @@ impl MqttClient {
     /// Resultado de la operación.
     ///
     pub fn disconnect(&mut self, reason_code: ReasonCode) -> Result<(), Error> {
-        let logger = create_logger(&self.config.general.log_path)?;
+        let logger = create_logger_handler(&self.config.general.log_path)?;
 
         if !reason_code.is_valid_disconnect_code_from_client() {
             let msg = "Código de desconexión inválido".to_string();
@@ -416,7 +416,7 @@ impl MqttClient {
     /// Resultado de la operación.
     ///
     pub fn pin_request(&mut self) -> Result<(), Error> {
-        let logger = create_logger(&self.config.general.log_path)?;
+        let logger = create_logger_handler(&self.config.general.log_path)?;
         PingReq.send(&mut self.stream)?;
         MqttClientActions::SendPinreq.log_action(
             &self.config.general.id,

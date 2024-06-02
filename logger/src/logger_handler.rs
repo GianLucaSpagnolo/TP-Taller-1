@@ -1,21 +1,8 @@
 
 /// El logger guarda en alto nivel las acciones de todas las aplicaciones,
 /// que pasan por el servidor.
-/// Cuando el servidor recibe una accion de su protocolo, llama al logger
-/// para asentarla.
 ///
-/// El logger entonces:
-///      * encola la accion
-///          * la parsea a traves del protocolo
-///          * le agrega un timestamp y la pasa al file manager para
-///            persistirla
-///
-/// En un principio solo hay un archivo de log, en donde se guardaran los campos:
-///      * timestamp
-///      * client_id
-///      * accion parseada
-///
-/// El log define el archivo, y su formato. (en un principio .csv)
+/// El logger define el archivo, y su formato. (en un principio .csv)
 use chrono;
 use chrono::prelude::*;
 use std::{
@@ -55,8 +42,8 @@ fn open_log_file(route: &String) -> Result<File, Error> {
 }
 
 // Logger ----------------------------------------------------------
-/// Crea un logger y devuelve un handler para manejarlo
-pub fn create_logger(log_file_path: &String) -> Result<LoggerHandler, Error> {
+/// Crea un logger handler y devuelve un handler para manejarlo
+pub fn create_logger_handler(log_file_path: &String) -> Result<LoggerHandler, Error> {
     let (tw, tr) = channel();
     let mut logger_handler = LoggerHandler::create_logger_handler(tw, log_file_path);
 
@@ -69,44 +56,22 @@ pub fn create_logger(log_file_path: &String) -> Result<LoggerHandler, Error> {
     }
 }
 
-pub struct LoggerHandler {
+#[derive(Clone)]
+pub struct Logger {
     write_pipe: Sender<String>,
     log_file_path: String,
-    threads: Vec<JoinHandle<Result<(), std::io::Error>>>,
 }
 
-impl LoggerHandler {
-    pub fn create_logger_handler(w_pipe: Sender<String>, route: &String) -> LoggerHandler {
-        LoggerHandler {
+impl Logger {
+    pub fn create_logger(w_pipe: Sender<String>, route: &String) -> Logger {
+        Logger {
             write_pipe: w_pipe,
             log_file_path: String::from(route),
-            threads: vec![],
         }
     }
 
-    // must be called once
-    pub fn initiate_listener(&mut self, reader: Receiver<String>) -> Result<(), Error> {
-        let path = String::from(&self.log_file_path);
-        let (tw, tr) = channel();
-
-        self.threads
-            .push(thread::spawn(move || log_actions(&path, reader, &tw)));
-
-        match tr.recv() {
-            Ok(r) => {
-                if !r.contains("Ok") {
-                    return Err(Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        "Error at open log file",
-                    ));
-                };
-                Ok(())
-            }
-            Err(..) => Err(Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Thread handler recv error",
-            )),
-        }
+    pub fn get_path(&self) -> String{
+        self.log_file_path.to_string()
     }
 
     // parsea el mensaje en el formato definido.
@@ -132,8 +97,60 @@ impl LoggerHandler {
     }
 
     // must be called once
-    pub fn close_logger(self) {
+    pub fn close(self) {
         drop(self.write_pipe);
+    }
+}
+
+pub struct LoggerHandler {
+    logger: Logger,
+    threads: Vec<JoinHandle<Result<(), std::io::Error>>>,
+}
+
+impl LoggerHandler {
+    pub fn create_logger_handler(w_pipe: Sender<String>, route: &String) -> LoggerHandler {
+        LoggerHandler {
+            logger: Logger::create_logger(w_pipe.clone(), route),
+            threads: vec![],
+        }
+    }
+
+    // must be called once
+    pub fn initiate_listener(&mut self, reader: Receiver<String>) -> Result<Logger, Error> {
+        let path = self.logger.get_path();
+        let (tw, tr) = channel();
+
+        self.threads
+            .push(thread::spawn(move || log_actions(&path, reader, &tw)));
+
+        match tr.recv() {
+            Ok(r) => {
+                if !r.contains("Ok") {
+                    return Err(Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Error at open log file",
+                    ));
+                };
+                Ok(self.logger.clone())
+            }
+            Err(..) => Err(Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Thread handler recv error",
+            )),
+        }
+    }
+
+    // ver de sacar
+    pub fn log_event(&self, msg: &String, client_id: &String) {
+        self.logger.log_event(msg, client_id)
+    }
+
+    // must be called once
+    // para poder cerrar el thread, se deben cerrar
+    // todas las referencias al receiver, es decir,
+    // todos los loggers clonados.
+    pub fn close_logger(self) {
+        self.logger.close();
         for thread in self.threads {
             let _ = thread.join();
         }
@@ -177,6 +194,7 @@ fn log_action(action: &mut String, file: &mut File) -> Result<(), Error> {
     write_line(&mut line, file)
 }
 
+// Testing -------------------------------------------------
 #[cfg(test)]
 mod test {
     use crate::file_manager::{open_file, read_file};
@@ -358,6 +376,134 @@ mod test {
         line_counter += 1;
         logger_handler.close_logger();
         logger_handler2.close_logger();
+
+        // testing
+        let file = match open_file(&log_file_path) {
+            Ok(f) => f,
+            Err(e) => {
+                println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
+                panic!()
+            }
+        };
+
+        let readed_lines = read_file(&file).unwrap();
+
+        for line in &readed_lines {
+            if line.contains(&header) || line.contains(&str1) || line.contains(&str2) {
+                continue;
+            };
+
+            println!("Unknow line: [{}]", line);
+            let _ = remove_file(&log_file_path);
+            panic!()
+        }
+
+        // deleting the file:
+        let _ = remove_file(&log_file_path);
+        // plus 1 for the unique header
+        assert_eq!(line_counter + 1, readed_lines.len());
+    }
+
+    #[test]
+    fn the_logger_handler_can_manage_the_logger_listener() {
+        let log_file_path = String::from("log4.tmp");
+        let header = "Time,Client_ID,Action".to_string();
+        let str1 = "Initiating logger ...".to_string();
+        let str2 = "Closing logger ...".to_string();
+        let mut line_counter = 0;
+
+        let (tw, tr) = channel();
+        let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
+
+        let logger = match logger_handler.initiate_listener(tr) {
+            Ok(log) => log,
+            Err(e) => {
+                println!("Logger 1 fails to initiate by: {}", e);
+                panic!();
+            }
+        };
+
+        logger.log_event(&str1, &0.to_string());
+        line_counter += 1;
+        logger.log_event(&str2, &0.to_string());
+        line_counter += 1;
+        logger.close();
+        logger_handler.close_logger();
+
+        // testing
+        let file = match open_file(&log_file_path) {
+            Ok(f) => f,
+            Err(e) => {
+                println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
+                panic!()
+            }
+        };
+
+        let readed_lines = read_file(&file).unwrap();
+
+        for line in &readed_lines {
+            if line.contains(&header) || line.contains(&str1) || line.contains(&str2) {
+                continue;
+            };
+
+            println!("Unknow line: [{}]", line);
+            let _ = remove_file(&log_file_path);
+            panic!()
+        }
+
+        // deleting the file:
+        let _ = remove_file(&log_file_path);
+        // plus 1 for the unique header
+        assert_eq!(line_counter + 1, readed_lines.len());
+    }
+
+    #[test]
+    fn the_logger_can_be_moved_between_threads() {
+        let log_file_path = String::from("log5.tmp");
+        let header = "Time,Client_ID,Action".to_string();
+        let str1 = "Initiating logger ...".to_string();
+        let str2 = "Closing logger ...".to_string();
+        let mut line_counter = 0;
+
+        let (tw, tr) = channel();
+        let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
+
+        let logger = match logger_handler.initiate_listener(tr) {
+            Ok(log) => log,
+            Err(e) => {
+                println!("Logger 1 fails to initiate by: {}", e);
+                panic!();
+            }
+        };
+
+        let logger_cpy = logger.clone();
+        let str1_cpy = str1.to_string();
+        let str2_cpy = str1.to_string();
+        let mut threads = vec![];
+        threads.push(std::thread::spawn(move || {
+            logger_cpy.log_event(&str1_cpy, &0.to_string());
+            logger_cpy.log_event(&str1_cpy, &0.to_string());
+            logger_cpy.close();
+        }));
+        
+        let logger_cpy_2 = logger.clone();
+        threads.push(std::thread::spawn(move || {
+            logger_cpy_2.log_event(&str2_cpy, &0.to_string());
+            logger_cpy_2.log_event(&str2_cpy, &0.to_string());
+            logger_cpy_2.close();
+        }));
+
+        line_counter += 1;
+        line_counter += 1;
+        line_counter += 1;
+        line_counter += 1;
+
+        logger.close();
+        logger_handler.close_logger();
+
+        for t in threads {
+            let _ = t.join();
+        }
 
         // testing
         let file = match open_file(&log_file_path) {

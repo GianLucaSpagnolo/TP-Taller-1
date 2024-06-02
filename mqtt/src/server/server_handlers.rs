@@ -39,7 +39,7 @@ pub mod connect_handler {
 pub mod publish_handler {
     use std::{collections::HashMap, io::Error, net::TcpStream};
 
-    use logger::logger_handler::create_logger;
+    use logger::logger_handler::create_logger_handler;
 
     use crate::{
         logging::{actions::MqttActions, server_actions::MqttServerActions},
@@ -69,7 +69,7 @@ pub mod publish_handler {
         let topic = pub_packet.properties.topic_name.clone();
         let mut receivers = Vec::new();
 
-        let logger = create_logger(&server.config.general.log_path)?;
+        let logger = create_logger_handler(&server.config.general.log_path)?;
 
         MqttServerActions::ReceivePublish(topic.clone()).log_action(
             &server.config.general.id,
@@ -105,7 +105,7 @@ pub mod publish_handler {
 pub mod subscribe_handler {
     use std::{io::Error, net::TcpStream};
 
-    use logger::logger_handler::create_logger;
+    use logger::logger_handler::create_logger_handler;
 
     use crate::{
         common::topic_filter::TopicFilter,
@@ -180,7 +180,7 @@ pub mod subscribe_handler {
     ) -> Result<MqttServerActions, Error> {
         let client_id = get_sub_id_and_topics(&mut sub_packet.properties.topic_filters)?;
 
-        let logger = create_logger(&server.config.general.log_path)?;
+        let logger = create_logger_handler(&server.config.general.log_path)?;
 
         if let Some(session) = server.sessions.get_mut(&client_id) {
             session
@@ -216,7 +216,7 @@ pub mod subscribe_handler {
 pub mod unsubscribe_handler {
     use std::{io::Error, net::TcpStream};
 
-    use logger::logger_handler::create_logger;
+    use logger::logger_handler::create_logger_handler;
 
     use crate::{
         logging::{actions::MqttActions, server_actions::MqttServerActions},
@@ -286,7 +286,7 @@ pub mod unsubscribe_handler {
     ) -> Result<MqttServerActions, Error> {
         let client_id = get_unsub_id_and_topics(&mut unsub_packet.properties.topic_filters)?;
 
-        let logger = create_logger(&server.config.general.log_path)?;
+        let logger = create_logger_handler(&server.config.general.log_path)?;
 
         if let Some(session) = server.sessions.get_mut(&client_id) {
             session.subscriptions.retain(|t| {
