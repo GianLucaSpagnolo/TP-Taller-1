@@ -42,20 +42,6 @@ fn open_log_file(route: &String) -> Result<File, Error> {
 }
 
 // Logger ----------------------------------------------------------
-/// Crea un logger handler y devuelve un handler para manejarlo
-pub fn create_logger_handler(log_file_path: &String) -> Result<LoggerHandler, Error> {
-    let (tw, tr) = channel();
-    let mut logger_handler = LoggerHandler::create_logger_handler(tw, log_file_path);
-
-    match logger_handler.initiate_listener(tr) {
-        Err(e) => Err(Error::new(
-            std::io::ErrorKind::InvalidData,
-            "Logger fails to initiate by error: ".to_string() + &e.to_string(),
-        )),
-        Ok(..) => Ok(logger_handler),
-    }
-}
-
 #[derive(Clone)]
 pub struct Logger {
     write_pipe: Sender<String>,
@@ -76,6 +62,7 @@ impl Logger {
 
     // parsea el mensaje en el formato definido.
     // separator = ',' --> .csv
+    // manejar error de log event ...
     pub fn log_event(&self, msg: &String, client_id: &String) {
         let separator = ",";
 
@@ -99,6 +86,21 @@ impl Logger {
     // must be called once
     pub fn close(self) {
         drop(self.write_pipe);
+    }
+}
+
+// Logger handler---------------------------------------------------
+/// Crea un logger handler y devuelve un handler para manejarlo
+pub fn create_logger_handler(log_file_path: &String) -> Result<LoggerHandler, Error> {
+    let (tw, tr) = channel();
+    let mut logger_handler = LoggerHandler::create_logger_handler(tw, log_file_path);
+
+    match logger_handler.initiate_listener(tr) {
+        Err(e) => Err(Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Logger fails to initiate by error: ".to_string() + &e.to_string(),
+        )),
+        Ok(..) => Ok(logger_handler),
     }
 }
 
@@ -140,7 +142,7 @@ impl LoggerHandler {
         }
     }
 
-    // ver de sacar
+    // sacar al terminar la refactorizacion
     pub fn log_event(&self, msg: &String, client_id: &String) {
         self.logger.log_event(msg, client_id)
     }
@@ -157,8 +159,19 @@ impl LoggerHandler {
     }
 }
 
+
+
+// Logging -------------------------------------------------
+fn get_actual_timestamp() -> String {
+    let dt = Local::now();
+    let naive_utc = dt.naive_utc();
+    let offset = dt.offset();
+    let dt_new = DateTime::<Local>::from_naive_utc_and_offset(naive_utc, *offset);
+    dt_new.format("%Y-%m-%d %H:%M:%S:%3f").to_string()
+}
+
 // se recibe el evento parseado, es decir, ya viene traducido
-pub fn log_actions(
+fn log_actions(
     log_file_route: &String,
     read_pipe: Receiver<String>,
     write_pipe: &Sender<String>,
@@ -178,15 +191,6 @@ pub fn log_actions(
         let _ = log_action(&mut received.to_string(), &mut log_file);
     }
     Ok(())
-}
-
-// Logging -------------------------------------------------
-fn get_actual_timestamp() -> String {
-    let dt = Local::now();
-    let naive_utc = dt.naive_utc();
-    let offset = dt.offset();
-    let dt_new = DateTime::<Local>::from_naive_utc_and_offset(naive_utc, *offset);
-    dt_new.format("%Y-%m-%d %H:%M:%S:%3f").to_string()
 }
 
 fn log_action(action: &mut String, file: &mut File) -> Result<(), Error> {
