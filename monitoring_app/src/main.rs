@@ -15,9 +15,7 @@ fn main() -> Result<(), Error> {
 
     let client = MqttClient::init(config)?;
 
-    let app = MonitoringApp::new(client, log_path);
-
-    let threads_handlers = app.init()?;
+    let threads_handlers = MonitoringApp::init(client, log_path)?;
 
     threads_handlers.broker_listener.join().unwrap()?;
     threads_handlers.message_handler.join().unwrap();

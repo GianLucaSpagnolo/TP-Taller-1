@@ -11,6 +11,8 @@ shared = { path = "../shared" }
 
 eframe = "0.27.2"
 egui = "0.27.2"
+walkers = "0.22.0"
+egui_extras = { version = "0.27.2", features = ["all_loaders"] }
 
 [[bin]]
 name = "monitoring_app"

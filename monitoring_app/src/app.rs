@@ -4,10 +4,12 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use egui::Context;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
     interfaces::incident_interface::IncidentInterface, models::cam_model::cam_list::CamList,
 };
+use walkers::{sources::OpenStreetMap, MapMemory, Tiles};
 
 use crate::interface::run_interface;
 
@@ -26,8 +28,8 @@ pub struct MonitoringApp {
     pub cam_list: Arc<Mutex<CamList>>,
     pub inc_interface: IncidentInterface,
     pub log_path: String,
-    /* tiles: Tiles,
-    map_memory: MapMemory, */
+    pub tiles: Tiles,
+    pub map_memory: MapMemory,
 }
 
 /// ## MonitoringHandler
@@ -83,9 +85,7 @@ impl MonitoringApp {
     /// - `client`: cliente MQTT
     /// - `log_path`: ruta del archivo de log
     ///     
-    pub fn new(client: MqttClient, log_path: String) -> Self {
-        let cam_list = Arc::new(Mutex::new(CamList::default()));
-
+    pub fn new(client: MqttClient, log_path: String, egui_ctx: Context, cam_list: Arc<Mutex<CamList>> ) -> Self {
         Self {
             client,
             cam_list,
@@ -94,8 +94,8 @@ impl MonitoringApp {
                 ..Default::default()
             },
             log_path: log_path.to_string(),
-            /* tiles: Tiles::new(OpenStreetMap, egui_ctx),
-            map_memory: MapMemory::default(), */
+            tiles: Tiles::new(OpenStreetMap, egui_ctx),
+            map_memory: MapMemory::default(),
         }
     }
 
@@ -106,14 +106,16 @@ impl MonitoringApp {
     /// #### Retorno
     /// Resultado de la inicialización
     ///
-    pub fn init(mut self) -> Result<MonitoringHandler, Error> {
-        let listener = self.client.run_listener()?;
+    pub fn init(mut client: MqttClient, log_path: String) -> Result<MonitoringHandler, Error> {
+        let listener = client.run_listener()?;
 
-        let handler = process_messages(listener.receiver, self.cam_list.clone())?;
+        let cam_list = Arc::new(Mutex::new(CamList::default()));
 
-        self.client.subscribe(vec!["camaras"])?;
+        let handler = process_messages(listener.receiver, cam_list.clone())?;
 
-        match run_interface(self) {
+        client.subscribe(vec!["camaras"])?;
+
+        match run_interface(client, log_path, cam_list ) {
             Ok(_) => Ok(MonitoringHandler {
                 broker_listener: listener.handler,
                 message_handler: handler,
