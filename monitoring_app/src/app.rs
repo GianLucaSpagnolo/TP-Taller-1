@@ -85,7 +85,12 @@ impl MonitoringApp {
     /// - `client`: cliente MQTT
     /// - `log_path`: ruta del archivo de log
     ///     
-    pub fn new(client: MqttClient, log_path: String, egui_ctx: Context, cam_list: Arc<Mutex<CamList>> ) -> Self {
+    pub fn new(
+        client: MqttClient,
+        log_path: String,
+        egui_ctx: Context,
+        cam_list: Arc<Mutex<CamList>>,
+    ) -> Self {
         Self {
             client,
             cam_list,
@@ -115,7 +120,7 @@ impl MonitoringApp {
 
         client.subscribe(vec!["camaras"])?;
 
-        match run_interface(client, log_path, cam_list ) {
+        match run_interface(client, log_path, cam_list) {
             Ok(_) => Ok(MonitoringHandler {
                 broker_listener: listener.handler,
                 message_handler: handler,
