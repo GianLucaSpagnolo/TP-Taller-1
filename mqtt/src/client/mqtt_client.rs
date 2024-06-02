@@ -1,9 +1,11 @@
 use std::{io::Error, net::TcpStream};
 
+use logger::logger_handler::create_logger;
+
 use crate::{
-    common::{reason_codes::ReasonCode, utils::create_logger},
+    common::reason_codes::ReasonCode,
     config::{client_config::ClientConfig, mqtt_config::Config},
-    logger::{actions::MqttActions, client_actions::MqttClientActions},
+    logging::{actions::MqttActions, client_actions::MqttClientActions},
     mqtt_packets::{
         headers::fixed_header::PacketFixedHeader,
         packet::generic_packet::{get_packet, PacketReceived, Serialization},

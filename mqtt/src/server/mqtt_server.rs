@@ -5,11 +5,12 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+use logger::logger_handler::create_logger;
+
 use crate::common::reason_codes::ReasonCode;
-use crate::common::utils::create_logger;
 use crate::config::{mqtt_config::Config, server_config::ServerConfig};
-use crate::logger::actions::MqttActions;
-use crate::logger::server_actions::MqttServerActions;
+use crate::logging::actions::MqttActions;
+use crate::logging::server_actions::MqttServerActions;
 use crate::mqtt_packets::headers::fixed_header::PacketFixedHeader;
 use crate::mqtt_packets::packet::generic_packet::{get_packet, PacketReceived, Serialization};
 use crate::mqtt_packets::packets::pingresp::PingResp;

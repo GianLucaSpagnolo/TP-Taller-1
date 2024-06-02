@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::logger_handler::LoggerHandler;
+use logger::logger_handler::LoggerHandler;
 
 /// ## MqttActions
 ///

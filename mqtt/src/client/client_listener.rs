@@ -5,9 +5,11 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use logger::logger_handler::create_logger;
+
 use crate::{
-    common::{reason_codes::ReasonCode, utils::create_logger},
-    logger::{actions::MqttActions, client_actions::MqttClientActions},
+    common::reason_codes::ReasonCode,
+    logging::{actions::MqttActions, client_actions::MqttClientActions},
     mqtt_packets::{
         headers::fixed_header::PacketFixedHeader,
         packet::generic_packet::{get_packet, PacketReceived},

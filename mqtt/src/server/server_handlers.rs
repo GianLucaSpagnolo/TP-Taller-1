@@ -2,7 +2,7 @@ pub mod connect_handler {
     use std::{io::Error, net::TcpStream};
 
     use crate::{
-        logger::server_actions::MqttServerActions,
+        logging::server_actions::MqttServerActions,
         mqtt_packets::{
             packet::generic_packet::Serialization,
             packets::{connack::Connack, connect::Connect},
@@ -39,9 +39,10 @@ pub mod connect_handler {
 pub mod publish_handler {
     use std::{collections::HashMap, io::Error, net::TcpStream};
 
+    use logger::logger_handler::create_logger;
+
     use crate::{
-        common::utils::create_logger,
-        logger::{actions::MqttActions, server_actions::MqttServerActions},
+        logging::{actions::MqttActions, server_actions::MqttServerActions},
         mqtt_packets::{
             packet::generic_packet::Serialization,
             packets::{puback::Puback, publish::Publish},
@@ -104,9 +105,11 @@ pub mod publish_handler {
 pub mod subscribe_handler {
     use std::{io::Error, net::TcpStream};
 
+    use logger::logger_handler::create_logger;
+
     use crate::{
-        common::{topic_filter::TopicFilter, utils::create_logger},
-        logger::{actions::MqttActions, server_actions::MqttServerActions},
+        common::topic_filter::TopicFilter,
+        logging::{actions::MqttActions, server_actions::MqttServerActions},
         mqtt_packets::{
             packet::generic_packet::Serialization,
             packets::{suback::Suback, subscribe::Subscribe},
@@ -213,9 +216,10 @@ pub mod subscribe_handler {
 pub mod unsubscribe_handler {
     use std::{io::Error, net::TcpStream};
 
+    use logger::logger_handler::create_logger;
+
     use crate::{
-        common::utils::create_logger,
-        logger::{actions::MqttActions, server_actions::MqttServerActions},
+        logging::{actions::MqttActions, server_actions::MqttServerActions},
         mqtt_packets::{
             packet::generic_packet::Serialization,
             packets::{unsuback::Unsuback, unsubscribe::Unsubscribe},
@@ -322,7 +326,7 @@ pub mod disconnect_handler {
 
     use crate::{
         common::reason_codes::ReasonCode,
-        logger::server_actions::MqttServerActions,
+        logging::server_actions::MqttServerActions,
         mqtt_packets::{
             packet::generic_packet::Serialization, packets::disconnect::Disconnect,
             properties::disconnect_properties::DisconnectProperties,

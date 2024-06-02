@@ -1,4 +1,4 @@
-use crate::common::utils::*;
+
 /// El logger guarda en alto nivel las acciones de todas las aplicaciones,
 /// que pasan por el servidor.
 /// Cuando el servidor recibe una accion de su protocolo, llama al logger
@@ -24,6 +24,8 @@ use std::{
     sync::mpsc::{channel, Receiver, Sender},
     thread::{self, JoinHandle},
 };
+
+use crate::file_manager::{open_file, read_file, write_line};
 
 // file manager ------------------------------------------------
 fn file_was_created(file: &File) -> bool {
@@ -53,6 +55,20 @@ fn open_log_file(route: &String) -> Result<File, Error> {
 }
 
 // Logger ----------------------------------------------------------
+/// Crea un logger y devuelve un handler para manejarlo
+pub fn create_logger(log_file_path: &String) -> Result<LoggerHandler, Error> {
+    let (tw, tr) = channel();
+    let mut logger_handler = LoggerHandler::create_logger_handler(tw, log_file_path);
+
+    match logger_handler.initiate_listener(tr) {
+        Err(e) => Err(Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Logger fails to initiate by error: ".to_string() + &e.to_string(),
+        )),
+        Ok(..) => Ok(logger_handler),
+    }
+}
+
 pub struct LoggerHandler {
     write_pipe: Sender<String>,
     log_file_path: String,
@@ -163,8 +179,9 @@ fn log_action(action: &mut String, file: &mut File) -> Result<(), Error> {
 
 #[cfg(test)]
 mod test {
+    use crate::file_manager::{open_file, read_file};
+
     use super::LoggerHandler;
-    use crate::common::utils::*;
     use core::panic;
     use std::{fs::remove_file, sync::mpsc::channel};
 

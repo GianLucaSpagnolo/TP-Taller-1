@@ -50,7 +50,7 @@ pub trait Config<Config = Self> {
         let archivo_abierto: Option<File> = open_config_file(&file_path);
         let mut parametros = Vec::new();
 
-        archivo_abierto.map(|archivo| match read_file(&archivo) {
+        archivo_abierto.map(|archivo| match read_config_file(&archivo) {
             None => None,
             Some(lineas_leidas) => {
                 parametros = get_file_parameters(lineas_leidas, 2);
