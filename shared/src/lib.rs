@@ -31,6 +31,7 @@ pub mod views {
     }
 
     pub mod dialog_alert;
+    pub mod icon;
 }
 
 pub mod controllers {

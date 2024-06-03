@@ -9,10 +9,7 @@ edition = "2021"
 mqtt = { path = "../mqtt" }
 
 rand = "0.8.4"
-ab_glyph = "0.2.26"
-ahash = "0.8.11"
-nohash-hasher = "0.2.0"
-parking_lot = "0.12.3"
+image = "0.25.1"
 eframe = "0.27.2"
 walkers = "0.22.0"
 egui_extras = "0.27.2"

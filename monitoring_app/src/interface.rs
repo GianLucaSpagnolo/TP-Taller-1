@@ -1,11 +1,10 @@
 use std::sync::{Arc, Mutex};
 
-use eframe::egui::ViewportBuilder;
-use egui::{IconData, Style, Visuals};
+use egui::{Style, Visuals};
 use mqtt::client::mqtt_client::MqttClient;
 use shared::{
     models::cam_model::cam_list::CamList,
-    views::{incs_views::incidents::show_incidents, map_views::map::show_map},
+    views::{icon::get_icon_data, incs_views::incidents::show_incidents, map_views::map::show_map},
 };
 
 use crate::app::MonitoringApp;
@@ -75,28 +74,13 @@ pub fn run_interface(
     log_path: String,
     cam_list: Arc<Mutex<CamList>>,
 ) -> Result<(), eframe::Error> {
-    let logo = image::open("monitoring_app/assets/app_logo.png")
-        .expect("Failed to open icon path")
-        .to_rgba8();
-    let (icon_width, icon_height) = logo.dimensions();
+    let mut options = eframe::NativeOptions::default();
 
-    let icon = IconData {
-        rgba: logo.into_raw(),
-        width: icon_width,
-        height: icon_height,
-    };
-
-    let viewport = ViewportBuilder {
-        maximized: Some(true),
-        icon: Some(Arc::new(icon)),
-        ..Default::default()
-    };
-
-    let options = eframe::NativeOptions {
-        centered: true,
-        viewport,
-        ..Default::default()
-    };
+    options.viewport.maximized = Some(true);
+    options.viewport.fullsize_content_view = Some(true);
+    options.viewport.icon = Some(Arc::new(get_icon_data(
+        "monitoring_app/assets/app_logo.png",
+    )));
 
     eframe::run_native(
         "Apliación de monitoreo",
