@@ -7,11 +7,10 @@ use std::{
 use egui::Context;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
-    interfaces::incident_interface::IncidentInterface, models::cam_model::cam_list::CamList,
+    interfaces::{incident_interface::IncidentInterface, map_interface::MapInterface}, models::cam_model::cam_list::CamList,
 };
-use walkers::{sources::OpenStreetMap, MapMemory, Tiles};
 
-use crate::interface::run_interface;
+use crate::app_interface::run_interface;
 
 /// ## MonitoringApp
 ///
@@ -27,9 +26,9 @@ pub struct MonitoringApp {
     pub client: MqttClient,
     pub cam_list: Arc<Mutex<CamList>>,
     pub inc_interface: IncidentInterface,
+    pub map_interface: MapInterface,
     pub log_path: String,
-    pub tiles: Tiles,
-    pub map_memory: MapMemory,
+
 }
 
 /// ## MonitoringHandler
@@ -98,9 +97,8 @@ impl MonitoringApp {
                 editable: true,
                 ..Default::default()
             },
+            map_interface: MapInterface::new(egui_ctx),
             log_path: log_path.to_string(),
-            tiles: Tiles::new(OpenStreetMap, egui_ctx),
-            map_memory: MapMemory::default(),
         }
     }
 
