@@ -10,15 +10,10 @@ pub fn show_map(
     tiles: &mut walkers::Tiles,
     map_memory: &mut walkers::MapMemory,
     click_incident: &mut plugins::ClickedIncident,
-){  
-    
+) {
     let my_position = Position::from_lon_lat(-58.4426488, -34.6177712);
 
-    let map = Map::new(
-        Some(tiles),
-        map_memory,
-        my_position,
-    ).with_plugin( click_incident);
+    let map = Map::new(Some(tiles), map_memory, my_position).with_plugin(click_incident);
 
     ui.add(map);
 

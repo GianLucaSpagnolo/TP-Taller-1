@@ -1,9 +1,5 @@
 use egui::{Color32, Painter, Response};
-use walkers::{
-    extras::Texture,
-    Plugin, Position, Projector,
-};
-
+use walkers::{extras::Texture, Plugin, Position, Projector};
 
 // Helper structure for the `Images` plugin.
 pub struct ImagesPluginData {
@@ -64,7 +60,11 @@ impl Plugin for &mut ClickedIncident {
         }
 
         if let Some(position) = self.clicked_at {
-            painter.circle_filled(projector.project(position).to_pos2(), 5.0, Color32::DARK_RED);
+            painter.circle_filled(
+                projector.project(position).to_pos2(),
+                5.0,
+                Color32::DARK_RED,
+            );
         }
     }
 }

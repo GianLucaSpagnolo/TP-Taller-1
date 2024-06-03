@@ -13,7 +13,7 @@ use crate::app::MonitoringApp;
 use eframe::egui::{self, Margin};
 
 impl eframe::App for MonitoringApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {        
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let frame = egui::Frame {
             inner_margin: Margin {
                 top: 30.0,
@@ -32,7 +32,7 @@ impl eframe::App for MonitoringApp {
                 show_cams(ui, &self.cam_list);
         });
         */
-            
+
         egui::TopBottomPanel::top("top")
             .resizable(false)
             .frame(frame)
@@ -53,9 +53,13 @@ impl eframe::App for MonitoringApp {
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            show_map(ui, &mut self.tiles, &mut self.map_memory, &mut self.inc_interface.click_incident);
+            show_map(
+                ui,
+                &mut self.tiles,
+                &mut self.map_memory,
+                &mut self.inc_interface.click_incident,
+            );
         });
-
     }
 }
 
@@ -71,11 +75,12 @@ pub fn run_interface(
     log_path: String,
     cam_list: Arc<Mutex<CamList>>,
 ) -> Result<(), eframe::Error> {
-
-    let logo = image::open("monitoring_app/assets/app_logo.png").expect("Failed to open icon path").to_rgba8();
+    let logo = image::open("monitoring_app/assets/app_logo.png")
+        .expect("Failed to open icon path")
+        .to_rgba8();
     let (icon_width, icon_height) = logo.dimensions();
 
-    let icon = IconData{
+    let icon = IconData {
         rgba: logo.into_raw(),
         width: icon_width,
         height: icon_height,

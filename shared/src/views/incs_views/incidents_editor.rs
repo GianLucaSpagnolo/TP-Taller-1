@@ -24,7 +24,6 @@ pub fn add_incident_button(
     inc_interface: &mut IncidentInterface,
 ) {
     if ui.button("Agregar incidente").clicked() {
-
         let latitude = inc_interface.click_incident.clicked_at.map(|pos| pos.lat());
 
         let longitude = inc_interface.click_incident.clicked_at.map(|pos| pos.lon());
@@ -57,7 +56,7 @@ pub fn incident_editor(
 ) {
     ui.horizontal(|ui| {
         let name_label = ui.label("Nueva latitud: ");
-        let lat = match inc_interface.click_incident.clicked_at.map(|pos| pos.lat()){
+        let lat = match inc_interface.click_incident.clicked_at.map(|pos| pos.lat()) {
             Some(lat) => lat.to_string(),
             None => "".to_string(),
         };
@@ -65,7 +64,7 @@ pub fn incident_editor(
     });
     ui.horizontal(|ui| {
         let name_label = ui.label("Nueva longitud: ");
-        let lon = match inc_interface.click_incident.clicked_at.map(|pos| pos.lon()){
+        let lon = match inc_interface.click_incident.clicked_at.map(|pos| pos.lon()) {
             Some(lat) => lat.to_string(),
             None => "".to_string(),
         };
