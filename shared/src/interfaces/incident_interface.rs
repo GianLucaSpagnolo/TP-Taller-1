@@ -18,5 +18,5 @@ pub struct IncidentInterface {
     pub wrong_data: bool,
     pub show_data_alert: bool,
     pub editable: bool,
-    pub click_incident: plugins::ClickedIncident,
+    pub click_incident: plugins::ClickIncidentEvent,
 }

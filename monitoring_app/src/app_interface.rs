@@ -95,7 +95,7 @@ pub fn run_interface(
     options.viewport.maximized = Some(true);
     options.viewport.fullsize_content_view = Some(true);
     options.viewport.icon = Some(Arc::new(get_icon_data(
-        "monitoring_app/assets/app_logo.png",
+        "monitoring_app/assets/app_icon.png",
     )));
 
     eframe::run_native(

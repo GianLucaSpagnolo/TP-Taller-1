@@ -9,7 +9,7 @@ pub fn show_map(
     ui: &mut Ui,
     tiles: &mut walkers::Tiles,
     map_memory: &mut walkers::MapMemory,
-    click_incident: &mut plugins::ClickedIncident,
+    click_incident: &mut plugins::ClickIncidentEvent,
 ) {
     let my_position = Position::from_lon_lat(-58.4426488, -34.6177712);
 
