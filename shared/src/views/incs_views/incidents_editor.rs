@@ -1,4 +1,4 @@
-use egui::Ui;
+use egui::{RichText, Ui};
 use mqtt::client::mqtt_client::MqttClient;
 
 use crate::{
@@ -24,15 +24,10 @@ pub fn add_incident_button(
     inc_interface: &mut IncidentInterface,
 ) {
     if ui.button("Agregar incidente").clicked() {
-        let latitude: Option<f64> = match inc_interface.latitude_field.parse::<f64>() {
-            Ok(lat) => Some(lat),
-            Err(_) => None,
-        };
 
-        let longitude: Option<f64> = match inc_interface.longitude_field.parse::<f64>() {
-            Ok(long) => Some(long),
-            Err(_) => None,
-        };
+        let latitude = inc_interface.click_incident.clicked_at.map(|pos| pos.lat());
+
+        let longitude = inc_interface.click_incident.clicked_at.map(|pos| pos.lon());
 
         if latitude.is_none() || longitude.is_none() {
             inc_interface.show_data_alert = true;
@@ -62,13 +57,19 @@ pub fn incident_editor(
 ) {
     ui.horizontal(|ui| {
         let name_label = ui.label("Nueva latitud: ");
-        ui.text_edit_singleline(&mut inc_interface.latitude_field)
-            .labelled_by(name_label.id);
+        let lat = match inc_interface.click_incident.clicked_at.map(|pos| pos.lat()){
+            Some(lat) => lat.to_string(),
+            None => "".to_string(),
+        };
+        ui.label(RichText::new(lat)).labelled_by(name_label.id);
     });
     ui.horizontal(|ui| {
         let name_label = ui.label("Nueva longitud: ");
-        ui.text_edit_singleline(&mut inc_interface.longitude_field)
-            .labelled_by(name_label.id);
+        let lon = match inc_interface.click_incident.clicked_at.map(|pos| pos.lon()){
+            Some(lat) => lat.to_string(),
+            None => "".to_string(),
+        };
+        ui.label(RichText::new(lon)).labelled_by(name_label.id);
     });
     add_incident_button(ui, client, inc_interface);
 }

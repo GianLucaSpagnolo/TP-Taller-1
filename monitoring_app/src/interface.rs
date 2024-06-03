@@ -1,21 +1,19 @@
 use std::sync::{Arc, Mutex};
 
 use eframe::egui::ViewportBuilder;
-use egui::{Style, Visuals};
+use egui::{IconData, Style, Visuals};
 use mqtt::client::mqtt_client::MqttClient;
 use shared::{
     models::cam_model::cam_list::CamList,
-    views::{dialog_alert::dialog_alert, incs_views::incidents::show_incidents},
+    views::{incs_views::incidents::show_incidents, map_views::map::show_map},
 };
 
 use crate::app::MonitoringApp;
 
 use eframe::egui::{self, Margin};
 
-use walkers::{Map, Position};
-
 impl eframe::App for MonitoringApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {        
         let frame = egui::Frame {
             inner_margin: Margin {
                 top: 30.0,
@@ -32,16 +30,16 @@ impl eframe::App for MonitoringApp {
         .frame(frame)
             .show(ctx, |ui| {
                 show_cams(ui, &self.cam_list);
-            });
+        });
         */
-
+            
         egui::TopBottomPanel::top("top")
             .resizable(false)
             .frame(frame)
             .show(ctx, |ui| {
                 ui.add(
                     egui::Image::new(egui::include_image!("../assets/app_title.png"))
-                        .fit_to_original_size(0.25),
+                        .fit_to_original_size(0.3),
                 );
             });
 
@@ -55,23 +53,9 @@ impl eframe::App for MonitoringApp {
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.add(
-                Map::new(
-                    Some(&mut self.tiles),
-                    &mut self.map_memory,
-                    Position::from_lon_lat(17.03664, 51.09916),
-                )
-                .zoom_gesture(true)
-                .drag_gesture(true),
-            );
+            show_map(ui, &mut self.tiles, &mut self.map_memory, &mut self.inc_interface.click_incident);
         });
-        let alert_description = "La latitud o longitud no son números válidos.";
 
-        dialog_alert(
-            ctx,
-            &mut self.inc_interface.show_data_alert,
-            alert_description,
-        );
     }
 }
 
@@ -87,11 +71,19 @@ pub fn run_interface(
     log_path: String,
     cam_list: Arc<Mutex<CamList>>,
 ) -> Result<(), eframe::Error> {
-    let _ = client;
+
+    let logo = image::open("monitoring_app/assets/app_logo.png").expect("Failed to open icon path").to_rgba8();
+    let (icon_width, icon_height) = logo.dimensions();
+
+    let icon = IconData{
+        rgba: logo.into_raw(),
+        width: icon_width,
+        height: icon_height,
+    };
 
     let viewport = ViewportBuilder {
         maximized: Some(true),
-        // add logo
+        icon: Some(Arc::new(icon)),
         ..Default::default()
     };
 

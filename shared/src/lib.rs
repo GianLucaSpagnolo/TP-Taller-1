@@ -23,6 +23,13 @@ pub mod views {
         pub mod incidents_editor;
         pub mod incidents_list;
     }
+
+    pub mod map_views {
+        pub mod map;
+        pub mod plugins;
+        pub mod windows;
+    }
+
     pub mod dialog_alert;
 }
 
