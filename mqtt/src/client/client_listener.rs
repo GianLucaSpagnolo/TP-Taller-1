@@ -98,7 +98,7 @@ impl MqttClientListener {
                     &(ReasonCode::MalformedPacket.to_string()),
                     &client.config.general.id,
                 );
-                logger.close_logger();
+                logger.close();
                 return Err(e);
             }
         };
@@ -108,7 +108,7 @@ impl MqttClientListener {
                 if let Some(res) = res {
                     res
                 } else {
-                    logger.close_logger();
+                    logger.close();
                     return Ok(());
                 }
             }
@@ -117,7 +117,7 @@ impl MqttClientListener {
                     &("Error al manejar el mensaje: ".to_string() + &e.to_string()),
                     &client.config.general.id,
                 );
-                logger.close_logger();
+                logger.close();
                 return Err(e);
             }
         };
@@ -127,13 +127,13 @@ impl MqttClientListener {
             Err(e) => {
                 let msg = "Error al recibir mensaje del servidor: ".to_string() + &e.to_string();
                 logger.log_event(&msg, &client.config.general.id);
-                logger.close_logger();
+                logger.close();
                 return Err(Error::new(std::io::ErrorKind::Other, msg));
             }
         };
 
         thread::sleep(std::time::Duration::from_millis(1000));
-        logger.close_logger();
+        logger.close();
         Ok(())
     }
 
@@ -155,7 +155,8 @@ impl MqttClientListener {
         fixed_header: PacketFixedHeader,
         log_path: &String,
     ) -> Result<Option<MqttClientMessage>, Error> {
-        let logger = create_logger_handler(log_path)?;
+        let logger_handler = create_logger_handler(log_path)?;
+        let logger = logger_handler.get_logger();
 
         let packet_recived = get_packet(
             &mut stream,
@@ -193,7 +194,7 @@ impl MqttClientListener {
                     &"Paquete desconocido recibido".to_string(),
                     &client.config.general.id,
                 );
-                logger.close_logger();
+                logger.close();
                 return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido"));
             }
         };
@@ -203,8 +204,8 @@ impl MqttClientListener {
             &logger,
             &client.config.general.log_in_term,
         );
-        logger.close_logger();
-
+        logger.close();
+        logger_handler.close();
         if let MqttClientActions::ReceivePublish(_) = action {
             return Ok(Some(MqttClientMessage { topic, data }));
         }

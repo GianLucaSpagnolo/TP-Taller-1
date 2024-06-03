@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use logger::logger_handler::LoggerHandler;
+use logger::logger_handler::Logger;
 
 /// ## MqttActions
 ///
@@ -19,7 +19,7 @@ pub trait MqttActions<Role = Self> {
     /// - `logger`: logger del servidor
     /// - `log_in_term`: loguear en terminal
     ///
-    fn log_action(&self, id: &String, logger: &LoggerHandler, log_in_term: &bool)
+    fn log_action(&self, id: &String, logger: &Logger, log_in_term: &bool)
     where
         Self: Display,
     {

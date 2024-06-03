@@ -142,6 +142,10 @@ impl LoggerHandler {
         }
     }
 
+    pub fn get_logger(&self) -> Logger{
+        self.logger.clone()
+    }
+
     // sacar al terminar la refactorizacion
     pub fn log_event(&self, msg: &String, client_id: &String) {
         self.logger.log_event(msg, client_id)
@@ -151,7 +155,7 @@ impl LoggerHandler {
     // para poder cerrar el thread, se deben cerrar
     // todas las referencias al receiver, es decir,
     // todos los loggers clonados.
-    pub fn close_logger(self) {
+    pub fn close(self) {
         self.logger.close();
         for thread in self.threads {
             let _ = thread.join();
@@ -224,7 +228,7 @@ mod test {
 
         logger_handler.log_event(&str1, &0.to_string());
         logger_handler.log_event(&str2, &0.to_string());
-        logger_handler.close_logger();
+        logger_handler.close();
 
         // testing
         let file = match open_file(&log_file_path) {
@@ -276,7 +280,7 @@ mod test {
         line_counter += 1;
         logger_handler.log_event(&str2, &0.to_string());
         line_counter += 1;
-        logger_handler.close_logger();
+        logger_handler.close();
 
         // testing
         let mut file = match open_file(&log_file_path) {
@@ -315,7 +319,7 @@ mod test {
         line_counter += 1;
         logger_handler.log_event(&str2, &0.to_string());
         line_counter += 1;
-        logger_handler.close_logger();
+        logger_handler.close();
 
         file = match open_file(&log_file_path) {
             Ok(f) => f,
@@ -378,8 +382,8 @@ mod test {
         line_counter += 1;
         logger_handler2.log_event(&str2, &0.to_string());
         line_counter += 1;
-        logger_handler.close_logger();
-        logger_handler2.close_logger();
+        logger_handler.close();
+        logger_handler2.close();
 
         // testing
         let file = match open_file(&log_file_path) {
@@ -432,7 +436,7 @@ mod test {
         logger.log_event(&str2, &0.to_string());
         line_counter += 1;
         logger.close();
-        logger_handler.close_logger();
+        logger_handler.close();
 
         // testing
         let file = match open_file(&log_file_path) {
@@ -503,7 +507,7 @@ mod test {
         line_counter += 1;
 
         logger.close();
-        logger_handler.close_logger();
+        logger_handler.close();
 
         for t in threads {
             let _ = t.join();

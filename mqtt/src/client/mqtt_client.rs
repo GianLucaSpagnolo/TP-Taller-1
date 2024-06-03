@@ -117,11 +117,11 @@ fn stablish_tcp_connection(
                 &("Error al conectar con servidor: ".to_string() + &e.to_string()),
                 client_id,
             );
-            logger.close_logger();
+            logger.close();
             return Err(e);
         }
     };
-    logger.close_logger();
+    logger.close();
     Ok(stream)
 }
 
@@ -147,8 +147,8 @@ fn send_connect_packet(
     payload: ConnectPayload,
     config: &ClientConfig,
 ) -> Result<(), Error> {
-    let logger = create_logger_handler(&log_path)?;
-
+    let logger_handler = create_logger_handler(&log_path)?;
+    let logger = logger_handler.get_logger();
     match Connect::new(config.connect_properties.clone(), payload).send(stream) {
         Ok(_) => (),
         Err(e) => {
@@ -156,7 +156,7 @@ fn send_connect_packet(
                 &("Error al conectar con servidor: ".to_string() + &e.to_string()),
                 client_id,
             );
-            logger.close_logger();
+            logger.close();
             return Err(e);
         }
     };
@@ -180,11 +180,13 @@ fn send_connect_packet(
                 &("Error al procesar connack: ".to_string() + &e.to_string()),
                 client_id,
             );
-            logger.close_logger();
+            logger.close();
             return Err(e);
         }
     };
-    logger.close_logger();
+
+    logger.close();
+    logger_handler.close();
     Ok(())
 }
 
@@ -248,7 +250,8 @@ impl MqttClient {
     /// Resultado de la operación.
     ///
     pub fn publish(&mut self, message: Vec<u8>, topic: String) -> Result<(), Error> {
-        let logger = create_logger_handler(&self.config.general.log_path)?;
+        let logger_handler = create_logger_handler(&self.config.general.log_path)?;
+        let logger = logger_handler.get_logger();
 
         self.current_packet_id += 1;
         let properties = PublishProperties {
@@ -273,7 +276,8 @@ impl MqttClient {
             &self.config.general.log_in_term,
         );
 
-        logger.close_logger();
+        logger.close();
+        logger_handler.close();
         Ok(())
     }
 
@@ -288,7 +292,8 @@ impl MqttClient {
     /// Resultado de la operación.
     ///
     pub fn subscribe(&mut self, topics: Vec<&str>) -> Result<(), Error> {
-        let logger = create_logger_handler(&self.config.general.log_path)?;
+        let logger_handler = create_logger_handler(&self.config.general.log_path)?;
+        let logger = logger_handler.get_logger();
 
         let mut properties = SubscribeProperties {
             packet_identifier: 0,
@@ -316,7 +321,8 @@ impl MqttClient {
             &self.config.general.log_in_term,
         );
 
-        logger.close_logger();
+        logger.close();
+        logger_handler.close();
         Ok(())
     }
 
@@ -332,7 +338,8 @@ impl MqttClient {
     /// Resultado de la operación.
     ///
     pub fn unsubscribe(&mut self, topics: Vec<&str>, packet_id: u16) -> Result<(), Error> {
-        let logger = create_logger_handler(&self.config.general.log_path)?;
+        let logger_handler = create_logger_handler(&self.config.general.log_path)?;
+        let logger = logger_handler.get_logger();
 
         let mut properties = UnsubscribeProperties {
             packet_identifier: packet_id,
@@ -354,7 +361,9 @@ impl MqttClient {
             &logger,
             &self.config.general.log_in_term,
         );
-        logger.close_logger();
+
+        logger.close();
+        logger_handler.close();
         Ok(())
     }
 
@@ -369,12 +378,13 @@ impl MqttClient {
     /// Resultado de la operación.
     ///
     pub fn disconnect(&mut self, reason_code: ReasonCode) -> Result<(), Error> {
-        let logger = create_logger_handler(&self.config.general.log_path)?;
+        let logger_handler = create_logger_handler(&self.config.general.log_path)?;
+        let logger = logger_handler.get_logger();
 
         if !reason_code.is_valid_disconnect_code_from_client() {
             let msg = "Código de desconexión inválido".to_string();
             logger.log_event(&msg, &self.config.general.id);
-            logger.close_logger();
+            logger.close();
             return Err(Error::new(std::io::ErrorKind::Other, msg));
         }
 
@@ -404,7 +414,8 @@ impl MqttClient {
             &logger,
             &self.config.general.log_in_term,
         );
-        logger.close_logger();
+        logger.close();
+        logger_handler.close();
         Ok(())
     }
 
@@ -416,14 +427,16 @@ impl MqttClient {
     /// Resultado de la operación.
     ///
     pub fn pin_request(&mut self) -> Result<(), Error> {
-        let logger = create_logger_handler(&self.config.general.log_path)?;
+        let logger_handler = create_logger_handler(&self.config.general.log_path)?;
+        let logger = logger_handler.get_logger();
         PingReq.send(&mut self.stream)?;
         MqttClientActions::SendPinreq.log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
         );
-        logger.close_logger();
+        logger.close();
+        logger_handler.close();
         Ok(())
     }
 }
