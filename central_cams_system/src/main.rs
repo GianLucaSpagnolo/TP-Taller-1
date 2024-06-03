@@ -8,6 +8,7 @@ use std::{
 };
 
 use cams_system::CamsSystem;
+use logger::logger_handler::{create_logger_handler, Logger};
 use mqtt::{
     client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
     config::{client_config::ClientConfig, mqtt_config::Config},
@@ -19,6 +20,7 @@ pub fn process_messages(
     client: &mut MqttClient,
     receiver: Receiver<MqttClientMessage>,
     cams_system: Arc<Mutex<CamsSystem>>,
+    logger: Logger,
 ) -> Result<JoinHandle<()>, Error> {
     let mut client = client.clone();
     let handler = thread::spawn(move || loop {
@@ -30,16 +32,15 @@ pub fn process_messages(
                     IncidentState::InProgess => cams_system
                         .lock()
                         .unwrap()
-                        .process_incident_in_progress(&mut client, incident),
+                        .process_incident_in_progress(&mut client, incident, &logger),
                     IncidentState::Resolved => cams_system
                         .lock()
                         .unwrap()
-                        .process_incident_resolved(&mut client, incident),
+                        .process_incident_resolved(&mut client, incident, &logger),
                 }
             }
         }
     });
-
     Ok(handler)
 }
 
@@ -53,24 +54,32 @@ fn main() -> Result<(), Error> {
     show_start(&cam_system);
 
     let config = ClientConfig::from_file(String::from(config_path))?;
+    
+    let logger_handler = create_logger_handler(&config.general.log_path)?;
+    let logger = logger_handler.get_logger();
 
     let mut client = MqttClient::init(config)?;
 
-    client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
-    client.subscribe(vec!["inc"])?;
+    client.publish(cam_system.system.as_bytes(), "camaras".to_string(), &logger)?;
+    client.subscribe(vec!["inc"], &logger)?;
 
     let cams_system_ref = Arc::new(Mutex::new(cam_system));
     let cam_system_clone = cams_system_ref.clone();
 
     let mut client_clone = client.clone();
+    let logger_cpy = logger.clone();
     let handle = thread::spawn(move || {
-        process_standard_input(&mut client_clone, cam_system_clone);
+        process_standard_input(&mut client_clone, cam_system_clone, &logger_cpy);
+        logger_cpy.close();
     });
 
     let listener = client.run_listener()?;
 
     let process_message_handler: JoinHandle<()> =
-        process_messages(&mut client, listener.receiver, cams_system_ref)?;
+        process_messages(&mut client, listener.receiver, cams_system_ref, logger.clone())?;
+
+    logger.close();
+    logger_handler.close();
 
     handle.join().unwrap();
     listener.handler.join().unwrap()?;

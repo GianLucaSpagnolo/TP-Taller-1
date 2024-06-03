@@ -4,6 +4,7 @@ pub mod interface {
         sync::{Arc, Mutex},
     };
 
+    use logger::logger_handler::Logger;
     use mqtt::client::mqtt_client::MqttClient;
     use shared::models::{
         cam_model::cam::{Cam, CamState},
@@ -59,6 +60,7 @@ pub mod interface {
         client: &mut MqttClient,
         cam_system: Arc<Mutex<CamsSystem>>,
         args: Vec<&str>,
+        logger: &Logger,
     ) -> Result<(), Error> {
         let id = generate_id(&cam_system.lock().unwrap())?;
 
@@ -73,7 +75,7 @@ pub mod interface {
         };
         let mut cam_system = cam_system.lock().unwrap();
         println!("Camera added: {:?} ", cam_system.add_new_camara(cam));
-        client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
+        client.publish(cam_system.system.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
 
@@ -97,6 +99,7 @@ pub mod interface {
         client: &mut MqttClient,
         cam_system: Arc<Mutex<CamsSystem>>,
         args: Vec<&str>,
+        logger: &Logger,
     ) -> Result<(), Error> {
         let id = check_delete_args(args)?;
 
@@ -117,7 +120,7 @@ pub mod interface {
             cam.id, cam.state, cam.location.latitude, cam.location.longitude
         );
 
-        client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
+        client.publish(cam_system.system.as_bytes(), "camaras".to_string(), logger)?;
 
         Ok(())
     }
@@ -142,6 +145,7 @@ pub mod interface {
         client: &mut MqttClient,
         cam_system: Arc<Mutex<CamsSystem>>,
         parts: Vec<&str>,
+        logger: &Logger,
     ) -> Result<(), Error> {
         let (id, lat, long) = check_modify_args(parts)?;
 
@@ -154,11 +158,11 @@ pub mod interface {
 
         cam_system.modify_cam_position(id, new_coordenate)?;
         println!("Cámara modificada correctamente");
-        client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
+        client.publish(cam_system.system.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
 
-    pub fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSystem>>) {
+    pub fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSystem>>, logger: &Logger) {
         let stdin = std::io::stdin();
         let stdin = stdin.lock();
         for line in stdin.lines() {
@@ -173,21 +177,21 @@ pub mod interface {
                         }
                     };
                     match *action {
-                        "add" => match add_action(client, cam_system.clone(), parts) {
+                        "add" => match add_action(client, cam_system.clone(), parts, logger) {
                             Ok(_) => cam_system.lock().unwrap().list_cameras(),
                             Err(e) => {
                                 println!("Error al agregar cámara: {}", e);
                                 continue;
                             }
                         },
-                        "delete" => match delete_action(client, cam_system.clone(), parts) {
+                        "delete" => match delete_action(client, cam_system.clone(), parts, logger) {
                             Ok(_) => cam_system.lock().unwrap().list_cameras(),
                             Err(e) => {
                                 println!("Error al eliminar cámara: {}", e);
                                 continue;
                             }
                         },
-                        "modify" => match modify_action(client, cam_system.clone(), parts) {
+                        "modify" => match modify_action(client, cam_system.clone(), parts, logger) {
                             Ok(_) => cam_system.lock().unwrap().list_cameras(),
                             Err(e) => {
                                 println!("Error al modificar cámara: {}", e);

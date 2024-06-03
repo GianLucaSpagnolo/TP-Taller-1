@@ -1,4 +1,5 @@
 use egui::Ui;
+use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
 
 use crate::{
@@ -22,6 +23,7 @@ pub fn add_incident_button(
     ui: &mut Ui,
     client: &mut MqttClient,
     inc_interface: &mut IncidentInterface,
+    logger: &Logger,
 ) {
     if ui.button("Agregar incidente").clicked() {
         let latitude: Option<f64> = match inc_interface.latitude_field.parse::<f64>() {
@@ -41,7 +43,7 @@ pub fn add_incident_button(
                 latitude: latitude.unwrap(),
                 longitude: longitude.unwrap(),
             };
-            add_incident(client, &mut inc_interface.historial, field.clone());
+            add_incident(client, &mut inc_interface.historial, field.clone(), logger);
         }
     }
 }
@@ -59,6 +61,7 @@ pub fn incident_editor(
     ui: &mut Ui,
     client: &mut MqttClient,
     inc_interface: &mut IncidentInterface,
+    logger: &Logger,
 ) {
     ui.horizontal(|ui| {
         let name_label = ui.label("Nueva latitud: ");
@@ -70,5 +73,5 @@ pub fn incident_editor(
         ui.text_edit_singleline(&mut inc_interface.longitude_field)
             .labelled_by(name_label.id);
     });
-    add_incident_button(ui, client, inc_interface);
+    add_incident_button(ui, client, inc_interface, logger);
 }

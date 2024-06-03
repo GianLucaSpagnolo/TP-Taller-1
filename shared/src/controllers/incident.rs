@@ -1,5 +1,6 @@
 pub mod incident_controller {
 
+    use logger::logger_handler::Logger;
     use mqtt::client::mqtt_client::MqttClient;
 
     use crate::models::{
@@ -10,9 +11,9 @@ pub mod incident_controller {
         },
     };
 
-    fn send_incident(client: &mut MqttClient, incident_received: Incident) {
+    fn send_incident(client: &mut MqttClient, incident_received: Incident, logger: &Logger) {
         client
-            .publish(incident_received.as_bytes().clone(), "inc".to_string())
+            .publish(incident_received.as_bytes().clone(), "inc".to_string(), logger)
             .unwrap();
     }
 
@@ -20,17 +21,18 @@ pub mod incident_controller {
         client: &mut MqttClient,
         historial: &mut IncidentList,
         location: Coordenates,
+        logger: &Logger,
     ) {
         let incident = historial.add(location);
-        send_incident(client, incident.clone());
+        send_incident(client, incident.clone(), logger);
         historial.incidents.insert(incident.id.clone(), incident);
     }
 
-    pub fn resolve_incident(client: &mut MqttClient, historial: &mut IncidentList, id: &String) {
+    pub fn resolve_incident(client: &mut MqttClient, historial: &mut IncidentList, id: &String, logger: &Logger) {
         let incident = historial.incidents.get_mut(id).unwrap();
         incident.state = IncidentState::Resolved;
         client
-            .publish(incident.as_bytes().clone(), "inc".to_string())
+            .publish(incident.as_bytes().clone(), "inc".to_string(), logger)
             .unwrap();
     }
 }

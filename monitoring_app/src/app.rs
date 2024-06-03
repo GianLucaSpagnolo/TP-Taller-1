@@ -4,6 +4,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
     interfaces::incident_interface::IncidentInterface, models::cam_model::cam_list::CamList,
@@ -25,7 +26,8 @@ pub struct MonitoringApp {
     pub client: MqttClient,
     pub cam_list: Arc<Mutex<CamList>>,
     pub inc_interface: IncidentInterface,
-    pub log_path: String,
+    //pub log_path: String,
+    pub logger: Logger,
     /* tiles: Tiles,
     map_memory: MapMemory, */
 }
@@ -83,7 +85,7 @@ impl MonitoringApp {
     /// - `client`: cliente MQTT
     /// - `log_path`: ruta del archivo de log
     ///     
-    pub fn new(client: MqttClient, log_path: String) -> Self {
+    pub fn new(client: MqttClient, logger_cpy: Logger) -> Self {
         let cam_list = Arc::new(Mutex::new(CamList::default()));
 
         Self {
@@ -93,7 +95,8 @@ impl MonitoringApp {
                 editable: true,
                 ..Default::default()
             },
-            log_path: log_path.to_string(),
+            //log_path: log_path.to_string(),
+            logger: logger_cpy,
             /* tiles: Tiles::new(OpenStreetMap, egui_ctx),
             map_memory: MapMemory::default(), */
         }
@@ -106,12 +109,12 @@ impl MonitoringApp {
     /// #### Retorno
     /// Resultado de la inicialización
     ///
-    pub fn init(mut self) -> Result<MonitoringHandler, Error> {
+    pub fn init(mut self, logger: &Logger) -> Result<MonitoringHandler, Error> {
         let listener = self.client.run_listener()?;
 
         let handler = process_messages(listener.receiver, self.cam_list.clone())?;
 
-        self.client.subscribe(vec!["camaras"])?;
+        self.client.subscribe(vec!["camaras"], logger)?;
 
         match run_interface(self) {
             Ok(_) => Ok(MonitoringHandler {

@@ -1,5 +1,6 @@
 use std::io::Error;
 
+use logger::logger_handler::create_logger_handler;
 use monitoring_app::app::MonitoringApp;
 use mqtt::{
     client::mqtt_client::MqttClient,
@@ -12,12 +13,14 @@ fn main() -> Result<(), Error> {
     let config = ClientConfig::from_file(String::from(config_path))?;
 
     let log_path = config.general.log_path.to_string();
+    let logger_handler = create_logger_handler(&log_path)?;
+    let logger = logger_handler.get_logger();
 
     let client = MqttClient::init(config)?;
 
-    let app = MonitoringApp::new(client, log_path);
+    let app = MonitoringApp::new(client, logger.clone());
 
-    let threads_handlers = app.init()?;
+    let threads_handlers = app.init(&logger)?;
 
     threads_handlers.broker_listener.join().unwrap()?;
     threads_handlers.message_handler.join().unwrap();
