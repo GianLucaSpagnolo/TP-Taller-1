@@ -143,10 +143,7 @@ mod test {
             let mut log_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             log_path.push(client_config.general.log_path.clone());
 
-            let log_file_path = match log_path.to_str() {
-                Some(r) => r,
-                None => "tmp",
-            };
+            let log_file_path = log_path.to_str().unwrap_or("tmp");
 
             let logger_handler = create_logger_handler(&log_file_path.to_string()).unwrap();
             let logger = logger_handler.get_logger();
