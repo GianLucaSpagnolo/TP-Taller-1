@@ -1,4 +1,7 @@
-use std::{fs::File, io::{BufRead, BufReader}};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+};
 
 // Abre el archivo recibiendo su ruta por parametro,
 // devuelve el archivo encapsulado en un option

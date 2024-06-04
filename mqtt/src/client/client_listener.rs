@@ -168,8 +168,8 @@ impl MqttClientListener {
         let mut topic = String::new();
         let action = match packet_recived {
             PacketReceived::Publish(publish) => {
-                topic = publish.properties.topic_name.clone();
-                data = publish.properties.application_message.clone();
+                topic.clone_from(&publish.properties.topic_name);
+                data.clone_from(&publish.properties.application_message);
                 MqttClientActions::ReceivePublish(topic.clone())
             }
             PacketReceived::Puback(puback) => MqttClientActions::AcknowledgePublish(

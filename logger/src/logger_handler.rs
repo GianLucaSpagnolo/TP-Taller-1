@@ -1,4 +1,3 @@
-
 /// El logger guarda en alto nivel las acciones de todas las aplicaciones,
 /// que pasan por el servidor.
 ///
@@ -56,7 +55,7 @@ impl Logger {
         }
     }
 
-    pub fn get_path(&self) -> String{
+    pub fn get_path(&self) -> String {
         self.log_file_path.to_string()
     }
 
@@ -85,7 +84,13 @@ impl Logger {
 
     // must be called once
     pub fn close(self) {
-        drop(self.write_pipe);
+        drop(self.write_pipe.to_owned());
+    }
+}
+
+impl Drop for Logger {
+    fn drop(&mut self) {
+        drop(self.write_pipe.to_owned())
     }
 }
 
@@ -142,7 +147,7 @@ impl LoggerHandler {
         }
     }
 
-    pub fn get_logger(&self) -> Logger{
+    pub fn get_logger(&self) -> Logger {
         self.logger.clone()
     }
 
@@ -162,8 +167,6 @@ impl LoggerHandler {
         }
     }
 }
-
-
 
 // Logging -------------------------------------------------
 fn get_actual_timestamp() -> String {
@@ -493,12 +496,87 @@ mod test {
             logger_cpy.log_event(&str1_cpy, &0.to_string());
             logger_cpy.close();
         }));
-        
+
         let logger_cpy_2 = logger.clone();
         threads.push(std::thread::spawn(move || {
             logger_cpy_2.log_event(&str2_cpy, &0.to_string());
             logger_cpy_2.log_event(&str2_cpy, &0.to_string());
             logger_cpy_2.close();
+        }));
+
+        line_counter += 1;
+        line_counter += 1;
+        line_counter += 1;
+        line_counter += 1;
+
+        logger.close();
+        logger_handler.close();
+
+        for t in threads {
+            let _ = t.join();
+        }
+
+        // testing
+        let file = match open_file(&log_file_path) {
+            Ok(f) => f,
+            Err(e) => {
+                println!("Error al abrir archivo de lectura: {}\n", &e.to_string());
+                panic!()
+            }
+        };
+
+        let readed_lines = read_file(&file).unwrap();
+
+        for line in &readed_lines {
+            if line.contains(&header) || line.contains(&str1) || line.contains(&str2) {
+                continue;
+            };
+
+            println!("Unknow line: [{}]", line);
+            let _ = remove_file(&log_file_path);
+            panic!()
+        }
+
+        // deleting the file:
+        let _ = remove_file(&log_file_path);
+        // plus 1 for the unique header
+        assert_eq!(line_counter + 1, readed_lines.len());
+    }
+
+    #[test]
+    fn the_logger_can_be_closed_by_raii() {
+        let log_file_path = String::from("log6.tmp");
+        let header = "Time,Client_ID,Action".to_string();
+        let str1 = "Initiating logger ...".to_string();
+        let str2 = "Closing logger ...".to_string();
+        let mut line_counter = 0;
+
+        let (tw, tr) = channel();
+        let mut logger_handler = LoggerHandler::create_logger_handler(tw, &log_file_path);
+
+        let logger = match logger_handler.initiate_listener(tr) {
+            Ok(log) => log,
+            Err(e) => {
+                println!("Logger 1 fails to initiate by: {}", e);
+                panic!();
+            }
+        };
+
+        let logger_cpy = logger.clone();
+        let str1_cpy = str1.to_string();
+        let str2_cpy = str1.to_string();
+        let mut threads = vec![];
+        threads.push(std::thread::spawn(move || {
+            logger_cpy.log_event(&str1_cpy, &0.to_string());
+            logger_cpy.log_event(&str1_cpy, &0.to_string());
+            //logger_cpy.close();
+        }));
+
+        let logger_cpy_2 = logger.clone();
+        threads.push(std::thread::spawn(move || {
+            logger_cpy_2.log_event(&str2_cpy, &0.to_string());
+            logger_cpy_2.log_event(&str2_cpy, &0.to_string());
+            //logger_cpy_2.close();
         }));
 
         line_counter += 1;

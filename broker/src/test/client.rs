@@ -42,7 +42,6 @@ fn sub_client(client: &mut MqttClient, logger: &Logger) -> Result<(), Error> {
 }
 
 fn pub_client(client: &mut MqttClient, logger: &Logger) -> Result<(), Error> {
-
     client.publish(
         "mensaje del cliente".as_bytes().to_vec(),
         "cams".to_string(),
@@ -54,7 +53,7 @@ fn pub_client(client: &mut MqttClient, logger: &Logger) -> Result<(), Error> {
     client.publish(
         "2do mensaje del cliente".to_string().as_bytes().to_vec(),
         "cams".to_string(),
-        logger
+        logger,
     )?;
 
     Ok(())
@@ -91,29 +90,62 @@ fn main() -> Result<(), Error> {
     let logger_handler = create_logger_handler(&config.general.log_path)?;
     let logger = logger_handler.get_logger();
 
-    let mut client = MqttClient::init(config)?;
+    let mut client = match MqttClient::init(config) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
 
-    let listener = client.run_listener()?;
+    let listener = match client.run_listener() {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
 
-    let process_message_handler = process_messages(listener.receiver)?;
+    let process_message_handler = match process_messages(listener.receiver) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
 
     match config_type {
-        1 => sub_client(&mut client, &logger)?,
-        2 => pub_client(&mut client, &logger)?,
+        1 => {
+            match sub_client(&mut client, &logger) {
+                Ok(r) => r,
+                Err(e) => {
+                    logger.close();
+                    logger_handler.close();
+                    return Err(e);
+                }
+            };
+        }
+        2 => {
+            match pub_client(&mut client, &logger) {
+                Ok(r) => r,
+                Err(e) => {
+                    logger.close();
+                    logger_handler.close();
+                    return Err(e);
+                }
+            };
+        }
         _ => {}
     }
 
-    match listener.handler.join().unwrap() {
-        Ok(_) => {}
-        Err(_) => {
-            logger.close();
-            logger_handler.close();
-            return Ok(())
-        },
-    }
-    process_message_handler.join().unwrap();
-
     logger.close();
     logger_handler.close();
+
+    let _ = listener.handler.join().unwrap();
+    process_message_handler.join().unwrap();
+
     Ok(())
 }

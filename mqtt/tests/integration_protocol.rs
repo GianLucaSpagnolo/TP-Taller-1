@@ -167,7 +167,7 @@ mod test {
                     }
                     .as_bytes(),
                     "messages".to_string(),
-                    &logger
+                    &logger,
                 )
                 .unwrap();
 
@@ -180,7 +180,7 @@ mod test {
                     }
                     .as_bytes(),
                     "messages".to_string(),
-                    &logger
+                    &logger,
                 )
                 .unwrap();
 
@@ -193,7 +193,7 @@ mod test {
                     }
                     .as_bytes(),
                     "messages".to_string(),
-                    &logger
+                    &logger,
                 )
                 .unwrap();
 
@@ -201,8 +201,10 @@ mod test {
             client.unsubscribe(vec!["bad messages"], 0x100).unwrap();
 
             thread::sleep(Duration::from_millis(500));
-            client.disconnect(ReasonCode::NormalDisconnection, &logger).unwrap();
-            
+            client
+                .disconnect(ReasonCode::NormalDisconnection, &logger)
+                .unwrap();
+
             logger.close();
             logger_handler.close();
             client_listener.handler.join().unwrap().unwrap();

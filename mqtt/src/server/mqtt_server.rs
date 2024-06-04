@@ -170,7 +170,7 @@ impl MqttServer {
 
         // Iniciando el procesador de mesages que recibe el servidor
         //self.server_listener_messages(Arc::clone(&receiver), log_path);
-       
+
         self.server_listener_messages(Arc::clone(&receiver), logger_cpy.clone());
 
         // Iniciando el listener de conexiones que recibe el servidor dentro de un thread pool
@@ -202,7 +202,7 @@ impl MqttServer {
         logger: &Logger,
     ) -> Result<MqttServerActions, Error> {
         let (pack, mut stream) = receiver.lock().unwrap().recv().unwrap();
-         match pack {
+        match pack {
             PacketReceived::Connect(connect_pack) => {
                 connect_handler::stablish_connection(self, stream, *connect_pack)
             }

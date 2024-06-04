@@ -54,14 +54,36 @@ fn main() -> Result<(), Error> {
     show_start(&cam_system);
 
     let config = ClientConfig::from_file(String::from(config_path))?;
-    
+
     let logger_handler = create_logger_handler(&config.general.log_path)?;
     let logger = logger_handler.get_logger();
 
-    let mut client = MqttClient::init(config)?;
+    let mut client = match MqttClient::init(config) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
 
-    client.publish(cam_system.system.as_bytes(), "camaras".to_string(), &logger)?;
-    client.subscribe(vec!["inc"], &logger)?;
+    match client.publish(cam_system.system.as_bytes(), "camaras".to_string(), &logger) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
+
+    match client.subscribe(vec!["inc"], &logger) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
 
     let cams_system_ref = Arc::new(Mutex::new(cam_system));
     let cam_system_clone = cams_system_ref.clone();
@@ -73,10 +95,28 @@ fn main() -> Result<(), Error> {
         logger_cpy.close();
     });
 
-    let listener = client.run_listener()?;
+    let listener = match client.run_listener() {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
 
-    let process_message_handler: JoinHandle<()> =
-        process_messages(&mut client, listener.receiver, cams_system_ref, logger.clone())?;
+    let process_message_handler: JoinHandle<()> = match process_messages(
+        &mut client,
+        listener.receiver,
+        cams_system_ref,
+        logger.clone(),
+    ) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
 
     logger.close();
     logger_handler.close();

@@ -105,7 +105,12 @@ impl CamsSystem {
         println!("{}", self.system);
     }
 
-    pub fn process_incident_in_progress(&mut self, client: &mut MqttClient, incident: Incident, logger: &Logger) {
+    pub fn process_incident_in_progress(
+        &mut self,
+        client: &mut MqttClient,
+        incident: Incident,
+        logger: &Logger,
+    ) {
         self.modify_cameras_state(incident.location.clone(), CamState::Alert);
         match client.publish(self.system.as_bytes(), "camaras".to_string(), logger) {
             Ok(_) => {
@@ -118,7 +123,12 @@ impl CamsSystem {
         }
     }
 
-    pub fn process_incident_resolved(&mut self, client: &mut MqttClient, incident: Incident, logger: &Logger) {
+    pub fn process_incident_resolved(
+        &mut self,
+        client: &mut MqttClient,
+        incident: Incident,
+        logger: &Logger,
+    ) {
         self.modify_cameras_state(incident.location.clone(), CamState::SavingEnergy);
         match client.publish(self.system.as_bytes(), "camaras".to_string(), logger) {
             Ok(_) => {

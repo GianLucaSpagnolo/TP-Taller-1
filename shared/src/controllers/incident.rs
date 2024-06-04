@@ -13,7 +13,11 @@ pub mod incident_controller {
 
     fn send_incident(client: &mut MqttClient, incident_received: Incident, logger: &Logger) {
         client
-            .publish(incident_received.as_bytes().clone(), "inc".to_string(), logger)
+            .publish(
+                incident_received.as_bytes().clone(),
+                "inc".to_string(),
+                logger,
+            )
             .unwrap();
     }
 
@@ -28,7 +32,12 @@ pub mod incident_controller {
         historial.incidents.insert(incident.id.clone(), incident);
     }
 
-    pub fn resolve_incident(client: &mut MqttClient, historial: &mut IncidentList, id: &String, logger: &Logger) {
+    pub fn resolve_incident(
+        client: &mut MqttClient,
+        historial: &mut IncidentList,
+        id: &String,
+        logger: &Logger,
+    ) {
         let incident = historial.incidents.get_mut(id).unwrap();
         incident.state = IncidentState::Resolved;
         client

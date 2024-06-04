@@ -16,14 +16,29 @@ fn main() -> Result<(), Error> {
     let logger_handler = create_logger_handler(&log_path)?;
     let logger = logger_handler.get_logger();
 
-    let client = MqttClient::init(config)?;
+    let client = match MqttClient::init(config) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
 
     let app = MonitoringApp::new(client, logger.clone());
 
-    let threads_handlers = app.init(&logger)?;
+    let threads_handlers = match app.init(&logger) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
 
+    logger.close();
+    logger_handler.close();
     threads_handlers.broker_listener.join().unwrap()?;
     threads_handlers.message_handler.join().unwrap();
-
     Ok(())
 }

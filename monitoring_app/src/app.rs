@@ -95,7 +95,6 @@ impl MonitoringApp {
                 editable: true,
                 ..Default::default()
             },
-            //log_path: log_path.to_string(),
             logger: logger_cpy,
             /* tiles: Tiles::new(OpenStreetMap, egui_ctx),
             map_memory: MapMemory::default(), */

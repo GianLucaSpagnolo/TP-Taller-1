@@ -209,7 +209,7 @@ impl MqttClient {
         let logger_handler = create_logger_handler(&log_path)?;
         let logger = logger_handler.get_logger();
 
-        let payload = ConnectPayload {  
+        let payload = ConnectPayload {
             client_id: config.general.id.clone(),
             ..Default::default()
         };
@@ -220,7 +220,7 @@ impl MqttClient {
                 logger.close();
                 logger_handler.close();
                 return Err(e);
-            },
+            }
         };
 
         send_connect_packet(&client_id, log_path, &mut stream, payload, &config)?;
@@ -232,7 +232,7 @@ impl MqttClient {
             stream,
             current_packet_id,
         };
-        
+
         logger.close();
         logger_handler.close();
         Ok(client)
@@ -260,7 +260,12 @@ impl MqttClient {
     /// ### Retorno
     /// Resultado de la operación.
     ///
-    pub fn publish(&mut self, message: Vec<u8>, topic: String, logger: &Logger) -> Result<(), Error> {
+    pub fn publish(
+        &mut self,
+        message: Vec<u8>,
+        topic: String,
+        logger: &Logger,
+    ) -> Result<(), Error> {
         self.current_packet_id += 1;
         let properties = PublishProperties {
             topic_name: topic.clone(),
@@ -410,7 +415,7 @@ impl MqttClient {
             logger,
             &self.config.general.log_in_term,
         );
-   
+
         Ok(())
     }
 

@@ -162,7 +162,11 @@ pub mod interface {
         Ok(())
     }
 
-    pub fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSystem>>, logger: &Logger) {
+    pub fn process_standard_input(
+        client: &mut MqttClient,
+        cam_system: Arc<Mutex<CamsSystem>>,
+        logger: &Logger,
+    ) {
         let stdin = std::io::stdin();
         let stdin = stdin.lock();
         for line in stdin.lines() {
@@ -184,20 +188,24 @@ pub mod interface {
                                 continue;
                             }
                         },
-                        "delete" => match delete_action(client, cam_system.clone(), parts, logger) {
-                            Ok(_) => cam_system.lock().unwrap().list_cameras(),
-                            Err(e) => {
-                                println!("Error al eliminar cámara: {}", e);
-                                continue;
+                        "delete" => {
+                            match delete_action(client, cam_system.clone(), parts, logger) {
+                                Ok(_) => cam_system.lock().unwrap().list_cameras(),
+                                Err(e) => {
+                                    println!("Error al eliminar cámara: {}", e);
+                                    continue;
+                                }
                             }
-                        },
-                        "modify" => match modify_action(client, cam_system.clone(), parts, logger) {
-                            Ok(_) => cam_system.lock().unwrap().list_cameras(),
-                            Err(e) => {
-                                println!("Error al modificar cámara: {}", e);
-                                continue;
+                        }
+                        "modify" => {
+                            match modify_action(client, cam_system.clone(), parts, logger) {
+                                Ok(_) => cam_system.lock().unwrap().list_cameras(),
+                                Err(e) => {
+                                    println!("Error al modificar cámara: {}", e);
+                                    continue;
+                                }
                             }
-                        },
+                        }
                         "list" => cam_system.lock().unwrap().list_cameras(),
 
                         "help" => {
