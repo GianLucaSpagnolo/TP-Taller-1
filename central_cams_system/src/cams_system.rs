@@ -59,6 +59,12 @@ impl CamsSystem {
     pub fn modify_cam_position(&mut self, id: u8, new_pos: Coordenates) -> Result<(), Error> {
         match self.system.cams.iter_mut().find(|cam| cam.id == id) {
             Some(cam) => {
+                if cam.state == CamState::Alert {
+                    return Err(Error::new(
+                        std::io::ErrorKind::Other,
+                        "ERROR - No se puede modificar la posición de una cámara en modo alerta",
+                    ));
+                }
                 cam.location.latitude = new_pos.latitude;
                 cam.location.longitude = new_pos.longitude;
             }
