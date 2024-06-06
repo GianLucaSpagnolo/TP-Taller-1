@@ -5,11 +5,12 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+use logger::logger_handler::{create_logger_handler, Logger};
+
 use crate::common::reason_codes::ReasonCode;
-use crate::common::utils::create_logger;
 use crate::config::{mqtt_config::Config, server_config::ServerConfig};
-use crate::logger::actions::MqttActions;
-use crate::logger::server_actions::MqttServerActions;
+use crate::logging::actions::MqttActions;
+use crate::logging::server_actions::MqttServerActions;
 use crate::mqtt_packets::headers::fixed_header::PacketFixedHeader;
 use crate::mqtt_packets::packet::generic_packet::{get_packet, PacketReceived, Serialization};
 use crate::mqtt_packets::packets::pingresp::PingResp;
@@ -18,6 +19,7 @@ use super::server_handlers::{
     connect_handler, disconnect_handler, publish_handler, subscribe_handler, unsubscribe_handler,
 };
 use super::server_session::Session;
+// ver caso logger en drop ...
 
 /// ## MqttServer
 ///
@@ -128,31 +130,19 @@ impl MqttServer {
     /// ### Retorno
     /// - `Result<(), Error>`: Resultado de la operación
     ///
-    pub fn start_server(self) -> Result<(), Error> {
+    pub fn start_server(self, logger: Logger) -> Result<(), Error> {
         let id = self.config.general.id.clone();
-        let log_path = self.config.general.log_path.to_string();
-        let logger = match create_logger(&log_path) {
-            Ok(log) => {
-                log.log_event(
-                    &"Logger del servidor inicializado".to_string(),
-                    &self.config.general.id,
-                );
-                log
-            }
-            Err(e) => {
-                //eprintln!("Error obtenido al inicializar el logger del servidor: {}", e);
-                return Err(e);
-            }
-        };
+        let logger_cpy = logger.clone();
 
         let listener = match TcpListener::bind(self.config.get_socket_address()) {
             Ok(lis) => lis,
             Err(e) => {
-                logger.log_event(
+                logger_cpy.log_event(
                     &("Error al conectar con servidor: ".to_string() + &e.to_string()),
                     &self.config.general.id,
                 );
-                logger.close_logger();
+                logger_cpy.close();
+                logger.close();
                 return Err(e);
             }
         };
@@ -164,7 +154,9 @@ impl MqttServer {
         let receiver = Arc::new(Mutex::new(receiver));
 
         // Iniciando el procesador de mesages que recibe el servidor
-        self.server_listener_messages(Arc::clone(&receiver), log_path);
+        //self.server_listener_messages(Arc::clone(&receiver), log_path);
+
+        self.server_listener_messages(Arc::clone(&receiver), logger_cpy.clone());
 
         // Iniciando el listener de conexiones que recibe el servidor dentro de un thread pool
         client_handler(listener, Arc::clone(&sender))?;
@@ -173,7 +165,9 @@ impl MqttServer {
             &("Cerrando servidor ... no se reciben mas paquetes".to_string()),
             &id,
         );
-        logger.close_logger();
+
+        logger_cpy.close();
+        logger.close();
         Err(Error::new(
             std::io::ErrorKind::Other,
             "No se pudo recibir el paquete",
@@ -190,10 +184,10 @@ impl MqttServer {
     fn process_messages(
         &mut self,
         receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>,
+        logger: &Logger,
     ) -> Result<MqttServerActions, Error> {
         let (pack, mut stream) = receiver.lock().unwrap().recv().unwrap();
-        let logger = create_logger(&self.config.general.log_path)?;
-        let result = match pack {
+        match pack {
             PacketReceived::Connect(connect_pack) => {
                 connect_handler::stablish_connection(self, stream, *connect_pack)
             }
@@ -201,18 +195,18 @@ impl MqttServer {
                 disconnect_handler::receive_disconnect(stream, *disconnect_pack)
             }
             PacketReceived::Publish(pub_packet) => {
-                publish_handler::resend_publish_to_subscribers(self, stream, *pub_packet)
+                publish_handler::resend_publish_to_subscribers(self, stream, *pub_packet, logger)
             }
             PacketReceived::Subscribe(sub_packet) => {
-                subscribe_handler::add_subscriptions(self, stream, *sub_packet)
+                subscribe_handler::add_subscriptions(self, stream, *sub_packet, logger)
             }
             PacketReceived::Unsubscribe(unsub_packet) => {
-                unsubscribe_handler::remove_subscriptions(self, stream, *unsub_packet)
+                unsubscribe_handler::remove_subscriptions(self, stream, *unsub_packet, logger)
             }
             PacketReceived::PingReq(_) => {
                 MqttServerActions::ReceivePingReq.log_action(
                     &self.config.general.id,
-                    &logger,
+                    logger,
                     &self.config.general.log_in_term,
                 );
                 PingResp.send(&mut stream)?;
@@ -222,9 +216,7 @@ impl MqttServer {
                 std::io::ErrorKind::Other,
                 "Server - Paquete recibido no es válido",
             )),
-        };
-        logger.close_logger();
-        result
+        }
     }
 
     /// ### server_listener_messages
@@ -238,40 +230,42 @@ impl MqttServer {
     fn server_listener_messages(
         mut self,
         receiver: Arc<Mutex<Receiver<(PacketReceived, TcpStream)>>>,
-        log_path: String,
+        logger: Logger,
     ) {
+        let logger_cpy = logger.clone();
         thread::spawn(move || -> Result<(), Error> {
+            let log_2 = logger_cpy.clone();
             loop {
-                let logger_handler = match create_logger(&log_path) {
-                    Ok(log) => log,
-                    Err(e) => return Err(e),
-                };
-                match self.process_messages(Arc::clone(&receiver)) {
+                let log = log_2.clone();
+                match self.process_messages(Arc::clone(&receiver), &log) {
                     Ok(a) => {
                         a.log_action(
                             &self.config.general.id,
-                            &logger_handler,
+                            &log,
                             &self.config.general.log_in_term,
                         );
                     }
                     Err(e) => {
-                        logger_handler.log_event(
+                        logger_cpy.log_event(
                             &("Error al procesar el mensaje: ".to_string() + &e.to_string()),
                             &self.config.general.id,
                         );
-                        logger_handler.close_logger();
+                        logger_cpy.close();
                         return Err(e);
                     }
                 };
-                logger_handler.close_logger();
+                log.close();
             }
         });
+        logger.close();
     }
 }
 
+// no se puede extender drop, necesita crear su logger
 impl Drop for MqttServer {
     fn drop(&mut self) {
-        let logger = create_logger(&self.config.general.log_path).unwrap();
+        let logger_handler = create_logger_handler(&self.config.general.log_path).unwrap();
+        let logger = logger_handler.get_logger();
         for (_, session) in self.sessions.iter_mut() {
             match disconnect_handler::send_disconnect(
                 &mut session.stream_connection,
@@ -286,11 +280,13 @@ impl Drop for MqttServer {
             };
             let _ = session.disconnect();
         }
+
         MqttServerActions::CloseServer.log_action(
             &self.config.general.id,
             &logger,
             &self.config.general.log_in_term,
         );
-        logger.close_logger();
+        logger.close();
+        logger_handler.close();
     }
 }

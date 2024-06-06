@@ -1,5 +1,6 @@
 use egui::Ui;
 use egui_extras::{Column, TableBuilder, TableRow};
+use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
 
 use crate::{
@@ -30,6 +31,7 @@ fn incident_row(
     inc_interface: &mut IncidentInterface,
     incident: &Incident,
     id: &String,
+    logger: &Logger,
 ) {
     row.col(|ui| {
         ui.label(incident.id.to_string());
@@ -56,7 +58,7 @@ fn incident_row(
     if inc_interface.editable {
         row.col(|ui| {
             if ui.button("Resolver").clicked() {
-                resolve_incident(client, &mut inc_interface.historial, id);
+                resolve_incident(client, &mut inc_interface.historial, id, logger);
             }
         });
     }
@@ -71,7 +73,12 @@ fn incident_row(
 /// - `client`: Cliente MQTT
 /// - `inc_interface`: Interfaz de incidente
 ///
-pub fn incident_list(ui: &mut Ui, client: &mut MqttClient, inc_interface: &mut IncidentInterface) {
+pub fn incident_list(
+    ui: &mut Ui,
+    client: &mut MqttClient,
+    inc_interface: &mut IncidentInterface,
+    logger: &Logger,
+) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
         .column(Column::exact(200.0))
@@ -102,7 +109,7 @@ pub fn incident_list(ui: &mut Ui, client: &mut MqttClient, inc_interface: &mut I
             } else {
                 for (id, incident) in &inc_interface.historial.incidents.clone() {
                     body.row(20.0, |row| {
-                        incident_row(row, client, inc_interface, incident, id);
+                        incident_row(row, client, inc_interface, incident, id, logger);
                     });
                 }
             }

@@ -1,6 +1,6 @@
 [workspace]
 
-members = [ "broker", "central_cams_system", "monitoring_app",
-	"mqtt", "shared",
+members = [ "broker", "central_cams_system", "logger", "monitoring_app",
+	"mqtt", "shared", "logger"
 ]
 resolver = "2"

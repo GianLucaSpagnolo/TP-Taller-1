@@ -25,7 +25,7 @@ impl eframe::App for MonitoringApp {
             .resizable(false)
             .frame(frame)
             .show(ctx, |ui| {
-                show_incidents(ui, &mut self.client, &mut self.inc_interface);
+                show_incidents(ui, &mut self.client, &mut self.inc_interface, &self.logger);
             });
         egui::SidePanel::right("list")
             .resizable(false)
