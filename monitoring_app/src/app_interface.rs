@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use egui::{Style, Visuals};
 use mqtt::client::mqtt_client::MqttClient;
+use shared::views::app_views::cams_views::show_cams;
 use shared::views::app_views::inc_views::show_incidents;
 use shared::views::map_views::map::show_map;
 use shared::{
@@ -32,8 +33,11 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
     .resizable(false)
     .frame(frame)
     .show(ctx, |ui| {
-        egui::CollapsingHeader::new("Menu").show(ui, |ui| {
+        egui::CollapsingHeader::new("Incidentes").show(ui, |ui| {
             show_incidents(ui, &mut app.client, &mut app.inc_interface);
+        });
+        egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
+            show_cams(ui, &app.cam_list);
         });
     });
 }
@@ -66,15 +70,6 @@ impl eframe::App for MonitoringApp {
         header(ctx, frame);
         side_menu(self, ctx, frame);
         map(self, ctx);
-        
-        /*
-        egui::SidePanel::right("list")
-        .resizable(false)
-        .frame(frame)
-            .show(ctx, |ui| {
-                show_cams(ui, &self.cam_list);
-        });
-        */
     }
 }
 
