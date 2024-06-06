@@ -75,13 +75,12 @@ impl CamsSystem {
                 ))
             }
         }
-        Ok(())
+        Ok(()) 
     }
 
     pub fn modify_cameras_state(&mut self, incident_location: Coordenates, new_state: CamState) {
         let mut modified_cams = Vec::new();
-        let mut modified_state = false;
-        
+       
         for cam in self.system.cams.iter_mut() {
             if (incident_location.latitude - cam.location.latitude).abs() < self.range_alert
                 && (incident_location.longitude - cam.location.longitude).abs() < self.range_alert
@@ -89,24 +88,22 @@ impl CamsSystem {
                 match new_state {
                     CamState::Alert => {
                         cam.state = new_state.clone();
-                        modified_state = true;
                         cam.incidents_covering += 1;
                     }
                     CamState::SavingEnergy => {
+                        if cam.incidents_covering == 0 {
+                            continue;
+                        }
                         cam.incidents_covering -= 1;
                         if cam.incidents_covering == 0 {
                             cam.state = new_state.clone();
-                            modified_state = true;
-                        }
+                       }
                     }
                 }
                 modified_cams.push(cam.clone());
             }
         }
 
-        if !modified_state {
-            return;
-        }
         for cam in self.system.cams.iter_mut() {
             for modified_cam in &modified_cams {
                 if (modified_cam.location.latitude - cam.location.latitude).abs()
@@ -114,7 +111,21 @@ impl CamsSystem {
                     && (modified_cam.location.longitude - cam.location.longitude).abs()
                         < self.range_alert_between_cameras
                 {
-                    cam.state = new_state.clone();
+                    if !modified_cams.contains(&cam) && new_state == CamState::Alert{
+                        cam.incidents_covering += 1;
+                        cam.state = new_state.clone();
+
+                    } 
+
+                    if !modified_cams.contains(&cam) && new_state == CamState::SavingEnergy {
+                        if cam.incidents_covering == 0 {
+                            continue;
+                        }
+                        cam.incidents_covering -= 1;
+                        if cam.incidents_covering == 0 {
+                            cam.state = new_state.clone();
+                        }
+                    }
                     break;
                 }
             }
