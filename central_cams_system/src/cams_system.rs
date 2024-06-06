@@ -45,14 +45,14 @@ impl CamsSystem {
                 ))
             }
         };
-        let cam = self.system.cams.remove(pos);
+        let cam = self.system.cams.get(pos).unwrap();
         if cam.state == CamState::Alert {
             return Err(Error::new(
                 std::io::ErrorKind::Other,
                 "ERROR - No se puede eliminar una cámara en modo alerta",
             ));
         }
-
+        let cam = self.system.cams.remove(pos);
         Ok(cam)
     }
 
