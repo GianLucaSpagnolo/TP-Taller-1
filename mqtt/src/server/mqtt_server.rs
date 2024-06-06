@@ -130,24 +130,9 @@ impl MqttServer {
     /// ### Retorno
     /// - `Result<(), Error>`: Resultado de la operación
     ///
-    pub fn start_server(self) -> Result<(), Error> {
+    pub fn start_server(self, logger: Logger) -> Result<(), Error> {
         let id = self.config.general.id.clone();
-        let log_path = self.config.general.log_path.to_string();
-        let logger = match create_logger_handler(&log_path) {
-            Ok(log) => {
-                log.log_event(
-                    &"Logger del servidor inicializado".to_string(),
-                    &self.config.general.id,
-                );
-                log
-            }
-            Err(e) => {
-                //eprintln!("Error obtenido al inicializar el logger del servidor: {}", e);
-                return Err(e);
-            }
-        };
-
-        let logger_cpy = logger.get_logger();
+        let logger_cpy = logger.clone();
 
         let listener = match TcpListener::bind(self.config.get_socket_address()) {
             Ok(lis) => lis,

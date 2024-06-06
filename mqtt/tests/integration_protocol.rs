@@ -123,10 +123,15 @@ mod test {
             let server_config =
                 ServerConfig::from_file(String::from(path.to_str().unwrap())).unwrap();
 
+            let log_path = server_config.general.log_path.to_string();
+            let logger = create_logger_handler(&log_path).unwrap();
+
             let server = MqttServer::new(server_config.clone());
-            if let Err(e) = server.clone().start_server() {
+            if let Err(e) = server.clone().start_server(logger.get_logger()) {
+                logger.close();
                 panic!("Server fails with error: {}", e);
             }
+            logger.close();
         });
 
         // CLIENT
