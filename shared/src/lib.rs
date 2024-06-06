@@ -15,7 +15,7 @@ pub mod interfaces {
     pub mod map_interface;
 }
 pub mod views {
-    pub mod app_views{
+    pub mod app_views {
         pub mod cams_views;
         pub mod inc_views;
     }

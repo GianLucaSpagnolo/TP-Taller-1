@@ -89,7 +89,6 @@ fn cams_list(ui: &mut Ui, cam_list: &Arc<Mutex<CamList>>) {
         });
 }
 
-
 /// ## show_cams
 ///
 /// Muestra la lista de cámaras

@@ -9,6 +9,7 @@ edition = "2021"
 mqtt = { path = "../mqtt" }
 shared = { path = "../shared" }
 
+image = "0.25.1"
 eframe = "0.27.2"
 egui = "0.27.2"
 walkers = "0.22.0"

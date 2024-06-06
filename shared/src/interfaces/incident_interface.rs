@@ -15,6 +15,7 @@ use crate::{models::inc_model::incident_list::IncidentList, views::map_views::pl
 #[derive(Default)]
 pub struct IncidentInterface {
     pub historial: IncidentList,
+    pub view: plugins::ImagesData,
     pub wrong_data: bool,
     pub show_data_alert: bool,
     pub editable: bool,

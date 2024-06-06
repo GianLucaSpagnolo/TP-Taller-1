@@ -4,7 +4,8 @@ use crate::models::coordenates::Coordenates;
 
 use super::cam::{Cam, CamState};
 
-use rand::Rng;
+//use rand::Rng;
+use walkers::Position;
 
 /// ## CamList
 ///
@@ -103,9 +104,10 @@ impl CamList {
         CamList { cams }
     }
 
-    pub fn generate_ramdoms_cams(number_of_camaras: i32) -> Self {
-        let mut rng = rand::thread_rng();
+    pub fn generate_ramdoms_cams(_number_of_camaras: i32) -> Self {
         let mut cams = Vec::new();
+        /*
+        let mut rng = rand::thread_rng();
         for i in 0..number_of_camaras {
             cams.push(Cam {
                 id: i as u8,
@@ -115,7 +117,66 @@ impl CamList {
                 },
                 state: CamState::SavingEnergy,
             });
-        }
+        } */
+
+        let cam1 = Cam {
+            id: 1,
+            location: Coordenates {
+                latitude: -34.581568266649754,
+                longitude: -58.4744644927824,
+            },
+            state: CamState::SavingEnergy,
+        };
+
+        let cam2 = Cam {
+            id: 2,
+            location: Coordenates {
+                latitude: -34.631345851866776,
+                longitude: -58.41585822580699,
+            },
+            state: CamState::SavingEnergy,
+        };
+
+        let cam3 = Cam {
+            id: 3,
+            location: Coordenates {
+                latitude: -34.61863371802939,
+                longitude: -58.45012545762901,
+            },
+            state: CamState::SavingEnergy,
+        };
+
+        let cam4 = Cam {
+            id: 4,
+            location: Coordenates {
+                latitude: -34.58153624609583,
+                longitude: -58.42089675544147,
+            },
+            state: CamState::SavingEnergy,
+        };
+
+        let cam5 = Cam {
+            id: 5,
+            location: Coordenates {
+                latitude: -34.608203436360505,
+                longitude: -58.37366305468922,
+            },
+            state: CamState::SavingEnergy,
+        };
+
+        cams.push(cam1);
+        cams.push(cam2);
+        cams.push(cam3);
+        cams.push(cam4);
+        cams.push(cam5);
+
         CamList { cams }
+    }
+
+    pub fn get_positions(&self) -> Vec<Position> {
+        self.cams
+            .iter()
+            .map(|cam| Position::from_lat_lon(cam.location.latitude, cam.location.longitude))
+            .collect()
     }
 }

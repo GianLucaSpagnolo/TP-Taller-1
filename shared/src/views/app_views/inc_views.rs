@@ -6,11 +6,13 @@ use egui_extras::{Column, TableBuilder, TableRow};
 use crate::{
     controllers::incident::incident_controller::{add_incident, resolve_incident},
     interfaces::incident_interface::IncidentInterface,
-    models::{coordenates::Coordenates, inc_model::incident::{Incident, IncidentState}},
+    models::{
+        coordenates::Coordenates,
+        inc_model::incident::{Incident, IncidentState},
+    },
 };
 
 static COORDENATE_PRECISION: usize = 4;
-
 
 /// ## add_incident_button
 ///
@@ -41,7 +43,12 @@ pub fn add_incident_button(
                 latitude: latitude.unwrap(),
                 longitude: longitude.unwrap(),
             };
-            add_incident(client, &mut inc_interface.historial, field.clone());
+            add_incident(
+                client,
+                &mut inc_interface.historial,
+                &mut inc_interface.view,
+                field.clone(),
+            );
         }
     }
 }

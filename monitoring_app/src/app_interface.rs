@@ -5,43 +5,37 @@ use mqtt::client::mqtt_client::MqttClient;
 use shared::views::app_views::cams_views::show_cams;
 use shared::views::app_views::inc_views::show_incidents;
 use shared::views::map_views::map::show_map;
-use shared::{
-    models::cam_model::cam_list::CamList,
-    views::icon::get_icon_data,
-};
+use shared::{models::cam_model::cam_list::CamList, views::icon::get_icon_data};
 
 use crate::app::MonitoringApp;
 
 use eframe::egui::{self, Margin};
 
-
 pub fn header(ctx: &egui::Context, frame: egui::Frame) {
     egui::TopBottomPanel::top("top")
-    .resizable(false)
-    .frame(frame)
-    .show(ctx, |ui| {
-        ui.add(
-            egui::Image::new(egui::include_image!("../assets/app_title.png"))
-                .fit_to_original_size(0.3),
-        );
-    });
+        .resizable(false)
+        .frame(frame)
+        .show(ctx, |ui| {
+            ui.add(
+                egui::Image::new(egui::include_image!("../assets/app_title.png"))
+                    .fit_to_original_size(0.3),
+            );
+        });
 }
-
 
 pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Frame) {
     egui::SidePanel::left("menu")
-    .resizable(false)
-    .frame(frame)
-    .show(ctx, |ui| {
-        egui::CollapsingHeader::new("Incidentes").show(ui, |ui| {
-            show_incidents(ui, &mut app.client, &mut app.inc_interface);
+        .resizable(false)
+        .frame(frame)
+        .show(ctx, |ui| {
+            egui::CollapsingHeader::new("Incidentes").show(ui, |ui| {
+                show_incidents(ui, &mut app.client, &mut app.inc_interface);
+            });
+            egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
+                show_cams(ui, &app.cam_list);
+            });
         });
-        egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
-            show_cams(ui, &app.cam_list);
-        });
-    });
 }
-
 
 pub fn map(app: &mut MonitoringApp, ctx: &egui::Context) {
     egui::CentralPanel::default().show(ctx, |ui| {
@@ -50,10 +44,11 @@ pub fn map(app: &mut MonitoringApp, ctx: &egui::Context) {
             &mut app.map_interface.tiles,
             &mut app.map_interface.map_memory,
             &mut app.inc_interface.click_incident,
+            &mut app.cam_img,
+            &mut app.inc_interface.view,
         );
     });
 }
-
 
 impl eframe::App for MonitoringApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -66,7 +61,7 @@ impl eframe::App for MonitoringApp {
             },
             ..Default::default()
         };
-        
+
         header(ctx, frame);
         side_menu(self, ctx, frame);
         map(self, ctx);
@@ -93,12 +88,16 @@ pub fn run_interface(
         "monitoring_app/assets/app_icon.png",
     )));
 
+    let mut visuals = Visuals::dark();
+
+    visuals.extreme_bg_color = egui::Color32::from_rgb(0, 0, 0);
+
     eframe::run_native(
         "Apliación de monitoreo",
         options,
         Box::new(|creation_context| {
             let style = Style {
-                visuals: Visuals::dark(),
+                visuals,
                 ..Style::default()
             };
             creation_context.egui_ctx.set_style(style);
