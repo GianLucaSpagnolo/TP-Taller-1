@@ -39,7 +39,9 @@ impl CamList {
                 CamState::Alert => 1,
             };
             bytes.push(state);
+            bytes.push(cam.incidents_covering);
         }
+
 
         bytes
     }
@@ -67,6 +69,9 @@ impl CamList {
             };
             index += 1;
 
+            let incidents_covering = bytes[index];
+            index += 1;
+
             cams.push(Cam {
                 id,
                 location: Coordenates {
@@ -74,6 +79,8 @@ impl CamList {
                     longitude,
                 },
                 state,
+                incidents_covering,
+
             });
         }
 
@@ -91,6 +98,7 @@ impl CamList {
                     longitude: rng.gen_range(-180.0..180.0),
                 },
                 state: CamState::SavingEnergy,
+                incidents_covering: 0,
             });
         }
         CamList { cams }

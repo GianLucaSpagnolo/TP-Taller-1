@@ -24,6 +24,8 @@ pub struct Cam {
     pub id: u8,
     pub location: Coordenates,
     pub state: CamState,
+    pub incidents_covering: u8,
+
 }
 
 impl Display for Cam {

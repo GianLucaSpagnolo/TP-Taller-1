@@ -70,6 +70,7 @@ pub mod interface {
             id,
             location,
             state: CamState::SavingEnergy,
+            incidents_covering: 0,
         };
         let mut cam_system = cam_system.lock().unwrap();
         println!("Camera added: {:?} ", cam_system.add_new_camara(cam));
