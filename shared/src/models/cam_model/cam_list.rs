@@ -50,8 +50,10 @@ impl CamList {
             let state = match cam.state {
                 CamState::SavingEnergy => 0,
                 CamState::Alert => 1,
+                CamState::Removed => 2,
             };
             bytes.push(state);
+            bytes.push(cam.incidents_covering);
         }
 
         bytes
@@ -86,8 +88,12 @@ impl CamList {
             let state = match bytes[index] {
                 0 => CamState::SavingEnergy,
                 1 => CamState::Alert,
+                2 => CamState::Removed,
                 _ => panic!("Invalid state"),
             };
+            index += 1;
+
+            let incidents_covering = bytes[index];
             index += 1;
 
             cams.push(Cam {
@@ -97,6 +103,7 @@ impl CamList {
                     longitude,
                 },
                 state,
+                incidents_covering,
             });
         }
 
@@ -114,6 +121,7 @@ impl CamList {
                     longitude: rng.gen_range(-180.0..180.0),
                 },
                 state: CamState::SavingEnergy,
+                incidents_covering: 0,
             });
         }
         CamList { cams }

@@ -2,7 +2,8 @@ mod cams_system;
 mod system_interface;
 
 use std::{
-    io::Error,
+    fs,
+    io::{self, Error},
     sync::{mpsc::Receiver, Arc, Mutex},
     thread::{self, JoinHandle},
 };
@@ -46,10 +47,35 @@ pub fn process_messages(
 
 fn main() -> Result<(), Error> {
     let config_path = "central_cams_system/config/cams_config.txt";
-    let range_alert = 2.0;
-    let range_alert_between_cameras = 10.0;
+    let contents = fs::read_to_string("central_cams_system/config/initial_config.txt")?;
+    let mut range_alert = 0.0;
+    let mut range_alert_between_cameras = 0.0;
+    let mut db_path = String::new();
 
-    let cam_system = CamsSystem::init(10, range_alert, range_alert_between_cameras);
+    for line in contents.lines() {
+        let parts: Vec<&str> = line.split(':').collect();
+        match parts[0].trim() {
+            "range_alert" => {
+                range_alert = parts[1].trim().parse().map_err(|_| {
+                    io::Error::new(io::ErrorKind::InvalidData, "Invalid range_alert value")
+                })?
+            }
+            "range_alert_between_cameras" => {
+                range_alert_between_cameras = parts[1].trim().parse().map_err(|_| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid range_alert_between_cameras value",
+                    )
+                })?
+            }
+            "db_path" => {
+                db_path = parts[1].trim().to_string();
+            }
+            _ => (),
+        }
+    }
+
+    let cam_system = CamsSystem::init(range_alert, range_alert_between_cameras, db_path);
 
     show_start(&cam_system);
 
@@ -67,14 +93,16 @@ fn main() -> Result<(), Error> {
         }
     };
 
-    match client.publish(cam_system.system.as_bytes(), "camaras".to_string(), &logger) {
-        Ok(r) => r,
-        Err(e) => {
-            logger.close();
-            logger_handler.close();
-            return Err(e);
-        }
-    };
+    for cam in cam_system.system.cams.iter() {
+        match client.publish(cam.as_bytes(), "camaras".to_string(), &logger) {
+            Ok(r) => r,
+            Err(e) => {
+                logger.close();
+                logger_handler.close();
+                return Err(e);
+            }
+        };
+    }
 
     match client.subscribe(vec!["inc"], &logger) {
         Ok(r) => r,
