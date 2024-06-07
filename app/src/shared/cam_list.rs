@@ -37,11 +37,11 @@ impl CamList {
             let state = match cam.state {
                 CamState::SavingEnergy => 0,
                 CamState::Alert => 1,
+                CamState::Removed => 2,
             };
             bytes.push(state);
             bytes.push(cam.incidents_covering);
         }
-
 
         bytes
     }
@@ -65,6 +65,7 @@ impl CamList {
             let state = match bytes[index] {
                 0 => CamState::SavingEnergy,
                 1 => CamState::Alert,
+                2 => CamState::Removed,
                 _ => panic!("Invalid state"),
             };
             index += 1;
@@ -80,7 +81,6 @@ impl CamList {
                 },
                 state,
                 incidents_covering,
-
             });
         }
 

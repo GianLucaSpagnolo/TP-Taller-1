@@ -1,5 +1,6 @@
 pub mod interface {
     use std::{
+        fs,
         io::{BufRead, Error},
         sync::{Arc, Mutex},
     };
@@ -31,10 +32,7 @@ pub mod interface {
             .map(|cam| cam.id + 1);
         match id {
             Some(id) => Ok(id),
-            None => Err(Error::new(
-                std::io::ErrorKind::Other,
-                "Error al generar el id",
-            )),
+            None => Ok(0),
         }
     }
 
@@ -73,8 +71,12 @@ pub mod interface {
             incidents_covering: 0,
         };
         let mut cam_system = cam_system.lock().unwrap();
-        println!("Camera added: {:?} ", cam_system.add_new_camara(cam));
-        client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
+        let added_cam = cam_system.add_new_camara(cam);
+        println!("Camera added: {:?} ", added_cam);
+
+        let bytes = cam_system.system.as_bytes();
+        fs::write(cam_system.db_path.clone(), bytes)?;
+        client.publish(added_cam.as_bytes(), "camaras".to_string())?;
         Ok(())
     }
 
@@ -111,14 +113,17 @@ pub mod interface {
             }
         };
 
-        let cam = cam_system.delete_camara(id)?;
-
+        let mut cam = cam_system.delete_camara(id)?;
+        cam.state = CamState::Removed;
         println!(
             "Cámara eliminada: id:{} - modo:{:?} - latitud:{} - longitud:{}",
             cam.id, cam.state, cam.location.latitude, cam.location.longitude
         );
 
-        client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
+        let bytes = cam_system.system.as_bytes();
+        fs::write(cam_system.db_path.clone(), bytes)?;
+
+        client.publish(cam.as_bytes(), "camaras".to_string())?;
 
         Ok(())
     }
@@ -153,9 +158,12 @@ pub mod interface {
 
         let mut cam_system = cam_system.lock().unwrap();
 
-        cam_system.modify_cam_position(id, new_coordenate)?;
+        let modified_cam = cam_system.modify_cam_position(id, new_coordenate)?;
         println!("Cámara modificada correctamente");
-        client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
+
+        let bytes = cam_system.system.as_bytes();
+        fs::write(cam_system.db_path.clone(), bytes)?;
+        client.publish(modified_cam.as_bytes(), "camaras".to_string())?;
         Ok(())
     }
 

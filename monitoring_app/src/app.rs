@@ -4,7 +4,12 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use app::shared::{cam_list::CamList, coordenates::Coordenates, incident_list::IncidentList};
+use app::shared::{
+    cam::{Cam, CamState},
+    cam_list::CamList,
+    coordenates::Coordenates,
+    incident_list::IncidentList,
+};
 use mqtt::client::mqtt_client::{MqttClient, MqttClientMessage};
 
 use crate::controllers::run::run_interface;
@@ -32,8 +37,17 @@ fn process_messages(
         for message_received in receiver.try_iter() {
             match message_received.topic.as_str() {
                 "camaras" => {
-                    let data = CamList::from_be_bytes(message_received.data);
-                    *system.lock().unwrap() = data;
+                    let data = Cam::from_be_bytes(message_received.data);
+                    let mut system_lock = system.lock().unwrap();
+                    if let Some(cam) = system_lock.cams.iter_mut().find(|c| c.id == data.id) {
+                        if data.state != CamState::Removed {
+                            *cam = data;
+                        } else {
+                            system_lock.cams.retain(|c| c.id != data.id);
+                        }
+                    } else {
+                        system_lock.cams.push(data);
+                    }
                 }
                 "dron" => {
                     // cambiar estado

@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::{fs, io::Error};
 
 use app::shared::{
     cam::{Cam, CamState},
@@ -12,20 +12,23 @@ pub struct CamsSystem {
     pub system: CamList,
     pub range_alert: f64,
     pub range_alert_between_cameras: f64,
+    pub db_path: String,
 }
 
 impl CamsSystem {
-    pub fn init(
-        number_of_camaras: i32,
-        range_alert: f64,
-        range_alert_between_cameras: f64,
-    ) -> Self {
-        let system = CamList::generate_ramdoms_cams(number_of_camaras);
+    pub fn init(range_alert: f64, range_alert_between_cameras: f64, db_path: String) -> Self {
+        let bytes = fs::read("central_cams_system/config/cams_system_db").unwrap();
+        let system = if bytes.is_empty() {
+            CamList { cams: Vec::new() }
+        } else {
+            CamList::from_be_bytes(bytes)
+        };
 
         CamsSystem {
             system,
             range_alert,
             range_alert_between_cameras,
+            db_path,
         }
     }
 
@@ -56,7 +59,7 @@ impl CamsSystem {
         Ok(cam)
     }
 
-    pub fn modify_cam_position(&mut self, id: u8, new_pos: Coordenates) -> Result<(), Error> {
+    pub fn modify_cam_position(&mut self, id: u8, new_pos: Coordenates) -> Result<Cam, Error> {
         match self.system.cams.iter_mut().find(|cam| cam.id == id) {
             Some(cam) => {
                 if cam.state == CamState::Alert {
@@ -67,20 +70,22 @@ impl CamsSystem {
                 }
                 cam.location.latitude = new_pos.latitude;
                 cam.location.longitude = new_pos.longitude;
+                Ok(cam.clone())
             }
-            None => {
-                return Err(Error::new(
-                    std::io::ErrorKind::Other,
-                    "No se encontró la cámara",
-                ))
-            }
+            None => Err(Error::new(
+                std::io::ErrorKind::Other,
+                "No se encontró la cámara",
+            )),
         }
-        Ok(()) 
     }
 
-    pub fn modify_cameras_state(&mut self, incident_location: Coordenates, new_state: CamState) {
+    pub fn modify_cameras_state(
+        &mut self,
+        incident_location: Coordenates,
+        new_state: CamState,
+    ) -> Vec<Cam> {
         let mut modified_cams = Vec::new();
-       
+
         for cam in self.system.cams.iter_mut() {
             if (incident_location.latitude - cam.location.latitude).abs() < self.range_alert
                 && (incident_location.longitude - cam.location.longitude).abs() < self.range_alert
@@ -97,12 +102,15 @@ impl CamsSystem {
                         cam.incidents_covering -= 1;
                         if cam.incidents_covering == 0 {
                             cam.state = new_state.clone();
-                       }
+                        }
                     }
+                    _ => {}
                 }
                 modified_cams.push(cam.clone());
             }
         }
+
+        let mut close_cameras_modified = Vec::new();
 
         for cam in self.system.cams.iter_mut() {
             for modified_cam in &modified_cams {
@@ -111,25 +119,31 @@ impl CamsSystem {
                     && (modified_cam.location.longitude - cam.location.longitude).abs()
                         < self.range_alert_between_cameras
                 {
-                    if !modified_cams.contains(&cam) && new_state == CamState::Alert{
+                    if !modified_cams.contains(cam) && new_state == CamState::Alert {
                         cam.incidents_covering += 1;
                         cam.state = new_state.clone();
+                        close_cameras_modified.push(cam.clone());
+                    }
 
-                    } 
-
-                    if !modified_cams.contains(&cam) && new_state == CamState::SavingEnergy {
+                    if !modified_cams.contains(cam) && new_state == CamState::SavingEnergy {
                         if cam.incidents_covering == 0 {
                             continue;
                         }
                         cam.incidents_covering -= 1;
                         if cam.incidents_covering == 0 {
                             cam.state = new_state.clone();
+                            close_cameras_modified.push(cam.clone());
                         }
                     }
                     break;
                 }
             }
         }
+        for cam in close_cameras_modified {
+            modified_cams.push(cam);
+        }
+
+        modified_cams
     }
 
     pub fn list_cameras(&self) {
@@ -137,28 +151,41 @@ impl CamsSystem {
     }
 
     pub fn process_incident_in_progress(&mut self, client: &mut MqttClient, incident: Incident) {
-        self.modify_cameras_state(incident.location.clone(), CamState::Alert);
-        match client.publish(self.system.as_bytes(), "camaras".to_string()) {
-            Ok(_) => {
-                println!("Modifica estado de las cámaras en alerta");
-                self.list_cameras();
-            }
-            Err(e) => {
-                println!("Error al publicar mensaje: {}", e);
+        let modified_cams = self.modify_cameras_state(incident.location.clone(), CamState::Alert);
+
+        let bytes = self.system.as_bytes();
+        fs::write(self.db_path.clone(), bytes).unwrap();
+
+        for cam in modified_cams {
+            match client.publish(cam.as_bytes(), "camaras".to_string()) {
+                Ok(_) => {
+                    println!("Modifica estado de la cámara en modo alerta");
+                }
+                Err(e) => {
+                    println!("Error al publicar mensaje: {}", e);
+                }
             }
         }
+        self.list_cameras();
     }
 
     pub fn process_incident_resolved(&mut self, client: &mut MqttClient, incident: Incident) {
-        self.modify_cameras_state(incident.location.clone(), CamState::SavingEnergy);
-        match client.publish(self.system.as_bytes(), "camaras".to_string()) {
-            Ok(_) => {
-                println!("Modifica estado de las cámaras en modo ahorro de energía");
-                self.list_cameras();
-            }
-            Err(e) => {
-                println!("Error al publicar mensaje: {}", e);
+        let modified_cams =
+            self.modify_cameras_state(incident.location.clone(), CamState::SavingEnergy);
+
+        let bytes = self.system.as_bytes();
+        fs::write(self.db_path.clone(), bytes).unwrap();
+
+        for cam in modified_cams {
+            match client.publish(cam.as_bytes(), "camaras".to_string()) {
+                Ok(_) => {
+                    println!("Modifica estado de la cámara en modo ahorro de energía");
+                }
+                Err(e) => {
+                    println!("Error al publicar mensaje: {}", e);
+                }
             }
         }
+        self.list_cameras();
     }
 }
