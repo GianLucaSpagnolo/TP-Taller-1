@@ -13,6 +13,7 @@ pub mod models {
 pub mod interfaces {
     pub mod incident_interface;
 }
+
 pub mod views {
     pub mod cams_views {
         pub mod cams;

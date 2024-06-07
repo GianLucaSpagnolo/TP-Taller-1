@@ -1,5 +1,6 @@
 use std::{fs, io::Error};
 
+use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
 use shared::models::{
     cam_model::{
@@ -152,14 +153,19 @@ impl CamsSystem {
         println!("{}", self.system);
     }
 
-    pub fn process_incident_in_progress(&mut self, client: &mut MqttClient, incident: Incident) {
+    pub fn process_incident_in_progress(
+        &mut self,
+        client: &mut MqttClient,
+        incident: Incident,
+        logger: &Logger,
+    ) {
         let modified_cams = self.modify_cameras_state(incident.location.clone(), CamState::Alert);
 
         let bytes = self.system.as_bytes();
         fs::write(self.db_path.clone(), bytes).unwrap();
 
         for cam in modified_cams {
-            match client.publish(cam.as_bytes(), "camaras".to_string()) {
+            match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {
                 Ok(_) => {
                     println!("Modifica estado de la cámara en modo alerta");
                 }
@@ -171,7 +177,12 @@ impl CamsSystem {
         self.list_cameras();
     }
 
-    pub fn process_incident_resolved(&mut self, client: &mut MqttClient, incident: Incident) {
+    pub fn process_incident_resolved(
+        &mut self,
+        client: &mut MqttClient,
+        incident: Incident,
+        logger: &Logger,
+    ) {
         let modified_cams =
             self.modify_cameras_state(incident.location.clone(), CamState::SavingEnergy);
 
@@ -179,7 +190,7 @@ impl CamsSystem {
         fs::write(self.db_path.clone(), bytes).unwrap();
 
         for cam in modified_cams {
-            match client.publish(cam.as_bytes(), "camaras".to_string()) {
+            match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {
                 Ok(_) => {
                     println!("Modifica estado de la cámara en modo ahorro de energía");
                 }

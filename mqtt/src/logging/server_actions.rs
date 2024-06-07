@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{
     common::{reason_codes::ReasonCode, topic_filter::TopicFilter},
-    logger::actions::add_topics_names,
+    logging::actions::add_topics_names,
 };
 
 use super::actions::MqttActions;

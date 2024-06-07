@@ -2,7 +2,7 @@ pub mod connect_handler {
     use std::{io::Error, net::TcpStream};
 
     use crate::{
-        logger::server_actions::MqttServerActions,
+        logging::server_actions::MqttServerActions,
         mqtt_packets::{
             packet::generic_packet::Serialization,
             packets::{connack::Connack, connect::Connect},
@@ -39,9 +39,10 @@ pub mod connect_handler {
 pub mod publish_handler {
     use std::{collections::HashMap, io::Error, net::TcpStream};
 
+    use logger::logger_handler::Logger;
+
     use crate::{
-        common::utils::create_logger,
-        logger::{actions::MqttActions, server_actions::MqttServerActions},
+        logging::{actions::MqttActions, server_actions::MqttServerActions},
         mqtt_packets::{
             packet::generic_packet::Serialization,
             packets::{puback::Puback, publish::Publish},
@@ -64,15 +65,14 @@ pub mod publish_handler {
         server: &mut MqttServer,
         mut stream: TcpStream,
         pub_packet: Publish,
+        logger: &Logger,
     ) -> Result<MqttServerActions, Error> {
         let topic = pub_packet.properties.topic_name.clone();
         let mut receivers = Vec::new();
 
-        let logger = create_logger(&server.config.general.log_path)?;
-
         MqttServerActions::ReceivePublish(topic.clone()).log_action(
             &server.config.general.id,
-            &logger,
+            logger,
             &server.config.general.log_in_term,
         );
 
@@ -87,7 +87,7 @@ pub mod publish_handler {
 
         MqttServerActions::SendPublish(topic.clone(), receivers).log_action(
             &server.config.general.id,
-            &logger,
+            logger,
             &server.config.general.log_in_term,
         );
 
@@ -96,7 +96,6 @@ pub mod publish_handler {
         )?);
         puback.send(&mut stream)?;
 
-        logger.close_logger();
         Ok(MqttServerActions::SendPuback(topic.clone()))
     }
 }
@@ -104,9 +103,11 @@ pub mod publish_handler {
 pub mod subscribe_handler {
     use std::{io::Error, net::TcpStream};
 
+    use logger::logger_handler::Logger;
+
     use crate::{
-        common::{topic_filter::TopicFilter, utils::create_logger},
-        logger::{actions::MqttActions, server_actions::MqttServerActions},
+        common::topic_filter::TopicFilter,
+        logging::{actions::MqttActions, server_actions::MqttServerActions},
         mqtt_packets::{
             packet::generic_packet::Serialization,
             packets::{suback::Suback, subscribe::Subscribe},
@@ -174,10 +175,9 @@ pub mod subscribe_handler {
         server: &mut MqttServer,
         mut stream: TcpStream,
         mut sub_packet: Subscribe,
+        logger: &Logger,
     ) -> Result<MqttServerActions, Error> {
         let client_id = get_sub_id_and_topics(&mut sub_packet.properties.topic_filters)?;
-
-        let logger = create_logger(&server.config.general.log_path)?;
 
         if let Some(session) = server.sessions.get_mut(&client_id) {
             session
@@ -196,7 +196,7 @@ pub mod subscribe_handler {
         )
         .log_action(
             &server.config.general.id,
-            &logger,
+            logger,
             &server.config.general.log_in_term,
         );
 
@@ -205,7 +205,6 @@ pub mod subscribe_handler {
         )?);
         suback.send(&mut stream)?;
 
-        logger.close_logger();
         Ok(MqttServerActions::SendSuback(client_id.clone()))
     }
 }
@@ -213,9 +212,10 @@ pub mod subscribe_handler {
 pub mod unsubscribe_handler {
     use std::{io::Error, net::TcpStream};
 
+    use logger::logger_handler::Logger;
+
     use crate::{
-        common::utils::create_logger,
-        logger::{actions::MqttActions, server_actions::MqttServerActions},
+        logging::{actions::MqttActions, server_actions::MqttServerActions},
         mqtt_packets::{
             packet::generic_packet::Serialization,
             packets::{unsuback::Unsuback, unsubscribe::Unsubscribe},
@@ -279,10 +279,9 @@ pub mod unsubscribe_handler {
         server: &mut MqttServer,
         mut stream: TcpStream,
         mut unsub_packet: Unsubscribe,
+        logger: &Logger,
     ) -> Result<MqttServerActions, Error> {
         let client_id = get_unsub_id_and_topics(&mut unsub_packet.properties.topic_filters)?;
-
-        let logger = create_logger(&server.config.general.log_path)?;
 
         if let Some(session) = server.sessions.get_mut(&client_id) {
             session.subscriptions.retain(|t| {
@@ -304,7 +303,7 @@ pub mod unsubscribe_handler {
         )
         .log_action(
             &server.config.general.id,
-            &logger,
+            logger,
             &server.config.general.log_in_term,
         );
 
@@ -322,7 +321,7 @@ pub mod disconnect_handler {
 
     use crate::{
         common::reason_codes::ReasonCode,
-        logger::server_actions::MqttServerActions,
+        logging::server_actions::MqttServerActions,
         mqtt_packets::{
             packet::generic_packet::Serialization, packets::disconnect::Disconnect,
             properties::disconnect_properties::DisconnectProperties,
