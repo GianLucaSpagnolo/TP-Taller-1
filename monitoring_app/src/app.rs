@@ -7,7 +7,11 @@ use std::{
 use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
-    interfaces::incident_interface::IncidentInterface, models::cam_model::{cam::{Cam, CamState}, cam_list::CamList},
+    interfaces::incident_interface::IncidentInterface,
+    models::cam_model::{
+        cam::{Cam, CamState},
+        cam_list::CamList,
+    },
 };
 
 use crate::interface::run_interface;
