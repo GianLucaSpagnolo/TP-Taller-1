@@ -1,0 +1,6 @@
+id: broker
+ip: 127.0.0.1
+port: 5000
+maximum_threads: 4
+log_path: data/logs/broker_log.csv
+log_in_terminal: true

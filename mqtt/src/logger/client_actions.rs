@@ -1,14 +1,31 @@
 use std::fmt;
 
 use crate::{
-    control_packets::{
-        mqtt_packet::reason_codes::ReasonCode, mqtt_subscribe::subscribe_properties::TopicFilter,
-    },
+    common::{reason_codes::ReasonCode, topic_filter::TopicFilter},
     logger::actions::add_topics_names,
 };
 
 use super::actions::MqttActions;
 
+/// ## MqttClientActions
+///
+/// Enum que representa las acciones de un cliente MQTT
+///
+/// ### Variantes
+/// - `Connection`: Conexion establecida
+/// - `ReceivePublish`: Cliente recibe un mensaje
+/// - `ReceiveDisconnect`: Cliente recibe un mensaje de desconexión
+/// - `ReceivePinresp`: Cliente recibe respuesta de ping
+/// - `SendConnect`: Cliente envia mensaje de conexión
+/// - `SendPublish`: Cliente envia mensaje
+/// - `SendSubscribe`: Cliente envia mensaje de subscripción
+/// - `SendUnsubscribe`: Cliente envia mensaje de desubscripción
+/// - `SendDisconnect`: Cliente envia mensaje de desconexión
+/// - `SendPinreq`: Cliente envia ping
+/// - `AcknowledgePublish`: Cliente recibe confirmación de envio de mensaje
+/// - `AcknowledgeSubscribe`: Cliente recibe confirmación de subscripción
+/// - `AcknowledgeUnsubscribe`: Cliente recibe confirmación de desubscripción
+///
 pub enum MqttClientActions {
     Connection(String, u8),
     ReceivePublish(String),

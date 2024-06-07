@@ -1,12 +1,14 @@
 use std::{fs, io::Error};
 
-use app::shared::{
-    cam::{Cam, CamState},
-    cam_list::CamList,
-    coordenates::Coordenates,
-    incident::Incident,
-};
 use mqtt::client::mqtt_client::MqttClient;
+use shared::models::{
+    cam_model::{
+        cam::{Cam, CamState},
+        cam_list::CamList,
+    },
+    coordenates::Coordenates,
+    inc_model::incident::Incident,
+};
 
 pub struct CamsSystem {
     pub system: CamList,
