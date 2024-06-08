@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use egui::{Style, Visuals};
+use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
 use shared::views::app_views::cams_views::show_cams;
 use shared::views::app_views::inc_views::show_incidents;
@@ -29,7 +30,7 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
         .frame(frame)
         .show(ctx, |ui| {
             egui::CollapsingHeader::new("Incidentes").show(ui, |ui| {
-                show_incidents(ui, &mut app.client, &mut app.inc_interface);
+                show_incidents(ui, &mut app.client, &mut app.inc_interface, &app.logger);
             });
             egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
                 show_cams(ui, &app.cam_list);
@@ -77,8 +78,8 @@ impl eframe::App for MonitoringApp {
 ///
 pub fn run_interface(
     client: MqttClient,
-    log_path: String,
     cam_list: Arc<Mutex<CamList>>,
+    logger: Logger,
 ) -> Result<(), eframe::Error> {
     let mut options = eframe::NativeOptions::default();
 
@@ -104,9 +105,9 @@ pub fn run_interface(
             egui_extras::install_image_loaders(&creation_context.egui_ctx);
             Box::new(MonitoringApp::new(
                 client,
-                log_path,
                 creation_context.egui_ctx.clone(),
                 cam_list,
+                logger,
             ))
         }),
     )

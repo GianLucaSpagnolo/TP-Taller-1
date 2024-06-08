@@ -111,21 +111,8 @@ impl CamList {
         CamList { cams }
     }
 
-    pub fn generate_ramdoms_cams(_number_of_camaras: i32) -> Self {
+    pub fn generate_cams() -> Self {
         let mut cams = Vec::new();
-        /*
-        let mut rng = rand::thread_rng();
-        for i in 0..number_of_camaras {
-            cams.push(Cam {
-                id: i as u8,
-                location: Coordenates {
-                    latitude: rng.gen_range(-90.0..90.0),
-                    longitude: rng.gen_range(-180.0..180.0),
-                },
-                state: CamState::SavingEnergy,
-                incidents_covering: 0,
-            });
-        } */
 
         let cam1 = Cam {
             id: 1,
@@ -134,6 +121,7 @@ impl CamList {
                 longitude: -58.4744644927824,
             },
             state: CamState::SavingEnergy,
+            incidents_covering: 0,
         };
 
         let cam2 = Cam {
@@ -143,6 +131,7 @@ impl CamList {
                 longitude: -58.41585822580699,
             },
             state: CamState::SavingEnergy,
+            incidents_covering: 0,
         };
 
         let cam3 = Cam {
@@ -152,6 +141,7 @@ impl CamList {
                 longitude: -58.45012545762901,
             },
             state: CamState::SavingEnergy,
+            incidents_covering: 0,
         };
 
         let cam4 = Cam {
@@ -161,6 +151,7 @@ impl CamList {
                 longitude: -58.42089675544147,
             },
             state: CamState::SavingEnergy,
+            incidents_covering: 0,
         };
 
         let cam5 = Cam {
@@ -170,6 +161,7 @@ impl CamList {
                 longitude: -58.37366305468922,
             },
             state: CamState::SavingEnergy,
+            incidents_covering: 0,
         };
 
         cams.push(cam1);

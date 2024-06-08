@@ -20,7 +20,7 @@ pub struct CamsSystem {
 
 impl CamsSystem {
     pub fn init(range_alert: f64, range_alert_between_cameras: f64, db_path: String) -> Self {
-        let bytes = fs::read("central_cams_system/config/cams_system_db").unwrap();
+        let bytes = fs::read(db_path.as_str()).unwrap();
         let system = if bytes.is_empty() {
             CamList { cams: Vec::new() }
         } else {
