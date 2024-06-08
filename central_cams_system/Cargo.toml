@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 mqtt = { path = "../mqtt" }
 shared = { path = "../shared" }
+logger = { path = "../logger" }
 
 [[bin]]
 name = "cams_system"

@@ -1,9 +1,11 @@
 pub mod interface {
     use std::{
+        fs,
         io::{BufRead, Error},
         sync::{Arc, Mutex},
     };
 
+    use logger::logger_handler::Logger;
     use mqtt::client::mqtt_client::MqttClient;
     use shared::models::{
         cam_model::cam::{Cam, CamState},
@@ -31,10 +33,7 @@ pub mod interface {
             .map(|cam| cam.id + 1);
         match id {
             Some(id) => Ok(id),
-            None => Err(Error::new(
-                std::io::ErrorKind::Other,
-                "Error al generar el id",
-            )),
+            None => Ok(0),
         }
     }
 
@@ -59,6 +58,7 @@ pub mod interface {
         client: &mut MqttClient,
         cam_system: Arc<Mutex<CamsSystem>>,
         args: Vec<&str>,
+        logger: &Logger,
     ) -> Result<(), Error> {
         let id = generate_id(&cam_system.lock().unwrap())?;
 
@@ -70,10 +70,15 @@ pub mod interface {
             id,
             location,
             state: CamState::SavingEnergy,
+            incidents_covering: 0,
         };
         let mut cam_system = cam_system.lock().unwrap();
-        println!("Camera added: {:?} ", cam_system.add_new_camara(cam));
-        client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
+        let added_cam = cam_system.add_new_camara(cam);
+        println!("Camera added: {:?} ", added_cam);
+
+        let bytes = cam_system.system.as_bytes();
+        fs::write(cam_system.db_path.clone(), bytes)?;
+        client.publish(added_cam.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
 
@@ -97,6 +102,7 @@ pub mod interface {
         client: &mut MqttClient,
         cam_system: Arc<Mutex<CamsSystem>>,
         args: Vec<&str>,
+        logger: &Logger,
     ) -> Result<(), Error> {
         let id = check_delete_args(args)?;
 
@@ -110,14 +116,17 @@ pub mod interface {
             }
         };
 
-        let cam = cam_system.delete_camara(id)?;
-
+        let mut cam = cam_system.delete_camara(id)?;
+        cam.state = CamState::Removed;
         println!(
             "Cámara eliminada: id:{} - modo:{:?} - latitud:{} - longitud:{}",
             cam.id, cam.state, cam.location.latitude, cam.location.longitude
         );
 
-        client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
+        let bytes = cam_system.system.as_bytes();
+        fs::write(cam_system.db_path.clone(), bytes)?;
+
+        client.publish(cam.as_bytes(), "camaras".to_string(), logger)?;
 
         Ok(())
     }
@@ -142,6 +151,7 @@ pub mod interface {
         client: &mut MqttClient,
         cam_system: Arc<Mutex<CamsSystem>>,
         parts: Vec<&str>,
+        logger: &Logger,
     ) -> Result<(), Error> {
         let (id, lat, long) = check_modify_args(parts)?;
 
@@ -152,13 +162,20 @@ pub mod interface {
 
         let mut cam_system = cam_system.lock().unwrap();
 
-        cam_system.modify_cam_position(id, new_coordenate)?;
+        let modified_cam = cam_system.modify_cam_position(id, new_coordenate)?;
         println!("Cámara modificada correctamente");
-        client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
+
+        let bytes = cam_system.system.as_bytes();
+        fs::write(cam_system.db_path.clone(), bytes)?;
+        client.publish(modified_cam.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
 
-    pub fn process_standard_input(client: &mut MqttClient, cam_system: Arc<Mutex<CamsSystem>>) {
+    pub fn process_standard_input(
+        client: &mut MqttClient,
+        cam_system: Arc<Mutex<CamsSystem>>,
+        logger: &Logger,
+    ) {
         let stdin = std::io::stdin();
         let stdin = stdin.lock();
         for line in stdin.lines() {
@@ -173,27 +190,31 @@ pub mod interface {
                         }
                     };
                     match *action {
-                        "add" => match add_action(client, cam_system.clone(), parts) {
+                        "add" => match add_action(client, cam_system.clone(), parts, logger) {
                             Ok(_) => cam_system.lock().unwrap().list_cameras(),
                             Err(e) => {
                                 println!("Error al agregar cámara: {}", e);
                                 continue;
                             }
                         },
-                        "delete" => match delete_action(client, cam_system.clone(), parts) {
-                            Ok(_) => cam_system.lock().unwrap().list_cameras(),
-                            Err(e) => {
-                                println!("Error al eliminar cámara: {}", e);
-                                continue;
+                        "delete" => {
+                            match delete_action(client, cam_system.clone(), parts, logger) {
+                                Ok(_) => cam_system.lock().unwrap().list_cameras(),
+                                Err(e) => {
+                                    println!("Error al eliminar cámara: {}", e);
+                                    continue;
+                                }
                             }
-                        },
-                        "modify" => match modify_action(client, cam_system.clone(), parts) {
-                            Ok(_) => cam_system.lock().unwrap().list_cameras(),
-                            Err(e) => {
-                                println!("Error al modificar cámara: {}", e);
-                                continue;
+                        }
+                        "modify" => {
+                            match modify_action(client, cam_system.clone(), parts, logger) {
+                                Ok(_) => cam_system.lock().unwrap().list_cameras(),
+                                Err(e) => {
+                                    println!("Error al modificar cámara: {}", e);
+                                    continue;
+                                }
                             }
-                        },
+                        }
                         "list" => cam_system.lock().unwrap().list_cameras(),
 
                         "help" => {

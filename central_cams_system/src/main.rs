@@ -2,12 +2,14 @@ mod cams_system;
 mod system_interface;
 
 use std::{
-    io::Error,
+    fs,
+    io::{self, Error},
     sync::{mpsc::Receiver, Arc, Mutex},
     thread::{self, JoinHandle},
 };
 
 use cams_system::CamsSystem;
+use logger::logger_handler::{create_logger_handler, Logger};
 use mqtt::{
     client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
     config::{client_config::ClientConfig, mqtt_config::Config},
@@ -19,6 +21,7 @@ pub fn process_messages(
     client: &mut MqttClient,
     receiver: Receiver<MqttClientMessage>,
     cams_system: Arc<Mutex<CamsSystem>>,
+    logger: Logger,
 ) -> Result<JoinHandle<()>, Error> {
     let mut client = client.clone();
     let handler = thread::spawn(move || loop {
@@ -30,47 +33,121 @@ pub fn process_messages(
                     IncidentState::InProgess => cams_system
                         .lock()
                         .unwrap()
-                        .process_incident_in_progress(&mut client, incident),
+                        .process_incident_in_progress(&mut client, incident, &logger),
                     IncidentState::Resolved => cams_system
                         .lock()
                         .unwrap()
-                        .process_incident_resolved(&mut client, incident),
+                        .process_incident_resolved(&mut client, incident, &logger),
                 }
             }
         }
     });
-
     Ok(handler)
 }
 
 fn main() -> Result<(), Error> {
     let config_path = "central_cams_system/config/cams_config.txt";
-    let range_alert = 2.0;
-    let range_alert_between_cameras = 10.0;
+    let contents = fs::read_to_string("central_cams_system/config/initial_config.txt")?;
+    let mut range_alert = 0.0;
+    let mut range_alert_between_cameras = 0.0;
+    let mut db_path = String::new();
 
-    let cam_system = CamsSystem::init(10, range_alert, range_alert_between_cameras);
+    for line in contents.lines() {
+        let parts: Vec<&str> = line.split(':').collect();
+        match parts[0].trim() {
+            "range_alert" => {
+                range_alert = parts[1].trim().parse().map_err(|_| {
+                    io::Error::new(io::ErrorKind::InvalidData, "Invalid range_alert value")
+                })?
+            }
+            "range_alert_between_cameras" => {
+                range_alert_between_cameras = parts[1].trim().parse().map_err(|_| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid range_alert_between_cameras value",
+                    )
+                })?
+            }
+            "db_path" => {
+                db_path = parts[1].trim().to_string();
+            }
+            _ => (),
+        }
+    }
+
+    let cam_system = CamsSystem::init(range_alert, range_alert_between_cameras, db_path);
 
     show_start(&cam_system);
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
-    let mut client = MqttClient::init(config)?;
+    let logger_handler = create_logger_handler(&config.general.log_path)?;
+    let logger = logger_handler.get_logger();
 
-    client.publish(cam_system.system.as_bytes(), "camaras".to_string())?;
-    client.subscribe(vec!["inc"])?;
+    let mut client = match MqttClient::init(config) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
+
+    for cam in cam_system.system.cams.iter() {
+        match client.publish(cam.as_bytes(), "camaras".to_string(), &logger) {
+            Ok(r) => r,
+            Err(e) => {
+                logger.close();
+                logger_handler.close();
+                return Err(e);
+            }
+        };
+    }
+
+    match client.subscribe(vec!["inc"], &logger) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
 
     let cams_system_ref = Arc::new(Mutex::new(cam_system));
     let cam_system_clone = cams_system_ref.clone();
 
     let mut client_clone = client.clone();
+    let logger_cpy = logger.clone();
     let handle = thread::spawn(move || {
-        process_standard_input(&mut client_clone, cam_system_clone);
+        process_standard_input(&mut client_clone, cam_system_clone, &logger_cpy);
+        logger_cpy.close();
     });
 
-    let listener = client.run_listener()?;
+    let listener = match client.run_listener() {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
 
-    let process_message_handler: JoinHandle<()> =
-        process_messages(&mut client, listener.receiver, cams_system_ref)?;
+    let process_message_handler: JoinHandle<()> = match process_messages(
+        &mut client,
+        listener.receiver,
+        cams_system_ref,
+        logger.clone(),
+    ) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
+
+    logger.close();
+    logger_handler.close();
 
     handle.join().unwrap();
     listener.handler.join().unwrap()?;

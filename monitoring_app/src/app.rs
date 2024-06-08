@@ -5,12 +5,9 @@ use std::{
 };
 
 use egui::Context;
+use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
-use shared::{
-    interfaces::{incident_interface::IncidentInterface, map_interface::MapInterface},
-    models::cam_model::cam_list::CamList,
-    views::map_views::plugins::ImagesData,
-};
+use shared::{interfaces::{incident_interface::IncidentInterface, map_interface::MapInterface}, models::cam_model::{cam::{Cam, CamState}, cam_list::CamList}, views::map_views::plugins::ImagesData};
 
 use crate::app_interface::run_interface;
 
@@ -30,7 +27,7 @@ pub struct MonitoringApp {
     pub cam_img: ImagesData,
     pub inc_interface: IncidentInterface,
     pub map_interface: MapInterface,
-    pub log_path: String,
+    pub logger: Logger,
 }
 
 /// ## MonitoringHandler
@@ -62,8 +59,17 @@ fn process_messages(
         for message_received in receiver.try_iter() {
             match message_received.topic.as_str() {
                 "camaras" => {
-                    let data = CamList::from_be_bytes(message_received.data);
-                    *system.lock().unwrap() = data;
+                    let data = Cam::from_be_bytes(message_received.data);
+                    let mut system_lock = system.lock().unwrap();
+                    if let Some(cam) = system_lock.cams.iter_mut().find(|c| c.id == data.id) {
+                        if data.state != CamState::Removed {
+                            *cam = data;
+                        } else {
+                            system_lock.cams.retain(|c| c.id != data.id);
+                        }
+                    } else {
+                        system_lock.cams.push(data);
+                    }
                 }
                 "dron" => {
                     // cambiar estado
@@ -99,13 +105,11 @@ impl MonitoringApp {
     ///     
     pub fn new(
         client: MqttClient,
-        log_path: String,
         egui_ctx: Context,
         cam_list: Arc<Mutex<CamList>>,
+        logger_cpy: Logger
     ) -> Self {
         let pos = cam_list.lock().unwrap().get_positions();
-
-        print!("{:?}", pos);
 
         let cam_img =
             load_image_from_path(std::path::Path::new("monitoring_app/assets/cam.png")).unwrap();
@@ -124,7 +128,7 @@ impl MonitoringApp {
                 ..Default::default()
             },
             map_interface: MapInterface::new(egui_ctx.to_owned()),
-            log_path: log_path.to_string(),
+            logger: logger_cpy,
         }
     }
 
@@ -135,18 +139,18 @@ impl MonitoringApp {
     /// #### Retorno
     /// Resultado de la inicialización
     ///
-    pub fn init(mut client: MqttClient, log_path: String) -> Result<MonitoringHandler, Error> {
+    pub fn init(mut client: MqttClient, logger: Logger) -> Result<MonitoringHandler, Error> {
         let listener = client.run_listener()?;
 
-        let cam_list = CamList::generate_ramdoms_cams(5);
+        let cam_list = CamList::default();
 
         let cam_list_ref = Arc::new(Mutex::new(cam_list));
 
         let handler = process_messages(listener.receiver, cam_list_ref.clone())?;
 
-        client.subscribe(vec!["camaras"])?;
+        client.subscribe(vec!["camaras"], &logger)?;
 
-        match run_interface(client, log_path, cam_list_ref) {
+        match run_interface(client, cam_list_ref, logger) {
             Ok(_) => Ok(MonitoringHandler {
                 broker_listener: listener.handler,
                 message_handler: handler,

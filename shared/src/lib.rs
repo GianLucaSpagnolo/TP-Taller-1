@@ -14,6 +14,7 @@ pub mod interfaces {
     pub mod incident_interface;
     pub mod map_interface;
 }
+
 pub mod views {
     pub mod app_views {
         pub mod cams_views;
