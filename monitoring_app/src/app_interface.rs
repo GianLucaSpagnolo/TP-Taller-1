@@ -3,10 +3,10 @@ use std::sync::{Arc, Mutex};
 use egui::{Style, Visuals};
 use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
-use shared::views::app_views::cams_views::show_cams;
 use shared::views::app_views::inc_views::show_incidents;
+use shared::views::icon::get_icon_data;
 use shared::views::map_views::map::show_map;
-use shared::{models::cam_model::cam_list::CamList, views::icon::get_icon_data};
+use shared::{models::cam_model::cam_list::CamList, views::app_views::cams_views::show_cams};
 
 use crate::app::MonitoringApp;
 
@@ -33,7 +33,7 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
                 show_incidents(ui, &mut app.client, &mut app.inc_interface, &app.logger);
             });
             egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
-                show_cams(ui, &app.cam_list);
+                show_cams(ui, &app.cam_interface.cam_list.lock().unwrap());
             });
         });
 }
@@ -42,11 +42,11 @@ pub fn map(app: &mut MonitoringApp, ctx: &egui::Context) {
     egui::CentralPanel::default().show(ctx, |ui| {
         show_map(
             ui,
+            ctx,
             &mut app.map_interface.tiles,
             &mut app.map_interface.map_memory,
-            &mut app.inc_interface.click_incident,
-            &mut app.cam_img,
-            &mut app.inc_interface.view,
+            &mut app.cam_interface,
+            &mut app.inc_interface,
         );
     });
 }
@@ -69,18 +69,7 @@ impl eframe::App for MonitoringApp {
     }
 }
 
-/// ### run_interface
-///
-/// Ejecuta la interfaz de usuario
-///
-/// ### Parametros
-/// - `app`: Aplicación de monitoreo
-///
-pub fn run_interface(
-    client: MqttClient,
-    cam_list: Arc<Mutex<CamList>>,
-    logger: Logger,
-) -> Result<(), eframe::Error> {
+pub fn get_options() -> eframe::NativeOptions {
     let mut options = eframe::NativeOptions::default();
 
     options.viewport.maximized = Some(true);
@@ -89,25 +78,43 @@ pub fn run_interface(
         "monitoring_app/assets/app_icon.png",
     )));
 
+    options
+}
+
+pub fn get_style() -> Style {
     let mut visuals = Visuals::dark();
 
     visuals.extreme_bg_color = egui::Color32::from_rgb(0, 0, 0);
 
+    Style {
+        visuals,
+        ..Style::default()
+    }
+}
+
+/// ### run
+///
+/// Ejecuta la interfaz de usuario
+///
+/// ### Parametros
+/// - `app`: Aplicación de monitoreo
+///
+pub fn run_interface(
+    client: MqttClient,
+    logger: Logger,
+    cam_list_ref: Arc<Mutex<CamList>>,
+) -> Result<(), eframe::Error> {
     eframe::run_native(
         "Apliación de monitoreo",
-        options,
+        get_options(),
         Box::new(|creation_context| {
-            let style = Style {
-                visuals,
-                ..Style::default()
-            };
-            creation_context.egui_ctx.set_style(style);
+            creation_context.egui_ctx.set_style(get_style());
             egui_extras::install_image_loaders(&creation_context.egui_ctx);
             Box::new(MonitoringApp::new(
                 client,
-                creation_context.egui_ctx.clone(),
-                cam_list,
                 logger,
+                cam_list_ref,
+                creation_context.egui_ctx.to_owned(),
             ))
         }),
     )

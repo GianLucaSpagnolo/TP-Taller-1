@@ -80,4 +80,8 @@ impl Incident {
             state,
         }
     }
+
+    pub fn is_in_progress(&self) -> bool {
+        self.state == IncidentState::InProgess
+    }
 }

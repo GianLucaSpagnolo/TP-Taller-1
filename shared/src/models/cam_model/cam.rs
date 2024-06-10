@@ -101,4 +101,8 @@ impl Cam {
             incidents_covering,
         }
     }
+
+    pub fn is_in_alert(&self) -> bool {
+        self.state == CamState::Alert
+    }
 }

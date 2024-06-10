@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use eframe::egui::Ui;
 
 use egui_extras::{Column, TableBuilder};
@@ -52,7 +50,7 @@ fn cam_row(mut row: egui_extras::TableRow, cam: &Cam) {
 /// - `ui`: Interfaz de usuario
 /// - `cam_list`: Lista de cámaras
 ///
-fn cams_list(ui: &mut Ui, cam_list: &Arc<Mutex<CamList>>) {
+fn cams_list(ui: &mut Ui, cam_list: &CamList) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
         .column(Column::exact(250.0))
@@ -73,14 +71,14 @@ fn cams_list(ui: &mut Ui, cam_list: &Arc<Mutex<CamList>>) {
             });
         })
         .body(|mut body| {
-            if cam_list.lock().unwrap().cams.is_empty() {
+            if cam_list.cams.is_empty() {
                 body.row(20.0, |mut row| {
                     row.col(|ui| {
                         ui.label("No hay camaras");
                     });
                 });
             } else {
-                for cam in &cam_list.lock().unwrap().cams {
+                for cam in &cam_list.cams {
                     body.row(20.0, |row| {
                         cam_row(row, cam);
                     });
@@ -97,7 +95,7 @@ fn cams_list(ui: &mut Ui, cam_list: &Arc<Mutex<CamList>>) {
 /// - `ui`: Interfaz de usuario
 /// - `cam_list`: Lista de cámaras
 ///
-pub fn show_cams(ui: &mut Ui, cam_list: &Arc<Mutex<CamList>>) {
+pub fn show_cams(ui: &mut Ui, cam_list: &CamList) {
     ui.heading("Listado de cámaras");
     ui.separator();
     ui.add_space(10.0);

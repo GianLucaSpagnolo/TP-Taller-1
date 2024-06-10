@@ -2,9 +2,9 @@ pub mod incident_controller {
 
     use logger::logger_handler::Logger;
     use mqtt::client::mqtt_client::MqttClient;
-    use walkers::Position;
 
     use crate::{
+        interfaces::incident_interface,
         models::{
             coordenates::Coordenates,
             inc_model::{
@@ -12,7 +12,6 @@ pub mod incident_controller {
                 incident_list::IncidentList,
             },
         },
-        views::map_views::plugins,
     };
 
     fn send_incident(client: &mut MqttClient, incident_received: Incident, logger: &Logger) {
@@ -27,18 +26,16 @@ pub mod incident_controller {
 
     pub fn add_incident(
         client: &mut MqttClient,
-        historial: &mut IncidentList,
-        view: &mut plugins::ImagesData,
+        incident_interface: &mut incident_interface::IncidentInterface,
         location: Coordenates,
         logger: &Logger,
     ) {
-        let incident = historial.add(location);
+        let incident = incident_interface.historial.add(location);
         send_incident(client, incident.clone(), logger);
-        view.add_image(Position::from_lon_lat(
-            incident.location.longitude,
-            incident.location.latitude,
-        ));
-        historial.incidents.insert(incident.id.clone(), incident);
+        incident_interface
+            .historial
+            .incidents
+            .insert(incident.id.clone(), incident);
     }
 
     pub fn resolve_incident(

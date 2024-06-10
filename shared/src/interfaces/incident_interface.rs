@@ -1,4 +1,9 @@
-use crate::{models::inc_model::incident_list::IncidentList, views::map_views::plugins};
+use egui::ColorImage;
+
+use crate::{
+    models::inc_model::incident_list::IncidentList, utils::load_image_from_path,
+    views::map_views::plugins::ClickIncidentEvent,
+};
 
 /// ## IncidentInterface
 ///
@@ -15,9 +20,33 @@ use crate::{models::inc_model::incident_list::IncidentList, views::map_views::pl
 #[derive(Default)]
 pub struct IncidentInterface {
     pub historial: IncidentList,
-    pub view: plugins::ImagesData,
+    pub inc_icon: ColorImage,
     pub wrong_data: bool,
     pub show_data_alert: bool,
     pub editable: bool,
-    pub click_incident: plugins::ClickIncidentEvent,
+    pub click_incident: ClickIncidentEvent,
+}
+
+impl IncidentInterface {
+    /// ### new
+    ///
+    /// Crea una nueva interfaz de incidentes
+    ///
+    /// ### Parametros
+    /// - `editable`: Indica si los datos son editables
+    /// - 'icon_path': Ruta del icono
+    /// - `egui_ctx`: Contexto de egui
+    ///
+    /// ### Retorno
+    /// Estructura de la interfaz de incidentes
+    ///
+    pub fn new(editable: bool, icon_path: &str) -> Self {
+        let icon = load_image_from_path(std::path::Path::new(icon_path)).unwrap();
+
+        Self {
+            editable,
+            inc_icon: icon,
+            ..Default::default()
+        }
+    }
 }

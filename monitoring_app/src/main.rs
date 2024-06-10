@@ -25,18 +25,18 @@ fn main() -> Result<(), Error> {
         }
     };
 
-    let threads_handlers = match MonitoringApp::init(client, logger.clone()) {
+    let handlers = match MonitoringApp::init(client, logger.clone()) {
         Ok(r) => r,
         Err(e) => {
             logger.close();
             logger_handler.close();
-            return Err(e);
+            return Err(Error::new(std::io::ErrorKind::Other, e));
         }
     };
 
     logger.close();
     logger_handler.close();
-    threads_handlers.broker_listener.join().unwrap()?;
-    threads_handlers.message_handler.join().unwrap();
+    handlers.broker_listener.join().unwrap()?;
+    handlers.message_handler.join().unwrap();
     Ok(())
 }

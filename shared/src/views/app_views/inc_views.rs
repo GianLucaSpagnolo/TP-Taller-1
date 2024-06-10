@@ -45,13 +45,7 @@ pub fn add_incident_button(
                 latitude: latitude.unwrap(),
                 longitude: longitude.unwrap(),
             };
-            add_incident(
-                client,
-                &mut inc_interface.historial,
-                &mut inc_interface.view,
-                field.clone(),
-                logger,
-            );
+            add_incident(client, inc_interface, field.clone(), logger);
         }
     }
 }
@@ -152,7 +146,12 @@ fn incident_row(
 /// - `client`: Cliente MQTT
 /// - `inc_interface`: Interfaz de incidente
 ///
-pub fn incident_list(ui: &mut Ui, client: &mut MqttClient, inc_interface: &mut IncidentInterface, logger: &Logger) {
+pub fn incident_list(
+    ui: &mut Ui,
+    client: &mut MqttClient,
+    inc_interface: &mut IncidentInterface,
+    logger: &Logger,
+) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
         .column(Column::exact(200.0))

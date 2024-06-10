@@ -1,8 +1,10 @@
-use egui::{Color32, ColorImage, Painter, Response};
+use egui::{Color32, ColorImage, Context, Painter, Response};
 use walkers::{
     extras::{Image, Images, Texture},
     Plugin, Position, Projector,
 };
+
+use crate::models::{cam_model::cam_list::CamList, inc_model::incident_list::IncidentList};
 
 // Helper structure for the `Images` plugin.
 pub struct ImgPluginData {
@@ -13,63 +15,58 @@ pub struct ImgPluginData {
     pub y_scale: f32,
 }
 
-impl ImgPluginData {
-    pub fn new(egui_ctx: egui::Context, img: egui::ColorImage, pos: Position) -> Self {
-        Self {
-            pos,
-            texture: Texture::from_color_image(img, &egui_ctx),
-            angle: 0.0,
-            x_scale: 0.15,
-            y_scale: 0.15,
-        }
-    }
-}
-
-#[derive(Default)]
-pub struct ImagesData {
-    img: ColorImage,
-    egui_ctx: egui::Context,
-    images: Vec<ImgPluginData>,
-}
-
-impl ImagesData {
-    pub fn new(egui_ctx: egui::Context, img: ColorImage, positions: Vec<Position>) -> Self {
-        Self {
-            img: img.clone(),
-            egui_ctx: egui_ctx.to_owned(),
-            images: positions
-                .into_iter()
-                .map(|pos| ImgPluginData::new(egui_ctx.to_owned(), img.clone(), pos))
-                .collect(),
-        }
-    }
-
-    pub fn update(&mut self, positions: Vec<Position>) {
-        self.images = positions
-            .into_iter()
-            .map(|pos| ImgPluginData::new(self.egui_ctx.to_owned(), self.img.clone(), pos))
-            .collect();
-    }
-
-    pub fn add_image(&mut self, pos: Position) {
-        self.images.push(ImgPluginData::new(
-            self.egui_ctx.to_owned(),
-            self.img.clone(),
-            pos,
-        ));
-    }
-}
-
 /// Creates a built-in `Images` plugin with an example image.
-pub fn images(images: &mut ImagesData) -> impl Plugin {
+pub fn cam_images(
+    egui_ctx: Context,
+    cams: &mut CamList,
+    icon: ColorImage,
+    alert_icon: ColorImage,
+) -> impl Plugin {
+    let cam_texture = Texture::from_color_image(icon, &egui_ctx);
+    let alert_texture = Texture::from_color_image(alert_icon, &egui_ctx);
+    let angle = 0.0;
+    let x_scale = 0.1;
+    let y_scale = 0.1;
+
     Images::new(
-        images
-            .images
+        cams.cams
             .iter()
-            .map(|img| {
-                let mut image = Image::new(img.texture.clone(), img.pos);
-                image.scale(img.x_scale, img.y_scale);
-                image.angle(img.angle.to_radians());
+            .map(|cam| {
+                let pos = cam.location.to_walkers_position();
+                let texture = if cam.is_in_alert() {
+                    alert_texture.clone()
+                } else {
+                    cam_texture.clone()
+                };
+                let mut image = Image::new(texture.clone(), pos);
+                image.scale(x_scale, y_scale);
+                image.angle(angle);
+                image
+            })
+            .collect(),
+    )
+}
+
+pub fn inc_images(
+    egui_ctx: Context,
+    incidents: &mut IncidentList,
+    icon: ColorImage,
+) -> impl Plugin {
+    let texture = Texture::from_color_image(icon, &egui_ctx);
+    let angle = 0.0;
+    let x_scale = 0.15;
+    let y_scale = 0.15;
+
+    Images::new(
+        incidents
+            .incidents
+            .iter()
+            .filter(|(_, inc)| inc.is_in_progress())
+            .map(|(_, inc)| {
+                let pos = inc.location.to_walkers_position();
+                let mut image = Image::new(texture.clone(), pos);
+                image.scale(x_scale, y_scale);
+                image.angle(angle);
                 image
             })
             .collect(),
