@@ -90,7 +90,7 @@ impl Plugin for &mut ClickIncidentEvent {
             painter.circle_filled(
                 projector.project(position).to_pos2(),
                 5.0,
-                Color32::DARK_RED,
+                Color32::RED,
             );
         }
     }
