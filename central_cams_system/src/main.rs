@@ -75,7 +75,7 @@ fn main() -> Result<(), Error> {
         }
     }
 
-    let cam_system = CamsSystem::init(range_alert, range_alert_between_cameras, db_path);
+    let cam_system = CamsSystem::init(range_alert, range_alert_between_cameras, db_path)?;
 
     show_start(&cam_system);
 
