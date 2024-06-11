@@ -9,6 +9,7 @@ use shared::views::map_views::map::show_map;
 use shared::{models::cam_model::cam_list::CamList, views::app_views::cams_views::show_cams};
 
 use crate::app::MonitoringApp;
+use crate::app_config::MonitoringAppConfig;
 
 use eframe::egui::{self, Margin};
 
@@ -30,7 +31,13 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
         .frame(frame)
         .show(ctx, |ui| {
             egui::CollapsingHeader::new("Incidentes").show(ui, |ui| {
-                show_incidents(ui, &mut app.client, &mut app.inc_interface, &app.logger);
+                show_incidents(
+                    ui,
+                    &mut app.client,
+                    &mut app.inc_interface,
+                    &app.logger,
+                    &app.config.db_path,
+                );
             });
             egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
                 show_cams(ui, &app.cam_interface.cam_list.lock().unwrap());
@@ -47,6 +54,7 @@ pub fn map(app: &mut MonitoringApp, ctx: &egui::Context) {
             &mut app.map_interface.map_memory,
             &mut app.cam_interface,
             &mut app.inc_interface,
+            app.config.initial_position,
         );
     });
 }
@@ -69,14 +77,12 @@ impl eframe::App for MonitoringApp {
     }
 }
 
-pub fn get_options() -> eframe::NativeOptions {
+pub fn get_options(icon_path: &str) -> eframe::NativeOptions {
     let mut options = eframe::NativeOptions::default();
 
     options.viewport.maximized = Some(true);
     options.viewport.fullsize_content_view = Some(true);
-    options.viewport.icon = Some(Arc::new(get_icon_data(
-        "monitoring_app/assets/app_icon.png",
-    )));
+    options.viewport.icon = Some(Arc::new(get_icon_data(icon_path)));
 
     options
 }
@@ -103,14 +109,16 @@ pub fn run_interface(
     client: MqttClient,
     logger: Logger,
     cam_list_ref: Arc<Mutex<CamList>>,
+    config: MonitoringAppConfig,
 ) -> Result<(), eframe::Error> {
     eframe::run_native(
         "Apliación de monitoreo",
-        get_options(),
+        get_options(&config.app_icon_path),
         Box::new(|creation_context| {
             creation_context.egui_ctx.set_style(get_style());
             egui_extras::install_image_loaders(&creation_context.egui_ctx);
             Box::new(MonitoringApp::new(
+                config,
                 client,
                 logger,
                 cam_list_ref,

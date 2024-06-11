@@ -18,7 +18,7 @@ use shared::{
     },
 };
 
-use crate::app_interface::run_interface;
+use crate::{app_config::MonitoringAppConfig, app_interface::run_interface};
 
 /// ## MonitoringApp
 ///
@@ -31,11 +31,12 @@ use crate::app_interface::run_interface;
 /// - `log_path`: ruta del archivo de log
 ///
 pub struct MonitoringApp {
+    pub config: MonitoringAppConfig,
     pub client: MqttClient,
+    pub logger: Logger,
     pub cam_interface: CamInterface,
     pub inc_interface: IncidentInterface,
     pub map_interface: MapInterface,
-    pub logger: Logger,
 }
 
 /// ## MonitoringHandler
@@ -101,6 +102,7 @@ impl MonitoringApp {
     /// - `log_path`: ruta del archivo de log
     ///     
     pub fn new(
+        config: MonitoringAppConfig,
         client: MqttClient,
         logger: Logger,
         cam_list_ref: Arc<Mutex<CamList>>,
@@ -108,14 +110,19 @@ impl MonitoringApp {
     ) -> Self {
         Self {
             client,
+            logger,
             cam_interface: CamInterface::new(
                 cam_list_ref,
-                "monitoring_app/assets/cam.png",
-                "monitoring_app/assets/cam_alert.png",
+                &config.cam_icon_path,
+                &config.cam_alert_icon_path,
             ),
-            inc_interface: IncidentInterface::new(true, "monitoring_app/assets/incident.png"),
+            inc_interface: IncidentInterface::new(
+                config.db_path.to_string(),
+                true,
+                &config.inc_icon_path,
+            ),
             map_interface: MapInterface::new(egui_ctx.to_owned()),
-            logger,
+            config,
         }
     }
 
@@ -130,7 +137,11 @@ impl MonitoringApp {
     /// #### Retorno
     /// Handler de los procesos de la aplicación
     ///
-    pub fn init(mut client: MqttClient, logger: Logger) -> Result<MonitoringHandler, Error> {
+    pub fn init(
+        mut client: MqttClient,
+        logger: Logger,
+        config: MonitoringAppConfig,
+    ) -> Result<MonitoringHandler, Error> {
         let listener = client.run_listener()?;
 
         let cam_list = CamList::default();
@@ -141,7 +152,7 @@ impl MonitoringApp {
 
         client.subscribe(vec!["camaras"], &logger)?;
 
-        match run_interface(client, logger, cam_list_ref) {
+        match run_interface(client, logger, cam_list_ref, config) {
             Ok(_) => Ok(MonitoringHandler {
                 broker_listener: listener.handler,
                 message_handler: handler,

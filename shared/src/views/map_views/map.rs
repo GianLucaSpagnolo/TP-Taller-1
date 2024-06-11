@@ -15,10 +15,9 @@ pub fn show_map(
     map_memory: &mut walkers::MapMemory,
     cams: &mut CamInterface,
     inc: &mut IncidentInterface,
+    initial_position: Position,
 ) {
-    let my_position = Position::from_lon_lat(-58.4426488, -34.6177712);
-
-    let map = Map::new(Some(tiles), map_memory, my_position)
+    let map = Map::new(Some(tiles), map_memory, initial_position)
         .with_plugin(&mut inc.click_incident)
         .with_plugin(cam_images(
             egui_ctx.clone(),

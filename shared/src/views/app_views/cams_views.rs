@@ -19,7 +19,7 @@ static COORDENATE_PRECISION: usize = 4;
 ///
 fn cam_row(mut row: egui_extras::TableRow, cam: &Cam) {
     row.col(|ui| {
-        ui.label(&format!("{}", cam.id));
+        ui.label(cam.id.to_string());
     });
     row.col(|ui| {
         if CamState::Alert == cam.state {

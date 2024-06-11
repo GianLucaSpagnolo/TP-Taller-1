@@ -19,15 +19,23 @@ pub struct CamsSystem {
 }
 
 impl CamsSystem {
-    pub fn init(range_alert: f64, range_alert_between_cameras: f64, db_path: String) -> Result<Self, Error> {
-        let _ = match fs::OpenOptions::new().create(true).write(true).open(&db_path) {
-            Ok(_) => {},
+    pub fn init(
+        range_alert: f64,
+        range_alert_between_cameras: f64,
+        db_path: String,
+    ) -> Result<Self, Error> {
+        match fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open(&db_path)
+        {
+            Ok(_) => {}
             Err(e) => {
                 println!("Failed to open or create file: {}", e);
                 return Err(e);
-            },
+            }
         };
-        
+
         let bytes = match fs::read(&db_path) {
             Ok(bytes) => bytes,
             Err(_) => Vec::new(),

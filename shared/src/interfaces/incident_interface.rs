@@ -1,3 +1,5 @@
+use std::{collections::HashMap, fs, io::Error};
+
 use egui::ColorImage;
 
 use crate::{
@@ -28,6 +30,33 @@ pub struct IncidentInterface {
 }
 
 impl IncidentInterface {
+    pub fn init_historial(db_path: String) -> Result<IncidentList, Error> {
+        match fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open(&db_path)
+        {
+            Ok(_) => {}
+            Err(e) => {
+                println!("Failed to open or create file: {}", e);
+                return Err(e);
+            }
+        };
+
+        let bytes = match fs::read(&db_path) {
+            Ok(bytes) => bytes,
+            Err(_) => Vec::new(),
+        };
+
+        if bytes.is_empty() {
+            Ok(IncidentList {
+                incidents: HashMap::new(),
+            })
+        } else {
+            Ok(IncidentList::from_be_bytes(bytes))
+        }
+    }
+
     /// ### new
     ///
     /// Crea una nueva interfaz de incidentes
@@ -40,10 +69,13 @@ impl IncidentInterface {
     /// ### Retorno
     /// Estructura de la interfaz de incidentes
     ///
-    pub fn new(editable: bool, icon_path: &str) -> Self {
+    pub fn new(db_path: String, editable: bool, icon_path: &str) -> Self {
         let icon = load_image_from_path(std::path::Path::new(icon_path)).unwrap();
 
+        let historial = IncidentInterface::init_historial(db_path).unwrap();
+
         Self {
+            historial,
             editable,
             inc_icon: icon,
             ..Default::default()

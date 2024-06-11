@@ -32,6 +32,7 @@ pub fn add_incident_button(
     client: &mut MqttClient,
     inc_interface: &mut IncidentInterface,
     logger: &Logger,
+    db_path: &str,
 ) {
     if ui.button("Agregar incidente").clicked() {
         let latitude = inc_interface.click_incident.clicked_at.map(|pos| pos.lat());
@@ -45,7 +46,14 @@ pub fn add_incident_button(
                 latitude: latitude.unwrap(),
                 longitude: longitude.unwrap(),
             };
-            add_incident(client, inc_interface, field.clone(), logger);
+            add_incident(
+                client,
+                &mut inc_interface.historial,
+                field.clone(),
+                logger,
+                db_path,
+            )
+            .unwrap();
         }
     }
 }
@@ -64,6 +72,7 @@ pub fn incident_editor(
     client: &mut MqttClient,
     inc_interface: &mut IncidentInterface,
     logger: &Logger,
+    db_path: &str,
 ) {
     ui.horizontal(|ui| {
         let name_label = ui.label("Nueva latitud: ");
@@ -81,7 +90,7 @@ pub fn incident_editor(
         };
         ui.label(RichText::new(lon)).labelled_by(name_label.id);
     });
-    add_incident_button(ui, client, inc_interface, logger);
+    add_incident_button(ui, client, inc_interface, logger, db_path);
 }
 
 /// ## incident_row
@@ -103,8 +112,9 @@ fn incident_row(
     client: &mut MqttClient,
     inc_interface: &mut IncidentInterface,
     incident: &Incident,
-    id: &String,
+    id: &u8,
     logger: &Logger,
+    db_path: &str,
 ) {
     row.col(|ui| {
         ui.label(incident.id.to_string());
@@ -131,7 +141,8 @@ fn incident_row(
     if inc_interface.editable {
         row.col(|ui| {
             if ui.button("Resolver").clicked() {
-                resolve_incident(client, &mut inc_interface.historial, id, logger);
+                resolve_incident(client, &mut inc_interface.historial, id, logger, db_path)
+                    .unwrap();
             }
         });
     }
@@ -151,6 +162,7 @@ pub fn incident_list(
     client: &mut MqttClient,
     inc_interface: &mut IncidentInterface,
     logger: &Logger,
+    db_path: &str,
 ) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
@@ -182,7 +194,7 @@ pub fn incident_list(
             } else {
                 for (id, incident) in &inc_interface.historial.incidents.clone() {
                     body.row(20.0, |row| {
-                        incident_row(row, client, inc_interface, incident, id, logger);
+                        incident_row(row, client, inc_interface, incident, id, logger, db_path);
                     });
                 }
             }
@@ -206,16 +218,17 @@ pub fn show_incidents(
     client: &mut MqttClient,
     incident_interface: &mut IncidentInterface,
     logger: &Logger,
+    db_path: &str,
 ) {
     if incident_interface.editable {
         ui.heading("Gestor de incidentes");
         ui.separator();
         ui.add_space(10.0);
-        incident_editor(ui, client, incident_interface, logger);
+        incident_editor(ui, client, incident_interface, logger, db_path);
         ui.add_space(10.0);
     }
     ui.heading("Historial de incidentes");
     ui.separator();
     ui.add_space(10.0);
-    incident_list(ui, client, incident_interface, logger);
+    incident_list(ui, client, incident_interface, logger, db_path);
 }

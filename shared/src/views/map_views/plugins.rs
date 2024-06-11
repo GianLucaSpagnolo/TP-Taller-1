@@ -87,11 +87,7 @@ impl Plugin for &mut ClickIncidentEvent {
         }
 
         if let Some(position) = self.clicked_at {
-            painter.circle_filled(
-                projector.project(position).to_pos2(),
-                5.0,
-                Color32::RED,
-            );
+            painter.circle_filled(projector.project(position).to_pos2(), 5.0, Color32::RED);
         }
     }
 }
