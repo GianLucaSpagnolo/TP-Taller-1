@@ -31,19 +31,8 @@ pub struct IncidentInterface {
 
 impl IncidentInterface {
     pub fn init_historial(db_path: String) -> Result<IncidentList, Error> {
-        match fs::OpenOptions::new()
-            .create(true)
-            .write(true)
-            .open(&db_path)
-        {
-            Ok(_) => {}
-            Err(e) => {
-                println!("Failed to open or create file: {}", e);
-                return Err(e);
-            }
-        };
 
-        let bytes = match fs::read(&db_path) {
+        let bytes = match fs::read(db_path) {
             Ok(bytes) => bytes,
             Err(_) => Vec::new(),
         };
