@@ -19,20 +19,29 @@ pub struct CamsSystem {
 }
 
 impl CamsSystem {
-    pub fn init(range_alert: f64, range_alert_between_cameras: f64, db_path: String) -> Self {
-        let bytes = fs::read("central_cams_system/config/cams_system_db").unwrap();
+    pub fn init(
+        range_alert: f64,
+        range_alert_between_cameras: f64,
+        db_path: String,
+    ) -> Result<Self, Error> {
+
+        let bytes = match fs::read(&db_path) {
+            Ok(bytes) => bytes,
+            Err(_) => Vec::new(),
+        };
+
         let system = if bytes.is_empty() {
             CamList { cams: Vec::new() }
         } else {
             CamList::from_be_bytes(bytes)
         };
 
-        CamsSystem {
+        Ok(CamsSystem {
             system,
             range_alert,
             range_alert_between_cameras,
             db_path,
-        }
+        })
     }
 
     pub fn add_new_camara(&mut self, cam: Cam) -> Cam {

@@ -10,8 +10,11 @@ mqtt = { path = "../mqtt" }
 shared = { path = "../shared" }
 logger = { path = "../logger" }
 
+image = "0.25.1"
 eframe = "0.27.2"
 egui = "0.27.2"
+walkers = "0.22.0"
+egui_extras = { version = "0.27.2", features = ["all_loaders"] }
 
 [[bin]]
 name = "monitoring_app"

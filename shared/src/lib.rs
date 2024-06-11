@@ -11,22 +11,29 @@ pub mod models {
 }
 
 pub mod interfaces {
+    pub mod cam_interface;
     pub mod incident_interface;
+    pub mod map_interface;
 }
 
 pub mod views {
-    pub mod cams_views {
-        pub mod cams;
-        pub mod cams_list;
+    pub mod app_views {
+        pub mod cams_views;
+        pub mod inc_views;
     }
-    pub mod incs_views {
-        pub mod incidents;
-        pub mod incidents_editor;
-        pub mod incidents_list;
+
+    pub mod map_views {
+        pub mod map;
+        pub mod plugins;
+        pub mod windows;
     }
+
     pub mod dialog_alert;
+    pub mod icon;
 }
 
 pub mod controllers {
     pub mod incident;
 }
+
+pub mod utils;

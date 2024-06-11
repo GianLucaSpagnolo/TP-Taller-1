@@ -1,5 +1,7 @@
 use std::{fmt::Display, io::Error};
 
+use walkers::Position;
+
 /// ## Coordenates
 ///
 /// Estructura que representa las coordenadas de un punto
@@ -30,6 +32,10 @@ impl Coordenates {
             latitude,
             longitude,
         })
+    }
+
+    pub fn to_walkers_position(&self) -> Position {
+        Position::from_lon_lat(self.longitude, self.latitude)
     }
 }
 

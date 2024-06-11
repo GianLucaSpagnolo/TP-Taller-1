@@ -4,17 +4,21 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use egui::Context;
 use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
-    interfaces::incident_interface::IncidentInterface,
+    interfaces::{
+        cam_interface::CamInterface, incident_interface::IncidentInterface,
+        map_interface::MapInterface,
+    },
     models::cam_model::{
         cam::{Cam, CamState},
         cam_list::CamList,
     },
 };
 
-use crate::interface::run_interface;
+use crate::{app_config::MonitoringAppConfig, app_interface::run_interface};
 
 /// ## MonitoringApp
 ///
@@ -27,13 +31,12 @@ use crate::interface::run_interface;
 /// - `log_path`: ruta del archivo de log
 ///
 pub struct MonitoringApp {
+    pub config: MonitoringAppConfig,
     pub client: MqttClient,
-    pub cam_list: Arc<Mutex<CamList>>,
-    pub inc_interface: IncidentInterface,
-    //pub log_path: String,
     pub logger: Logger,
-    /* tiles: Tiles,
-    map_memory: MapMemory, */
+    pub cam_interface: CamInterface,
+    pub inc_interface: IncidentInterface,
+    pub map_interface: MapInterface,
 }
 
 /// ## MonitoringHandler
@@ -59,14 +62,14 @@ pub struct MonitoringHandler {
 ///
 fn process_messages(
     receiver: Receiver<MqttClientMessage>,
-    system: Arc<Mutex<CamList>>,
+    cam_list: Arc<Mutex<CamList>>,
 ) -> Result<JoinHandle<()>, Error> {
     let handler = thread::spawn(move || loop {
         for message_received in receiver.try_iter() {
             match message_received.topic.as_str() {
                 "camaras" => {
                     let data = Cam::from_be_bytes(message_received.data);
-                    let mut system_lock = system.lock().unwrap();
+                    let system_lock = &mut cam_list.lock().unwrap();
                     if let Some(cam) = system_lock.cams.iter_mut().find(|c| c.id == data.id) {
                         if data.state != CamState::Removed {
                             *cam = data;
@@ -98,19 +101,28 @@ impl MonitoringApp {
     /// - `client`: cliente MQTT
     /// - `log_path`: ruta del archivo de log
     ///     
-    pub fn new(client: MqttClient, logger_cpy: Logger) -> Self {
-        let cam_list = Arc::new(Mutex::new(CamList::default()));
-
+    pub fn new(
+        config: MonitoringAppConfig,
+        client: MqttClient,
+        logger: Logger,
+        cam_list_ref: Arc<Mutex<CamList>>,
+        egui_ctx: Context,
+    ) -> Self {
         Self {
             client,
-            cam_list,
-            inc_interface: IncidentInterface {
-                editable: true,
-                ..Default::default()
-            },
-            logger: logger_cpy,
-            /* tiles: Tiles::new(OpenStreetMap, egui_ctx),
-            map_memory: MapMemory::default(), */
+            logger,
+            cam_interface: CamInterface::new(
+                cam_list_ref,
+                &config.cam_icon_path,
+                &config.cam_alert_icon_path,
+            ),
+            inc_interface: IncidentInterface::new(
+                config.db_path.to_string(),
+                true,
+                &config.inc_icon_path,
+            ),
+            map_interface: MapInterface::new(egui_ctx.to_owned()),
+            config,
         }
     }
 
@@ -118,17 +130,29 @@ impl MonitoringApp {
     ///
     /// Inicializa la aplicación de monitoreo
     ///
-    /// #### Retorno
-    /// Resultado de la inicialización
+    /// #### Parametros
+    /// - `client`: cliente MQTT
+    /// - `logger`: logger
     ///
-    pub fn init(mut self, logger: &Logger) -> Result<MonitoringHandler, Error> {
-        let listener = self.client.run_listener()?;
+    /// #### Retorno
+    /// Handler de los procesos de la aplicación
+    ///
+    pub fn init(
+        mut client: MqttClient,
+        logger: Logger,
+        config: MonitoringAppConfig,
+    ) -> Result<MonitoringHandler, Error> {
+        let listener = client.run_listener()?;
 
-        let handler = process_messages(listener.receiver, self.cam_list.clone())?;
+        let cam_list = CamList::default();
 
-        self.client.subscribe(vec!["camaras"], logger)?;
+        let cam_list_ref = Arc::new(Mutex::new(cam_list));
 
-        match run_interface(self) {
+        let handler = process_messages(listener.receiver, cam_list_ref.clone())?;
+
+        client.subscribe(vec!["camaras"], &logger)?;
+
+        match run_interface(client, logger, cam_list_ref, config) {
             Ok(_) => Ok(MonitoringHandler {
                 broker_listener: listener.handler,
                 message_handler: handler,
