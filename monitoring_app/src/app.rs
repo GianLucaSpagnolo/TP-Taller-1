@@ -4,6 +4,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use drone_app::drone::Drone;
 use egui::Context;
 use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
@@ -80,8 +81,9 @@ fn process_messages(
                         system_lock.cams.push(data);
                     }
                 }
-                "dron" => {
-                    
+                "drone" => {
+                    let dron = Drone::from_be_bytes(message_received.data);
+                    println!("Dron: {:?}", dron);
                 }
                 _ => {}
             }
@@ -151,7 +153,7 @@ impl MonitoringApp {
         let handler = process_messages(listener.receiver, cam_list_ref.clone())?;
 
         client.subscribe(vec!["camaras"], &logger)?;
-
+        client.subscribe(vec!["drone"], &logger)?;
         match run_interface(client, logger, cam_list_ref, config) {
             Ok(_) => Ok(MonitoringHandler {
                 broker_listener: listener.handler,
