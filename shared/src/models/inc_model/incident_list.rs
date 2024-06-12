@@ -22,6 +22,7 @@ impl IncidentList {
             id: self.incidents.len() as u8,
             location,
             state: IncidentState::InProgess,
+            drones_covering: 0,
         };
         self.incidents.insert(incident.id, incident.clone());
         incident

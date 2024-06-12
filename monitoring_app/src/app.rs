@@ -81,7 +81,7 @@ fn process_messages(
                     }
                 }
                 "dron" => {
-                    // cambiar estado
+                    
                 }
                 _ => {}
             }

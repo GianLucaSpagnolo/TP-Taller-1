@@ -1,6 +1,6 @@
 use crate::models::coordenates::Coordenates;
 
-pub const INCIDENT_SIZE: usize = 18;
+pub const INCIDENT_SIZE: usize = 19;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum IncidentState {
@@ -13,6 +13,7 @@ pub struct Incident {
     pub id: u8,
     pub location: Coordenates,
     pub state: IncidentState,
+    pub drones_covering: u8
 }
 
 impl Incident {
@@ -36,6 +37,7 @@ impl Incident {
         };
 
         bytes.push(state);
+        bytes.push(self.drones_covering);
 
         bytes
     }
@@ -66,7 +68,10 @@ impl Incident {
             1 => IncidentState::Resolved,
             _ => panic!("Invalid state"),
         };
-
+        
+        index += 1;
+        let drones_covering = bytes[index];
+        
         Incident {
             id,
             location: Coordenates {
@@ -74,6 +79,7 @@ impl Incident {
                 longitude,
             },
             state,
+            drones_covering
         }
     }
 
