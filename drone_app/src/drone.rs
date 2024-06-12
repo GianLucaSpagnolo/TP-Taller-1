@@ -4,6 +4,7 @@ use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
 use shared::models::inc_model::incident::Incident;
 
+#[derive(Debug)]
 pub struct Drone {
     distancia_maxima_alcance: f64,
     duracion_de_bateria: f64,
@@ -33,11 +34,50 @@ impl Drone {
     }
 
     pub fn process_incident(&self, client: &mut MqttClient , incident: Incident, logger: &Logger ) {
-            if (incident.location.latitude - self.initial_lat).abs() < self.distancia_maxima_alcance
-                && (incident.location.longitude - self.initial_lon).abs() < self.distancia_maxima_alcance && incident.drones_covering < 2
-            {
-                //client.publish(, "drone".to_string(), logger);
-                println!("Incidente procesado: {:?}", incident);
-            }
+        client.publish(self.as_bytes(), "drone".to_string(), logger).unwrap();
+        println!("Incidente procesado: {:?}", incident);
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        bytes.extend_from_slice(&self.distancia_maxima_alcance.to_be_bytes());
+        bytes.extend_from_slice(&self.duracion_de_bateria.to_be_bytes());
+        bytes.extend_from_slice(&self.initial_lat.to_be_bytes());
+        bytes.extend_from_slice(&self.initial_lon.to_be_bytes());
+        bytes.extend_from_slice(&self.charging_station_lat.to_be_bytes());
+        bytes.extend_from_slice(&self.charging_station_lon.to_be_bytes());
+
+        bytes
+    }
+    pub fn from_be_bytes(bytes: Vec<u8>) -> Drone {
+        let mut index = 0;
+
+        let distancia_maxima_alcance = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
+        index += 8;
+
+        let duracion_de_bateria = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
+        index += 8;
+
+        let initial_lat = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
+        index += 8;
+
+        let initial_lon = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
+        index += 8;
+        
+        let charging_station_lat = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
+        index += 8;
+
+        let charging_station_lon = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
+        index += 8;
+
+        Drone {
+            distancia_maxima_alcance,
+            duracion_de_bateria,
+            initial_lat,
+            initial_lon,
+            charging_station_lat,
+            charging_station_lon,
+        }
     }
 }
