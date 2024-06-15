@@ -187,6 +187,7 @@ mod test {
             subscription_identifier: Some(0),
             content_type: Some("type".to_string()),
             application_message,
+            is_will_message: false,
         };
 
         let publish = Publish::new(1, 2, 1, properties);
@@ -271,6 +272,7 @@ mod test {
         }
 
         assert_eq!(deserialize_string(props.application_message), message);
+        assert_eq!(props.is_will_message, false);
     }
 
     #[test]
@@ -324,5 +326,6 @@ mod test {
             deserialize_string(publish.properties.application_message),
             "".to_string()
         );
+        assert_eq!(publish.properties.is_will_message, false);
     }
 }

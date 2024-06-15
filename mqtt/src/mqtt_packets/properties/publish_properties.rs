@@ -22,6 +22,7 @@ pub struct PublishProperties {
     pub content_type: Option<String>,
 
     pub application_message: Vec<u8>, // Payload
+    pub is_will_message: bool,
 }
 
 impl Clone for PublishProperties {
@@ -39,6 +40,7 @@ impl Clone for PublishProperties {
             content_type: self.content_type.clone(),
 
             application_message: self.application_message.clone(),
+            is_will_message: self.is_will_message,
         }
     }
 }
@@ -49,7 +51,7 @@ impl PacketProperties for PublishProperties {
         let fixed_props_size =
             std::mem::size_of::<u16>() + self.topic_name.len() + std::mem::size_of::<u16>();
 
-        let payload_size = std::mem::size_of::<u16>() + self.application_message.len();
+        let payload_size = std::mem::size_of::<u16>() + self.application_message.len() + std::mem::size_of::<u8>();
 
         fixed_props_size as u32 + variable_props.size_of() + payload_size as u32
     }
@@ -114,6 +116,15 @@ impl PacketProperties for PublishProperties {
         bytes.extend_from_slice(&application_message_len.to_be_bytes());
         bytes.extend_from_slice(&self.application_message);
 
+        match self.is_will_message {
+            true => {
+                bytes.extend_from_slice(&[1]);
+            }
+            false => {
+                bytes.extend_from_slice(&[0]);
+            }
+        }
+
         Ok(bytes)
     }
 
@@ -165,6 +176,7 @@ impl PacketProperties for PublishProperties {
         let application_message_len = read_two_byte_integer(stream).unwrap_or(0);
         let mut application_message = vec![0; application_message_len as usize];
         stream.read_exact(&mut application_message)?;
+        let is_will_message = read_byte(stream)? == 1;
 
         Ok(PublishProperties {
             topic_name,
@@ -178,6 +190,7 @@ impl PacketProperties for PublishProperties {
             subscription_identifier,
             content_type,
             application_message,
+            is_will_message,
         })
     }
 }

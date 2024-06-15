@@ -167,6 +167,7 @@ mod test {
             subscription_identifier: Some(0),
             content_type: Some("type".to_string()),
             application_message,
+            is_will_message: false,
         };
 
         let publish = Publish::new(1, qos_level, 0, properties);
@@ -622,6 +623,7 @@ mod test {
                     let application_message =
                         deserialize_message(publish.properties.application_message);
                     application_message.validate_message(0, "first message".to_string());
+                    assert_eq!(publish.properties.is_will_message, false);
                 } else if publish.properties.packet_identifier == 5 {
                     assert_eq!(publish.properties.topic_name, "mensajes");
                     assert_eq!(publish.properties.payload_format_indicator, Some(1));
@@ -644,6 +646,7 @@ mod test {
                     let application_message =
                         deserialize_message(publish.properties.application_message);
                     application_message.validate_message(0, "second message".to_string());
+                    assert_eq!(publish.properties.is_will_message, false);
                 } else if publish.properties.packet_identifier == 7 {
                     assert_eq!(publish.properties.topic_name, "mensajes");
                     assert_eq!(publish.properties.payload_format_indicator, Some(1));
@@ -666,6 +669,7 @@ mod test {
                     let application_message =
                         deserialize_message(publish.properties.application_message);
                     application_message.validate_message(0, "im tired message".to_string());
+                    assert_eq!(publish.properties.is_will_message, false);
                 }
             }
             PacketReceived::Puback(puback) => {
