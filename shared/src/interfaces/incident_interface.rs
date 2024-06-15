@@ -31,7 +31,6 @@ pub struct IncidentInterface {
 
 impl IncidentInterface {
     pub fn init_historial(db_path: String) -> Result<IncidentList, Error> {
-
         let bytes = match fs::read(db_path) {
             Ok(bytes) => bytes,
             Err(_) => Vec::new(),
