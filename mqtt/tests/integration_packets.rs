@@ -400,6 +400,7 @@ mod test {
         // DISCONNECT
 
         let properties = DisconnectProperties {
+            id: "hannah".to_string(),
             disconnect_reason_code: ReasonCode::NormalDisconnection.get_id(),
             session_expiry_interval: Some(3000),
             reason_string: Some("its joever".to_string()),
@@ -768,6 +769,7 @@ mod test {
                 );
             }
             PacketReceived::Disconnect(disconnect) => {
+                assert_eq!(disconnect.properties.id, "hannah".to_string());
                 assert_eq!(
                     disconnect.properties.disconnect_reason_code,
                     ReasonCode::NormalDisconnection.get_id()
