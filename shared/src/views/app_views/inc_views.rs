@@ -48,7 +48,7 @@ pub fn add_incident_button(
             };
             add_incident(
                 client,
-                &mut inc_interface.historial,
+                &mut inc_interface.historial.lock().unwrap(),
                 field.clone(),
                 logger,
                 db_path,
@@ -141,7 +141,7 @@ fn incident_row(
     if inc_interface.editable {
         row.col(|ui| {
             if ui.button("Resolver").clicked() {
-                resolve_incident(client, &mut inc_interface.historial, id, logger, db_path)
+                resolve_incident(client, &mut inc_interface.historial.lock().unwrap(), id, logger, db_path)
                     .unwrap();
             }
         });
@@ -164,6 +164,7 @@ pub fn incident_list(
     logger: &Logger,
     db_path: &str,
 ) {
+    let incidents = &inc_interface.historial.lock().unwrap().incidents.clone();
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
         .column(Column::exact(200.0))
@@ -185,14 +186,14 @@ pub fn incident_list(
             });
         })
         .body(|mut body| {
-            if inc_interface.historial.incidents.is_empty() {
+            if incidents.is_empty() {
                 body.row(20.0, |mut row| {
                     row.col(|ui| {
                         ui.label("No hay incidentes");
                     });
                 });
             } else {
-                for (id, incident) in &inc_interface.historial.incidents.clone() {
+                for (id, incident) in &incidents.clone(){
                     body.row(20.0, |row| {
                         incident_row(row, client, inc_interface, incident, id, logger, db_path);
                     });

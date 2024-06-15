@@ -22,6 +22,13 @@ pub fn process_messages(
                 let incident = Incident::from_be_bytes(message_received.data);
                 drone.lock().unwrap().process_incident(&mut client, incident.clone(), &logger);
                 println!("Mensaje recibido: {:?}", incident);
+            } else if message_received.topic.as_str() == "drone" {
+                let drone_received = Drone::from_be_bytes(message_received.data);
+                if drone_received.id == drone.lock().unwrap().id {
+                    continue;
+                }
+                println!("Mensaje recibido: {:?}", drone_received);
+                client.publish(drone_received.as_bytes(), "drone".to_string(), &logger).unwrap();
             }
         }
     });
@@ -38,7 +45,7 @@ fn main() -> Result<(), Error> {
     let mut initial_lon: f64 = 0.0;
     let mut charging_station_lat: f64 = 0.0;
     let mut charging_station_lon: f64 = 0.0;
-
+    let mut id = 0;
 
     for line in contents.lines() {
         let parts: Vec<&str> = line.split(':').collect();
@@ -88,12 +95,24 @@ fn main() -> Result<(), Error> {
                     )
                 })?
             }
-            _ => (),
+            "id" => {
+                id = parts[1].trim().parse().map_err(|_| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid id",
+                    )
+                })?
+            } _ => {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Invalid configuration file",
+                ))
+            }
         }
 
     }
 
-    let drone = Drone::init(distancia_maxima_alcance, duracion_de_bateria, initial_lat, initial_lon, charging_station_lat, charging_station_lon)?;
+    let drone = Drone::init(id, distancia_maxima_alcance, duracion_de_bateria, initial_lat, initial_lon, charging_station_lat, charging_station_lon)?;
 
     let config = ClientConfig::from_file(String::from(config_path))?;
 
@@ -127,6 +146,7 @@ fn main() -> Result<(), Error> {
         }
     };
 
+    client.publish(drone.as_bytes(), "drone".to_string(), &logger).unwrap();
     let drone_ref = Arc::new(Mutex::new(drone));
 
     let listener = match client.run_listener() {

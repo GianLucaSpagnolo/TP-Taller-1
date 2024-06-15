@@ -1,7 +1,5 @@
 use std::{
-    io::Error,
-    sync::{mpsc::Receiver, Arc, Mutex},
-    thread::{self, JoinHandle},
+    fs, io::Error, sync::{mpsc::Receiver, Arc, Mutex}, thread::{self, JoinHandle}
 };
 
 use drone_app::drone::Drone;
@@ -9,14 +7,13 @@ use egui::Context;
 use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
-    interfaces::{
+    controllers::incident, interfaces::{
         cam_interface::CamInterface, incident_interface::IncidentInterface,
         map_interface::MapInterface,
-    },
-    models::cam_model::{
+    }, models::{cam_model::{
         cam::{Cam, CamState},
         cam_list::CamList,
-    },
+    }, inc_model::incident_list::IncidentList}
 };
 
 use crate::{app_config::MonitoringAppConfig, app_interface::run_interface};
@@ -64,8 +61,10 @@ pub struct MonitoringHandler {
 fn process_messages(
     receiver: Receiver<MqttClientMessage>,
     cam_list: Arc<Mutex<CamList>>,
+    incident_list: Arc<Mutex<IncidentList>>,
+    db_path: String,
 ) -> Result<JoinHandle<()>, Error> {
-    let handler = thread::spawn(move || loop {
+    let handler: JoinHandle<()> = thread::spawn(move || loop {
         for message_received in receiver.try_iter() {
             match message_received.topic.as_str() {
                 "camaras" => {
@@ -84,6 +83,12 @@ fn process_messages(
                 "drone" => {
                     let dron = Drone::from_be_bytes(message_received.data);
                     println!("Dron: {:?}", dron);
+                    let incidents_historial = &mut incident_list.lock().unwrap();
+                    println!("Incidentes: {:?}", incidents_historial.incidents);
+                    incidents_historial.incidents.remove(&0);
+                    let bytes = incidents_historial.as_bytes();
+                    fs::write(db_path.to_string(), bytes).unwrap();
+
                 }
                 _ => {}
             }
@@ -97,7 +102,7 @@ fn process_messages(
 impl MonitoringApp {
     /// ### new
     ///    
-    /// Crea una nueva aplicación de monitoreo
+    /// Crea una nueva ap licación de monitoreo
     ///
     /// #### Parametros
     /// - `client`: cliente MQTT
@@ -109,6 +114,7 @@ impl MonitoringApp {
         logger: Logger,
         cam_list_ref: Arc<Mutex<CamList>>,
         egui_ctx: Context,
+        incident_list: Arc<Mutex<IncidentList>>,
     ) -> Self {
         Self {
             client,
@@ -122,6 +128,7 @@ impl MonitoringApp {
                 config.db_path.to_string(),
                 true,
                 &config.inc_icon_path,
+                incident_list
             ),
             map_interface: MapInterface::new(egui_ctx.to_owned()),
             config,
@@ -150,11 +157,15 @@ impl MonitoringApp {
 
         let cam_list_ref = Arc::new(Mutex::new(cam_list));
 
-        let handler = process_messages(listener.receiver, cam_list_ref.clone())?;
+        let incident_list = IncidentList::default();
+
+        let incident_list_ref = Arc::new(Mutex::new(incident_list));
+
+        let handler = process_messages(listener.receiver, cam_list_ref.clone(), incident_list_ref.clone(), config.db_path.clone())?;
 
         client.subscribe(vec!["camaras"], &logger)?;
         client.subscribe(vec!["drone"], &logger)?;
-        match run_interface(client, logger, cam_list_ref, config) {
+        match run_interface(client, logger, cam_list_ref, config, incident_list_ref) {
             Ok(_) => Ok(MonitoringHandler {
                 broker_listener: listener.handler,
                 message_handler: handler,

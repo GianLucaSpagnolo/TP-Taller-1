@@ -11,7 +11,7 @@ use super::incident::{self, Incident, IncidentState};
 /// ### Atributos
 /// - `incidents`: HashMap de incidentes
 ///
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct IncidentList {
     pub incidents: HashMap<u8, Incident>,
 }
