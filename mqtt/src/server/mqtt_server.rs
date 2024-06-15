@@ -192,7 +192,7 @@ impl MqttServer {
                 connect_handler::stablish_connection(self, stream, *connect_pack)
             }
             PacketReceived::Disconnect(disconnect_pack) => {
-                disconnect_handler::receive_disconnect(stream, *disconnect_pack)
+                disconnect_handler::receive_disconnect(self, *disconnect_pack, logger)
             }
             PacketReceived::Publish(pub_packet) => {
                 publish_handler::resend_publish_to_subscribers(self, stream, *pub_packet, logger)

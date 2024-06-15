@@ -317,15 +317,18 @@ pub mod unsubscribe_handler {
 }
 
 pub mod disconnect_handler {
-    use std::{io::Error, net::TcpStream};
+    use std::{collections::HashMap, io::Error, net::TcpStream};
+
+    use logger::logger_handler::Logger;
 
     use crate::{
         common::reason_codes::ReasonCode,
-        logging::server_actions::MqttServerActions,
+        logging::{actions::MqttActions, server_actions::MqttServerActions},
         mqtt_packets::{
             packet::generic_packet::Serialization, packets::disconnect::Disconnect,
             properties::disconnect_properties::DisconnectProperties,
         },
+        server::{mqtt_server::MqttServer, server_session::Session},
     };
 
     /// ### receive_disconnect
@@ -340,20 +343,51 @@ pub mod disconnect_handler {
     /// - `Result<MqttServerActions, Error>`: Resultado de la operación
     ///
     pub fn receive_disconnect(
-        stream_connection: TcpStream,
+        server: &mut MqttServer,
         packet: Disconnect,
+        logger: &Logger,
     ) -> Result<MqttServerActions, Error> {
-        // search session and disconnect ?
-        stream_connection.shutdown(std::net::Shutdown::Both)?;
-
         let reason_code =
             if packet.properties.disconnect_reason_code == ReasonCode::Success.get_id() {
                 ReasonCode::NormalDisconnection
             } else {
                 ReasonCode::new(packet.properties.disconnect_reason_code)
             };
+        MqttServerActions::ReceiveDisconnect(reason_code).log_action(
+            &server.config.general.id,
+            logger,
+            &server.config.general.log_in_term,
+        );
 
-        Ok(MqttServerActions::ReceiveDisconnect(reason_code))
+        let hash_sessions = <HashMap<String, Session> as Clone>::clone(&server.sessions);
+        let session = server
+            .sessions
+            .get_mut(packet.properties.id.clone().as_str())
+            .unwrap();
+
+        if let Some(will_message) = session.will_message.clone() {
+            let mut receivers = Vec::new();
+            hash_sessions.into_iter().for_each(|(id, s)| {
+                if s.active
+                    && id != packet.properties.id
+                    && s.subscriptions
+                        .iter()
+                        .any(|t| t.topic_filter == will_message.will_topic)
+                {
+                    will_message.send_message(&mut s.stream_connection.try_clone().unwrap());
+                    receivers.push(id.clone());
+                }
+            });
+
+            session.disconnect()?;
+            Ok(MqttServerActions::SendWillMessage(
+                will_message.will_topic,
+                receivers,
+            ))
+        } else {
+            session.disconnect()?;
+            Ok(MqttServerActions::NoSendWillMessage())
+        }
     }
 
     /// ### send_disconnect

@@ -29,6 +29,8 @@ use super::actions::MqttActions;
 pub enum MqttServerActions {
     Connection(String),
     SendDisconnect(ReasonCode),
+    SendWillMessage(String, Vec<String>),
+    NoSendWillMessage(),
     SendPublish(String, Vec<String>),
     SendPuback(String),
     ReceivePublish(String),
@@ -115,6 +117,16 @@ impl fmt::Display for MqttServerActions {
                 "DISCONNECT - Servidor recibió una desconección debido a: [{}]",
                 reason_code
             ),
+            MqttServerActions::SendWillMessage(topic, receivers) => {
+                write!(
+                    f,
+                    "DISCONNECT - Servidor envió mensaje de voluntad del topico '{}' a los clientes {:?}",
+                    topic, receivers
+                )
+            }
+            MqttServerActions::NoSendWillMessage() => {
+                write!(f, "DISCONNECT - Servidor no envió mensaje de voluntad")
+            }
             MqttServerActions::CloseServer => write!(f, "SHUTDOWN - Servidor apagandose"),
             MqttServerActions::SendPingResp => {
                 write!(f, "PINGRESP - Servidor envió respuesta de ping")

@@ -397,6 +397,7 @@ impl MqttClient {
         }
 
         let properties = DisconnectProperties {
+            id: self.config.general.id.clone(),
             disconnect_reason_code,
             session_expiry_interval: None,
             reason_string: None,

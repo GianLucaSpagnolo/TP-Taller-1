@@ -1,14 +1,13 @@
 use std::{
-    io::Error,
+    io::{Error, Write},
     net::{Shutdown, TcpStream},
 };
 
 use crate::{
     common::{flags::flags_handler, topic_filter::TopicFilter},
     mqtt_packets::packets::connect::Connect,
+    server::mqtt_server::MqttServer,
 };
-
-use super::mqtt_server::MqttServer;
 
 /// ## WillMessage
 ///
@@ -27,7 +26,7 @@ pub struct WillMessage {
 impl WillMessage {
     /// ### new
     ///
-    /// Crea un nuevo mensaje de voluntad
+    /// Crea un nuevo "mensaje de voluntad"
     ///
     /// #### Parametros
     /// - `will_flag`: bandera de voluntad
@@ -54,6 +53,10 @@ impl WillMessage {
         } else {
             None
         }
+    }
+
+    pub fn send_message(&self, stream: &mut dyn Write) {
+        stream.write_all(&self.will_payload).unwrap();
     }
 }
 
