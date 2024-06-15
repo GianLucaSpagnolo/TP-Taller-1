@@ -272,7 +272,7 @@ mod test {
         }
 
         assert_eq!(deserialize_string(props.application_message), message);
-        assert_eq!(props.is_will_message, false);
+        assert!(!props.is_will_message);
     }
 
     #[test]
@@ -326,6 +326,6 @@ mod test {
             deserialize_string(publish.properties.application_message),
             "".to_string()
         );
-        assert_eq!(publish.properties.is_will_message, false);
+        assert!(!publish.properties.is_will_message);
     }
 }

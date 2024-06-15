@@ -51,7 +51,8 @@ impl PacketProperties for PublishProperties {
         let fixed_props_size =
             std::mem::size_of::<u16>() + self.topic_name.len() + std::mem::size_of::<u16>();
 
-        let payload_size = std::mem::size_of::<u16>() + self.application_message.len() + std::mem::size_of::<u8>();
+        let payload_size =
+            std::mem::size_of::<u16>() + self.application_message.len() + std::mem::size_of::<u8>();
 
         fixed_props_size as u32 + variable_props.size_of() + payload_size as u32
     }

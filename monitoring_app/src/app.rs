@@ -71,6 +71,7 @@ fn process_messages(
         for message_received in receiver.try_iter() {
             match message_received.topic.as_str() {
                 "camaras" => {
+                    // manejar message_received.is_will_message
                     let data = Cam::from_be_bytes(message_received.data);
                     let system_lock = &mut cam_list.lock().unwrap();
                     if let Some(cam) = system_lock.cams.iter_mut().find(|c| c.id == data.id) {

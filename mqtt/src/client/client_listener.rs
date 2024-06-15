@@ -209,7 +209,11 @@ impl MqttClientListener {
         logger.close();
         logger_handler.close();
         if let MqttClientActions::ReceivePublish(_) = action {
-            return Ok(Some(MqttClientMessage { topic, data, is_will_message }));
+            return Ok(Some(MqttClientMessage {
+                topic,
+                data,
+                is_will_message,
+            }));
         }
         Ok(None)
     }

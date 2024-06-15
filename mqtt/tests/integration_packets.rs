@@ -623,7 +623,7 @@ mod test {
                     let application_message =
                         deserialize_message(publish.properties.application_message);
                     application_message.validate_message(0, "first message".to_string());
-                    assert_eq!(publish.properties.is_will_message, false);
+                    assert!(!publish.properties.is_will_message);
                 } else if publish.properties.packet_identifier == 5 {
                     assert_eq!(publish.properties.topic_name, "mensajes");
                     assert_eq!(publish.properties.payload_format_indicator, Some(1));
@@ -646,7 +646,7 @@ mod test {
                     let application_message =
                         deserialize_message(publish.properties.application_message);
                     application_message.validate_message(0, "second message".to_string());
-                    assert_eq!(publish.properties.is_will_message, false);
+                    assert!(!publish.properties.is_will_message);
                 } else if publish.properties.packet_identifier == 7 {
                     assert_eq!(publish.properties.topic_name, "mensajes");
                     assert_eq!(publish.properties.payload_format_indicator, Some(1));
@@ -669,7 +669,7 @@ mod test {
                     let application_message =
                         deserialize_message(publish.properties.application_message);
                     application_message.validate_message(0, "im tired message".to_string());
-                    assert_eq!(publish.properties.is_will_message, false);
+                    assert!(!publish.properties.is_will_message);
                 }
             }
             PacketReceived::Puback(puback) => {
