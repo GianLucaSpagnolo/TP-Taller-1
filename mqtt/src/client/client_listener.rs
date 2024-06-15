@@ -166,10 +166,12 @@ impl MqttClientListener {
 
         let mut data = Vec::new();
         let mut topic = String::new();
+        let mut is_will_message = false;
         let action = match packet_recived {
             PacketReceived::Publish(publish) => {
                 topic.clone_from(&publish.properties.topic_name);
                 data.clone_from(&publish.properties.application_message);
+                is_will_message = publish.properties.is_will_message;
                 MqttClientActions::ReceivePublish(topic.clone())
             }
             PacketReceived::Puback(puback) => MqttClientActions::AcknowledgePublish(
@@ -207,7 +209,7 @@ impl MqttClientListener {
         logger.close();
         logger_handler.close();
         if let MqttClientActions::ReceivePublish(_) = action {
-            return Ok(Some(MqttClientMessage { topic, data }));
+            return Ok(Some(MqttClientMessage { topic, data, is_will_message }));
         }
         Ok(None)
     }

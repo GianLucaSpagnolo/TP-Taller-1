@@ -65,6 +65,7 @@ impl WillMessage {
             packet_identifier: 0,
             payload_format_indicator: Some(1),
             application_message: self.will_payload.clone(),
+            is_will_message: true,
             ..Default::default()
         };
 
