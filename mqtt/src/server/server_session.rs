@@ -5,7 +5,11 @@ use std::{
 
 use crate::{
     common::{flags::flags_handler, topic_filter::TopicFilter},
-    mqtt_packets::packets::connect::Connect,
+    mqtt_packets::{
+        packet::generic_packet::Serialization,
+        packets::{connect::Connect, publish::Publish},
+        properties::publish_properties::PublishProperties,
+    },
     server::mqtt_server::MqttServer,
 };
 
@@ -55,8 +59,17 @@ impl WillMessage {
         }
     }
 
-    pub fn send_message(&self, stream: &mut dyn Write) {
-        stream.write_all(&self.will_payload).unwrap();
+    pub fn send_message(&self, stream: &mut dyn Write) -> bool {
+        let publish_props = PublishProperties {
+            topic_name: self.will_topic.clone(),
+            packet_identifier: 0,
+            payload_format_indicator: Some(1),
+            application_message: self.will_payload.clone(),
+            ..Default::default()
+        };
+
+        let publish = Publish::new(0, 1, 0, publish_props);
+        publish.write_to(stream).is_ok()
     }
 }
 
@@ -154,6 +167,15 @@ pub fn open_new_session(
 ) -> u8 {
     if let Some(session) = server.sessions.get_mut(&connect.payload.client_id) {
         // Resumes session
+        let will_message = WillMessage::new(
+            flags_handler::get_connect_flag_will_flag(connect.properties.connect_flags),
+            connect.payload.will_topic.as_ref(),
+            connect.payload.will_payload.clone(),
+        );
+        if let Some(will) = will_message {
+            session.will_message = Some(will);
+        }
+
         session.reconnect();
         1
     } else {

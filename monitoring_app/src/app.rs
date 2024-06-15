@@ -6,7 +6,10 @@ use std::{
 
 use egui::Context;
 use logger::logger_handler::Logger;
-use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
+use mqtt::{
+    client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
+    config::{client_config::ClientConfig, mqtt_config::Config},
+};
 use shared::{
     interfaces::{
         cam_interface::CamInterface, incident_interface::IncidentInterface,
@@ -160,4 +163,22 @@ impl MonitoringApp {
             Err(e) => Err(Error::new(std::io::ErrorKind::Other, e.to_string())),
         }
     }
+}
+
+fn create_will_message_payload() -> Vec<u8> {
+    let message = "App de Monitoreo desconectada".to_string();
+
+    let mut payload: Vec<u8> = Vec::new();
+    let message_len = message.len() as u16;
+    payload.extend_from_slice(&message_len.to_be_bytes());
+    payload.extend_from_slice(message.as_bytes());
+
+    payload
+}
+
+pub fn create_monitoring_app_client_config(path: &str) -> Result<ClientConfig, Error> {
+    let mut config = ClientConfig::from_file(String::from(path))?;
+    config.set_will_message("inc".to_string(), create_will_message_payload());
+
+    Ok(config)
 }

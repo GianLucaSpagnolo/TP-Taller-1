@@ -367,6 +367,8 @@ pub mod disconnect_handler {
 
         if let Some(will_message) = session.will_message.clone() {
             let mut receivers = Vec::new();
+            let mut will_message_sent = false;
+
             hash_sessions.into_iter().for_each(|(id, s)| {
                 if s.active
                     && id != packet.properties.id
@@ -374,16 +376,21 @@ pub mod disconnect_handler {
                         .iter()
                         .any(|t| t.topic_filter == will_message.will_topic)
                 {
-                    will_message.send_message(&mut s.stream_connection.try_clone().unwrap());
+                    will_message_sent =
+                        will_message.send_message(&mut s.stream_connection.try_clone().unwrap());
                     receivers.push(id.clone());
                 }
             });
 
             session.disconnect()?;
-            Ok(MqttServerActions::SendWillMessage(
-                will_message.will_topic,
-                receivers,
-            ))
+            if will_message_sent {
+                Ok(MqttServerActions::SendWillMessage(
+                    will_message.will_topic,
+                    receivers,
+                ))
+            } else {
+                Ok(MqttServerActions::ErrorWhileSendingWillMessage())
+            }
         } else {
             session.disconnect()?;
             Ok(MqttServerActions::NoSendWillMessage())

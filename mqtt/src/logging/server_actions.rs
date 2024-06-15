@@ -31,6 +31,7 @@ pub enum MqttServerActions {
     SendDisconnect(ReasonCode),
     SendWillMessage(String, Vec<String>),
     NoSendWillMessage(),
+    ErrorWhileSendingWillMessage(),
     SendPublish(String, Vec<String>),
     SendPuback(String),
     ReceivePublish(String),
@@ -126,6 +127,9 @@ impl fmt::Display for MqttServerActions {
             }
             MqttServerActions::NoSendWillMessage() => {
                 write!(f, "DISCONNECT - Servidor no envió mensaje de voluntad")
+            }
+            MqttServerActions::ErrorWhileSendingWillMessage() => {
+                write!(f, "DISCONNECT - No se ha podido enviar mensaje de voluntad")
             }
             MqttServerActions::CloseServer => write!(f, "SHUTDOWN - Servidor apagandose"),
             MqttServerActions::SendPingResp => {
