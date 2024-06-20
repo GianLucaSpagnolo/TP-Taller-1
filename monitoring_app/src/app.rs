@@ -2,7 +2,7 @@ use std::{
     fs, io::Error, sync::{mpsc::Receiver, Arc, Mutex}, thread::{self, JoinHandle}
 };
 
-use drone_app::drone::Drone;
+use drone_app::drone::{Drone, DroneState};
 use egui::Context;
 use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
@@ -82,10 +82,18 @@ fn process_messages(
                 }
                 "drone" => {
                     let dron = Drone::from_be_bytes(message_received.data);
-                    println!("Dron: {:?}", dron);
                     let incidents_historial = &mut incident_list.lock().unwrap();
-                    println!("Incidentes: {:?}", incidents_historial.incidents);
-                    incidents_historial.incidents.remove(&0);
+                    
+                    match dron.state {
+                        DroneState::GoingToIncident => {
+                            let incident = incidents_historial.incidents.get_mut(&dron.id_incident_covering.unwrap()).unwrap(); 
+                            incident.drones_covering = incident.drones_covering + 1;
+                            println!("Drones cubriendo: {:?}", incident);
+                            
+                        }
+
+                        _ => {}
+                    }
                     let bytes = incidents_historial.as_bytes();
                     fs::write(db_path.to_string(), bytes).unwrap();
 

@@ -21,7 +21,6 @@ pub fn process_messages(
             if message_received.topic.as_str() == "inc" {
                 let incident = Incident::from_be_bytes(message_received.data);
                 drone.lock().unwrap().process_incident(&mut client, incident.clone(), &logger);
-                println!("Mensaje recibido: {:?}", incident);
             } else if message_received.topic.as_str() == "drone" {
                 let drone_received = Drone::from_be_bytes(message_received.data);
                 if drone_received.id == drone.lock().unwrap().id {
