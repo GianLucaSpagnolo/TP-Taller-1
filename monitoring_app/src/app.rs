@@ -19,6 +19,7 @@ use shared::{
         cam::{Cam, CamState},
         cam_list::CamList,
     },
+    will_message::{serialize_will_message_payload, deserialize_will_message_payload},
 };
 
 use crate::{app_config::MonitoringAppConfig, app_interface::run_interface};
@@ -55,6 +56,15 @@ pub struct MonitoringHandler {
     pub message_handler: JoinHandle<()>,
 }
 
+// ### handle_camaras_will_message
+//
+// Maneja el mensaje de voluntad de las cámaras
+//
+fn handle_camaras_will_message(message_received: Vec<u8>) {
+    let message = deserialize_will_message_payload(message_received);
+    println!("Will message received: {:?} disconnected", message);
+}
+
 /// ### process_messages
 ///
 /// Procesa los mensajes recibidos por el cliente MQTT
@@ -71,17 +81,21 @@ fn process_messages(
         for message_received in receiver.try_iter() {
             match message_received.topic.as_str() {
                 "camaras" => {
-                    // manejar message_received.is_will_message
-                    let data = Cam::from_be_bytes(message_received.data);
-                    let system_lock = &mut cam_list.lock().unwrap();
-                    if let Some(cam) = system_lock.cams.iter_mut().find(|c| c.id == data.id) {
-                        if data.state != CamState::Removed {
-                            *cam = data;
-                        } else {
-                            system_lock.cams.retain(|c| c.id != data.id);
-                        }
+                    if message_received.is_will_message {
+                        handle_camaras_will_message(message_received.data);
+                        
                     } else {
-                        system_lock.cams.push(data);
+                        let data = Cam::from_be_bytes(message_received.data);
+                        let system_lock = &mut cam_list.lock().unwrap();
+                        if let Some(cam) = system_lock.cams.iter_mut().find(|c| c.id == data.id) {
+                            if data.state != CamState::Removed {
+                                *cam = data;
+                            } else {
+                                system_lock.cams.retain(|c| c.id != data.id);
+                            }
+                        } else {
+                            system_lock.cams.push(data);
+                        }
                     }
                 }
                 "dron" => {
@@ -166,20 +180,17 @@ impl MonitoringApp {
     }
 }
 
-fn create_will_message_payload() -> Vec<u8> {
-    let message = "App de Monitoreo desconectada".to_string();
-
-    let mut payload: Vec<u8> = Vec::new();
-    let message_len = message.len() as u16;
-    payload.extend_from_slice(&message_len.to_be_bytes());
-    payload.extend_from_slice(message.as_bytes());
-
-    payload
-}
-
+// ### create_monitoring_app_client_config
+//
+// Crea la configuración del cliente de la aplicación de monitoreo.
+// Tambien configura el mensaje de voluntad del cliente.
+//
+// #### Parametros
+// - `path`: ruta del archivo de configuración
+//
 pub fn create_monitoring_app_client_config(path: &str) -> Result<ClientConfig, Error> {
     let mut config = ClientConfig::from_file(String::from(path))?;
-    config.set_will_message("inc".to_string(), create_will_message_payload());
+    config.set_will_message("inc".to_string(), serialize_will_message_payload(config.general.id.clone()));
 
     Ok(config)
 }

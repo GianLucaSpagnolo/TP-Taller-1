@@ -19,7 +19,6 @@ use super::server_handlers::{
     connect_handler, disconnect_handler, publish_handler, subscribe_handler, unsubscribe_handler,
 };
 use super::server_session::Session;
-// ver caso logger en drop ...
 
 /// ## MqttServer
 ///
@@ -61,7 +60,6 @@ pub fn message_catcher(
     mut stream: TcpStream,
     sender: Arc<Mutex<Sender<(PacketReceived, TcpStream)>>>,
 ) -> Result<(), Error> {
-    // averiguo el tipo de paquete:
     let sender = sender.lock().unwrap().clone();
 
     let fixed_header = PacketFixedHeader::read_from(&mut stream)?;

@@ -8,14 +8,19 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use cams_system::CamsSystem;
+use cams_system::{create_cams_system_client_config, CamsSystem};
 use logger::logger_handler::{create_logger_handler, Logger};
-use mqtt::{
-    client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
-    config::{client_config::ClientConfig, mqtt_config::Config},
-};
-use shared::models::inc_model::incident::{Incident, IncidentState};
+use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
+use shared::{models::inc_model::incident::{Incident, IncidentState}, will_message::deserialize_will_message_payload};
 use system_interface::interface::{process_standard_input, show_start};
+
+const APP_CONFIG_PATH: &str = "central_cams_system/config/initial_config.txt";
+const CLIENT_CONFIG_PATH: &str = "central_cams_system/config/cams_config.txt";
+
+fn handle_inc_will_message(message_received: Vec<u8>) {
+    let message = deserialize_will_message_payload(message_received);
+    println!("Will message received: {:?} disconnected", message);
+}
 
 pub fn process_messages(
     client: &mut MqttClient,
@@ -27,17 +32,22 @@ pub fn process_messages(
     let handler = thread::spawn(move || loop {
         for message_received in receiver.try_iter() {
             if message_received.topic.as_str() == "inc" {
-                let incident = Incident::from_be_bytes(message_received.data);
-                println!("Mensaje recibido: {:?}", incident);
-                match incident.state {
-                    IncidentState::InProgess => cams_system
-                        .lock()
-                        .unwrap()
-                        .process_incident_in_progress(&mut client, incident, &logger),
-                    IncidentState::Resolved => cams_system
-                        .lock()
-                        .unwrap()
-                        .process_incident_resolved(&mut client, incident, &logger),
+                if message_received.is_will_message {
+                    handle_inc_will_message(message_received.data);
+
+                } else {
+                    let incident = Incident::from_be_bytes(message_received.data);
+                    println!("Mensaje recibido: {:?}", incident);
+                    match incident.state {
+                        IncidentState::InProgess => cams_system
+                            .lock()
+                            .unwrap()
+                            .process_incident_in_progress(&mut client, incident, &logger),
+                        IncidentState::Resolved => cams_system
+                            .lock()
+                            .unwrap()
+                            .process_incident_resolved(&mut client, incident, &logger),
+                    }
                 }
             }
         }
@@ -46,8 +56,7 @@ pub fn process_messages(
 }
 
 fn main() -> Result<(), Error> {
-    let config_path = "central_cams_system/config/cams_config.txt";
-    let contents = fs::read_to_string("central_cams_system/config/initial_config.txt")?;
+    let contents = fs::read_to_string(APP_CONFIG_PATH)?;
     let mut range_alert = 0.0;
     let mut range_alert_between_cameras = 0.0;
     let mut db_path = String::new();
@@ -79,7 +88,7 @@ fn main() -> Result<(), Error> {
 
     show_start(&cam_system);
 
-    let config = ClientConfig::from_file(String::from(config_path))?;
+    let config = create_cams_system_client_config(CLIENT_CONFIG_PATH)?;
 
     let logger_handler = create_logger_handler(&config.general.log_path)?;
     let logger = logger_handler.get_logger();
