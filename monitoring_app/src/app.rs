@@ -19,7 +19,7 @@ use shared::{
         cam::{Cam, CamState},
         cam_list::CamList,
     },
-    will_message::{serialize_will_message_payload, deserialize_will_message_payload},
+    will_message::{deserialize_will_message_payload, serialize_will_message_payload},
 };
 
 use crate::{app_config::MonitoringAppConfig, app_interface::run_interface};
@@ -83,7 +83,6 @@ fn process_messages(
                 "camaras" => {
                     if message_received.is_will_message {
                         handle_camaras_will_message(message_received.data);
-                        
                     } else {
                         let data = Cam::from_be_bytes(message_received.data);
                         let system_lock = &mut cam_list.lock().unwrap();
@@ -190,7 +189,10 @@ impl MonitoringApp {
 //
 pub fn create_monitoring_app_client_config(path: &str) -> Result<ClientConfig, Error> {
     let mut config = ClientConfig::from_file(String::from(path))?;
-    config.set_will_message("inc".to_string(), serialize_will_message_payload(config.general.id.clone()));
+    config.set_will_message(
+        "inc".to_string(),
+        serialize_will_message_payload(config.general.id.clone()),
+    );
 
     Ok(config)
 }

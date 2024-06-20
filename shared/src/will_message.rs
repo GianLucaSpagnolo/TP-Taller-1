@@ -6,9 +6,7 @@
 //
 pub fn deserialize_will_message_payload(payload: Vec<u8>) -> String {
     let message_len = u16::from_be_bytes([payload[0], payload[1]]) as usize;
-    let message = String::from_utf8(payload[2..message_len + 2].to_vec()).unwrap();
-
-    message
+    String::from_utf8(payload[2..message_len + 2].to_vec()).unwrap()
 }
 
 // Create a Will Message payload

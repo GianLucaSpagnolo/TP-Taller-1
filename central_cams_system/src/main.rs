@@ -11,7 +11,10 @@ use std::{
 use cams_system::{create_cams_system_client_config, CamsSystem};
 use logger::logger_handler::{create_logger_handler, Logger};
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
-use shared::{models::inc_model::incident::{Incident, IncidentState}, will_message::deserialize_will_message_payload};
+use shared::{
+    models::inc_model::incident::{Incident, IncidentState},
+    will_message::deserialize_will_message_payload,
+};
 use system_interface::interface::{process_standard_input, show_start};
 
 const APP_CONFIG_PATH: &str = "central_cams_system/config/initial_config.txt";
@@ -34,7 +37,6 @@ pub fn process_messages(
             if message_received.topic.as_str() == "inc" {
                 if message_received.is_will_message {
                     handle_inc_will_message(message_received.data);
-
                 } else {
                     let incident = Incident::from_be_bytes(message_received.data);
                     println!("Mensaje recibido: {:?}", incident);

@@ -171,8 +171,13 @@ impl MqttClientListener {
             PacketReceived::Publish(publish) => {
                 topic.clone_from(&publish.properties.topic_name);
                 data.clone_from(&publish.properties.application_message);
+
                 is_will_message = publish.properties.is_will_message;
-                MqttClientActions::ReceivePublish(topic.clone())
+                if is_will_message {
+                    MqttClientActions::ReceiveWillMessage(topic.clone())
+                } else {
+                    MqttClientActions::ReceivePublish(topic.clone())
+                }
             }
             PacketReceived::Puback(puback) => MqttClientActions::AcknowledgePublish(
                 client.config.general.id.clone(),
