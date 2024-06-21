@@ -4,13 +4,16 @@ use std::time::Duration;
 
 use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
-use shared::models::inc_model::incident::Incident;
+
+use crate::models::inc_model::incident::Incident;
 
 #[derive(Debug)]
 pub enum DroneState {
     Available,
     GoingToIncident,
+    GoingBack,
     ResolvingIncident,
+    LowBattery,
     Charging,
 }
 
@@ -26,12 +29,12 @@ pub struct Drone {
     charging_station_lat: f64,
     charging_station_lon: f64,
     pub state: DroneState,
-    pub id_incident_covering : Option<u8>,
-    drones : Vec<Drone>,
-} 
+    pub id_incident_covering: Option<u8>,
+    drones: Vec<Drone>,
+}
 
 impl Drone {
-    pub fn init (
+    pub fn init(
         id: u8,
         distancia_maxima_alcance: f64,
         duracion_de_bateria: f64,
@@ -56,19 +59,31 @@ impl Drone {
         })
     }
 
-    pub fn process_incident(&mut self, client: &mut MqttClient , incident: Incident, logger: &Logger ) {
-        let distance_to_incident = self.get_distance_to_incident(incident.location.latitude, incident.location.longitude);
-        
-        if self.is_close_enough(distance_to_incident) && self.is_closer_than_other_drones(distance_to_incident) {
+    pub fn process_incident(
+        &mut self,
+        client: &mut MqttClient,
+        incident: Incident,
+        logger: &Logger,
+    ) {
+        let distance_to_incident =
+            self.get_distance_to_incident(incident.location.latitude, incident.location.longitude);
+
+        if self.is_close_enough(distance_to_incident)
+            && self.is_closer_than_other_drones(distance_to_incident)
+        {
             self.state = DroneState::GoingToIncident;
             self.id_incident_covering = Some(incident.id);
 
-            client.publish(self.as_bytes(), "drone".to_string(), logger).unwrap();
+            client
+                .publish(self.as_bytes(), "drone".to_string(), logger)
+                .unwrap();
             thread::sleep(Duration::from_millis(distance_to_incident as u64 * 10000));
             self.state = DroneState::ResolvingIncident;
             self.current_lat = incident.location.latitude + 0.0001;
             self.current_lon = incident.location.longitude + 0.0001;
-            client.publish(self.as_bytes(), "drone".to_string(), logger).unwrap(); 
+            client
+                .publish(self.as_bytes(), "drone".to_string(), logger)
+                .unwrap();
             thread::sleep(Duration::from_millis(distance_to_incident as u64 * 10000));
             self.current_lat = self.initial_lat;
             self.current_lon = self.initial_lon;
@@ -76,12 +91,19 @@ impl Drone {
         }
     }
 
-    pub fn process_drone_message(&mut self, client: &mut MqttClient, drone_received: Drone, logger: &Logger) {
+    pub fn process_drone_message(
+        &mut self,
+        client: &mut MqttClient,
+        drone_received: Drone,
+        logger: &Logger,
+    ) {
         if let Some(index) = self.drones.iter().position(|d| d.id == drone_received.id) {
             self.drones[index] = drone_received;
         } else {
             self.drones.push(drone_received);
-            client.publish(self.as_bytes(), "drone".to_string(), logger).unwrap();
+            client
+                .publish(self.as_bytes(), "drone".to_string(), logger)
+                .unwrap();
         }
     }
 
@@ -101,20 +123,20 @@ impl Drone {
         let state = match self.state {
             DroneState::Available => 0,
             DroneState::GoingToIncident => 1,
-            DroneState::ResolvingIncident => 2,
-            DroneState::Charging => 3,
+            DroneState::GoingBack => 2,
+            DroneState::ResolvingIncident => 3,
+            DroneState::LowBattery => 4,
+            DroneState::Charging => 5,
         };
         bytes.push(state);
 
-        let id_incident_covering = match self.id_incident_covering {
-            Some(id) => id,
-            None => 0,
-        };
+        let id_incident_covering = self.id_incident_covering.unwrap_or(0);
+
         bytes.push(id_incident_covering);
 
         let drones_len = self.drones.len() as u16;
         bytes.extend_from_slice(&drones_len.to_be_bytes());
-    
+
         for drone in &self.drones {
             bytes.push(self.id);
             bytes.extend_from_slice(&drone.distancia_maxima_alcance.to_be_bytes());
@@ -129,15 +151,14 @@ impl Drone {
             let state = match self.state {
                 DroneState::Available => 0,
                 DroneState::GoingToIncident => 1,
-                DroneState::ResolvingIncident => 2,
-                DroneState::Charging => 3,
+                DroneState::GoingBack => 2,
+                DroneState::ResolvingIncident => 3,
+                DroneState::LowBattery => 4,
+                DroneState::Charging => 5,
             };
             bytes.push(state);
 
-            let id_incident_covering = match self.id_incident_covering {
-                Some(id) => id,
-                None => 0,
-            };
+            let id_incident_covering = self.id_incident_covering.unwrap_or(0);
             bytes.push(id_incident_covering);
         }
 
@@ -149,7 +170,8 @@ impl Drone {
         let id = bytes[index];
         index += 1;
 
-        let distancia_maxima_alcance = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
+        let distancia_maxima_alcance =
+            f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
         index += 8;
 
         let duracion_de_bateria = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
@@ -166,7 +188,7 @@ impl Drone {
 
         let current_lon = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
         index += 8;
-        
+
         let charging_station_lat = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
         index += 8;
 
@@ -176,8 +198,10 @@ impl Drone {
         let state = match bytes[index] {
             0 => DroneState::Available,
             1 => DroneState::GoingToIncident,
-            2 => DroneState::ResolvingIncident,
-            3 => DroneState::Charging,
+            2 => DroneState::GoingBack,
+            3 => DroneState::ResolvingIncident,
+            4 => DroneState::LowBattery,
+            5 => DroneState::Charging,
             _ => panic!("Invalid state"),
         };
 
@@ -194,10 +218,10 @@ impl Drone {
         let mut drones = Vec::new();
 
         for _ in 0..drones_len {
-            let drone = Drone::from_be_bytes(bytes[index..index + 49].try_into().unwrap());
+            let drone = Drone::from_be_bytes(bytes[index..index + 49].into());
             index += 49;
             drones.push(drone);
-        }        
+        }
 
         Drone {
             id,

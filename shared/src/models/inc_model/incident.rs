@@ -13,7 +13,7 @@ pub struct Incident {
     pub id: u8,
     pub location: Coordenates,
     pub state: IncidentState,
-    pub drones_covering: u8
+    pub drones_covering: u8,
 }
 
 impl Incident {
@@ -68,10 +68,10 @@ impl Incident {
             1 => IncidentState::Resolved,
             _ => panic!("Invalid state"),
         };
-        
+
         index += 1;
         let drones_covering = bytes[index];
-        
+
         Incident {
             id,
             location: Coordenates {
@@ -79,7 +79,7 @@ impl Incident {
                 longitude,
             },
             state,
-            drones_covering
+            drones_covering,
         }
     }
 

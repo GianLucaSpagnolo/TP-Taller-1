@@ -141,8 +141,14 @@ fn incident_row(
     if inc_interface.editable {
         row.col(|ui| {
             if ui.button("Resolver").clicked() {
-                resolve_incident(client, &mut inc_interface.historial.lock().unwrap(), id, logger, db_path)
-                    .unwrap();
+                resolve_incident(
+                    client,
+                    &mut inc_interface.historial.lock().unwrap(),
+                    id,
+                    logger,
+                    db_path,
+                )
+                .unwrap();
             }
         });
     }
@@ -193,7 +199,7 @@ pub fn incident_list(
                     });
                 });
             } else {
-                for (id, incident) in &incidents.clone(){
+                for (id, incident) in &incidents.clone() {
                     body.row(20.0, |row| {
                         incident_row(row, client, inc_interface, incident, id, logger, db_path);
                     });

@@ -1,6 +1,6 @@
-use std::{collections::HashMap, fs, io::Error};
-use std::sync::{Arc, Mutex};
 use egui::ColorImage;
+use std::sync::{Arc, Mutex};
+use std::{fs, io::Error};
 
 use crate::{
     models::inc_model::incident_list::IncidentList, utils::load_image_from_path,
@@ -30,8 +30,10 @@ pub struct IncidentInterface {
 }
 
 impl IncidentInterface {
-    pub fn init_historial(db_path: String, incident_list: Arc<Mutex<IncidentList>>) -> Result<Arc<Mutex<IncidentList>>, Error> {
-
+    pub fn init_historial(
+        db_path: String,
+        incident_list: Arc<Mutex<IncidentList>>,
+    ) -> Result<Arc<Mutex<IncidentList>>, Error> {
         let bytes = match fs::read(db_path) {
             Ok(bytes) => bytes,
             Err(_) => Vec::new(),
@@ -58,7 +60,12 @@ impl IncidentInterface {
     /// ### Retorno
     /// Estructura de la interfaz de incidentes
     ///
-    pub fn new(db_path: String, editable: bool, icon_path: &str, incident_list:Arc<Mutex<IncidentList>> ) -> Self {
+    pub fn new(
+        db_path: String,
+        editable: bool,
+        icon_path: &str,
+        incident_list: Arc<Mutex<IncidentList>>,
+    ) -> Self {
         let icon = load_image_from_path(std::path::Path::new(icon_path)).unwrap();
 
         let historial = IncidentInterface::init_historial(db_path, incident_list).unwrap();

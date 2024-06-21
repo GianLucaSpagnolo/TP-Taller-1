@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use egui::{Style, Visuals};
 use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
-use shared::models::inc_model::incident_list::{self, IncidentList};
+use shared::models::inc_model::incident_list::IncidentList;
 use shared::views::app_views::inc_views::show_incidents;
 use shared::views::icon::get_icon_data;
 use shared::views::map_views::map::show_map;
@@ -111,7 +111,7 @@ pub fn run_interface(
     logger: Logger,
     cam_list_ref: Arc<Mutex<CamList>>,
     config: MonitoringAppConfig,
-    incident_list: Arc<Mutex<IncidentList>>
+    incident_list: Arc<Mutex<IncidentList>>,
 ) -> Result<(), eframe::Error> {
     eframe::run_native(
         "Apliación de monitoreo",
@@ -125,7 +125,7 @@ pub fn run_interface(
                 logger,
                 cam_list_ref,
                 creation_context.egui_ctx.to_owned(),
-                incident_list
+                incident_list,
             ))
         }),
     )
