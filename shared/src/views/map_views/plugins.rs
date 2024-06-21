@@ -4,7 +4,11 @@ use walkers::{
     Plugin, Position, Projector,
 };
 
-use crate::models::{cam_model::cam_list::CamList, drone_model::{drone::DroneState, drone_list::DroneList}, inc_model::incident_list::IncidentList};
+use crate::models::{
+    cam_model::{cam::CamState, cam_list::CamList},
+    drone_model::{drone::DroneState, drone_list::DroneList},
+    inc_model::{incident::IncidentState, incident_list::IncidentList},
+};
 
 // Helper structure for the `Images` plugin.
 pub struct ImgPluginData {
@@ -19,11 +23,9 @@ pub struct ImgPluginData {
 pub fn cam_images(
     egui_ctx: Context,
     cams: &mut CamList,
-    icon: ColorImage,
+    default_icon: ColorImage,
     alert_icon: ColorImage,
 ) -> impl Plugin {
-    let cam_texture = Texture::from_color_image(icon, &egui_ctx);
-    let alert_texture = Texture::from_color_image(alert_icon, &egui_ctx);
     let angle = 0.0;
     let x_scale = 0.1;
     let y_scale = 0.1;
@@ -32,11 +34,11 @@ pub fn cam_images(
         cams.cams
             .iter()
             .map(|cam| {
-                let pos = cam.location.to_walkers_position();
-                let texture = if cam.is_in_alert() {
-                    alert_texture.clone()
+                let pos = cam.location;
+                let texture = if let CamState::Alert = cam.state {
+                    Texture::from_color_image(alert_icon.clone(), &egui_ctx)
                 } else {
-                    cam_texture.clone()
+                    Texture::from_color_image(default_icon.clone(), &egui_ctx)
                 };
                 let mut image = Image::new(texture.clone(), pos);
                 image.scale(x_scale, y_scale);
@@ -47,44 +49,38 @@ pub fn cam_images(
     )
 }
 
-pub fn drone_images(
-    egui_ctx: Context,
-    drones: &mut DroneList,
-    icon: ColorImage,
-    alert_icon: ColorImage,
-    back_icon: ColorImage,
-    resolving_icon: ColorImage,
-    low_battery_icon: ColorImage,
-    charging_icon: ColorImage,
-) -> impl Plugin {
-    let default_texture = Texture::from_color_image(icon, &egui_ctx);
-    let alert_texture = Texture::from_color_image(alert_icon, &egui_ctx);
-    let back_icon = Texture::from_color_image(back_icon, &egui_ctx);
-    let resolving_icon = Texture::from_color_image(resolving_icon, &egui_ctx);
-    let low_battery_icon = Texture::from_color_image(low_battery_icon, &egui_ctx);
-    let charging_icon = Texture::from_color_image(charging_icon, &egui_ctx);
+pub struct DroneIcons {
+    pub default: ColorImage,
+    pub alert: ColorImage,
+    pub going_back: ColorImage,
+    pub resolving: ColorImage,
+    pub low_battery: ColorImage,
+    pub charging: ColorImage,
+}
 
+pub fn drone_images(egui_ctx: Context, drones: &mut DroneList, icons: DroneIcons) -> impl Plugin {
     let angle = 0.0;
     let x_scale = 0.1;
     let y_scale = 0.1;
 
     Images::new(
-        drones.drones
+        drones
+            .drones
             .iter()
             .map(|drone| {
                 let pos = drone.current_pos;
                 let texture = if let DroneState::GoingToIncident = drone.state {
-                    alert_texture.clone()
+                    Texture::from_color_image(icons.alert.clone(), &egui_ctx)
                 } else if let DroneState::GoingBack = drone.state {
-                    back_icon.clone()
+                    Texture::from_color_image(icons.going_back.clone(), &egui_ctx)
                 } else if let DroneState::ResolvingIncident = drone.state {
-                    resolving_icon.clone()
+                    Texture::from_color_image(icons.resolving.clone(), &egui_ctx)
                 } else if let DroneState::LowBattery = drone.state {
-                    low_battery_icon.clone()
+                    Texture::from_color_image(icons.low_battery.clone(), &egui_ctx)
                 } else if let DroneState::Charging = drone.state {
-                    charging_icon.clone()
+                    Texture::from_color_image(icons.charging.clone(), &egui_ctx)
                 } else {
-                    default_texture.clone()
+                    Texture::from_color_image(icons.default.clone(), &egui_ctx)
                 };
                 let mut image = Image::new(texture.clone(), pos);
                 image.scale(x_scale, y_scale);
@@ -94,7 +90,6 @@ pub fn drone_images(
             .collect(),
     )
 }
-
 
 pub fn inc_images(
     egui_ctx: Context,
@@ -110,9 +105,9 @@ pub fn inc_images(
         incidents
             .incidents
             .iter()
-            .filter(|(_, inc)| inc.is_in_progress())
+            .filter(|(_, inc)| inc.state == IncidentState::InProgess)
             .map(|(_, inc)| {
-                let pos = inc.location.to_walkers_position();
+                let pos = inc.location;
                 let mut image = Image::new(texture.clone(), pos);
                 image.scale(x_scale, y_scale);
                 image.angle(angle);

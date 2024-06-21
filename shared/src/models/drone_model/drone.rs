@@ -61,7 +61,7 @@ impl Drone {
         logger: &Logger,
     ) {
         let distance_to_incident =
-            self.get_distance_to_incident(incident.location.latitude, incident.location.longitude);
+            self.get_distance_to_incident(incident.location.lat(), incident.location.lon());
 
         if self.is_close_enough(distance_to_incident)
             && self.is_closer_than_other_drones(distance_to_incident)
@@ -74,7 +74,10 @@ impl Drone {
                 .unwrap();
             thread::sleep(Duration::from_millis(distance_to_incident as u64 * 10000));
             self.state = DroneState::ResolvingIncident;
-            self.current_pos = Position::from_lat_lon(incident.location.latitude + 0.0001, incident.location.longitude + 0.0001);
+            self.current_pos = Position::from_lat_lon(
+                incident.location.lat() + 0.0001,
+                incident.location.lon() + 0.0001,
+            );
             client
                 .publish(self.as_bytes(), "drone".to_string(), logger)
                 .unwrap();
@@ -185,7 +188,8 @@ impl Drone {
 
         let current_pos = Position::from_lat_lon(current_lat, current_lon);
         let initial_pos = Position::from_lat_lon(initial_lat, initial_lon);
-        let charging_station_pos = Position::from_lat_lon(charging_station_lat, charging_station_lon);
+        let charging_station_pos =
+            Position::from_lat_lon(charging_station_lat, charging_station_lon);
 
         Drone {
             id,
@@ -201,7 +205,7 @@ impl Drone {
     }
 
     fn get_distance_to_incident(&self, lat: f64, lon: f64) -> f64 {
-        let x = self.initial_pos.lat()- lat;
+        let x = self.initial_pos.lat() - lat;
         let y = self.initial_pos.lon() - lon;
         (x * x + y * y).sqrt()
     }
@@ -214,7 +218,9 @@ impl Drone {
         let mut drones_closer = 0;
 
         for drone in self.drones.get_drones() {
-            if self.get_distance_to_incident(drone.initial_pos.lat(), drone.initial_pos.lon()) < distance {
+            if self.get_distance_to_incident(drone.initial_pos.lat(), drone.initial_pos.lon())
+                < distance
+            {
                 drones_closer += 1;
                 if drones_closer >= 2 {
                     return false;

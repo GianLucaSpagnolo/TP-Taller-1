@@ -1,22 +1,31 @@
 use egui::Ui;
 use walkers::{Map, Position};
 
-use crate::{
-    interfaces::{cam_interface::CamInterface, drone_interface::DroneInterface, incident_interface::IncidentInterface}, views::map_views::windows
-};
+use crate::{interfaces::global_interface::GlobalInterface, views::map_views::windows};
 
-use super::plugins::{cam_images, drone_images, inc_images};
+use super::plugins::{cam_images, drone_images, inc_images, DroneIcons};
 
 pub fn show_map(
     ui: &mut Ui,
     egui_ctx: &egui::Context,
     tiles: &mut walkers::Tiles,
     map_memory: &mut walkers::MapMemory,
-    cams: &mut CamInterface,
-    drones: &mut DroneInterface,
-    inc: &mut IncidentInterface,
+    global: &mut GlobalInterface,
     initial_position: Position,
 ) {
+    let cams = &mut global.cam_interface;
+    let drones = &mut global.drone_interface;
+    let inc = &mut global.inc_interface;
+
+    let drone_icons = DroneIcons {
+        default: drones.drone_icon.clone(),
+        alert: drones.drone_alert_icon.clone(),
+        going_back: drones.drone_back_icon.clone(),
+        resolving: drones.drone_resolving_icon.clone(),
+        low_battery: drones.drone_low_battery_icon.clone(),
+        charging: drones.drone_charging_icon.clone(),
+    };
+
     let map = Map::new(Some(tiles), map_memory, initial_position)
         .with_plugin(&mut inc.click_incident)
         .with_plugin(cam_images(
@@ -28,12 +37,7 @@ pub fn show_map(
         .with_plugin(drone_images(
             egui_ctx.clone(),
             &mut drones.drone_list.lock().unwrap(),
-            drones.drone_icon.clone(),
-            drones.drone_alert_icon.clone(),
-            drones.drone_back_icon.clone(),
-            drones.drone_resolving_icon.clone(),
-            drones.drone_low_battery_icon.clone(),
-            drones.drone_charging_icon.clone(),
+            drone_icons,
         ))
         .with_plugin(inc_images(
             egui_ctx.clone(),

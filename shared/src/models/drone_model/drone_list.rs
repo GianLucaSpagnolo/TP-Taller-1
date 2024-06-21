@@ -18,7 +18,7 @@ impl DroneList {
         }
     }
 
-    pub fn add (&mut self, drone: Drone) {
+    pub fn add(&mut self, drone: Drone) {
         self.drones.push(drone);
     }
 

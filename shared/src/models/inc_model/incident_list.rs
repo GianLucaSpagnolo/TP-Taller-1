@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::models::coordenates::Coordenates;
+use walkers::Position;
 
-use super::incident::{self, Incident, IncidentState};
+use super::incident::{Incident, IncidentState};
 
 /// ## IncidentList
 ///
@@ -17,7 +17,7 @@ pub struct IncidentList {
 }
 
 impl IncidentList {
-    pub fn add(&mut self, location: Coordenates) -> Incident {
+    pub fn add(&mut self, location: Position) -> Incident {
         let incident = Incident {
             id: self.incidents.len() as u8,
             location,
@@ -50,10 +50,38 @@ impl IncidentList {
 
         for _ in 0..incs_len {
             let incident = Incident::from_be_bytes(bytes[index..].to_vec());
-            index += incident::INCIDENT_SIZE;
+            index += Incident::len_in_bytes();
             incidents.insert(incident.id, incident);
         }
 
         IncidentList { incidents }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_serialization() {
+        let mut incident_list = IncidentList::default();
+        let incident = Incident {
+            id: 0,
+            location: Position::from_lat_lon(0.0, 0.0),
+            state: IncidentState::InProgess,
+            drones_covering: 0,
+        };
+        let incident2 = Incident {
+            id: 1,
+            location: Position::from_lat_lon(10.0, 10.0),
+            state: IncidentState::Resolved,
+            drones_covering: 0,
+        };
+        incident_list.incidents.insert(incident.id, incident);
+        incident_list.incidents.insert(incident2.id, incident2);
+        let bytes = incident_list.as_bytes();
+        let incident_list2 = IncidentList::from_be_bytes(bytes);
+
+        assert_eq!(incident_list.incidents, incident_list2.incidents);
     }
 }

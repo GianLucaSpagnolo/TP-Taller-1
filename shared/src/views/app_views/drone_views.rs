@@ -2,7 +2,10 @@ use eframe::egui::Ui;
 
 use egui_extras::{Column, TableBuilder};
 
-use crate::models::drone_model::{drone::{Drone, DroneState}, drone_list::DroneList};
+use crate::models::drone_model::{
+    drone::{Drone, DroneState},
+    drone_list::DroneList,
+};
 
 static COORDENATE_PRECISION: usize = 4;
 
@@ -16,7 +19,7 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
         };
         if let DroneState::GoingToIncident = drone.state {
             ui.label(egui::RichText::new("Atacando incidente").color(egui::Color32::RED));
-        }; 
+        };
         if let DroneState::GoingBack = drone.state {
             ui.label(egui::RichText::new("Volviendo a la base").color(egui::Color32::DARK_GREEN));
         };
@@ -33,13 +36,15 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
     row.col(|ui| {
         ui.label(&format!(
             "{:.1$}",
-            drone.current_pos.lat(), COORDENATE_PRECISION
+            drone.current_pos.lat(),
+            COORDENATE_PRECISION
         ));
     });
     row.col(|ui| {
         ui.label(&format!(
             "{:.1$}",
-            drone.current_pos.lon(), COORDENATE_PRECISION
+            drone.current_pos.lon(),
+            COORDENATE_PRECISION
         ));
     });
 }

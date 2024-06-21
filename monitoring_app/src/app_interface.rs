@@ -37,16 +37,26 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
                 show_incidents(
                     ui,
                     &mut app.client,
-                    &mut app.inc_interface,
+                    &mut app.global_interface.inc_interface,
                     &app.logger,
                     &app.config.db_path,
                 );
             });
             egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
-                show_cams(ui, &app.cam_interface.cam_list.lock().unwrap());
+                show_cams(
+                    ui,
+                    &app.global_interface.cam_interface.cam_list.lock().unwrap(),
+                );
             });
             egui::CollapsingHeader::new("Drones").show(ui, |ui| {
-                show_drones(ui, &app.drone_interface.drone_list.lock().unwrap());
+                show_drones(
+                    ui,
+                    &app.global_interface
+                        .drone_interface
+                        .drone_list
+                        .lock()
+                        .unwrap(),
+                );
             });
         });
 }
@@ -58,9 +68,7 @@ pub fn map(app: &mut MonitoringApp, ctx: &egui::Context) {
             ctx,
             &mut app.map_interface.tiles,
             &mut app.map_interface.map_memory,
-            &mut app.cam_interface,
-            &mut app.drone_interface,
-            &mut app.inc_interface,
+            &mut app.global_interface,
             app.config.initial_position,
         );
     });

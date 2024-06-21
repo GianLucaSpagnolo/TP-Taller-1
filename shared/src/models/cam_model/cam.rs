@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::models::coordenates::Coordenates;
+use walkers::Position;
 
 /// ## CamState
 ///
@@ -41,7 +41,7 @@ impl Display for CamState {
 
 pub struct Cam {
     pub id: u8,
-    pub location: Coordenates,
+    pub location: Position,
     pub state: CamState,
     pub incidents_covering: u8,
 }
@@ -50,18 +50,25 @@ impl Display for Cam {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Cam {{ id: {}, state: {}, location: {} }}",
-            self.id, self.state, self.location
+            "Cam {{ id: {}, state: {}, location: ({};{}) }}",
+            self.id,
+            self.state,
+            self.location.lat(),
+            self.location.lon()
         )
     }
 }
 
 impl Cam {
+    pub fn len_in_bytes() -> usize {
+        1 + 8 + 8 + 1 + 1
+    }
+
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
         bytes.push(self.id);
-        bytes.extend_from_slice(self.location.latitude.to_be_bytes().as_ref());
-        bytes.extend_from_slice(self.location.longitude.to_be_bytes().as_ref());
+        bytes.extend_from_slice(self.location.lat().to_be_bytes().as_ref());
+        bytes.extend_from_slice(self.location.lon().to_be_bytes().as_ref());
         let state = match self.state {
             CamState::SavingEnergy => 0,
             CamState::Alert => 1,
@@ -86,23 +93,70 @@ impl Cam {
             0 => CamState::SavingEnergy,
             1 => CamState::Alert,
             2 => CamState::Removed,
-            _ => panic!("Invalid state"),
+            _ => panic!("Invalid state {}", bytes[index]),
         };
         index += 1;
 
         let incidents_covering = bytes[index];
         Cam {
             id,
-            location: Coordenates {
-                latitude,
-                longitude,
-            },
+            location: Position::from_lat_lon(latitude, longitude),
             state,
             incidents_covering,
         }
     }
+}
 
-    pub fn is_in_alert(&self) -> bool {
-        self.state == CamState::Alert
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_serialization() {
+        let cam = Cam {
+            id: 0,
+            location: Position::from_lat_lon(1.0, 1.0),
+            state: CamState::SavingEnergy,
+            incidents_covering: 0,
+        };
+        let cam2 = Cam {
+            id: 1,
+            location: Position::from_lat_lon(1.0, 10.0),
+            state: CamState::Alert,
+            incidents_covering: 0,
+        };
+        let cam3 = Cam {
+            id: 2,
+            location: Position::from_lat_lon(10.0, 1.0),
+            state: CamState::Removed,
+            incidents_covering: 0,
+        };
+
+        let bytes = cam.as_bytes();
+
+        let cam_from_bytes = Cam::from_be_bytes(bytes);
+
+        assert_eq!(cam.id, cam_from_bytes.id);
+        assert_eq!(cam.location, cam_from_bytes.location);
+        assert_eq!(cam.state, cam_from_bytes.state);
+        assert_eq!(cam.incidents_covering, cam_from_bytes.incidents_covering);
+
+        let bytes = cam2.as_bytes();
+
+        let cam_from_bytes = Cam::from_be_bytes(bytes);
+
+        assert_eq!(cam2.id, cam_from_bytes.id);
+        assert_eq!(cam2.location, cam_from_bytes.location);
+        assert_eq!(cam2.state, cam_from_bytes.state);
+        assert_eq!(cam2.incidents_covering, cam_from_bytes.incidents_covering);
+
+        let bytes = cam3.as_bytes();
+
+        let cam_from_bytes = Cam::from_be_bytes(bytes);
+
+        assert_eq!(cam3.id, cam_from_bytes.id);
+        assert_eq!(cam3.location, cam_from_bytes.location);
+        assert_eq!(cam3.state, cam_from_bytes.state);
+        assert_eq!(cam3.incidents_covering, cam_from_bytes.incidents_covering);
     }
 }

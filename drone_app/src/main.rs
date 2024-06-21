@@ -31,7 +31,7 @@ pub fn process_messages(
                     .unwrap()
                     .process_incident(&mut client, incident.clone(), &logger);
             } else if message_received.topic.as_str() == "drone" {
-                let drone_received = Drone::from_be_bytes(message_received.data);
+                let drone_received = Drone::from_be_bytes(&message_received.data);
                 if drone_received.id == drone.lock().unwrap().id {
                     continue;
                 }
@@ -124,7 +124,7 @@ fn main() -> Result<(), Error> {
         distancia_maxima_alcance,
         duracion_de_bateria,
         initial_pos,
-        charging_station_pos
+        charging_station_pos,
     )?;
 
     let config = ClientConfig::from_file(String::from(config_path))?;

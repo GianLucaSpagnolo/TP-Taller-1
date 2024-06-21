@@ -10,14 +10,19 @@ use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
     interfaces::{
-        cam_interface::CamInterface, drone_interface::DroneInterface, incident_interface::IncidentInterface, map_interface::MapInterface
+        cam_interface::CamInterface, drone_interface::DroneInterface,
+        global_interface::GlobalInterface, incident_interface::IncidentInterface,
+        map_interface::MapInterface,
     },
     models::{
         cam_model::{
             cam::{Cam, CamState},
             cam_list::CamList,
         },
-        drone_model::{drone::{Drone, DroneState}, drone_list::DroneList},
+        drone_model::{
+            drone::{Drone, DroneState},
+            drone_list::DroneList,
+        },
         inc_model::incident_list::IncidentList,
     },
 };
@@ -38,9 +43,7 @@ pub struct MonitoringApp {
     pub config: MonitoringAppConfig,
     pub client: MqttClient,
     pub logger: Logger,
-    pub cam_interface: CamInterface,
-    pub drone_interface: DroneInterface,
-    pub inc_interface: IncidentInterface,
+    pub global_interface: GlobalInterface,
     pub map_interface: MapInterface,
 }
 
@@ -89,25 +92,19 @@ fn process_messages(
                     }
                 }
                 "drone" => {
-                    let dron = Drone::from_be_bytes(message_received.data);
+                    let dron = Drone::from_be_bytes(&message_received.data);
 
                     let incidents_historial = &mut incident_list.lock().unwrap();
-                    
-                    let inc_id = match dron.id_incident_covering{
-                        Some(id) => Some(id.clone()),
-                        None => None
-                    };
+
+                    let inc_id = dron.id_incident_covering;
 
                     let drone_state = dron.state.clone();
 
                     drone_list.lock().unwrap().update_drone(dron);
-                    
+
                     if let DroneState::GoingToIncident = drone_state {
                         if let Some(inc_id) = inc_id {
-                            let incident = incidents_historial
-                                .incidents
-                                .get_mut(&inc_id)
-                                .unwrap();
+                            let incident = incidents_historial.incidents.get_mut(&inc_id).unwrap();
                             incident.drones_covering += 1;
                             println!("Drones cubriendo: {:?}", incident);
                         };
@@ -142,29 +139,37 @@ impl MonitoringApp {
         egui_ctx: Context,
         incident_list: Arc<Mutex<IncidentList>>,
     ) -> Self {
+        let cam_interface = CamInterface::new(
+            cam_list_ref,
+            &config.cam_icon_path,
+            &config.cam_alert_icon_path,
+        );
+
+        let drone_interface = DroneInterface::new(
+            drone_list_ref,
+            &config.drone_icon_path,
+            &config.drone_alert_icon_path,
+            &config.drone_back_icon_path,
+            &config.drone_resolving_icon_path,
+            &config.drone_low_battery_icon_path,
+            &config.drone_charging_icon_path,
+        );
+
+        let inc_interface = IncidentInterface::new(
+            config.db_path.to_string(),
+            true,
+            &config.inc_icon_path,
+            incident_list,
+        );
+
         Self {
             client,
             logger,
-            cam_interface: CamInterface::new(
-                cam_list_ref,
-                &config.cam_icon_path,
-                &config.cam_alert_icon_path,
-            ),
-            drone_interface: DroneInterface::new(
-                drone_list_ref,
-                &config.drone_icon_path,
-                &config.drone_alert_icon_path,
-                &config.drone_back_icon_path,
-                &config.drone_resolving_icon_path,
-                &config.drone_low_battery_icon_path,
-                &config.drone_charging_icon_path,
-            ),
-            inc_interface: IncidentInterface::new(
-                config.db_path.to_string(),
-                true,
-                &config.inc_icon_path,
-                incident_list,
-            ),
+            global_interface: GlobalInterface {
+                cam_interface,
+                drone_interface,
+                inc_interface,
+            },
             map_interface: MapInterface::new(egui_ctx.to_owned()),
             config,
         }
@@ -210,7 +215,14 @@ impl MonitoringApp {
 
         client.subscribe(vec!["camaras"], &logger)?;
         client.subscribe(vec!["drone"], &logger)?;
-        match run_interface(client, logger, cam_list_ref, dron_list_ref, config, incident_list_ref) {
+        match run_interface(
+            client,
+            logger,
+            cam_list_ref,
+            dron_list_ref,
+            config,
+            incident_list_ref,
+        ) {
             Ok(_) => Ok(MonitoringHandler {
                 broker_listener: listener.handler,
                 message_handler: handler,

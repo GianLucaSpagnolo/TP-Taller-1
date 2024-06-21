@@ -3,7 +3,6 @@ pub mod models {
         pub mod cam;
         pub mod cam_list;
     }
-    pub mod coordenates;
 
     pub mod drone_model {
         pub mod drone;
@@ -18,6 +17,7 @@ pub mod models {
 pub mod interfaces {
     pub mod cam_interface;
     pub mod drone_interface;
+    pub mod global_interface;
     pub mod incident_interface;
     pub mod map_interface;
 }
