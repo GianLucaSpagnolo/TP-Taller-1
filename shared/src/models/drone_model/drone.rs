@@ -8,6 +8,8 @@ use walkers::Position;
 
 use crate::models::inc_model::incident::Incident;
 
+use super::drone_list::DroneList;
+
 #[derive(Debug, Clone)]
 pub enum DroneState {
     Available,
@@ -28,7 +30,7 @@ pub struct Drone {
     charging_station_pos: Position,
     pub state: DroneState,
     pub id_incident_covering: Option<u8>,
-    drones: Vec<Drone>,
+    drones: DroneList,
 }
 
 impl Drone {
@@ -48,7 +50,7 @@ impl Drone {
             charging_station_pos,
             state: DroneState::Available,
             id_incident_covering: None,
-            drones: Vec::new(),
+            drones: DroneList::default(),
         })
     }
 
@@ -88,10 +90,10 @@ impl Drone {
         drone_received: Drone,
         logger: &Logger,
     ) {
-        if let Some(index) = self.drones.iter().position(|d| d.id == drone_received.id) {
-            self.drones[index] = drone_received;
+        if let Some(index) = self.drones.contais(&drone_received) {
+            self.drones.modify(index, drone_received);
         } else {
-            self.drones.push(drone_received);
+            self.drones.add(drone_received);
             client
                 .publish(self.as_bytes(), "drone".to_string(), logger)
                 .unwrap();
@@ -125,37 +127,11 @@ impl Drone {
 
         bytes.push(id_incident_covering);
 
-        let drones_len = self.drones.len() as u16;
-        bytes.extend_from_slice(&drones_len.to_be_bytes());
-
-        for drone in &self.drones {
-            bytes.push(self.id);
-            bytes.extend_from_slice(&drone.distancia_maxima_alcance.to_be_bytes());
-            bytes.extend_from_slice(&drone.duracion_de_bateria.to_be_bytes());
-            bytes.extend_from_slice(&drone.initial_pos.lat().to_be_bytes());
-            bytes.extend_from_slice(&drone.initial_pos.lon().to_be_bytes());
-            bytes.extend_from_slice(&drone.current_pos.lat().to_be_bytes());
-            bytes.extend_from_slice(&drone.current_pos.lon().to_be_bytes());
-            bytes.extend_from_slice(&drone.charging_station_pos.lat().to_be_bytes());
-            bytes.extend_from_slice(&drone.charging_station_pos.lon().to_be_bytes());
-
-            let state = match self.state {
-                DroneState::Available => 0,
-                DroneState::GoingToIncident => 1,
-                DroneState::GoingBack => 2,
-                DroneState::ResolvingIncident => 3,
-                DroneState::LowBattery => 4,
-                DroneState::Charging => 5,
-            };
-            bytes.push(state);
-
-            let id_incident_covering = self.id_incident_covering.unwrap_or(0);
-            bytes.push(id_incident_covering);
-        }
+        bytes.extend_from_slice(&self.drones.as_bytes());
 
         bytes
     }
-    pub fn from_be_bytes(bytes: Vec<u8>) -> Drone {
+    pub fn from_be_bytes(bytes: &[u8]) -> Drone {
         let mut index = 0;
 
         let id = bytes[index];
@@ -203,16 +179,9 @@ impl Drone {
             id => Some(id),
         };
 
-        let drones_len = u16::from_be_bytes(bytes[index..index + 2].try_into().unwrap());
-        index += 2;
+        index += 1;
 
-        let mut drones = Vec::new();
-
-        for _ in 0..drones_len {
-            let drone = Drone::from_be_bytes(bytes[index..index + 49].into());
-            index += 49;
-            drones.push(drone);
-        }
+        let drones = DroneList::drones_from_be_bytes(bytes, index);
 
         let current_pos = Position::from_lat_lon(current_lat, current_lon);
         let initial_pos = Position::from_lat_lon(initial_lat, initial_lon);
@@ -244,7 +213,7 @@ impl Drone {
     fn is_closer_than_other_drones(&self, distance: f64) -> bool {
         let mut drones_closer = 0;
 
-        for drone in &self.drones {
+        for drone in self.drones.get_drones() {
             if self.get_distance_to_incident(drone.initial_pos.lat(), drone.initial_pos.lon()) < distance {
                 drones_closer += 1;
                 if drones_closer >= 2 {
