@@ -1,4 +1,4 @@
-use std::{fs, io::{self, Error}, sync::{mpsc::Receiver, Arc, Mutex}, thread::{self, JoinHandle}};
+use std::{env::args, fs, io::{self, Error}, process, sync::{mpsc::Receiver, Arc, Mutex}, thread::{self, JoinHandle}};
 
 use drone_app::drone::Drone;
 use mqtt::{
@@ -6,8 +6,7 @@ use mqtt::{
     config::{client_config::ClientConfig, mqtt_config::Config},
 };
 use logger::logger_handler::{create_logger_handler, Logger};
-use shared::models::inc_model::incident::{Incident, IncidentState};
-
+use shared::models::inc_model::incident::Incident;
 
 pub fn process_messages(
     client: &mut MqttClient,
@@ -26,8 +25,8 @@ pub fn process_messages(
                 if drone_received.id == drone.lock().unwrap().id {
                     continue;
                 }
-                println!("Mensaje recibido: {:?}", drone_received);
-                client.publish(drone_received.as_bytes(), "drone".to_string(), &logger).unwrap();
+                println!("Drone received: {:?}", drone_received);
+                drone.lock().unwrap().process_drone_message(&mut client, drone_received, &logger);
             }
         }
     });
@@ -36,8 +35,15 @@ pub fn process_messages(
 
 
 fn main() -> Result<(), Error> {
-    let config_path = "drone_app/config/drone_config.txt";
-    let contents = fs::read_to_string("drone_app/config/initial_config.txt")?;
+    let args: Vec<String> = args().collect();
+    if args.len() < 3 {
+        eprintln!("Usage: {} <path_to_config_file>", args[0]);
+        process::exit(1);
+    }
+
+    let contents = fs::read_to_string(&args[1])?; 
+    let config_path = &args[2];
+
     let mut distancia_maxima_alcance: f64 = 0.0;
     let mut duracion_de_bateria: f64 = 0.0;
     let mut initial_lat: f64 = 0.0;

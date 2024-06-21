@@ -1,0 +1,7 @@
+distancia_maxima_alcance: 0.015
+duracion_de_bateria: 10
+initial_lat: -34.5177712
+initial_lon: -58.3426488
+charging_station_lat: -34.5
+charging_station_lon: -58.3
+id: 2
