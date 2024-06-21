@@ -11,6 +11,8 @@ mqtt = { path = "../mqtt" }
 shared = { path = "../shared" }
 logger = { path = "../logger" }
 
+walkers = "0.22.0"
+
 [[bin]]
 name = "drone"
 path = "src/main.rs"

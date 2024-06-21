@@ -3,7 +3,9 @@ use std::sync::{Arc, Mutex};
 use egui::{Style, Visuals};
 use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
+use shared::models::drone_model::drone_list::DroneList;
 use shared::models::inc_model::incident_list::IncidentList;
+use shared::views::app_views::drone_views::show_drones;
 use shared::views::app_views::inc_views::show_incidents;
 use shared::views::icon::get_icon_data;
 use shared::views::map_views::map::show_map;
@@ -43,6 +45,9 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
             egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
                 show_cams(ui, &app.cam_interface.cam_list.lock().unwrap());
             });
+            egui::CollapsingHeader::new("Drones").show(ui, |ui| {
+                show_drones(ui, &app.drone_interface.drone_list.lock().unwrap());
+            });
         });
 }
 
@@ -54,6 +59,7 @@ pub fn map(app: &mut MonitoringApp, ctx: &egui::Context) {
             &mut app.map_interface.tiles,
             &mut app.map_interface.map_memory,
             &mut app.cam_interface,
+            &mut app.drone_interface,
             &mut app.inc_interface,
             app.config.initial_position,
         );
@@ -110,6 +116,7 @@ pub fn run_interface(
     client: MqttClient,
     logger: Logger,
     cam_list_ref: Arc<Mutex<CamList>>,
+    drone_list_ref: Arc<Mutex<DroneList>>,
     config: MonitoringAppConfig,
     incident_list: Arc<Mutex<IncidentList>>,
 ) -> Result<(), eframe::Error> {
@@ -124,6 +131,7 @@ pub fn run_interface(
                 client,
                 logger,
                 cam_list_ref,
+                drone_list_ref,
                 creation_context.egui_ctx.to_owned(),
                 incident_list,
             ))

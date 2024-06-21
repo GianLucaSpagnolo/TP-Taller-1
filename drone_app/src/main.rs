@@ -13,6 +13,7 @@ use mqtt::{
     config::{client_config::ClientConfig, mqtt_config::Config},
 };
 use shared::models::{drone_model::drone::Drone, inc_model::incident::Incident};
+use walkers::Position;
 
 pub fn process_messages(
     client: &mut MqttClient,
@@ -115,14 +116,15 @@ fn main() -> Result<(), Error> {
         }
     }
 
+    let initial_pos = Position::from_lat_lon(initial_lat, initial_lon);
+    let charging_station_pos = Position::from_lat_lon(charging_station_lat, charging_station_lon);
+
     let drone = Drone::init(
         id,
         distancia_maxima_alcance,
         duracion_de_bateria,
-        initial_lat,
-        initial_lon,
-        charging_station_lat,
-        charging_station_lon,
+        initial_pos,
+        charging_station_pos
     )?;
 
     let config = ClientConfig::from_file(String::from(config_path))?;

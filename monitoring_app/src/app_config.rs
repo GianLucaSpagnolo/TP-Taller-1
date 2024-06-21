@@ -11,6 +11,12 @@ pub struct MonitoringAppConfig {
     pub cam_icon_path: String,
     pub cam_alert_icon_path: String,
     pub inc_icon_path: String,
+    pub drone_icon_path: String,
+    pub drone_alert_icon_path: String,
+    pub drone_back_icon_path: String,
+    pub drone_resolving_icon_path: String,
+    pub drone_low_battery_icon_path: String,
+    pub drone_charging_icon_path: String,
     pub db_path: String,
 }
 
@@ -23,6 +29,12 @@ impl MonitoringAppConfig {
         let mut cam_icon_path = String::new();
         let mut cam_alert_icon_path = String::new();
         let mut inc_icon_path = String::new();
+        let mut drone_icon_path = String::new();
+        let mut drone_alert_icon_path = String::new();
+        let mut drone_back_icon_path = String::new();
+        let mut drone_resolving_icon_path = String::new();
+        let mut drone_low_battery_icon_path = String::new();
+        let mut drone_charging_icon_path = String::new();
         let mut db_path = String::new();
 
         for line in contents.lines() {
@@ -62,6 +74,24 @@ impl MonitoringAppConfig {
                 "inc_icon_path" => {
                     inc_icon_path = parts[1].trim().to_string();
                 }
+                "drone_icon_path" => {
+                    drone_icon_path = parts[1].trim().to_string();
+                }
+                "drone_alert_icon_path" => {
+                    drone_alert_icon_path = parts[1].trim().to_string();
+                }
+                "drone_back_icon_path" => {
+                    drone_back_icon_path = parts[1].trim().to_string();
+                }
+                "drone_resolving_icon_path" => {
+                    drone_resolving_icon_path = parts[1].trim().to_string();
+                }
+                "drone_low_battery_icon_path" => {
+                    drone_low_battery_icon_path = parts[1].trim().to_string();
+                }
+                "drone_charging_icon_path" => {
+                    drone_charging_icon_path = parts[1].trim().to_string();
+                }
                 "db_path" => {
                     db_path = parts[1].trim().to_string();
                 }
@@ -87,6 +117,12 @@ impl MonitoringAppConfig {
                 cam_icon_path,
                 cam_alert_icon_path,
                 inc_icon_path,
+                drone_icon_path,
+                drone_alert_icon_path,
+                drone_back_icon_path,
+                drone_resolving_icon_path,
+                drone_low_battery_icon_path,
+                drone_charging_icon_path,
                 db_path,
             });
         }

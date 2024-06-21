@@ -25,6 +25,7 @@ pub mod interfaces {
 pub mod views {
     pub mod app_views {
         pub mod cams_views;
+        pub mod drone_views;
         pub mod inc_views;
     }
 

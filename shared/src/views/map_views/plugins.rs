@@ -4,7 +4,7 @@ use walkers::{
     Plugin, Position, Projector,
 };
 
-use crate::models::{cam_model::cam_list::CamList, inc_model::incident_list::IncidentList};
+use crate::models::{cam_model::cam_list::CamList, drone_model::{drone::DroneState, drone_list::DroneList}, inc_model::incident_list::IncidentList};
 
 // Helper structure for the `Images` plugin.
 pub struct ImgPluginData {
@@ -46,6 +46,55 @@ pub fn cam_images(
             .collect(),
     )
 }
+
+pub fn drone_images(
+    egui_ctx: Context,
+    drones: &mut DroneList,
+    icon: ColorImage,
+    alert_icon: ColorImage,
+    back_icon: ColorImage,
+    resolving_icon: ColorImage,
+    low_battery_icon: ColorImage,
+    charging_icon: ColorImage,
+) -> impl Plugin {
+    let default_texture = Texture::from_color_image(icon, &egui_ctx);
+    let alert_texture = Texture::from_color_image(alert_icon, &egui_ctx);
+    let back_icon = Texture::from_color_image(back_icon, &egui_ctx);
+    let resolving_icon = Texture::from_color_image(resolving_icon, &egui_ctx);
+    let low_battery_icon = Texture::from_color_image(low_battery_icon, &egui_ctx);
+    let charging_icon = Texture::from_color_image(charging_icon, &egui_ctx);
+
+    let angle = 0.0;
+    let x_scale = 0.1;
+    let y_scale = 0.1;
+
+    Images::new(
+        drones.drones
+            .iter()
+            .map(|drone| {
+                let pos = drone.current_pos;
+                let texture = if let DroneState::GoingToIncident = drone.state {
+                    alert_texture.clone()
+                } else if let DroneState::GoingBack = drone.state {
+                    back_icon.clone()
+                } else if let DroneState::ResolvingIncident = drone.state {
+                    resolving_icon.clone()
+                } else if let DroneState::LowBattery = drone.state {
+                    low_battery_icon.clone()
+                } else if let DroneState::Charging = drone.state {
+                    charging_icon.clone()
+                } else {
+                    default_texture.clone()
+                };
+                let mut image = Image::new(texture.clone(), pos);
+                image.scale(x_scale, y_scale);
+                image.angle(angle);
+                image
+            })
+            .collect(),
+    )
+}
+
 
 pub fn inc_images(
     egui_ctx: Context,
