@@ -2,6 +2,18 @@
 
 ## Grupo
 
+
+## Instalacion de depencias
+
+    cd data/scripts
+    ./install_reqs.sh
+    cd ..
+    cd ..
+
 ## Como usar
+
+    cargo r --bin broker
+    cargo r --bin monitoring_app
+    cargo r --bin cams_system
 
 ## Como testear

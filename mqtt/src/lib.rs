@@ -2,6 +2,7 @@ pub mod client {
     pub mod client_listener;
     pub mod client_message;
     pub mod mqtt_client;
+    pub mod client_connector;
 }
 
 pub mod server {
@@ -9,6 +10,7 @@ pub mod server {
     pub mod mqtt_server;
     pub mod server_handlers;
     pub mod server_session;
+    pub mod server_connector;
 }
 
 pub mod logging {
