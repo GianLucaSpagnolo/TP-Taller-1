@@ -30,7 +30,7 @@ pub struct Drone {
     pub charging_station_pos: Position, //16
     pub state: DroneState, //1
     pub id_incident_covering: Option<u8>, //1
-    pub drones: DroneList, 
+    pub drones: DroneList,
 }
 
 impl Drone {
@@ -130,10 +130,9 @@ impl Drone {
 
         bytes.push(id_incident_covering);
 
-        bytes.extend_from_slice(&self.drones.as_bytes());
-
         bytes
     }
+
     pub fn from_be_bytes(bytes: &[u8]) -> Drone {
         let mut index = 0;
 
@@ -182,10 +181,6 @@ impl Drone {
             id => Some(id),
         };
 
-        index += 1;
-
-        let drones = DroneList::drones_from_be_bytes(bytes, index);
-
         let current_pos = Position::from_lat_lon(current_lat, current_lon);
         let initial_pos = Position::from_lat_lon(initial_lat, initial_lon);
         let charging_station_pos =
@@ -200,13 +195,10 @@ impl Drone {
             charging_station_pos,
             state,
             id_incident_covering,
-            drones,
+            drones: DroneList::default(),
         }
     }
 
-    pub fn size(&self) -> usize {
-        1 + 8 + 8 + 16 + 16 + 16 + 1 + 1 + self.drones.size()
-    }
     fn get_distance_to_incident(&self, lat: f64, lon: f64) -> f64 {
         let x = self.initial_pos.lat() - lat;
         let y = self.initial_pos.lon() - lon;
@@ -236,7 +228,6 @@ impl Drone {
 
 
 #[cfg(test)]
-
 mod tests {
 
     use walkers::Position;
@@ -267,6 +258,5 @@ mod tests {
         assert_eq!(dron.charging_station_pos.lat(), dron_deserialized.charging_station_pos.lat());
         assert_eq!(dron.charging_station_pos.lon(), dron_deserialized.charging_station_pos.lon());
         assert_eq!(dron.id_incident_covering, dron_deserialized.id_incident_covering);
-        assert_eq!(dron.drones.size(), 0);
     }
 }
