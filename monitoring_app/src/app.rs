@@ -1,3 +1,5 @@
+
+use std::time::Duration;
 use std::{
     fs,
     io::Error,
@@ -23,7 +25,7 @@ use shared::{
             drone::{Drone, DroneState},
             drone_list::DroneList,
         },
-        inc_model::incident_list::IncidentList,
+        inc_model::{incident::IncidentState, incident_list::IncidentList},
     },
 };
 
@@ -74,7 +76,10 @@ fn process_messages(
     drone_list: Arc<Mutex<DroneList>>,
     incident_list: Arc<Mutex<IncidentList>>,
     db_path: String,
+    client: &mut MqttClient,
+    logger: Logger,
 ) -> Result<JoinHandle<()>, Error> {
+    let mut client = client.clone();
     let handler: JoinHandle<()> = thread::spawn(move || loop {
         for message_received in receiver.try_iter() {
             match message_received.topic.as_str() {
@@ -102,11 +107,16 @@ fn process_messages(
 
                     drone_list.lock().unwrap().update_drone(dron);
 
-                    if let DroneState::GoingToIncident = drone_state {
+                    if let DroneState::ResolvingIncident = drone_state {
                         if let Some(inc_id) = inc_id {
                             let incident = incidents_historial.incidents.get_mut(&inc_id).unwrap();
                             incident.drones_covering += 1;
-                            println!("Drones cubriendo: {:?}", incident);
+                            if incident.drones_covering == 2 {
+                                thread::sleep(Duration::from_secs(3));
+                                incident.state = IncidentState::Resolved;
+                                incident.drones_covering = 0;
+                                client.publish(incident.as_bytes(), "inc".to_string(), &logger).unwrap();
+                            }
                         };
                     };
                     let bytes = incidents_historial.as_bytes();
@@ -211,6 +221,8 @@ impl MonitoringApp {
             dron_list_ref.clone(),
             incident_list_ref.clone(),
             config.db_path.clone(),
+            &mut client,
+            logger.clone()
         )?;
 
         client.subscribe(vec!["camaras"], &logger)?;

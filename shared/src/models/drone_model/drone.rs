@@ -6,11 +6,11 @@ use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
 use walkers::Position;
 
-use crate::models::inc_model::incident::Incident;
+use crate::models::inc_model::incident::{Incident, IncidentState};
 
 use super::drone_list::DroneList;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DroneState {
     Available,
     GoingToIncident,
@@ -60,30 +60,47 @@ impl Drone {
         incident: Incident,
         logger: &Logger,
     ) {
-        let distance_to_incident =
-            self.get_distance_to_incident(incident.location.lat(), incident.location.lon());
-
-        if self.is_close_enough(distance_to_incident)
-            && self.is_closer_than_other_drones(distance_to_incident)
-        {
-            self.state = DroneState::GoingToIncident;
-            self.id_incident_covering = Some(incident.id);
-
-            client
-                .publish(self.as_bytes(), "drone".to_string(), logger)
-                .unwrap();
-            thread::sleep(Duration::from_millis(distance_to_incident as u64 * 10000));
-            self.state = DroneState::ResolvingIncident;
-            self.current_pos = Position::from_lat_lon(
-                incident.location.lat() + 0.0001,
-                incident.location.lon() + 0.0001,
-            );
-            client
-                .publish(self.as_bytes(), "drone".to_string(), logger)
-                .unwrap();
-            thread::sleep(Duration::from_millis(distance_to_incident as u64 * 10000));
-            self.current_pos = self.initial_pos;
-            self.state = DroneState::Available;
+        if incident.state == IncidentState::Resolved {
+            if self.id_incident_covering == Some(incident.id) {
+                self.state = DroneState::GoingBack;
+                client
+                    .publish(self.as_bytes(), "drone".to_string(), logger)
+                    .unwrap();
+                thread::sleep(Duration::from_secs(3));
+                self.current_pos = self.initial_pos;
+                self.state = DroneState::Available;
+                self.id_incident_covering = None;
+                client
+                    .publish(self.as_bytes(), "drone".to_string(), logger)
+                    .unwrap();
+            }
+            return;
+        } else if self.state == DroneState::Available {
+            
+            let distance_to_incident =
+                self.get_distance_to_incident(incident.location.lat(), incident.location.lon());
+    
+            if self.is_close_enough(distance_to_incident)
+                && self.is_closer_than_other_drones(distance_to_incident)
+            {
+                self.state = DroneState::GoingToIncident;
+                self.id_incident_covering = Some(incident.id);
+    
+                client
+                    .publish(self.as_bytes(), "drone".to_string(), logger)
+                    .unwrap();
+                
+                thread::sleep(Duration::from_millis(distance_to_incident as u64 * 1000));
+                self.state = DroneState::ResolvingIncident;
+                self.current_pos = Position::from_lat_lon(
+                    incident.location.lat() + 0.0001,
+                    incident.location.lon() + 0.0001,
+                );
+                client
+                    .publish(self.as_bytes(), "drone".to_string(), logger)
+                    .unwrap();
+    
+            }
         }
     }
 
