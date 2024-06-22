@@ -35,7 +35,6 @@ pub fn process_messages(
                 if drone_received.id == drone.lock().unwrap().id {
                     continue;
                 }
-                println!("Drone received: {:?}", drone_received);
                 drone
                     .lock()
                     .unwrap()

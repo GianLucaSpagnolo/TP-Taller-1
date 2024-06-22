@@ -78,10 +78,10 @@ impl Drone {
         } else if self.state == DroneState::Available {
             
             let distance_to_incident =
-                self.get_distance_to_incident(incident.location.lat(), incident.location.lon());
+                get_distance_to_incident(self, incident.location.lat(), incident.location.lon());
     
             if self.is_close_enough(distance_to_incident)
-                && self.is_closer_than_other_drones(distance_to_incident)
+                && self.is_closer_than_other_drones(distance_to_incident, incident.location.lat(), incident.location.lon())
             {
                 self.state = DroneState::GoingToIncident;
                 self.id_incident_covering = Some(incident.id);
@@ -216,31 +216,30 @@ impl Drone {
         }
     }
 
-    fn get_distance_to_incident(&self, lat: f64, lon: f64) -> f64 {
-        let x = self.initial_pos.lat() - lat;
-        let y = self.initial_pos.lon() - lon;
-        (x * x + y * y).sqrt()
-    }
-
     fn is_close_enough(&self, distance: f64) -> bool {
         distance < self.distancia_maxima_alcance
     }
 
-    fn is_closer_than_other_drones(&self, distance: f64) -> bool {
+    fn is_closer_than_other_drones(&self, distance: f64, lat: f64, lon: f64) -> bool {
         let mut drones_closer = 0;
 
         for drone in self.drones.get_drones() {
-            if self.get_distance_to_incident(drone.initial_pos.lat(), drone.initial_pos.lon())
-                < distance
+            if get_distance_to_incident(drone, lat, lon) < distance
             {
                 drones_closer += 1;
-                if drones_closer >= 2 {
+                if drones_closer == 2 {
                     return false;
                 }
             }
         }
         true
     }
+}
+
+pub fn get_distance_to_incident(drone: &Drone, lat: f64, lon: f64) -> f64 {
+    let x = drone.initial_pos.lat() - lat;
+    let y = drone.initial_pos.lon() - lon;
+    (x * x + y * y).sqrt()
 }
 
 
