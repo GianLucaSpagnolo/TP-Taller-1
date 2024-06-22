@@ -3,7 +3,7 @@
 ## Grupo
 
 
-## Instalacion de depencias
+## Instalacion de dependencias
 
     cd data/scripts
     ./install_reqs.sh
