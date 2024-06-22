@@ -22,15 +22,15 @@ pub enum DroneState {
 
 #[derive(Debug)]
 pub struct Drone {
-    pub id: u8,
-    distancia_maxima_alcance: f64,
-    duracion_de_bateria: f64,
-    initial_pos: Position,
-    pub current_pos: Position,
-    charging_station_pos: Position,
-    pub state: DroneState,
-    pub id_incident_covering: Option<u8>,
-    drones: DroneList,
+    pub id: u8, //1
+    pub distancia_maxima_alcance: f64, //8
+    pub duracion_de_bateria: f64, //8
+    pub initial_pos: Position, //16
+    pub current_pos: Position, //16
+    pub charging_station_pos: Position, //16
+    pub state: DroneState, //1
+    pub id_incident_covering: Option<u8>, //1
+    pub drones: DroneList, 
 }
 
 impl Drone {
@@ -204,6 +204,9 @@ impl Drone {
         }
     }
 
+    pub fn size(&self) -> usize {
+        1 + 8 + 8 + 16 + 16 + 16 + 1 + 1 + self.drones.size()
+    }
     fn get_distance_to_incident(&self, lat: f64, lon: f64) -> f64 {
         let x = self.initial_pos.lat() - lat;
         let y = self.initial_pos.lon() - lon;
@@ -228,5 +231,42 @@ impl Drone {
             }
         }
         true
+    }
+}
+
+
+#[cfg(test)]
+
+mod tests {
+
+    use walkers::Position;
+
+    use crate::models::drone_model::drone::Drone;
+
+    #[test]
+    fn test_dron_serialization() {
+        let dron = Drone::init(
+            1,
+            100.0,
+            100.0,
+            Position::from_lat_lon(0.0, 0.0),
+            Position::from_lat_lon(0.0, 0.0),
+        )
+        .unwrap();
+
+        let bytes = dron.as_bytes();
+        let dron_deserialized = Drone::from_be_bytes(&bytes);
+
+        assert_eq!(dron.id, dron_deserialized.id);
+        assert_eq!(dron.distancia_maxima_alcance, dron_deserialized.distancia_maxima_alcance);
+        assert_eq!(dron.duracion_de_bateria, dron_deserialized.duracion_de_bateria);
+        assert_eq!(dron.initial_pos.lat(), dron_deserialized.initial_pos.lat());
+        assert_eq!(dron.initial_pos.lon(), dron_deserialized.initial_pos.lon());
+        assert_eq!(dron.current_pos.lat(), dron_deserialized.current_pos.lat());
+        assert_eq!(dron.current_pos.lon(), dron_deserialized.current_pos.lon());
+        assert_eq!(dron.charging_station_pos.lat(), dron_deserialized.charging_station_pos.lat());
+        assert_eq!(dron.charging_station_pos.lon(), dron_deserialized.charging_station_pos.lon());
+        assert_eq!(dron.id_incident_covering, dron_deserialized.id_incident_covering);
+        assert_eq!(dron.drones.size(), 0);
     }
 }
