@@ -24,7 +24,7 @@ pub enum DroneState {
 pub struct Drone {
     pub id: u8, //1
     pub distancia_maxima_alcance: f64, //8
-    pub duracion_de_bateria: f64, //8
+    pub nivel_de_bateria: f64, //8
     pub initial_pos: Position, //16
     pub current_pos: Position, //16
     pub charging_station_pos: Position, //16
@@ -37,14 +37,14 @@ impl Drone {
     pub fn init(
         id: u8,
         distancia_maxima_alcance: f64,
-        duracion_de_bateria: f64,
+        nivel_de_bateria: f64,
         initial_pos: Position,
         charging_station_pos: Position,
     ) -> Result<Self, Error> {
         Ok(Drone {
             id,
             distancia_maxima_alcance,
-            duracion_de_bateria,
+            nivel_de_bateria,
             initial_pos,
             current_pos: initial_pos,
             charging_station_pos,
@@ -125,7 +125,7 @@ impl Drone {
 
         bytes.push(self.id);
         bytes.extend_from_slice(&self.distancia_maxima_alcance.to_be_bytes());
-        bytes.extend_from_slice(&self.duracion_de_bateria.to_be_bytes());
+        bytes.extend_from_slice(&self.nivel_de_bateria.to_be_bytes());
         bytes.extend_from_slice(&self.initial_pos.lat().to_be_bytes());
         bytes.extend_from_slice(&self.initial_pos.lon().to_be_bytes());
         bytes.extend_from_slice(&self.current_pos.lat().to_be_bytes());
@@ -160,7 +160,7 @@ impl Drone {
             f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
         index += 8;
 
-        let duracion_de_bateria = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
+        let nivel_de_bateria = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
         index += 8;
 
         let initial_lat = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
@@ -206,7 +206,7 @@ impl Drone {
         Drone {
             id,
             distancia_maxima_alcance,
-            duracion_de_bateria,
+            nivel_de_bateria,
             initial_pos,
             current_pos,
             charging_station_pos,
@@ -233,6 +233,31 @@ impl Drone {
             }
         }
         true
+    }
+
+    pub fn discharge(&mut self, client: &mut MqttClient, logger: Logger) {
+        self.nivel_de_bateria -= 5.0;
+        if self.nivel_de_bateria <= 35.0 && self.state == DroneState::Available{
+            self.state = DroneState::LowBattery;   
+            client
+                .publish(self.as_bytes(), "drone".to_string(), &logger)
+                .unwrap();
+            thread::sleep(Duration::from_secs(3));
+            self.current_pos = self.charging_station_pos;
+            self.state = DroneState::Charging;
+            client
+                .publish(self.as_bytes(), "drone".to_string(), &logger)
+                .unwrap();
+
+            thread::sleep(Duration::from_secs(3));
+            self.nivel_de_bateria = 100.0;
+            self.state = DroneState::Available;
+            self.current_pos = self.initial_pos;
+
+            client
+                .publish(self.as_bytes(), "drone".to_string(), &logger)
+                .unwrap();
+        }
     }
 }
 
@@ -266,7 +291,7 @@ mod tests {
 
         assert_eq!(dron.id, dron_deserialized.id);
         assert_eq!(dron.distancia_maxima_alcance, dron_deserialized.distancia_maxima_alcance);
-        assert_eq!(dron.duracion_de_bateria, dron_deserialized.duracion_de_bateria);
+        assert_eq!(dron.nivel_de_bateria, dron_deserialized.nivel_de_bateria);
         assert_eq!(dron.initial_pos.lat(), dron_deserialized.initial_pos.lat());
         assert_eq!(dron.initial_pos.lon(), dron_deserialized.initial_pos.lon());
         assert_eq!(dron.current_pos.lat(), dron_deserialized.current_pos.lat());
