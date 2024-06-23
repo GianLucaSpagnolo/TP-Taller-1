@@ -118,8 +118,8 @@ impl Drone {
                     .publish(self.as_bytes(), "drone".to_string(), logger)
                     .unwrap();
                 
-                    let bytes = self.as_bytes();
-                    fs::write(self.db_path.clone(), bytes).unwrap();
+                let bytes = self.as_bytes();
+                fs::write(self.db_path.clone(), bytes).unwrap();
             }
         }
     }

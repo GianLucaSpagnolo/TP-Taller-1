@@ -47,13 +47,13 @@ pub fn process_messages(
 
 fn main() -> Result<(), Error> {
     let args: Vec<String> = args().collect();
-    if args.len() < 3 {
+    if args.len() < 2 {
         eprintln!("Usage: {} <path_to_config_file>", args[0]);
         process::exit(1);
     }
 
     let contents = fs::read_to_string(&args[1])?;
-    let config_path = &args[2];
+    let mut config_path = String::new();
 
     let mut distancia_maxima_alcance: f64 = 0.0;
     let mut duracion_de_bateria: f64 = 0.0;
@@ -108,6 +108,9 @@ fn main() -> Result<(), Error> {
             }
             "db_path" => {
                 db_path = parts[1].trim().to_string();
+            }
+            "mqtt_drone_config" => {
+                config_path = parts[1].trim().to_string();
             }
             _ => {
                 return Err(io::Error::new(
