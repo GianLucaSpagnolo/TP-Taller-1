@@ -167,7 +167,12 @@ pub fn incident_list(
     logger: &Logger,
     db_path: &str,
 ) {
-    let incidents = &inc_interface.inc_historial.lock().unwrap().incidents.clone();
+    let incidents = &inc_interface
+        .inc_historial
+        .lock()
+        .unwrap()
+        .incidents
+        .clone();
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
         .column(Column::exact(200.0))

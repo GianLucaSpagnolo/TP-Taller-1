@@ -2,7 +2,7 @@ use std::{fs, io};
 
 use walkers::Position;
 
-pub struct DroneConfig{
+pub struct DroneConfig {
     pub distancia_maxima_alcance: f64,
     pub duracion_de_bateria: f64,
     pub initial_pos: Position,
@@ -12,11 +12,10 @@ pub struct DroneConfig{
     pub db_path: String,
 }
 
-impl DroneConfig{
-    pub fn from_file(path: &str) -> Result<Self, io::Error>{
-        
+impl DroneConfig {
+    pub fn from_file(path: &str) -> Result<Self, io::Error> {
         let contents = fs::read_to_string(path)?;
-        
+
         let mut mqtt_config_path = String::new();
         let mut distancia_maxima_alcance: f64 = 0.0;
         let mut duracion_de_bateria: f64 = 0.0;
@@ -40,28 +39,24 @@ impl DroneConfig{
                     })?
                 }
                 "initial_lat" => {
-                    initial_lat = parts[1]
-                        .trim()
-                        .parse()
-                        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid latitude"))?
+                    initial_lat = parts[1].trim().parse().map_err(|_| {
+                        io::Error::new(io::ErrorKind::InvalidData, "Invalid latitude")
+                    })?
                 }
                 "initial_lon" => {
-                    initial_lon = parts[1]
-                        .trim()
-                        .parse()
-                        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid longitude"))?
+                    initial_lon = parts[1].trim().parse().map_err(|_| {
+                        io::Error::new(io::ErrorKind::InvalidData, "Invalid longitude")
+                    })?
                 }
                 "charging_station_lat" => {
-                    charging_station_lat = parts[1]
-                        .trim()
-                        .parse()
-                        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid latitude"))?
+                    charging_station_lat = parts[1].trim().parse().map_err(|_| {
+                        io::Error::new(io::ErrorKind::InvalidData, "Invalid latitude")
+                    })?
                 }
                 "charging_station_lon" => {
-                    charging_station_lon = parts[1]
-                        .trim()
-                        .parse()
-                        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid longitude"))?
+                    charging_station_lon = parts[1].trim().parse().map_err(|_| {
+                        io::Error::new(io::ErrorKind::InvalidData, "Invalid longitude")
+                    })?
                 }
                 "id" => {
                     id = parts[1]
@@ -85,7 +80,8 @@ impl DroneConfig{
         }
 
         let initial_pos = Position::from_lat_lon(initial_lat, initial_lon);
-        let charging_station_pos = Position::from_lat_lon(charging_station_lat, charging_station_lon);
+        let charging_station_pos =
+            Position::from_lat_lon(charging_station_lat, charging_station_lon);
 
         Ok(DroneConfig {
             distancia_maxima_alcance,
@@ -94,7 +90,7 @@ impl DroneConfig{
             charging_station_pos,
             id,
             db_path,
-            mqtt_config_path
+            mqtt_config_path,
         })
     }
 }

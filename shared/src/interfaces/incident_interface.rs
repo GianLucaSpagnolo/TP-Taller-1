@@ -41,12 +41,7 @@ impl IncidentInterface {
     /// ### Retorno
     /// Estructura de la interfaz de incidentes
     ///
-    pub fn new(
-        editable: bool,
-        icon_path: &str,
-        inc_historial: Arc<Mutex<IncidentList>>,
-    ) -> Self {
-        
+    pub fn new(editable: bool, icon_path: &str, inc_historial: Arc<Mutex<IncidentList>>) -> Self {
         let icon = load_image_from_path(std::path::Path::new(icon_path)).unwrap();
 
         Self {

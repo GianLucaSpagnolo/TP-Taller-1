@@ -74,7 +74,6 @@ impl IncidentList {
         let bytes = self.as_bytes();
         std::fs::write(path, bytes)
     }
-
 }
 
 #[cfg(test)]

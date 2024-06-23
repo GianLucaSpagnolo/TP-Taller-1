@@ -120,7 +120,9 @@ impl Drone {
                     .unwrap();
                 thread::sleep(Duration::from_millis(distance_to_incident as u64 * 1000));
 
-                println!("\x1b[36m  Ya en la posición del incidente, listo para resolverlo! \x1b[0m");
+                println!(
+                    "\x1b[36m  Ya en la posición del incidente, listo para resolverlo! \x1b[0m"
+                );
                 self.state = DroneState::ResolvingIncident;
                 self.current_pos = Position::from_lat_lon(
                     incident.location.lat() + 0.0001,

@@ -4,11 +4,13 @@ use std::{
 };
 
 use mqtt::config::{client_config::ClientConfig, mqtt_config::Config};
-use shared::{interfaces::drone_interface::DroneIconsPath, will_message::serialize_will_message_payload};
+use shared::{
+    interfaces::drone_interface::DroneIconsPath, will_message::serialize_will_message_payload,
+};
 use walkers::Position;
 
 #[derive(Clone, Default)]
-pub struct IconsPaths{
+pub struct IconsPaths {
     pub app_icon: String,
     pub cam_icon: String,
     pub cam_alert_icon: String,
@@ -17,7 +19,7 @@ pub struct IconsPaths{
 }
 
 #[derive(Clone, Default)]
-pub struct DBPaths{
+pub struct DBPaths {
     pub inc_db_path: String,
     pub cam_db_path: String,
     pub drone_db_path: String,
@@ -126,10 +128,7 @@ impl MonitoringAppConfig {
         }
 
         if let (Some(initial_lat), Some(initial_lon)) = (initial_lat, initial_lon) {
-            if inc_db_path.is_empty()
-                || cam_db_path.is_empty()
-                || drone_db_path.is_empty()
-            {
+            if inc_db_path.is_empty() || cam_db_path.is_empty() || drone_db_path.is_empty() {
                 return Err(Error::new(ErrorKind::InvalidData, "Missing db_path"));
             }
 

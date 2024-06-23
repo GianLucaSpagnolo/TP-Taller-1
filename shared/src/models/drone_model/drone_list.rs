@@ -193,7 +193,7 @@ mod tests {
     }
 
     #[test]
-    fn test_serialization(){
+    fn test_serialization() {
         let dron1 = Drone::init(
             1,
             100.0,
@@ -232,16 +232,39 @@ mod tests {
         let new_drone_list = DroneList::from_be_bytes(bytes);
 
         assert_eq!(drone_list.drones[0].id, new_drone_list.drones[0].id);
-        assert_eq!(drone_list.drones[0].nivel_de_bateria, new_drone_list.drones[0].nivel_de_bateria);
-        assert_eq!(drone_list.drones[0].distancia_maxima_alcance, new_drone_list.drones[0].distancia_maxima_alcance);
-        assert_eq!(drone_list.drones[0].current_pos.lat(), new_drone_list.drones[0].current_pos.lat());
-        assert_eq!(drone_list.drones[0].current_pos.lon(), new_drone_list.drones[0].current_pos.lon());
+        assert_eq!(
+            drone_list.drones[0].nivel_de_bateria,
+            new_drone_list.drones[0].nivel_de_bateria
+        );
+        assert_eq!(
+            drone_list.drones[0].distancia_maxima_alcance,
+            new_drone_list.drones[0].distancia_maxima_alcance
+        );
+        assert_eq!(
+            drone_list.drones[0].current_pos.lat(),
+            new_drone_list.drones[0].current_pos.lat()
+        );
+        assert_eq!(
+            drone_list.drones[0].current_pos.lon(),
+            new_drone_list.drones[0].current_pos.lon()
+        );
 
         assert_eq!(drone_list.drones[1].id, new_drone_list.drones[1].id);
-        assert_eq!(drone_list.drones[1].nivel_de_bateria, new_drone_list.drones[1].nivel_de_bateria);
-        assert_eq!(drone_list.drones[1].distancia_maxima_alcance, new_drone_list.drones[1].distancia_maxima_alcance);
-        assert_eq!(drone_list.drones[1].current_pos.lat(), new_drone_list.drones[1].current_pos.lat());
-        assert_eq!(drone_list.drones[1].current_pos.lon(), new_drone_list.drones[1].current_pos.lon());
-
+        assert_eq!(
+            drone_list.drones[1].nivel_de_bateria,
+            new_drone_list.drones[1].nivel_de_bateria
+        );
+        assert_eq!(
+            drone_list.drones[1].distancia_maxima_alcance,
+            new_drone_list.drones[1].distancia_maxima_alcance
+        );
+        assert_eq!(
+            drone_list.drones[1].current_pos.lat(),
+            new_drone_list.drones[1].current_pos.lat()
+        );
+        assert_eq!(
+            drone_list.drones[1].current_pos.lon(),
+            new_drone_list.drones[1].current_pos.lon()
+        );
     }
 }

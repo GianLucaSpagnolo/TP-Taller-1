@@ -120,7 +120,11 @@ fn process_messages(
                     let drone_state = dron.state.clone();
 
                     drone_list.lock().unwrap().update_drone(dron);
-                    drone_list.lock().unwrap().save(&db_paths.drone_db_path).unwrap();
+                    drone_list
+                        .lock()
+                        .unwrap()
+                        .save(&db_paths.drone_db_path)
+                        .unwrap();
 
                     if let DroneState::ResolvingIncident = drone_state {
                         if let Some(inc_id) = inc_id {
@@ -175,11 +179,8 @@ impl MonitoringApp {
 
         let drone_interface = DroneInterface::new(drone_list_ref, drone_icons_path);
 
-        let inc_interface = IncidentInterface::new(
-            true,
-            &config.icons_paths.inc_icon,
-            incident_list,
-        );
+        let inc_interface =
+            IncidentInterface::new(true, &config.icons_paths.inc_icon, incident_list);
 
         Self {
             client,
