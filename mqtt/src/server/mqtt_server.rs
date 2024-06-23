@@ -169,7 +169,6 @@ impl MqttServer {
     pub fn start_server(self, logger: Logger) -> Result<(), Error> {
         let id = self.config.general.id.clone();
         let logger_cpy = logger.clone();
-        
 
         self.register.log_sessions(
             &self.config.general.id,
