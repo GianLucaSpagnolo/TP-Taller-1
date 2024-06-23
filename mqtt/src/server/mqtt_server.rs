@@ -1,5 +1,5 @@
 use std::io::Error;
-use std::net::{TcpListener, TcpStream};
+use std::net::TcpStream;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -13,9 +13,11 @@ use crate::mqtt_packets::headers::fixed_header::PacketFixedHeader;
 use crate::mqtt_packets::packet::generic_packet::{get_packet, PacketReceived, Serialization};
 use crate::mqtt_packets::packets::pingresp::PingResp;
 
+use super::server_connector::TlsServerConnector;
 use super::server_handlers::{
     connect_handler, disconnect_handler, publish_handler, subscribe_handler, unsubscribe_handler,
 };
+
 use super::server_network::ServerNetwork;
 use super::server_register::SessionRegister;
 
@@ -90,11 +92,28 @@ pub fn message_catcher(
 /// - `sender`: Sender del servidor (envia los mensajes para que sean procesados)
 ///
 fn client_handler(
-    listener: TcpListener,
+    //listener: TcpListener,
+    server_connector: TlsServerConnector,
     sender: Arc<Mutex<Sender<(PacketReceived, TcpStream)>>>,
 ) -> Result<(), Error> {
+    let listener = server_connector.get_listener().unwrap();
+    let srv_cpy = Arc::new(server_connector);
+
     for client_stream in listener.incoming() {
-        let stream = client_stream?.try_clone()?;
+        let client_stream = match client_stream {
+            Err(e) => return Err(e),
+            Ok(client_stream) => client_stream,
+        };
+
+        let srv = srv_cpy.clone();
+        //let srv = srv_cpy.clone();
+        let mut stream = srv
+            .accept_tls_connection(client_stream)
+            .expect("error al aceptar conexion");
+
+        let stream = stream.get_mut();
+
+        let stream = stream.try_clone()?;
         let sender_clone = Arc::clone(&sender);
         thread::spawn(move || -> Result<(), Error> {
             loop {
@@ -103,6 +122,7 @@ fn client_handler(
             }
         });
     }
+
     Ok(())
 }
 
@@ -143,18 +163,27 @@ impl MqttServer {
             &logger,
         );
 
-        let listener = match TcpListener::bind(self.config.get_socket_address()) {
-            Ok(lis) => lis,
-            Err(e) => {
-                logger_cpy.log_event(
-                    &("Error al conectar con servidor: ".to_string() + &e.to_string()),
-                    &self.config.general.id,
-                );
-                logger_cpy.close();
-                logger.close();
-                return Err(e);
-            }
-        };
+        let address = self.config.get_socket_address().to_string();
+        let cert_path = self.config.general.cert_path.clone();
+        let cert_pass = self.config.general.cert_pass.clone();
+        let server_connector =
+            match TlsServerConnector::initialize(&cert_path, &cert_pass, &address) {
+                Ok(srv) => srv,
+                Err(e) => {
+                    logger_cpy.log_event(
+                        &("Error al conectar con servidor: ".to_string() + &e.to_string()),
+                        &self.config.general.id,
+                    );
+                    logger_cpy.close();
+                    logger.close();
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("TLS error de conexion: {}", e),
+                    ));
+                }
+            };
+
+        //let listener = server_connector.get_listener()?;
 
         let (sender, receiver) = mpsc::channel();
 
@@ -163,12 +192,11 @@ impl MqttServer {
         let receiver = Arc::new(Mutex::new(receiver));
 
         // Iniciando el procesador de mesages que recibe el servidor
-        //self.server_listener_messages(Arc::clone(&receiver), log_path);
-
         self.server_listener_messages(Arc::clone(&receiver), logger_cpy.clone());
 
         // Iniciando el listener de conexiones que recibe el servidor dentro de un thread pool
-        client_handler(listener, Arc::clone(&sender))?;
+        // agregar tls connector
+        client_handler(server_connector, Arc::clone(&sender))?;
 
         logger.log_event(
             &("Cerrando servidor ... no se reciben mas paquetes".to_string()),
