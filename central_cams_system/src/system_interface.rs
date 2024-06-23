@@ -205,30 +205,26 @@ pub mod interface {
                                 continue;
                             }
                         },
-                        "rm" => {
-                            match delete_action(client, cam_system.clone(), parts, logger) {
-                                Ok(_) => cam_system.lock().unwrap().list_cameras(),
-                                Err(e) => {
-                                    println!("Error al eliminar cámara: {}", e);
-                                    continue;
-                                }
+                        "rm" => match delete_action(client, cam_system.clone(), parts, logger) {
+                            Ok(_) => cam_system.lock().unwrap().list_cameras(),
+                            Err(e) => {
+                                println!("Error al eliminar cámara: {}", e);
+                                continue;
                             }
-                        }
-                        "edit" => {
-                            match modify_action(client, cam_system.clone(), parts, logger) {
-                                Ok(_) => cam_system.lock().unwrap().list_cameras(),
-                                Err(e) => {
-                                    println!("Error al modificar cámara: {}", e);
-                                    continue;
-                                }
+                        },
+                        "edit" => match modify_action(client, cam_system.clone(), parts, logger) {
+                            Ok(_) => cam_system.lock().unwrap().list_cameras(),
+                            Err(e) => {
+                                println!("Error al modificar cámara: {}", e);
+                                continue;
                             }
-                        }
+                        },
                         "list" => cam_system.lock().unwrap().list_cameras(),
 
                         "help" => {
                             show_menu_options();
                         }
-                        
+
                         _ => {
                             println!("Acción no válida");
                         }

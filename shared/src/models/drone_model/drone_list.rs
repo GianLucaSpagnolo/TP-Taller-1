@@ -92,9 +92,8 @@ mod tests {
         )
         .unwrap();
 
-
         drone_list.add(dron.clone());
-        
+
         dron.nivel_de_bateria = 50.0;
         dron.distancia_maxima_alcance = 50.0;
         dron.current_pos = Position::from_lat_lon(1.0, 1.0);

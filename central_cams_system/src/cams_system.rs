@@ -18,11 +18,7 @@ pub struct CamsSystem {
 }
 
 impl CamsSystem {
-
-    pub fn init(
-        path: String
-    ) -> Result<Self, Error> {
-
+    pub fn init(path: String) -> Result<Self, Error> {
         let config = CamSystemConfig::from_file(path)?;
 
         let bytes = match fs::read(&config.db_path) {
@@ -36,10 +32,7 @@ impl CamsSystem {
             CamList::from_be_bytes(bytes)
         };
 
-        Ok(CamsSystem {
-            system,
-            config,
-        })
+        Ok(CamsSystem { system, config })
     }
 
     pub fn add_new_camara(&mut self, cam: Cam) -> Cam {

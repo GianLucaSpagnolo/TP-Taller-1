@@ -27,11 +27,9 @@ pub struct DroneIconsPath {
 }
 
 impl DroneInterface {
-    pub fn new(
-        drone_list: Arc<Mutex<DroneList>>,
-        drone_icons_path: DroneIconsPath,
-    ) -> Self {
-        let drone_icon = load_image_from_path(std::path::Path::new(&drone_icons_path.default)).unwrap();
+    pub fn new(drone_list: Arc<Mutex<DroneList>>, drone_icons_path: DroneIconsPath) -> Self {
+        let drone_icon =
+            load_image_from_path(std::path::Path::new(&drone_icons_path.default)).unwrap();
         let drone_alert_icon =
             load_image_from_path(std::path::Path::new(&drone_icons_path.alert)).unwrap();
         let drone_back_icon =

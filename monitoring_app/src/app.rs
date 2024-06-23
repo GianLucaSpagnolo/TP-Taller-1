@@ -169,7 +169,7 @@ impl MonitoringApp {
             cam_list_ref,
             &config.cam_icon_path,
             &config.cam_alert_icon_path,
-        ); 
+        );
 
         let drone_icons_path = DroneIconsPath {
             default: config.drone_icon_path.clone(),
@@ -181,10 +181,7 @@ impl MonitoringApp {
             central: config.drone_central_icon_path.clone(),
         };
 
-        let drone_interface = DroneInterface::new(
-            drone_list_ref,
-            drone_icons_path
-        );
+        let drone_interface = DroneInterface::new(drone_list_ref, drone_icons_path);
 
         let inc_interface = IncidentInterface::new(
             config.db_path.to_string(),

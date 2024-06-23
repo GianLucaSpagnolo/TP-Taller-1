@@ -56,12 +56,12 @@ pub fn process_messages(
 }
 
 fn main() -> Result<(), Error> {
-
     let cam_system = CamsSystem::init(APP_CONFIG_PATH.to_string())?;
 
     show_start(&cam_system);
 
-    let logger_handler = create_logger_handler(&cam_system.config.mqtt_config.general.log_path.clone())?;
+    let logger_handler =
+        create_logger_handler(&cam_system.config.mqtt_config.general.log_path.clone())?;
     let logger = logger_handler.get_logger();
 
     let mut client = match MqttClient::init(cam_system.config.mqtt_config.clone()) {

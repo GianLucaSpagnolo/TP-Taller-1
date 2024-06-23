@@ -1,8 +1,10 @@
-use std::{fs, io::{self, Error}};
+use std::{
+    fs,
+    io::{self, Error},
+};
 
 use mqtt::config::{client_config::ClientConfig, mqtt_config::Config};
 use shared::will_message::serialize_will_message_payload;
-
 
 pub struct CamSystemConfig {
     pub range_alert: f64,
@@ -18,7 +20,7 @@ impl CamSystemConfig {
         let mut range_alert_between_cameras = 0.0;
         let mut db_path = String::new();
         let mut mqtt_config_path = String::new();
-        
+
         for line in contents.lines() {
             let parts: Vec<&str> = line.split(':').collect();
             match parts[0].trim() {
@@ -50,7 +52,7 @@ impl CamSystemConfig {
             "camaras".to_string(),
             serialize_will_message_payload(mqtt_config.general.id.clone()),
         );
-        
+
         Ok(CamSystemConfig {
             range_alert,
             range_alert_between_cameras,

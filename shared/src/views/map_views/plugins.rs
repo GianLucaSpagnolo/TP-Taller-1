@@ -91,7 +91,11 @@ pub fn drone_images(egui_ctx: Context, drones: &mut DroneList, icons: DroneIcons
     )
 }
 
-pub fn drone_central_images(egui_ctx: Context, drones: &mut DroneList, icon: ColorImage) -> impl Plugin {
+pub fn drone_central_images(
+    egui_ctx: Context,
+    drones: &mut DroneList,
+    icon: ColorImage,
+) -> impl Plugin {
     let angle = 0.0;
     let x_scale = 0.1;
     let y_scale = 0.1;
