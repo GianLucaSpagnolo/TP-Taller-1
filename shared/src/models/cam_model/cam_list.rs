@@ -77,6 +77,25 @@ impl CamList {
     pub fn get_positions(&self) -> Vec<Position> {
         self.cams.iter().map(|cam| cam.location).collect()
     }
+
+    pub fn init(db_path: &str) -> Self {
+        let bytes = match std::fs::read(db_path) {
+            Ok(bytes) => bytes,
+            Err(_) => Vec::new(),
+        };
+
+        if bytes.is_empty() {
+            CamList { cams: Vec::new() }
+        } else {
+            CamList::from_be_bytes(bytes)
+        }
+    }
+
+    pub fn save(&self, path: &str) -> std::io::Result<()> {
+        let bytes = self.as_bytes();
+        std::fs::write(path, bytes)
+    }
+
 }
 
 #[cfg(test)]

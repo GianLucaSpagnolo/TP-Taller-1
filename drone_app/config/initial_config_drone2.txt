@@ -5,5 +5,5 @@ initial_lon: -58.4326488
 charging_station_lat: -34.6
 charging_station_lon: -58.4
 id: 1
-db_path: drone_app/config/drone2.db
+db_path: data/db/drone2.db
 mqtt_drone_config: drone_app/config/drone_config2.txt

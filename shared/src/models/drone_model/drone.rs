@@ -69,6 +69,11 @@ impl Drone {
         Ok(drone)
     }
 
+    pub fn save(&self) {
+        let bytes = self.as_bytes();
+        fs::write(self.db_path.clone(), bytes).unwrap();
+    }
+
     pub fn process_incident(
         &mut self,
         client: &mut MqttClient,
@@ -93,8 +98,7 @@ impl Drone {
                     .publish(self.as_bytes(), "drone".to_string(), logger)
                     .unwrap();
 
-                let bytes = self.as_bytes();
-                fs::write(self.db_path.clone(), bytes).unwrap();
+                self.save();
             }
         } else if self.state == DroneState::Available {
             let distance_to_incident =
@@ -126,8 +130,7 @@ impl Drone {
                     .publish(self.as_bytes(), "drone".to_string(), logger)
                     .unwrap();
 
-                let bytes = self.as_bytes();
-                fs::write(self.db_path.clone(), bytes).unwrap();
+                self.save();
             }
         }
     }
@@ -147,8 +150,7 @@ impl Drone {
                 .unwrap();
         }
 
-        let bytes = self.as_bytes();
-        fs::write(self.db_path.clone(), bytes).unwrap();
+        self.save();
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
@@ -248,6 +250,10 @@ impl Drone {
         }
     }
 
+    pub fn size_of(&self) -> usize {
+        1 + 8 + 8 + 16 + 16 + 16 + 1 + 1
+    }
+
     fn is_close_enough(&self, distance: f64) -> bool {
         distance < self.distancia_maxima_alcance
     }
@@ -294,8 +300,7 @@ impl Drone {
                 .publish(self.as_bytes(), "drone".to_string(), &logger)
                 .unwrap();
         }
-        let bytes = self.as_bytes();
-        fs::write(self.db_path.clone(), bytes).unwrap();
+        self.save();
     }
 }
 

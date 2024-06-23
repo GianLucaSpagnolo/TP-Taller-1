@@ -1,6 +1,5 @@
 use egui::ColorImage;
 use std::sync::{Arc, Mutex};
-use std::{fs, io::Error};
 
 use crate::{
     models::inc_model::incident_list::IncidentList, utils::load_image_from_path,
@@ -21,7 +20,7 @@ use crate::{
 ///
 #[derive(Default)]
 pub struct IncidentInterface {
-    pub historial: Arc<Mutex<IncidentList>>,
+    pub inc_historial: Arc<Mutex<IncidentList>>,
     pub inc_icon: ColorImage,
     pub wrong_data: bool,
     pub show_data_alert: bool,
@@ -30,24 +29,6 @@ pub struct IncidentInterface {
 }
 
 impl IncidentInterface {
-    pub fn init_historial(
-        db_path: String,
-        incident_list: Arc<Mutex<IncidentList>>,
-    ) -> Result<Arc<Mutex<IncidentList>>, Error> {
-        let bytes = match fs::read(db_path) {
-            Ok(bytes) => bytes,
-            Err(_) => Vec::new(),
-        };
-
-        if bytes.is_empty() {
-            Ok(incident_list)
-        } else {
-            let incidents = IncidentList::from_be_bytes(bytes);
-            incident_list.lock().unwrap().incidents = incidents.incidents;
-            Ok(incident_list)
-        }
-    }
-
     /// ### new
     ///
     /// Crea una nueva interfaz de incidentes
@@ -61,17 +42,15 @@ impl IncidentInterface {
     /// Estructura de la interfaz de incidentes
     ///
     pub fn new(
-        db_path: String,
         editable: bool,
         icon_path: &str,
-        incident_list: Arc<Mutex<IncidentList>>,
+        inc_historial: Arc<Mutex<IncidentList>>,
     ) -> Self {
+        
         let icon = load_image_from_path(std::path::Path::new(icon_path)).unwrap();
 
-        let historial = IncidentInterface::init_historial(db_path, incident_list).unwrap();
-
         Self {
-            historial,
+            inc_historial,
             editable,
             inc_icon: icon,
             ..Default::default()

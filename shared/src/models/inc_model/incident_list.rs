@@ -56,6 +56,25 @@ impl IncidentList {
 
         IncidentList { incidents }
     }
+
+    pub fn init(db_path: &str) -> std::io::Result<IncidentList> {
+        let bytes = match std::fs::read(db_path) {
+            Ok(bytes) => bytes,
+            Err(_) => Vec::new(),
+        };
+
+        if bytes.is_empty() {
+            Ok(IncidentList::default())
+        } else {
+            let incidents = IncidentList::from_be_bytes(bytes);
+            Ok(incidents)
+        }
+    }
+    pub fn save(&self, path: &str) -> std::io::Result<()> {
+        let bytes = self.as_bytes();
+        std::fs::write(path, bytes)
+    }
+
 }
 
 #[cfg(test)]
