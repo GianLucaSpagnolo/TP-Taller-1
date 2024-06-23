@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::{fs, io::Error};
 use std::thread;
 use std::time::Duration;
 
@@ -31,6 +31,7 @@ pub struct Drone {
     pub state: DroneState, //1
     pub id_incident_covering: Option<u8>, //1
     pub drones: DroneList,
+    pub db_path: String,
 }
 
 impl Drone {
@@ -40,18 +41,32 @@ impl Drone {
         nivel_de_bateria: f64,
         initial_pos: Position,
         charging_station_pos: Position,
+        db_path: String,
     ) -> Result<Self, Error> {
-        Ok(Drone {
-            id,
-            distancia_maxima_alcance,
-            nivel_de_bateria,
-            initial_pos,
-            current_pos: initial_pos,
-            charging_station_pos,
-            state: DroneState::Available,
-            id_incident_covering: None,
-            drones: DroneList::default(),
-        })
+        let bytes = match fs::read(&db_path) {
+            Ok(bytes) => bytes,
+            Err(_) => Vec::new(),
+        };
+
+        let mut drone = if bytes.is_empty() {
+            Drone {
+                id,
+                distancia_maxima_alcance,
+                nivel_de_bateria,
+                initial_pos,
+                current_pos: initial_pos,
+                charging_station_pos,
+                state: DroneState::Available,
+                id_incident_covering: None,
+                drones: DroneList::default(),
+                db_path: db_path.clone(),
+            }
+        } else {
+            Drone::from_be_bytes(&bytes)
+        };
+
+        drone.db_path = db_path;
+        Ok(drone)
     }
 
     pub fn process_incident(
@@ -66,6 +81,7 @@ impl Drone {
                 client
                     .publish(self.as_bytes(), "drone".to_string(), logger)
                     .unwrap();
+
                 thread::sleep(Duration::from_secs(3));
                 self.current_pos = self.initial_pos;
                 self.state = DroneState::Available;
@@ -73,6 +89,9 @@ impl Drone {
                 client
                     .publish(self.as_bytes(), "drone".to_string(), logger)
                     .unwrap();
+
+                let bytes = self.as_bytes();
+                fs::write(self.db_path.clone(), bytes).unwrap();
             }
             return;
         } else if self.state == DroneState::Available {
@@ -89,7 +108,6 @@ impl Drone {
                 client
                     .publish(self.as_bytes(), "drone".to_string(), logger)
                     .unwrap();
-                
                 thread::sleep(Duration::from_millis(distance_to_incident as u64 * 1000));
                 self.state = DroneState::ResolvingIncident;
                 self.current_pos = Position::from_lat_lon(
@@ -99,7 +117,9 @@ impl Drone {
                 client
                     .publish(self.as_bytes(), "drone".to_string(), logger)
                     .unwrap();
-    
+                
+                    let bytes = self.as_bytes();
+                    fs::write(self.db_path.clone(), bytes).unwrap();
             }
         }
     }
@@ -118,6 +138,9 @@ impl Drone {
                 .publish(self.as_bytes(), "drone".to_string(), logger)
                 .unwrap();
         }
+
+        let bytes = self.as_bytes();
+        fs::write(self.db_path.clone(), bytes).unwrap();
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
@@ -146,7 +169,7 @@ impl Drone {
         let id_incident_covering = self.id_incident_covering.unwrap_or(0);
 
         bytes.push(id_incident_covering);
-
+        
         bytes
     }
 
@@ -213,6 +236,7 @@ impl Drone {
             state,
             id_incident_covering,
             drones: DroneList::default(),
+            db_path: String::new()
         }
     }
 
@@ -224,8 +248,7 @@ impl Drone {
         let mut drones_closer = 0;
 
         for drone in self.drones.get_drones() {
-            if get_distance_to_incident(drone, lat, lon) < distance
-            {
+            if get_distance_to_incident(drone, lat, lon) < distance && drone.state == DroneState::Available {
                 drones_closer += 1;
                 if drones_closer == 2 {
                     return false;
@@ -258,6 +281,8 @@ impl Drone {
                 .publish(self.as_bytes(), "drone".to_string(), &logger)
                 .unwrap();
         }
+        let bytes = self.as_bytes();
+        fs::write(self.db_path.clone(), bytes).unwrap();
     }
 }
 
@@ -283,6 +308,7 @@ mod tests {
             100.0,
             Position::from_lat_lon(0.0, 0.0),
             Position::from_lat_lon(0.0, 0.0),
+            String::new(),
         )
         .unwrap();
 
@@ -299,5 +325,6 @@ mod tests {
         assert_eq!(dron.charging_station_pos.lat(), dron_deserialized.charging_station_pos.lat());
         assert_eq!(dron.charging_station_pos.lon(), dron_deserialized.charging_station_pos.lon());
         assert_eq!(dron.id_incident_covering, dron_deserialized.id_incident_covering);
+        
     }
 }

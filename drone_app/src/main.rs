@@ -62,7 +62,7 @@ fn main() -> Result<(), Error> {
     let mut charging_station_lat: f64 = 0.0;
     let mut charging_station_lon: f64 = 0.0;
     let mut id = 0;
-
+    let mut db_path = String::new();
     for line in contents.lines() {
         let parts: Vec<&str> = line.split(':').collect();
         match parts[0].trim() {
@@ -106,6 +106,9 @@ fn main() -> Result<(), Error> {
                     .parse()
                     .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid id"))?
             }
+            "db_path" => {
+                db_path = parts[1].trim().to_string();
+            }
             _ => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
@@ -124,6 +127,7 @@ fn main() -> Result<(), Error> {
         duracion_de_bateria,
         initial_pos,
         charging_station_pos,
+        db_path,
     )?;
 
     let config = ClientConfig::from_file(String::from(config_path))?;
