@@ -12,6 +12,7 @@ use mqtt::{
     client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
     config::{client_config::ClientConfig, mqtt_config::Config},
 };
+use shared::interfaces::drone_interface::DroneIconsPath;
 use shared::{
     interfaces::{
         cam_interface::CamInterface, drone_interface::DroneInterface,
@@ -171,16 +172,21 @@ impl MonitoringApp {
             cam_list_ref,
             &config.cam_icon_path,
             &config.cam_alert_icon_path,
-        );
+        ); 
+
+        let drone_icons_path = DroneIconsPath {
+            default: config.drone_icon_path.clone(),
+            alert: config.drone_alert_icon_path.clone(),
+            going_back: config.drone_back_icon_path.clone(),
+            resolving: config.drone_resolving_icon_path.clone(),
+            low_battery: config.drone_low_battery_icon_path.clone(),
+            charging: config.drone_charging_icon_path.clone(),
+            central: config.drone_central_icon_path.clone(),
+        };
 
         let drone_interface = DroneInterface::new(
             drone_list_ref,
-            &config.drone_icon_path,
-            &config.drone_alert_icon_path,
-            &config.drone_back_icon_path,
-            &config.drone_resolving_icon_path,
-            &config.drone_low_battery_icon_path,
-            &config.drone_charging_icon_path,
+            drone_icons_path
         );
 
         let inc_interface = IncidentInterface::new(

@@ -3,7 +3,7 @@ use walkers::{Map, Position};
 
 use crate::{interfaces::global_interface::GlobalInterface, views::map_views::windows};
 
-use super::plugins::{cam_images, drone_images, inc_images, DroneIcons};
+use super::plugins::{cam_images, drone_central_images, drone_images, inc_images, DroneIcons};
 
 pub fn show_map(
     ui: &mut Ui,
@@ -26,6 +26,8 @@ pub fn show_map(
         charging: drones.drone_charging_icon.clone(),
     };
 
+    let mut drones_list = drones.drone_list.lock().unwrap();
+
     let map = Map::new(Some(tiles), map_memory, initial_position)
         .with_plugin(&mut inc.click_incident)
         .with_plugin(cam_images(
@@ -36,8 +38,13 @@ pub fn show_map(
         ))
         .with_plugin(drone_images(
             egui_ctx.clone(),
-            &mut drones.drone_list.lock().unwrap(),
+            &mut drones_list,
             drone_icons,
+        ))
+        .with_plugin(drone_central_images(
+            egui_ctx.clone(),
+            &mut drones_list,
+            drones.drone_central_icon.clone(),
         ))
         .with_plugin(inc_images(
             egui_ctx.clone(),

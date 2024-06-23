@@ -11,3 +11,4 @@ drone_back_icon_path: monitoring_app/assets/drone_back.png
 drone_resolving_icon_path: monitoring_app/assets/drone_resolving.png
 drone_low_battery_icon_path: monitoring_app/assets/drone_low_battery.png
 drone_charging_icon_path: monitoring_app/assets/drone_charging.png
+drone_central_icon_path: monitoring_app/assets/drone_central.png

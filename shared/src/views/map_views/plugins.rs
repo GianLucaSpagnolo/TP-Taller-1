@@ -91,6 +91,27 @@ pub fn drone_images(egui_ctx: Context, drones: &mut DroneList, icons: DroneIcons
     )
 }
 
+pub fn drone_central_images(egui_ctx: Context, drones: &mut DroneList, icon: ColorImage) -> impl Plugin {
+    let angle = 0.0;
+    let x_scale = 0.1;
+    let y_scale = 0.1;
+
+    Images::new(
+        drones
+            .drones
+            .iter()
+            .map(|drone| {
+                let pos = drone.charging_station_pos;
+                let texture = Texture::from_color_image(icon.clone(), &egui_ctx);
+                let mut image = Image::new(texture.clone(), pos);
+                image.scale(x_scale, y_scale);
+                image.angle(angle);
+                image
+            })
+            .collect(),
+    )
+}
+
 pub fn inc_images(
     egui_ctx: Context,
     incidents: &mut IncidentList,

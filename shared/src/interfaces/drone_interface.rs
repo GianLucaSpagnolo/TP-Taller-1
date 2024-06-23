@@ -13,29 +13,37 @@ pub struct DroneInterface {
     pub drone_resolving_icon: ColorImage,
     pub drone_low_battery_icon: ColorImage,
     pub drone_charging_icon: ColorImage,
+    pub drone_central_icon: ColorImage,
+}
+
+pub struct DroneIconsPath {
+    pub default: String,
+    pub alert: String,
+    pub going_back: String,
+    pub resolving: String,
+    pub low_battery: String,
+    pub charging: String,
+    pub central: String,
 }
 
 impl DroneInterface {
     pub fn new(
         drone_list: Arc<Mutex<DroneList>>,
-        drone_icon_path: &str,
-        drone_alert_icon_path: &str,
-        drone_back_icon_path: &str,
-        drone_resolving_icon_path: &str,
-        drone_low_battery_icon_path: &str,
-        drone_charging_icon_path: &str,
+        drone_icons_path: DroneIconsPath,
     ) -> Self {
-        let drone_icon = load_image_from_path(std::path::Path::new(drone_icon_path)).unwrap();
+        let drone_icon = load_image_from_path(std::path::Path::new(&drone_icons_path.default)).unwrap();
         let drone_alert_icon =
-            load_image_from_path(std::path::Path::new(drone_alert_icon_path)).unwrap();
+            load_image_from_path(std::path::Path::new(&drone_icons_path.alert)).unwrap();
         let drone_back_icon =
-            load_image_from_path(std::path::Path::new(drone_back_icon_path)).unwrap();
+            load_image_from_path(std::path::Path::new(&drone_icons_path.going_back)).unwrap();
         let drone_resolving_icon =
-            load_image_from_path(std::path::Path::new(drone_resolving_icon_path)).unwrap();
+            load_image_from_path(std::path::Path::new(&drone_icons_path.resolving)).unwrap();
         let drone_low_battery_icon =
-            load_image_from_path(std::path::Path::new(drone_low_battery_icon_path)).unwrap();
+            load_image_from_path(std::path::Path::new(&drone_icons_path.low_battery)).unwrap();
         let drone_charging_icon =
-            load_image_from_path(std::path::Path::new(drone_charging_icon_path)).unwrap();
+            load_image_from_path(std::path::Path::new(&drone_icons_path.charging)).unwrap();
+        let drone_central_icon =
+            load_image_from_path(std::path::Path::new(&drone_icons_path.central)).unwrap();
 
         Self {
             drone_list,
@@ -45,6 +53,7 @@ impl DroneInterface {
             drone_resolving_icon,
             drone_low_battery_icon,
             drone_charging_icon,
+            drone_central_icon,
         }
     }
 }

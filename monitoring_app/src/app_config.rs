@@ -17,6 +17,7 @@ pub struct MonitoringAppConfig {
     pub drone_resolving_icon_path: String,
     pub drone_low_battery_icon_path: String,
     pub drone_charging_icon_path: String,
+    pub drone_central_icon_path: String,
     pub db_path: String,
 }
 
@@ -35,6 +36,7 @@ impl MonitoringAppConfig {
         let mut drone_resolving_icon_path = String::new();
         let mut drone_low_battery_icon_path = String::new();
         let mut drone_charging_icon_path = String::new();
+        let mut drone_central_icon_path = String::new();
         let mut db_path = String::new();
 
         for line in contents.lines() {
@@ -92,6 +94,9 @@ impl MonitoringAppConfig {
                 "drone_charging_icon_path" => {
                     drone_charging_icon_path = parts[1].trim().to_string();
                 }
+                "drone_central_icon_path" => {
+                    drone_central_icon_path = parts[1].trim().to_string();
+                }
                 "db_path" => {
                     db_path = parts[1].trim().to_string();
                 }
@@ -123,6 +128,7 @@ impl MonitoringAppConfig {
                 drone_resolving_icon_path,
                 drone_low_battery_icon_path,
                 drone_charging_icon_path,
+                drone_central_icon_path,
                 db_path,
             });
         }
