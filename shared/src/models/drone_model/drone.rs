@@ -20,7 +20,7 @@ pub enum DroneState {
     Charging,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Drone {
     pub id: u8,                           //1
     pub distancia_maxima_alcance: f64,    //8
