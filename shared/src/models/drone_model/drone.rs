@@ -77,12 +77,15 @@ impl Drone {
     ) {
         if incident.state == IncidentState::Resolved {
             if self.id_incident_covering == Some(incident.id) {
+                println!("Incidente Resuelto, en camino a la posición inicial");
                 self.state = DroneState::GoingBack;
                 client
                     .publish(self.as_bytes(), "drone".to_string(), logger)
                     .unwrap();
 
                 thread::sleep(Duration::from_secs(3));
+
+                print!("Ya en la posición inicial de nuevo y disponible para cubrir nuevos incidentes!");
                 self.current_pos = self.initial_pos;
                 self.state = DroneState::Available;
                 self.id_incident_covering = None;
@@ -106,11 +109,14 @@ impl Drone {
             {
                 self.state = DroneState::GoingToIncident;
                 self.id_incident_covering = Some(incident.id);
+                println!("Incidente en progreso, en camino a la posición del incidente");
 
                 client
                     .publish(self.as_bytes(), "drone".to_string(), logger)
                     .unwrap();
                 thread::sleep(Duration::from_millis(distance_to_incident as u64 * 1000));
+
+                println!("Ya en la posición del incidente, listo para resolverlo!");
                 self.state = DroneState::ResolvingIncident;
                 self.current_pos = Position::from_lat_lon(
                     incident.location.lat() + 0.0001,
@@ -266,10 +272,12 @@ impl Drone {
         self.nivel_de_bateria -= 5.0;
         if self.nivel_de_bateria <= 35.0 && self.state == DroneState::Available {
             self.state = DroneState::LowBattery;
+            println!("Batería baja, cuidado!");
             client
                 .publish(self.as_bytes(), "drone".to_string(), &logger)
                 .unwrap();
             thread::sleep(Duration::from_secs(3));
+            println!("Cargando batería");
             self.current_pos = self.charging_station_pos;
             self.state = DroneState::Charging;
             client
@@ -277,6 +285,7 @@ impl Drone {
                 .unwrap();
 
             thread::sleep(Duration::from_secs(3));
+            println!("Batería cargada al 100%!");
             self.nivel_de_bateria = 100.0;
             self.state = DroneState::Available;
             self.current_pos = self.initial_pos;
