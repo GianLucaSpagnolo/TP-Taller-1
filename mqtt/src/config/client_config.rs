@@ -36,6 +36,10 @@ pub struct ClientConfig {
     pub sub_no_local: bool,
     pub sub_retain_as_published: bool,
     pub sub_retain_handling: u8,
+
+    // Will Message
+    pub will_topic: Option<String>,
+    pub will_payload: Option<Vec<u8>>,
 }
 
 impl Clone for ClientConfig {
@@ -50,6 +54,8 @@ impl Clone for ClientConfig {
             sub_no_local: self.sub_no_local,
             sub_retain_as_published: self.sub_retain_as_published,
             sub_retain_handling: self.sub_retain_handling,
+            will_topic: self.will_topic.clone(),
+            will_payload: self.will_payload.clone(),
         }
     }
 }
@@ -269,7 +275,6 @@ impl Config for ClientConfig {
                         }
                     };
                 }
-
                 "subscribe_max_qos" => {
                     sub_max_qos = match param.1.parse::<u8>() {
                         Ok(p) => p,
@@ -289,7 +294,6 @@ impl Config for ClientConfig {
                         }
                     };
                 }
-
                 "subscribe_retain_as_published" => {
                     sub_retain_as_published = match param.1.parse::<bool>() {
                         Ok(p) => p,
@@ -298,7 +302,6 @@ impl Config for ClientConfig {
                         }
                     };
                 }
-
                 "subscribe_retain_handling" => {
                     sub_retain_handling = match param.1.parse::<u8>() {
                         Ok(p) => p,
@@ -311,8 +314,7 @@ impl Config for ClientConfig {
                     }
                 }
 
-                "id" | "ip" | "port" | "log_path" | "log_in_terminal" | "domain_name"
-                | "cert_path" | "cert_pass" => {}
+                "id" | "ip" | "port" | "log_path" | "log_in_terminal" | "domain_name" => {}
 
                 _ => {
                     return Err(Error::new(
@@ -333,6 +335,24 @@ impl Config for ClientConfig {
             sub_no_local,
             sub_retain_as_published,
             sub_retain_handling,
+            will_topic: None,
+            will_payload: None,
         })
+    }
+}
+
+impl ClientConfig {
+    /// ### set_will_message
+    ///
+    /// Setea el mensaje de voluntad
+    ///
+    /// #### Parametros
+    ///
+    /// - `topic`: topico del mensaje
+    /// - `payload`: payload del mensaje
+    ///
+    pub fn set_will_message(&mut self, topic: String, payload: Vec<u8>) {
+        self.will_topic = Some(topic);
+        self.will_payload = Some(payload);
     }
 }

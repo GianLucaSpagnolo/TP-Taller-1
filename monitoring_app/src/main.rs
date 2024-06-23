@@ -1,23 +1,23 @@
 use std::io::Error;
 
 use logger::logger_handler::create_logger_handler;
-use monitoring_app::{app::MonitoringApp, app_config::MonitoringAppConfig};
-use mqtt::{
-    client::mqtt_client::MqttClient,
-    config::{client_config::ClientConfig, mqtt_config::Config},
+use monitoring_app::{
+    app::{create_monitoring_app_client_config, MonitoringApp},
+    app_config::MonitoringAppConfig,
 };
+use mqtt::client::mqtt_client::MqttClient;
+
+const APP_CONFIG_PATH: &str = "monitoring_app/config/app_config.txt";
+const CLIENT_CONFIG_PATH: &str = "monitoring_app/config/client_config.txt";
 
 fn main() -> Result<(), Error> {
-    let client_config_path = "monitoring_app/config/client_config.txt";
-    let app_config_path = "monitoring_app/config/app_config.txt";
-
-    let config = ClientConfig::from_file(String::from(client_config_path))?;
+    let config = create_monitoring_app_client_config(CLIENT_CONFIG_PATH)?;
 
     let log_path = config.general.log_path.to_string();
     let logger_handler = create_logger_handler(&log_path)?;
     let logger = logger_handler.get_logger();
 
-    let app_config = MonitoringAppConfig::new(String::from(app_config_path))?;
+    let app_config = MonitoringAppConfig::new(String::from(APP_CONFIG_PATH))?;
 
     let client = match MqttClient::init(config) {
         Ok(r) => r,

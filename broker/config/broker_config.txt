@@ -7,3 +7,4 @@ log_in_terminal: true
 cert_path: data/certificates/identity.pfx
 cert_pass: 1234
 domain_name: server
+db_path: broker/config/sessions.db
