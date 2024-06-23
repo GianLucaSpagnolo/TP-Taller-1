@@ -44,3 +44,4 @@ pub mod controllers {
 }
 
 pub mod utils;
+pub mod will_message;

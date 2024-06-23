@@ -167,6 +167,7 @@ mod test {
             subscription_identifier: Some(0),
             content_type: Some("type".to_string()),
             application_message,
+            is_will_message: false,
         };
 
         let publish = Publish::new(1, qos_level, 0, properties);
@@ -400,6 +401,7 @@ mod test {
         // DISCONNECT
 
         let properties = DisconnectProperties {
+            id: "hannah".to_string(),
             disconnect_reason_code: ReasonCode::NormalDisconnection.get_id(),
             session_expiry_interval: Some(3000),
             reason_string: Some("its joever".to_string()),
@@ -621,6 +623,7 @@ mod test {
                     let application_message =
                         deserialize_message(publish.properties.application_message);
                     application_message.validate_message(0, "first message".to_string());
+                    assert!(!publish.properties.is_will_message);
                 } else if publish.properties.packet_identifier == 5 {
                     assert_eq!(publish.properties.topic_name, "mensajes");
                     assert_eq!(publish.properties.payload_format_indicator, Some(1));
@@ -643,6 +646,7 @@ mod test {
                     let application_message =
                         deserialize_message(publish.properties.application_message);
                     application_message.validate_message(0, "second message".to_string());
+                    assert!(!publish.properties.is_will_message);
                 } else if publish.properties.packet_identifier == 7 {
                     assert_eq!(publish.properties.topic_name, "mensajes");
                     assert_eq!(publish.properties.payload_format_indicator, Some(1));
@@ -665,6 +669,7 @@ mod test {
                     let application_message =
                         deserialize_message(publish.properties.application_message);
                     application_message.validate_message(0, "im tired message".to_string());
+                    assert!(!publish.properties.is_will_message);
                 }
             }
             PacketReceived::Puback(puback) => {
@@ -768,6 +773,7 @@ mod test {
                 );
             }
             PacketReceived::Disconnect(disconnect) => {
+                assert_eq!(disconnect.properties.id, "hannah".to_string());
                 assert_eq!(
                     disconnect.properties.disconnect_reason_code,
                     ReasonCode::NormalDisconnection.get_id()

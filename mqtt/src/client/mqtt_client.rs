@@ -211,6 +211,8 @@ impl MqttClient {
 
         let payload = ConnectPayload {
             client_id: config.general.id.clone(),
+            will_topic: config.will_topic.clone(),
+            will_payload: config.will_payload.clone(),
             ..Default::default()
         };
 
@@ -225,7 +227,7 @@ impl MqttClient {
 
         send_connect_packet(&client_id, log_path, &mut stream, payload, &config)?;
 
-        let current_packet_id = 0;
+        let current_packet_id = 1;
 
         let client = MqttClient {
             config,
@@ -397,6 +399,7 @@ impl MqttClient {
         }
 
         let properties = DisconnectProperties {
+            id: self.config.general.id.clone(),
             disconnect_reason_code,
             session_expiry_interval: None,
             reason_string: None,
