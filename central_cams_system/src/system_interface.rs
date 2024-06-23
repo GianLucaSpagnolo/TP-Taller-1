@@ -7,10 +7,8 @@ pub mod interface {
 
     use logger::logger_handler::Logger;
     use mqtt::client::mqtt_client::MqttClient;
-    use shared::models::{
-        cam_model::cam::{Cam, CamState},
-        coordenates::Coordenates,
-    };
+    use shared::models::cam_model::cam::{Cam, CamState};
+    use walkers::Position;
 
     use crate::cams_system::CamsSystem;
 
@@ -62,22 +60,26 @@ pub mod interface {
     ) -> Result<(), Error> {
         let id = generate_id(&cam_system.lock().unwrap())?;
 
-        let (lat, long) = check_add_args(args)?;
+        let mut cam_system = cam_system.lock().unwrap();
+
+        let (lat, lon) = check_add_args(args)?;
 
         // Se utilizar unwrap() porque ya se validó que la cantidad de argumentos es correcta
-        let location = Coordenates::from_strings(lat, long)?;
+        let lat = lat.parse().unwrap();
+        let lon = lon.parse().unwrap();
+
+        let location = Position::from_lat_lon(lat, lon);
         let cam = Cam {
             id,
             location,
             state: CamState::SavingEnergy,
             incidents_covering: 0,
         };
-        let mut cam_system = cam_system.lock().unwrap();
         let added_cam = cam_system.add_new_camara(cam);
         println!("Camera added: {:?} ", added_cam);
 
         let bytes = cam_system.system.as_bytes();
-        fs::write(cam_system.db_path.clone(), bytes)?;
+        fs::write(cam_system.config.db_path.clone(), bytes)?;
         client.publish(added_cam.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
@@ -120,11 +122,14 @@ pub mod interface {
         cam.state = CamState::Removed;
         println!(
             "Cámara eliminada: id:{} - modo:{:?} - latitud:{} - longitud:{}",
-            cam.id, cam.state, cam.location.latitude, cam.location.longitude
+            cam.id,
+            cam.state,
+            cam.location.lat(),
+            cam.location.lon()
         );
 
         let bytes = cam_system.system.as_bytes();
-        fs::write(cam_system.db_path.clone(), bytes)?;
+        fs::write(cam_system.config.db_path.clone(), bytes)?;
 
         client.publish(cam.as_bytes(), "camaras".to_string(), logger)?;
 
@@ -153,12 +158,15 @@ pub mod interface {
         parts: Vec<&str>,
         logger: &Logger,
     ) -> Result<(), Error> {
-        let (id, lat, long) = check_modify_args(parts)?;
+        let (id, lat, lon) = check_modify_args(parts)?;
 
         // Se utilizar unwrap() porque ya se validó que la cantidad de argumentos es correcta
         let id = parse_id(id)?;
 
-        let new_coordenate = Coordenates::from_strings(lat, long)?;
+        let lat = lat.parse().unwrap();
+        let lon = lon.parse().unwrap();
+
+        let new_coordenate = Position::from_lat_lon(lat, lon);
 
         let mut cam_system = cam_system.lock().unwrap();
 
@@ -166,7 +174,7 @@ pub mod interface {
         println!("Cámara modificada correctamente");
 
         let bytes = cam_system.system.as_bytes();
-        fs::write(cam_system.db_path.clone(), bytes)?;
+        fs::write(cam_system.config.db_path.clone(), bytes)?;
         client.publish(modified_cam.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
@@ -197,24 +205,20 @@ pub mod interface {
                                 continue;
                             }
                         },
-                        "delete" => {
-                            match delete_action(client, cam_system.clone(), parts, logger) {
-                                Ok(_) => cam_system.lock().unwrap().list_cameras(),
-                                Err(e) => {
-                                    println!("Error al eliminar cámara: {}", e);
-                                    continue;
-                                }
+                        "rm" => match delete_action(client, cam_system.clone(), parts, logger) {
+                            Ok(_) => cam_system.lock().unwrap().list_cameras(),
+                            Err(e) => {
+                                println!("Error al eliminar cámara: {}", e);
+                                continue;
                             }
-                        }
-                        "modify" => {
-                            match modify_action(client, cam_system.clone(), parts, logger) {
-                                Ok(_) => cam_system.lock().unwrap().list_cameras(),
-                                Err(e) => {
-                                    println!("Error al modificar cámara: {}", e);
-                                    continue;
-                                }
+                        },
+                        "edit" => match modify_action(client, cam_system.clone(), parts, logger) {
+                            Ok(_) => cam_system.lock().unwrap().list_cameras(),
+                            Err(e) => {
+                                println!("Error al modificar cámara: {}", e);
+                                continue;
                             }
-                        }
+                        },
                         "list" => cam_system.lock().unwrap().list_cameras(),
 
                         "help" => {
@@ -246,14 +250,14 @@ pub mod interface {
         println!("Ejemplo: add;10.0;20.0");
 
         println!("\x1b[33m  2. Eliminar Cámara\x1b[0m");
-        println!("Para eliminar una cámara se debe utilizar el comando: delete.");
-        print_command_format("delete;id_camara_a_eliminar");
-        println!("Ejemplo: delete;1");
+        println!("Para eliminar una cámara se debe utilizar el comando: rm.");
+        print_command_format("rm;id_camara_a_eliminar");
+        println!("Ejemplo: rm;1");
 
         println!("\x1b[33m  3. Modificar la posición de una cámara\x1b[0m");
-        println!("Para modificar la posición de una cámara se debe utilizar el comando: modify.");
-        print_command_format("modify;id_camara_a_modificar;nueva_latitud;nueva_longitud");
-        println!("Ejemplo: modify;1;10.0;20.0");
+        println!("Para modificar la posición de una cámara se debe utilizar el comando: edit.");
+        print_command_format("edit;id_camara_a_modificar;nueva_latitud;nueva_longitud");
+        println!("Ejemplo: edit;1;10.0;20.0");
 
         println!("\x1b[33m  4. Listar Cámaras\x1b[0m");
         println!("Para listar las cámaras se debe utilizar el comando: \x1b[35m list\x1b[0m, sin ningún parámetro.");

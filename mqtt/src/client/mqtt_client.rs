@@ -142,7 +142,7 @@ fn stablish_tls_connection(
 ///
 /// ### Retorno
 /// Resultado de la operación.
-/// 
+///
 fn send_connect_packet(
     client_id: &String,
     log_path: String,

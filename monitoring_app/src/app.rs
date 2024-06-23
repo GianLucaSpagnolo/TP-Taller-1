@@ -1,4 +1,6 @@
+use std::time::Duration;
 use std::{
+    fs,
     io::Error,
     sync::{mpsc::Receiver, Arc, Mutex},
     thread::{self, JoinHandle},
@@ -6,20 +8,26 @@ use std::{
 
 use egui::Context;
 use logger::logger_handler::Logger;
-use mqtt::{
-    client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
-    config::{client_config::ClientConfig, mqtt_config::Config},
-};
+use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
+use shared::interfaces::drone_interface::DroneIconsPath;
 use shared::{
     interfaces::{
-        cam_interface::CamInterface, incident_interface::IncidentInterface,
+        cam_interface::CamInterface, drone_interface::DroneInterface,
+        global_interface::GlobalInterface, incident_interface::IncidentInterface,
         map_interface::MapInterface,
     },
-    models::cam_model::{
-        cam::{Cam, CamState},
-        cam_list::CamList,
+    models::{
+        cam_model::{
+            cam::{Cam, CamState},
+            cam_list::CamList,
+        },
+        drone_model::{
+            drone::{Drone, DroneState},
+            drone_list::DroneList,
+        },
+        inc_model::{incident::IncidentState, incident_list::IncidentList},
     },
-    will_message::{deserialize_will_message_payload, serialize_will_message_payload},
+    will_message::deserialize_will_message_payload,
 };
 
 use crate::{app_config::MonitoringAppConfig, app_interface::run_interface};
@@ -38,8 +46,7 @@ pub struct MonitoringApp {
     pub config: MonitoringAppConfig,
     pub client: MqttClient,
     pub logger: Logger,
-    pub cam_interface: CamInterface,
-    pub inc_interface: IncidentInterface,
+    pub global_interface: GlobalInterface,
     pub map_interface: MapInterface,
 }
 
@@ -76,8 +83,14 @@ fn handle_camaras_will_message(message_received: Vec<u8>) {
 fn process_messages(
     receiver: Receiver<MqttClientMessage>,
     cam_list: Arc<Mutex<CamList>>,
+    drone_list: Arc<Mutex<DroneList>>,
+    incident_list: Arc<Mutex<IncidentList>>,
+    db_path: String,
+    client: &mut MqttClient,
+    logger: Logger,
 ) -> Result<JoinHandle<()>, Error> {
-    let handler = thread::spawn(move || loop {
+    let mut client = client.clone();
+    let handler: JoinHandle<()> = thread::spawn(move || loop {
         for message_received in receiver.try_iter() {
             match message_received.topic.as_str() {
                 "camaras" => {
@@ -97,8 +110,33 @@ fn process_messages(
                         }
                     }
                 }
-                "dron" => {
-                    // cambiar estado
+                "drone" => {
+                    let dron = Drone::from_be_bytes(&message_received.data);
+
+                    let incidents_historial = &mut incident_list.lock().unwrap();
+
+                    let inc_id = dron.id_incident_covering;
+
+                    let drone_state = dron.state.clone();
+
+                    drone_list.lock().unwrap().update_drone(dron);
+
+                    if let DroneState::ResolvingIncident = drone_state {
+                        if let Some(inc_id) = inc_id {
+                            let incident = incidents_historial.incidents.get_mut(&inc_id).unwrap();
+                            incident.drones_covering += 1;
+                            if incident.drones_covering == 2 {
+                                thread::sleep(Duration::from_secs(3));
+                                incident.state = IncidentState::Resolved;
+                                incident.drones_covering = 0;
+                                client
+                                    .publish(incident.as_bytes(), "inc".to_string(), &logger)
+                                    .unwrap();
+                            }
+                        };
+                    };
+                    let bytes = incidents_historial.as_bytes();
+                    fs::write(&db_path, bytes).unwrap();
                 }
                 _ => {}
             }
@@ -112,7 +150,7 @@ fn process_messages(
 impl MonitoringApp {
     /// ### new
     ///    
-    /// Crea una nueva aplicación de monitoreo
+    /// Crea una nueva ap licación de monitoreo
     ///
     /// #### Parametros
     /// - `client`: cliente MQTT
@@ -123,21 +161,43 @@ impl MonitoringApp {
         client: MqttClient,
         logger: Logger,
         cam_list_ref: Arc<Mutex<CamList>>,
+        drone_list_ref: Arc<Mutex<DroneList>>,
         egui_ctx: Context,
+        incident_list: Arc<Mutex<IncidentList>>,
     ) -> Self {
+        let cam_interface = CamInterface::new(
+            cam_list_ref,
+            &config.cam_icon_path,
+            &config.cam_alert_icon_path,
+        );
+
+        let drone_icons_path = DroneIconsPath {
+            default: config.drone_icon_path.clone(),
+            alert: config.drone_alert_icon_path.clone(),
+            going_back: config.drone_back_icon_path.clone(),
+            resolving: config.drone_resolving_icon_path.clone(),
+            low_battery: config.drone_low_battery_icon_path.clone(),
+            charging: config.drone_charging_icon_path.clone(),
+            central: config.drone_central_icon_path.clone(),
+        };
+
+        let drone_interface = DroneInterface::new(drone_list_ref, drone_icons_path);
+
+        let inc_interface = IncidentInterface::new(
+            config.db_path.to_string(),
+            true,
+            &config.inc_icon_path,
+            incident_list,
+        );
+
         Self {
             client,
             logger,
-            cam_interface: CamInterface::new(
-                cam_list_ref,
-                &config.cam_icon_path,
-                &config.cam_alert_icon_path,
-            ),
-            inc_interface: IncidentInterface::new(
-                config.db_path.to_string(),
-                true,
-                &config.inc_icon_path,
-            ),
+            global_interface: GlobalInterface {
+                cam_interface,
+                drone_interface,
+                inc_interface,
+            },
             map_interface: MapInterface::new(egui_ctx.to_owned()),
             config,
         }
@@ -165,11 +225,34 @@ impl MonitoringApp {
 
         let cam_list_ref = Arc::new(Mutex::new(cam_list));
 
-        let handler = process_messages(listener.receiver, cam_list_ref.clone())?;
+        let dron_list = DroneList::default();
+
+        let dron_list_ref = Arc::new(Mutex::new(dron_list));
+
+        let incident_list = IncidentList::default();
+
+        let incident_list_ref = Arc::new(Mutex::new(incident_list));
+
+        let handler = process_messages(
+            listener.receiver,
+            cam_list_ref.clone(),
+            dron_list_ref.clone(),
+            incident_list_ref.clone(),
+            config.db_path.clone(),
+            &mut client,
+            logger.clone(),
+        )?;
 
         client.subscribe(vec!["camaras"], &logger)?;
-
-        match run_interface(client, logger, cam_list_ref, config) {
+        client.subscribe(vec!["drone"], &logger)?;
+        match run_interface(
+            client,
+            logger,
+            cam_list_ref,
+            dron_list_ref,
+            config,
+            incident_list_ref,
+        ) {
             Ok(_) => Ok(MonitoringHandler {
                 broker_listener: listener.handler,
                 message_handler: handler,
@@ -177,22 +260,4 @@ impl MonitoringApp {
             Err(e) => Err(Error::new(std::io::ErrorKind::Other, e.to_string())),
         }
     }
-}
-
-// ### create_monitoring_app_client_config
-//
-// Crea la configuración del cliente de la aplicación de monitoreo.
-// Tambien configura el mensaje de voluntad del cliente.
-//
-// #### Parametros
-// - `path`: ruta del archivo de configuración
-//
-pub fn create_monitoring_app_client_config(path: &str) -> Result<ClientConfig, Error> {
-    let mut config = ClientConfig::from_file(String::from(path))?;
-    config.set_will_message(
-        "inc".to_string(),
-        serialize_will_message_payload(config.general.id.clone()),
-    );
-
-    Ok(config)
 }

@@ -5,13 +5,11 @@ pub mod incident_controller {
     use logger::logger_handler::Logger;
     use mqtt::client::mqtt_client::MqttClient;
     use rand::Error;
+    use walkers::Position;
 
-    use crate::models::{
-        coordenates::Coordenates,
-        inc_model::{
-            incident::{Incident, IncidentState},
-            incident_list::IncidentList,
-        },
+    use crate::models::inc_model::{
+        incident::{Incident, IncidentState},
+        incident_list::IncidentList,
     };
 
     fn send_incident(client: &mut MqttClient, incident_received: Incident, logger: &Logger) {
@@ -27,7 +25,7 @@ pub mod incident_controller {
     pub fn add_incident(
         client: &mut MqttClient,
         historial: &mut IncidentList,
-        location: Coordenates,
+        location: Position,
         logger: &Logger,
         db_path: &str,
     ) -> Result<(), Error> {

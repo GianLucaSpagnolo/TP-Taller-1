@@ -29,16 +29,10 @@ fn cam_row(mut row: egui_extras::TableRow, cam: &Cam) {
         }
     });
     row.col(|ui| {
-        ui.label(&format!(
-            "{:.1$}",
-            cam.location.latitude, COORDENATE_PRECISION
-        ));
+        ui.label(&format!("{:.1$}", cam.location.lat(), COORDENATE_PRECISION));
     });
     row.col(|ui| {
-        ui.label(&format!(
-            "{:.1$}",
-            cam.location.longitude, COORDENATE_PRECISION
-        ));
+        ui.label(&format!("{:.1$}", cam.location.lon(), COORDENATE_PRECISION));
     });
 }
 
