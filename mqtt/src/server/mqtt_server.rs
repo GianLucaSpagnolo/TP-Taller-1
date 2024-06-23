@@ -1,6 +1,5 @@
 use std::io::Error;
 use std::net::TcpStream;
-//use std::str::Lines;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -97,18 +96,6 @@ fn client_handler(
     server_connector: TlsServerConnector,
     sender: Arc<Mutex<Sender<(PacketReceived, TcpStream)>>>,
 ) -> Result<(), Error> {
-    /*
-    for client_stream in listener.incoming() {
-        let stream = client_stream?.try_clone()?;
-        let sender_clone = Arc::clone(&sender);
-        thread::spawn(move || -> Result<(), Error> {
-            loop {
-                // Manejo de paquetes, cuando se recibe un paquete se envia al procesador de mensajes
-                message_catcher(stream.try_clone()?, sender_clone.clone())?;
-            }
-        });
-    }
-    */
     let listener = server_connector.get_listener().unwrap();
     let srv_cpy = Arc::new(server_connector);
 
@@ -175,20 +162,7 @@ impl MqttServer {
             &self.config.general.log_in_term,
             &logger,
         );
-        /*
-        let listener = match TcpListener::bind(self.config.get_socket_address()) {
-            Ok(lis) => lis,
-            Err(e) => {
-                logger_cpy.log_event(
-                    &("Error al conectar con servidor: ".to_string() + &e.to_string()),
-                    &self.config.general.id,
-                );
-                logger_cpy.close();
-                logger.close();
-                return Err(e);
-            }
-        };
-        */
+
         let address = self.config.get_socket_address().to_string();
         let cert_path = self.config.general.cert_path.clone();
         let cert_pass = self.config.general.cert_pass.clone();

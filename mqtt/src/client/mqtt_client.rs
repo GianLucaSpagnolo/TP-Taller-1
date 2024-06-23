@@ -109,24 +109,9 @@ fn stablish_tls_connection(
     client_id: &String,
     logger: &Logger,
 ) -> Result<TcpStream, Error> {
-    //let logger = create_logger_handler(&log_path)?;
-    /*
-    let stream = match TcpStream::connect(config.get_socket_address()) {
-        Ok(stream) => stream,
-        Err(e) => {
-            logger.log_event(
-                &("Error al conectar con servidor: ".to_string() + &e.to_string()),
-                client_id,
-            );
-            //logger.close();
-            return Err(e);
-        }
-    };
-    */
-
     let address = config.get_socket_address().to_string();
-
     let srv_name = &config.general.srv_name;
+
     match connect(&address, srv_name) {
         Ok(mut stream) => Ok(stream.get_mut().try_clone().unwrap()),
         Err(e) => {
