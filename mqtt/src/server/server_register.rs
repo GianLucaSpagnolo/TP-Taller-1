@@ -286,13 +286,13 @@ mod tests {
             db_path: Some(path.clone()),
         };
 
-        register.save();
+        let bytes = register.sessions_as_bytes();
 
-        let register_2 = SessionRegister::new(Some(path));
+        let sessions_2 = SessionRegister::sessions_from_be_bytes(bytes);
 
-        let session_2 = register_2.sessions.get("test").unwrap();
+        let session_2 = sessions_2.get("test").unwrap();
 
-        assert!(!session_2.active);
+        assert_eq!(session_2.active, session.active);
         assert_eq!(
             session.session_expiry_interval,
             session_2.session_expiry_interval
@@ -326,13 +326,13 @@ mod tests {
             db_path: Some(path.clone()),
         };
 
-        register.save();
+        let bytes = register.sessions_as_bytes();
 
-        let register_2 = SessionRegister::new(Some(path));
+        let sessions_2 = SessionRegister::sessions_from_be_bytes(bytes);
 
-        let session_2 = register_2.sessions.get("test").unwrap();
+        let session_2 = sessions_2.get("test").unwrap();
 
-        assert!(!session_2.active);
+        assert_eq!(session_2.active, session.active);
         assert_eq!(
             session.session_expiry_interval,
             session_2.session_expiry_interval
@@ -366,13 +366,13 @@ mod tests {
             db_path: Some(path.clone()),
         };
 
-        register.save();
+        let bytes = register.sessions_as_bytes();
 
-        let register_2 = SessionRegister::new(Some(path));
+        let sessions_2 = SessionRegister::sessions_from_be_bytes(bytes);
 
-        let session_2 = register_2.sessions.get("test").unwrap();
+        let session_2 = sessions_2.get("test").unwrap();
 
-        assert!(!session_2.active);
+        assert_eq!(session_2.active, session.active);
         assert_eq!(
             session.session_expiry_interval,
             session_2.session_expiry_interval
@@ -452,13 +452,13 @@ mod tests {
             db_path: Some(path.clone()),
         };
 
-        register.save();
+        let bytes = register.sessions_as_bytes();
 
-        let register_2 = SessionRegister::new(Some(path));
+        let sessions_2 = SessionRegister::sessions_from_be_bytes(bytes);
 
-        let session_deserializated = register_2.sessions.get("id_test").unwrap();
+        let session_deserializated = sessions_2.get("id_test").unwrap();
 
-        assert!(!session_deserializated.active);
+        assert_eq!(session.active, session_deserializated.active);
         assert_eq!(
             session.session_expiry_interval,
             session_deserializated.session_expiry_interval
@@ -472,9 +472,9 @@ mod tests {
             session_deserializated.messages_in_queue.len()
         );
 
-        let session_deserializated_2 = register_2.sessions.get("id_test2").unwrap();
+        let session_deserializated_2 = sessions_2.get("id_test2").unwrap();
 
-        assert!(!session_deserializated_2.active);
+        assert_eq!(session_2.active, session_deserializated_2.active);
         assert_eq!(
             session_2.session_expiry_interval,
             session_deserializated_2.session_expiry_interval
@@ -498,8 +498,8 @@ mod tests {
             panic!("Will message not found in session");
         }
 
-        let session_deserializated_3 = register_2.sessions.get("id_test3").unwrap();
-        assert!(!session_deserializated_3.active);
+        let session_deserializated_3 = sessions_2.get("id_test3").unwrap();
+        assert_eq!(session_3.active, session_deserializated_3.active);
         assert_eq!(
             session_3.session_expiry_interval,
             session_deserializated_3.session_expiry_interval
