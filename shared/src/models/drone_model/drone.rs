@@ -93,7 +93,6 @@ impl Drone {
                 let bytes = self.as_bytes();
                 fs::write(self.db_path.clone(), bytes).unwrap();
             }
-            return;
         } else if self.state == DroneState::Available {
             
             let distance_to_incident =

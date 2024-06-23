@@ -133,7 +133,7 @@ fn main() -> Result<(), Error> {
         db_path,
     )?;
 
-    let config = ClientConfig::from_file(String::from(config_path))?;
+    let config = ClientConfig::from_file(config_path)?;
 
     let logger_handler = create_logger_handler(&config.general.log_path)?;
     let logger = logger_handler.get_logger();
