@@ -254,14 +254,14 @@ pub mod interface {
         println!("Ejemplo: add;10.0;20.0");
 
         println!("\x1b[33m  2. Eliminar Cámara\x1b[0m");
-        println!("Para eliminar una cámara se debe utilizar el comando: delete.");
-        print_command_format("delete;id_camara_a_eliminar");
-        println!("Ejemplo: delete;1");
+        println!("Para eliminar una cámara se debe utilizar el comando: rm.");
+        print_command_format("rm;id_camara_a_eliminar");
+        println!("Ejemplo: rm;1");
 
         println!("\x1b[33m  3. Modificar la posición de una cámara\x1b[0m");
-        println!("Para modificar la posición de una cámara se debe utilizar el comando: modify.");
-        print_command_format("modify;id_camara_a_modificar;nueva_latitud;nueva_longitud");
-        println!("Ejemplo: modify;1;10.0;20.0");
+        println!("Para modificar la posición de una cámara se debe utilizar el comando: edit.");
+        print_command_format("edit;id_camara_a_modificar;nueva_latitud;nueva_longitud");
+        println!("Ejemplo: edit;1;10.0;20.0");
 
         println!("\x1b[33m  4. Listar Cámaras\x1b[0m");
         println!("Para listar las cámaras se debe utilizar el comando: \x1b[35m list\x1b[0m, sin ningún parámetro.");
