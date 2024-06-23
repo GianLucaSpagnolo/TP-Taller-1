@@ -311,7 +311,7 @@ impl Config for ClientConfig {
                     }
                 }
 
-                "id" | "ip" | "port" | "log_path" | "log_in_terminal" => {}
+                "id" | "ip" | "port" | "log_path" | "log_in_terminal" | "domain_name" => {}
 
                 _ => {
                     return Err(Error::new(

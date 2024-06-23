@@ -22,6 +22,7 @@ use crate::{
 };
 
 use super::client_listener::MqttClientListener;
+use super::client_connector::connect;
 
 /// ## MqttClient
 ///
@@ -103,13 +104,13 @@ fn receive_connack_packet(stream: &mut TcpStream) -> Result<Connack, Error> {
 /// ### Retorno
 /// Resultado de la operación.
 ///
-fn stablish_tcp_connection(
+fn stablish_tls_connection(
     config: &ClientConfig,
     client_id: &String,
     logger: &Logger,
 ) -> Result<TcpStream, Error> {
     //let logger = create_logger_handler(&log_path)?;
-
+    /*
     let stream = match TcpStream::connect(config.get_socket_address()) {
         Ok(stream) => stream,
         Err(e) => {
@@ -121,8 +122,25 @@ fn stablish_tcp_connection(
             return Err(e);
         }
     };
-    //logger.close();
-    Ok(stream)
+    */
+    
+    let address = config.get_socket_address().to_string();
+
+    let srv_name = &config.general.srv_name;
+    match connect(&address, srv_name) {
+        Ok(mut stream) => Ok(stream.get_mut().try_clone().unwrap()),
+        Err(e) => {
+            logger.log_event(
+                &("Error al conectar con servidor: ".to_string() + &e.to_string()),
+                client_id,
+            );
+
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("TLS connection error: {}", e),
+            ))
+        }
+    }
 }
 
 /// ## send_connect_packet
@@ -214,7 +232,7 @@ impl MqttClient {
             ..Default::default()
         };
 
-        let mut stream = match stablish_tcp_connection(&config, &client_id, &logger) {
+        let mut stream = match stablish_tls_connection(&config, &client_id, &logger) {
             Ok(s) => s,
             Err(e) => {
                 logger.close();

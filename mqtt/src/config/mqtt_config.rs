@@ -88,6 +88,7 @@ pub struct MqttConfig {
     pub port: u16,
     pub log_path: String,
     pub log_in_term: bool,
+    pub srv_name: String,
 }
 
 impl Clone for MqttConfig {
@@ -98,6 +99,7 @@ impl Clone for MqttConfig {
             port: self.port,
             log_path: self.log_path.clone(),
             log_in_term: self.log_in_term,
+            srv_name: self.srv_name.clone(),
         }
     }
 }
@@ -110,6 +112,7 @@ impl Config for MqttConfig {
         let mut port = None;
         let mut log_path = None;
         let mut log_in_term = None;
+        let mut srv_name = None;
 
         for param in params.iter() {
             match param.0.as_str() {
@@ -152,18 +155,24 @@ impl Config for MqttConfig {
                         }
                     }
                 }
+                "domain_name" => {
+                    srv_name = Some(param.1.clone());
+                }
                 _ => {}
             }
         }
 
-        match (id, ip, port, log_path, log_in_term) {
-            (Some(id), Some(ip), Some(port), Some(log_path), Some(log_in_term)) => Ok(MqttConfig {
-                id,
-                ip,
-                port,
-                log_path,
-                log_in_term,
-            }),
+        match (id, ip, port, log_path, log_in_term, srv_name) {
+            (Some(id), Some(ip), Some(port), Some(log_path), Some(log_in_term), Some(srv_name)) => {
+                Ok(MqttConfig {
+                    id,
+                    ip,
+                    port,
+                    log_path,
+                    log_in_term,
+                    srv_name,
+                })
+            }
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Missing parameters in configuration file",
