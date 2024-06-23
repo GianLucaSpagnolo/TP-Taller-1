@@ -174,19 +174,35 @@ impl Config for MqttConfig {
             }
         }
 
-        match (id, ip, port, log_path, log_in_term, srv_name, cert_path, cert_pass) {
-            (Some(id), Some(ip), Some(port), Some(log_path), Some(log_in_term), Some(srv_name),Some(cert_path), Some(cert_pass)) => {
-                Ok(MqttConfig {
-                    id,
-                    ip,
-                    port,
-                    log_path,
-                    log_in_term,
-                    srv_name,
-                    cert_path,
-                    cert_pass,
-                })
-            }
+        match (
+            id,
+            ip,
+            port,
+            log_path,
+            log_in_term,
+            srv_name,
+            cert_path,
+            cert_pass,
+        ) {
+            (
+                Some(id),
+                Some(ip),
+                Some(port),
+                Some(log_path),
+                Some(log_in_term),
+                Some(srv_name),
+                Some(cert_path),
+                Some(cert_pass),
+            ) => Ok(MqttConfig {
+                id,
+                ip,
+                port,
+                log_path,
+                log_in_term,
+                srv_name,
+                cert_path,
+                cert_pass,
+            }),
             _ => Err(Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Missing parameters in configuration file",

@@ -21,8 +21,8 @@ use crate::{
     },
 };
 
-use super::client_listener::MqttClientListener;
 use super::client_connector::connect;
+use super::client_listener::MqttClientListener;
 
 /// ## MqttClient
 ///
@@ -123,7 +123,7 @@ fn stablish_tls_connection(
         }
     };
     */
-    
+
     let address = config.get_socket_address().to_string();
 
     let srv_name = &config.general.srv_name;

@@ -27,7 +27,8 @@ step certificate format $CERTS_FOLDER$CA_NAME.crt --out $CERTS_FOLDER$CA_NAME.de
 echo "Descifrando CA ..."
 step certificate key $CERTS_FOLDER$CA_NAME.crt
 
-echo "Instalando certificado en SO:"
+echo "--Instalando certificado en SO: --"
+echo "Ingresa tu password de admin: "
 step certificate install $CERTS_FOLDER$CA_NAME.crt
 
 #openssl pkcs12 -export -out identity.pfx-inkey 2key.pem -in 2cert.pem -certfile 2fullchain.pem #ok

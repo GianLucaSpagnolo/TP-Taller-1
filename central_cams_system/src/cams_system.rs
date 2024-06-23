@@ -24,7 +24,6 @@ impl CamsSystem {
         range_alert_between_cameras: f64,
         db_path: String,
     ) -> Result<Self, Error> {
-
         let bytes = match fs::read(&db_path) {
             Ok(bytes) => bytes,
             Err(_) => Vec::new(),
