@@ -43,7 +43,7 @@ pub mod connect_handler {
         Connack::new(connack_properties).send(&mut stream)?;
         let action = if connack_flags == 0 {
             MqttServerActions::CreateSession(client.clone())
-        }else{
+        } else {
             let messages = server.register.get_pending_messages(&client);
             if let Some(messages) = messages {
                 while let Some(message) = messages.pop_front() {
@@ -102,19 +102,19 @@ pub mod publish_handler {
         );
 
         let subscribers = server.register.get_subscribers(&topic);
-           
+
         subscribers.into_iter().for_each(|(id, s)| {
             if s.active {
                 let stream = server.network.connections.get_mut(&id).unwrap();
                 let _ = pub_packet.send(&mut stream.try_clone().unwrap());
                 receivers.push(id.clone());
-            }else {
+            } else {
                 MqttServerActions::SendToQueueSession(id.clone()).log_action(
                     &server.config.general.id,
                     logger,
                     &server.config.general.log_in_term,
                 );
-                match server.register.store_message(&id, pub_packet.clone()){
+                match server.register.store_message(&id, pub_packet.clone()) {
                     Ok(_) => (),
                     Err(_) => {
                         MqttServerActions::ErrorWhileSendingWillMessage().log_action(
@@ -123,7 +123,6 @@ pub mod publish_handler {
                             &server.config.general.log_in_term,
                         );
                     }
-                
                 }
             }
         });
@@ -222,7 +221,9 @@ pub mod subscribe_handler {
     ) -> Result<MqttServerActions, Error> {
         let client_id = get_sub_id_and_topics(&mut sub_packet.properties.topic_filters)?;
 
-        server.register.add_subscription(&client_id, sub_packet.properties.topic_filters.clone())?;
+        server
+            .register
+            .add_subscription(&client_id, sub_packet.properties.topic_filters.clone())?;
 
         MqttServerActions::ReceiveSubscribe(
             client_id.clone(),
@@ -317,7 +318,9 @@ pub mod unsubscribe_handler {
     ) -> Result<MqttServerActions, Error> {
         let client_id = get_unsub_id_and_topics(&mut unsub_packet.properties.topic_filters)?;
 
-        server.register.remove_subscription(&client_id, unsub_packet.properties.topic_filters.clone())?;
+        server
+            .register
+            .remove_subscription(&client_id, unsub_packet.properties.topic_filters.clone())?;
 
         MqttServerActions::ReceiveUnsubscribe(
             client_id.clone(),
@@ -380,8 +383,13 @@ pub mod disconnect_handler {
             logger,
             &server.config.general.log_in_term,
         );
-        server.register.disconnect_session(&mut server.network, &packet, &server.config.general.id, &server.config.general.log_in_term, logger)
-
+        server.register.disconnect_session(
+            &mut server.network,
+            &packet,
+            &server.config.general.id,
+            &server.config.general.log_in_term,
+            logger,
+        )
     }
 
     /// ### send_disconnect

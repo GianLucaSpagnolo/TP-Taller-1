@@ -2,7 +2,8 @@ use std::io::{Error, Read};
 
 use crate::{
     common::data_types::data_representation::{
-        read_byte, variable_byte_integer_decode, variable_byte_integer_encode, variable_byte_integer_length,
+        read_byte, variable_byte_integer_decode, variable_byte_integer_encode,
+        variable_byte_integer_length,
     },
     mqtt_packets::packet::generic_packet::PacketType,
 };

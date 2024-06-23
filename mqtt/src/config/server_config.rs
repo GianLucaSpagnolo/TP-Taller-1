@@ -45,10 +45,10 @@ impl Config for ServerConfig {
             if param.0.as_str() == "db_path" {
                 db_path = Some(param.1.clone());
                 break;
-            }else{
+            } else {
                 db_path = None
             }
-        };
+        }
 
         Ok(ServerConfig { general, db_path })
     }

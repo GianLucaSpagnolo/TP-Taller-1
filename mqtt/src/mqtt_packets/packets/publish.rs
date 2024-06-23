@@ -153,7 +153,7 @@ impl Publish {
 
     pub fn as_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut bytes = Vec::new();
-         
+
         let fixed_header_content = PUBLISH_PACKET | self.fixed_header_flags;
         let fixed_header = PacketFixedHeader::new(fixed_header_content, self.properties.size_of());
         bytes.extend_from_slice(&fixed_header.as_bytes());
@@ -367,7 +367,7 @@ mod test {
     }
 
     #[test]
-    pub fn test_manual_serialization(){
+    pub fn test_manual_serialization() {
         let properties = PublishProperties {
             topic_name: "test".to_string(),
             packet_identifier: 0,
@@ -376,21 +376,25 @@ mod test {
             ..Default::default()
         };
 
-        let msg = Publish::new(
-            1,
-            1,
-            0,
-            properties,
-        );
+        let msg = Publish::new(1, 1, 0, properties);
 
         let bytes = msg.as_bytes();
 
         let publish = Publish::from_be_bytes(bytes.unwrap()).unwrap();
-        
+
         assert_eq!(msg.properties.size_of(), publish.properties.size_of());
         assert_eq!(msg.properties.topic_name, publish.properties.topic_name);
-        assert_eq!(msg.properties.packet_identifier, publish.properties.packet_identifier);
-        assert_eq!(msg.properties.payload_format_indicator, publish.properties.payload_format_indicator);
-        assert_eq!(msg.properties.application_message, publish.properties.application_message);
+        assert_eq!(
+            msg.properties.packet_identifier,
+            publish.properties.packet_identifier
+        );
+        assert_eq!(
+            msg.properties.payload_format_indicator,
+            publish.properties.payload_format_indicator
+        );
+        assert_eq!(
+            msg.properties.application_message,
+            publish.properties.application_message
+        );
     }
 }

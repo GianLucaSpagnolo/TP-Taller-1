@@ -1,7 +1,8 @@
 use std::{io::Error, net::TcpStream};
 
 use crate::{
-    common::{flags::flags_handler, reason_codes::ReasonCode}, mqtt_packets::{
+    common::{flags::flags_handler, reason_codes::ReasonCode},
+    mqtt_packets::{
         packets::{
             connect::Connect, publish::Publish, subscribe::Subscribe, unsubscribe::Unsubscribe,
         },
@@ -9,7 +10,7 @@ use crate::{
             connack_properties::ConnackProperties, puback_properties::PubackProperties,
             suback_properties::SubackProperties, unsuback_properties::UnsubackProperties,
         },
-    }
+    },
 };
 
 use super::mqtt_server::MqttServer;
@@ -54,7 +55,10 @@ pub fn determinate_connect_acknowledge(
     // El will message debe ser publicado despues de que una network connection se cierra y la sesion expira, o el willdelay interval haya pasado
     // El will message debe ser borrado en caso de que el servidor reciba un DISCONNECT packet con reason code 0x00, o una nueva Network Connection con Clean Start = 1
     // con el mismo client identifier. Tambien debe ser borrado de la session state en caso de que ya haya sido publicado
-    server.network.connections.insert(connect.payload.client_id.clone(), stream_connection);
+    server
+        .network
+        .connections
+        .insert(connect.payload.client_id.clone(), stream_connection);
     connack_properties.connect_acknowledge_flags = server.register.open_session(connect);
 
     Ok(connack_properties)

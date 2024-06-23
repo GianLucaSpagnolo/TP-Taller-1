@@ -52,7 +52,8 @@ impl TopicFilter {
 
         let topic_filter_len = bytes[index];
         index += 1;
-        let topic_filter = String::from_utf8(bytes[index..topic_filter_len as usize].to_vec()).unwrap();
+        let topic_filter =
+            String::from_utf8(bytes[index..topic_filter_len as usize].to_vec()).unwrap();
         index += topic_filter.len();
         let subscription_options = bytes[index];
 
@@ -78,6 +79,9 @@ mod test {
         let deserialized = TopicFilter::from_be_bytes(bytes);
 
         assert_eq!(topic_filter.topic_filter, deserialized.topic_filter);
-        assert_eq!(topic_filter.subscription_options, deserialized.subscription_options);
+        assert_eq!(
+            topic_filter.subscription_options,
+            deserialized.subscription_options
+        );
     }
 }

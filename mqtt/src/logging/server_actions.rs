@@ -172,7 +172,11 @@ impl fmt::Display for MqttServerActions {
                 write!(f, "SESSION - Servidor enviando mensajes en cola a '{}'", id)
             }
             MqttServerActions::SendPendingMessage(id) => {
-                write!(f, "SESSION - Servidor enviando mensaje pendiente a '{}'", id)
+                write!(
+                    f,
+                    "SESSION - Servidor enviando mensaje pendiente a '{}'",
+                    id
+                )
             }
         }
     }

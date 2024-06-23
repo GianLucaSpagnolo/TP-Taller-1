@@ -1,19 +1,26 @@
-use std::{collections::{HashMap, VecDeque}, fs, io::Error};
+use std::{
+    collections::{HashMap, VecDeque},
+    fs,
+    io::Error,
+};
 
 use logger::logger_handler::Logger;
 
-use crate::{common::{flags::flags_handler, topic_filter::TopicFilter}, logging::{actions::MqttActions, server_actions::MqttServerActions}, mqtt_packets::packets::{connect::Connect, disconnect::Disconnect, publish::Publish}};
+use crate::{
+    common::{flags::flags_handler, topic_filter::TopicFilter},
+    logging::{actions::MqttActions, server_actions::MqttServerActions},
+    mqtt_packets::packets::{connect::Connect, disconnect::Disconnect, publish::Publish},
+};
 
 use super::{server_network::ServerNetwork, server_session::Session, will_message::WillMessage};
 
 #[derive(Clone, Default)]
-pub struct SessionRegister{
+pub struct SessionRegister {
     sessions: HashMap<String, Session>,
-    pub db_path: Option<String>
+    pub db_path: Option<String>,
 }
 
 impl SessionRegister {
-
     fn sessions_as_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
@@ -51,7 +58,6 @@ impl SessionRegister {
     }
 
     pub fn new(db_path: Option<String>) -> Self {
-        
         let mut sessions = HashMap::new();
 
         if let Some(db_path) = &db_path {
@@ -60,7 +66,7 @@ impl SessionRegister {
                     Ok(bytes) => Self::sessions_from_be_bytes(bytes),
                     Err(_) => HashMap::new(),
                 };
-                if !sessions.is_empty(){
+                if !sessions.is_empty() {
                     for session in sessions.values_mut() {
                         session.active = false;
                     }
@@ -68,15 +74,15 @@ impl SessionRegister {
             }
         }
 
-        SessionRegister {
-            sessions,
-            db_path
-        }
+        SessionRegister { sessions, db_path }
     }
 
-    pub fn log_sessions(&self, server_id: &String, log_in_term: &bool ,logger: &Logger) {
-        MqttServerActions::RecoverSessions(self.sessions.keys().cloned().collect())
-            .log_action(server_id, logger, log_in_term);
+    pub fn log_sessions(&self, server_id: &String, log_in_term: &bool, logger: &Logger) {
+        MqttServerActions::RecoverSessions(self.sessions.keys().cloned().collect()).log_action(
+            server_id,
+            logger,
+            log_in_term,
+        );
     }
 
     fn save(&self) {
@@ -121,19 +127,20 @@ impl SessionRegister {
             self.save();
             0
         }
-
     }
 
     pub fn clean_session(&mut self, client_id: &str) {
         self.sessions.remove(client_id);
         self.save();
-    }  
+    }
 
-    pub fn add_subscription(&mut self, client_id: &str, mut topics: Vec<TopicFilter>) -> Result<(), Error>{
+    pub fn add_subscription(
+        &mut self,
+        client_id: &str,
+        mut topics: Vec<TopicFilter>,
+    ) -> Result<(), Error> {
         if let Some(session) = self.sessions.get_mut(client_id) {
-            session
-                .subscriptions
-                .append(&mut topics);
+            session.subscriptions.append(&mut topics);
             self.save();
             return Ok(());
         }
@@ -143,15 +150,15 @@ impl SessionRegister {
         ))
     }
 
-    pub fn remove_subscription(&mut self, client_id: &str, topic_filters: Vec<String>) -> Result<(), Error> {
+    pub fn remove_subscription(
+        &mut self,
+        client_id: &str,
+        topic_filters: Vec<String>,
+    ) -> Result<(), Error> {
         if let Some(session) = self.sessions.get_mut(client_id) {
             session
                 .subscriptions
-                .retain(|t| {
-                    topic_filters
-                    .iter()
-                    .any(|u| *u != t.topic_filter)
-                });
+                .retain(|t| topic_filters.iter().any(|u| *u != t.topic_filter));
             self.save();
             return Ok(());
         }
@@ -164,7 +171,11 @@ impl SessionRegister {
     pub fn get_subscribers(&self, topic: &str) -> Vec<(String, Session)> {
         let mut subscribers = Vec::new();
         for (id, session) in &self.sessions {
-            if session.subscriptions.iter().any(|t| t.topic_filter == topic){
+            if session
+                .subscriptions
+                .iter()
+                .any(|t| t.topic_filter == topic)
+            {
                 subscribers.push((id.clone(), session.clone()));
             }
         }
@@ -183,8 +194,14 @@ impl SessionRegister {
         ))
     }
 
-    pub fn disconnect_session(&mut self, network: &mut ServerNetwork, packet: &Disconnect, server_id: &String, log_in_term: &bool ,logger: &Logger) -> Result<MqttServerActions, Error>{
-        
+    pub fn disconnect_session(
+        &mut self,
+        network: &mut ServerNetwork,
+        packet: &Disconnect,
+        server_id: &String,
+        log_in_term: &bool,
+        logger: &Logger,
+    ) -> Result<MqttServerActions, Error> {
         let client_id = packet.properties.id.clone();
 
         let mut sessions = self.sessions.clone();
@@ -198,7 +215,7 @@ impl SessionRegister {
                 logger,
                 log_in_term,
             );
-            
+
             if let Some(will_message) = session.will_message.clone() {
                 let mut receivers = Vec::new();
                 let mut will_message_sent = false;
@@ -221,12 +238,12 @@ impl SessionRegister {
                     return Ok(MqttServerActions::SendWillMessage(
                         will_message.will_topic,
                         receivers,
-                    ))
+                    ));
                 } else {
-                    return Ok(MqttServerActions::ErrorWhileSendingWillMessage())
+                    return Ok(MqttServerActions::ErrorWhileSendingWillMessage());
                 }
             } else {
-                return Ok(MqttServerActions::NoSendWillMessage())
+                return Ok(MqttServerActions::NoSendWillMessage());
             }
         }
         Err(Error::new(
@@ -241,23 +258,22 @@ impl SessionRegister {
         }
         None
     }
-
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use crate::mqtt_packets::properties::publish_properties::PublishProperties;
 
     use super::*;
 
     #[test]
-    fn test_basic_serialization(){
-        let session = Session{
+    fn test_basic_serialization() {
+        let session = Session {
             active: true,
             session_expiry_interval: 0,
             subscriptions: Vec::new(),
             messages_in_queue: VecDeque::new(),
-            will_message: None
+            will_message: None,
         };
 
         let path = "tests/files/register_test_1.db".to_string();
@@ -265,66 +281,77 @@ mod tests{
         let mut sessions = HashMap::new();
         sessions.insert("test".to_string(), session.clone());
 
-        let register = SessionRegister{
+        let register = SessionRegister {
             sessions,
-            db_path: Some(path.clone())
+            db_path: Some(path.clone()),
         };
 
         register.save();
-        
+
         let register_2 = SessionRegister::new(Some(path));
 
         let session_2 = register_2.sessions.get("test").unwrap();
 
         assert!(!session_2.active);
-        assert_eq!(session.session_expiry_interval, session_2.session_expiry_interval);
+        assert_eq!(
+            session.session_expiry_interval,
+            session_2.session_expiry_interval
+        );
         assert_eq!(session.subscriptions.len(), session_2.subscriptions.len());
-        assert_eq!(session.messages_in_queue.len(), session_2.messages_in_queue.len());
+        assert_eq!(
+            session.messages_in_queue.len(),
+            session_2.messages_in_queue.len()
+        );
     }
 
     #[test]
-    fn test_serialization_with_subscriptions(){
-        let session = Session{
+    fn test_serialization_with_subscriptions() {
+        let session = Session {
             active: true,
             session_expiry_interval: 0,
-            subscriptions: vec![TopicFilter{
+            subscriptions: vec![TopicFilter {
                 topic_filter: "test".to_string(),
                 subscription_options: 1,
             }],
             messages_in_queue: VecDeque::new(),
-            will_message: None
+            will_message: None,
         };
 
         let path = "tests/files/register_test_2.db".to_string();
         let mut sessions = HashMap::new();
         sessions.insert("test".to_string(), session.clone());
 
-        let register = SessionRegister{
+        let register = SessionRegister {
             sessions,
-            db_path: Some(path.clone())
+            db_path: Some(path.clone()),
         };
 
         register.save();
 
         let register_2 = SessionRegister::new(Some(path));
-        
+
         let session_2 = register_2.sessions.get("test").unwrap();
 
         assert!(!session_2.active);
-        assert_eq!(session.session_expiry_interval, session_2.session_expiry_interval);
+        assert_eq!(
+            session.session_expiry_interval,
+            session_2.session_expiry_interval
+        );
         assert_eq!(session.subscriptions.len(), session_2.subscriptions.len());
-        assert_eq!(session.messages_in_queue.len(), session_2.messages_in_queue.len());
-        
+        assert_eq!(
+            session.messages_in_queue.len(),
+            session_2.messages_in_queue.len()
+        );
     }
 
     #[test]
-    fn test_serialization_with_will_message(){
-        let session = Session{
+    fn test_serialization_with_will_message() {
+        let session = Session {
             active: true,
             session_expiry_interval: 0,
             subscriptions: Vec::new(),
             messages_in_queue: VecDeque::new(),
-            will_message: Some(WillMessage{
+            will_message: Some(WillMessage {
                 will_topic: "test".to_string(),
                 will_payload: vec![1, 2, 3],
             }),
@@ -334,9 +361,9 @@ mod tests{
         let mut sessions = HashMap::new();
         sessions.insert("test".to_string(), session.clone());
 
-        let register = SessionRegister{
+        let register = SessionRegister {
             sessions,
-            db_path: Some(path.clone())
+            db_path: Some(path.clone()),
         };
 
         register.save();
@@ -346,9 +373,15 @@ mod tests{
         let session_2 = register_2.sessions.get("test").unwrap();
 
         assert!(!session_2.active);
-        assert_eq!(session.session_expiry_interval, session_2.session_expiry_interval);
+        assert_eq!(
+            session.session_expiry_interval,
+            session_2.session_expiry_interval
+        );
         assert_eq!(session.subscriptions.len(), session_2.subscriptions.len());
-        assert_eq!(session.messages_in_queue.len(), session_2.messages_in_queue.len());
+        assert_eq!(
+            session.messages_in_queue.len(),
+            session_2.messages_in_queue.len()
+        );
         if let Some(will) = &session.will_message {
             if let Some(will2) = &session_2.will_message {
                 assert_eq!(will.will_topic, will2.will_topic);
@@ -359,21 +392,18 @@ mod tests{
         } else {
             panic!("Will message not found in session");
         }
-
     }
     #[test]
-    fn test_serialization_complete(){
-        let session = Session{
+    fn test_serialization_complete() {
+        let session = Session {
             active: true,
             session_expiry_interval: 0,
-            subscriptions: vec![
-                TopicFilter{
-                    topic_filter: "test".to_string(),
-                    subscription_options: 1,
-                }
-            ],
+            subscriptions: vec![TopicFilter {
+                topic_filter: "test".to_string(),
+                subscription_options: 1,
+            }],
             messages_in_queue: VecDeque::new(),
-            will_message: None
+            will_message: None,
         };
 
         let session_2 = Session {
@@ -381,7 +411,7 @@ mod tests{
             session_expiry_interval: 0,
             subscriptions: Vec::new(),
             messages_in_queue: VecDeque::new(),
-            will_message: Some(WillMessage{
+            will_message: Some(WillMessage {
                 will_topic: "test".to_string(),
                 will_payload: vec![1, 2, 3],
             }),
@@ -395,22 +425,17 @@ mod tests{
             ..Default::default()
         };
 
-        let msg = Publish::new(
-            1,
-            1,
-            0,
-            properties,
-        );
+        let msg = Publish::new(1, 1, 0, properties);
 
         let session_3 = Session {
             active: true,
             session_expiry_interval: 0,
-            subscriptions: vec![TopicFilter{
+            subscriptions: vec![TopicFilter {
                 topic_filter: "test".to_string(),
                 subscription_options: 1,
             }],
             messages_in_queue: VecDeque::from(vec![msg.clone()]),
-            will_message: Some(WillMessage{
+            will_message: Some(WillMessage {
                 will_topic: "test".to_string(),
                 will_payload: vec![1, 2, 3],
             }),
@@ -422,28 +447,46 @@ mod tests{
         sessions.insert("id_test2".to_string(), session_2.clone());
         sessions.insert("id_test3".to_string(), session_3.clone());
 
-        let register = SessionRegister{
+        let register = SessionRegister {
             sessions,
-            db_path: Some(path.clone())
+            db_path: Some(path.clone()),
         };
 
         register.save();
-        
+
         let register_2 = SessionRegister::new(Some(path));
 
         let session_deserializated = register_2.sessions.get("id_test").unwrap();
 
         assert!(!session_deserializated.active);
-        assert_eq!(session.session_expiry_interval, session_deserializated.session_expiry_interval);
-        assert_eq!(session.subscriptions.len(), session_deserializated.subscriptions.len());
-        assert_eq!(session.messages_in_queue.len(), session_deserializated.messages_in_queue.len());
+        assert_eq!(
+            session.session_expiry_interval,
+            session_deserializated.session_expiry_interval
+        );
+        assert_eq!(
+            session.subscriptions.len(),
+            session_deserializated.subscriptions.len()
+        );
+        assert_eq!(
+            session.messages_in_queue.len(),
+            session_deserializated.messages_in_queue.len()
+        );
 
         let session_deserializated_2 = register_2.sessions.get("id_test2").unwrap();
 
         assert!(!session_deserializated_2.active);
-        assert_eq!(session_2.session_expiry_interval, session_deserializated_2.session_expiry_interval);
-        assert_eq!(session_2.subscriptions.len(), session_deserializated_2.subscriptions.len());
-        assert_eq!(session_2.messages_in_queue.len(), session_deserializated_2.messages_in_queue.len());
+        assert_eq!(
+            session_2.session_expiry_interval,
+            session_deserializated_2.session_expiry_interval
+        );
+        assert_eq!(
+            session_2.subscriptions.len(),
+            session_deserializated_2.subscriptions.len()
+        );
+        assert_eq!(
+            session_2.messages_in_queue.len(),
+            session_deserializated_2.messages_in_queue.len()
+        );
         if let Some(will) = &session_2.will_message {
             if let Some(will2) = &session_deserializated_2.will_message {
                 assert_eq!(will.will_topic, will2.will_topic);
@@ -457,9 +500,18 @@ mod tests{
 
         let session_deserializated_3 = register_2.sessions.get("id_test3").unwrap();
         assert!(!session_deserializated_3.active);
-        assert_eq!(session_3.session_expiry_interval, session_deserializated_3.session_expiry_interval);
-        assert_eq!(session_3.subscriptions.len(), session_deserializated_3.subscriptions.len());
-        assert_eq!(session_3.messages_in_queue.len(), session_deserializated_3.messages_in_queue.len());
+        assert_eq!(
+            session_3.session_expiry_interval,
+            session_deserializated_3.session_expiry_interval
+        );
+        assert_eq!(
+            session_3.subscriptions.len(),
+            session_deserializated_3.subscriptions.len()
+        );
+        assert_eq!(
+            session_3.messages_in_queue.len(),
+            session_deserializated_3.messages_in_queue.len()
+        );
         if let Some(will) = &session_3.will_message {
             if let Some(will2) = &session_deserializated_3.will_message {
                 assert_eq!(will.will_topic, will2.will_topic);
@@ -470,6 +522,5 @@ mod tests{
         } else {
             panic!("Will message not found in session");
         }
-
     }
 }

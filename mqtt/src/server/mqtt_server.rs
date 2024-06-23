@@ -115,7 +115,6 @@ impl MqttServer {
     /// - `config`: Configuración del servidor
     ///
     pub fn new(config: ServerConfig) -> Self {
-        
         let register = SessionRegister::new(config.db_path.clone());
         let network = ServerNetwork::default();
 
@@ -137,8 +136,12 @@ impl MqttServer {
     pub fn start_server(self, logger: Logger) -> Result<(), Error> {
         let id = self.config.general.id.clone();
         let logger_cpy = logger.clone();
-        
-        self.register.log_sessions(&self.config.general.id, &self.config.general.log_in_term ,&logger);
+
+        self.register.log_sessions(
+            &self.config.general.id,
+            &self.config.general.log_in_term,
+            &logger,
+        );
 
         let listener = match TcpListener::bind(self.config.get_socket_address()) {
             Ok(lis) => lis,
@@ -266,4 +269,3 @@ impl MqttServer {
         logger.close();
     }
 }
-

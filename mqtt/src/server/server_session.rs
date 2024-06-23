@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use crate::{
     common::{flags::flags_handler, topic_filter::TopicFilter},
-    mqtt_packets::packets::{connect::Connect, publish::Publish}
+    mqtt_packets::packets::{connect::Connect, publish::Publish},
 };
 
 use super::will_message::WillMessage;
@@ -67,7 +67,7 @@ impl Session {
 
         if let Some(will) = &self.will_message {
             len += will.as_bytes().len();
-        }else{
+        } else {
             len += 1;
         }
 
@@ -84,11 +84,11 @@ impl Session {
         let subs_len = self.subscriptions.len() as u16;
 
         bytes.extend_from_slice(subs_len.to_be_bytes().as_ref());
-        
+
         for sub in &self.subscriptions {
             bytes.extend_from_slice(sub.as_bytes().as_ref());
         }
-        
+
         let msg_len = self.messages_in_queue.len() as u16;
 
         bytes.extend_from_slice(msg_len.to_be_bytes().as_ref());
@@ -99,11 +99,11 @@ impl Session {
 
         if let Some(will) = &self.will_message {
             bytes.extend_from_slice(will.as_bytes().as_ref());
-        }else{
+        } else {
             bytes.extend_from_slice([0].as_ref());
         }
 
-        bytes        
+        bytes
     }
 
     pub fn from_be_bytes(bytes: Vec<u8>) -> Self {
@@ -112,7 +112,12 @@ impl Session {
         let active = bytes[index] == 1;
         index += 1;
 
-        let session_expiry_interval = u32::from_be_bytes([bytes[index], bytes[index + 1], bytes[index + 2], bytes[index + 3]]);
+        let session_expiry_interval = u32::from_be_bytes([
+            bytes[index],
+            bytes[index + 1],
+            bytes[index + 2],
+            bytes[index + 3],
+        ]);
         index += 4;
 
         let subs_len = u16::from_be_bytes([bytes[index], bytes[index + 1]]);
@@ -173,7 +178,6 @@ impl Session {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::vec;
@@ -187,7 +191,7 @@ mod tests {
         let session = Session {
             active: true,
             session_expiry_interval: 0,
-            subscriptions: vec![TopicFilter{
+            subscriptions: vec![TopicFilter {
                 topic_filter: "test".to_string(),
                 subscription_options: 1,
             }],
@@ -199,9 +203,15 @@ mod tests {
         let session2 = Session::from_be_bytes(bytes);
 
         assert_eq!(session.active, session2.active);
-        assert_eq!(session.session_expiry_interval, session2.session_expiry_interval);
+        assert_eq!(
+            session.session_expiry_interval,
+            session2.session_expiry_interval
+        );
         assert_eq!(session.subscriptions.len(), session2.subscriptions.len());
-        assert_eq!(session.messages_in_queue.len(), session2.messages_in_queue.len());
+        assert_eq!(
+            session.messages_in_queue.len(),
+            session2.messages_in_queue.len()
+        );
     }
 
     #[test]
@@ -211,7 +221,7 @@ mod tests {
             session_expiry_interval: 0,
             subscriptions: Vec::new(),
             messages_in_queue: VecDeque::new(),
-            will_message: Some(WillMessage{
+            will_message: Some(WillMessage {
                 will_topic: "test".to_string(),
                 will_payload: vec![1, 2, 3],
             }),
@@ -221,9 +231,15 @@ mod tests {
         let session2 = Session::from_be_bytes(bytes);
 
         assert_eq!(session.active, session2.active);
-        assert_eq!(session.session_expiry_interval, session2.session_expiry_interval);
+        assert_eq!(
+            session.session_expiry_interval,
+            session2.session_expiry_interval
+        );
         assert_eq!(session.subscriptions.len(), session2.subscriptions.len());
-        assert_eq!(session.messages_in_queue.len(), session2.messages_in_queue.len());
+        assert_eq!(
+            session.messages_in_queue.len(),
+            session2.messages_in_queue.len()
+        );
         if let Some(will) = &session.will_message {
             if let Some(will2) = &session2.will_message {
                 assert_eq!(will.will_topic, will2.will_topic);
@@ -236,10 +252,8 @@ mod tests {
         }
     }
 
-
     #[test]
     fn test_serialization_complete() {
-
         let properties = PublishProperties {
             topic_name: "test".to_string(),
             packet_identifier: 0,
@@ -248,22 +262,17 @@ mod tests {
             ..Default::default()
         };
 
-        let msg = Publish::new(
-            1,
-            1,
-            0,
-            properties,
-        );
+        let msg = Publish::new(1, 1, 0, properties);
 
         let session = Session {
             active: true,
             session_expiry_interval: 0,
-            subscriptions: vec![TopicFilter{
+            subscriptions: vec![TopicFilter {
                 topic_filter: "test".to_string(),
                 subscription_options: 1,
             }],
             messages_in_queue: VecDeque::from(vec![msg.clone()]),
-            will_message: Some(WillMessage{
+            will_message: Some(WillMessage {
                 will_topic: "test".to_string(),
                 will_payload: vec![1, 2, 3],
             }),
@@ -273,16 +282,40 @@ mod tests {
         let mut session2 = Session::from_be_bytes(bytes);
 
         assert_eq!(session.active, session2.active);
-        assert_eq!(session.session_expiry_interval, session2.session_expiry_interval);
+        assert_eq!(
+            session.session_expiry_interval,
+            session2.session_expiry_interval
+        );
         assert_eq!(session.subscriptions.len(), session2.subscriptions.len());
-        assert_eq!(session.subscriptions[0].topic_filter, session2.subscriptions[0].topic_filter);
-        assert_eq!(session.subscriptions[0].subscription_options, session2.subscriptions[0].subscription_options);
-        assert_eq!(session.messages_in_queue.len(), session2.messages_in_queue.len());
+        assert_eq!(
+            session.subscriptions[0].topic_filter,
+            session2.subscriptions[0].topic_filter
+        );
+        assert_eq!(
+            session.subscriptions[0].subscription_options,
+            session2.subscriptions[0].subscription_options
+        );
+        assert_eq!(
+            session.messages_in_queue.len(),
+            session2.messages_in_queue.len()
+        );
         let message_deserialized = session2.messages_in_queue.pop_back().unwrap();
-        assert_eq!(message_deserialized.properties.topic_name, msg.clone().properties.topic_name);
-        assert_eq!(message_deserialized.properties.packet_identifier, msg.clone().properties.packet_identifier);
-        assert_eq!(message_deserialized.properties.payload_format_indicator, msg.clone().properties.payload_format_indicator);
-        assert_eq!(message_deserialized.properties.application_message, msg.clone().properties.application_message);
+        assert_eq!(
+            message_deserialized.properties.topic_name,
+            msg.clone().properties.topic_name
+        );
+        assert_eq!(
+            message_deserialized.properties.packet_identifier,
+            msg.clone().properties.packet_identifier
+        );
+        assert_eq!(
+            message_deserialized.properties.payload_format_indicator,
+            msg.clone().properties.payload_format_indicator
+        );
+        assert_eq!(
+            message_deserialized.properties.application_message,
+            msg.clone().properties.application_message
+        );
         if let Some(will) = &session.will_message {
             if let Some(will2) = &session2.will_message {
                 assert_eq!(will.will_topic, will2.will_topic);
@@ -293,6 +326,5 @@ mod tests {
         } else {
             panic!("Will message not found in session");
         }
-
     }
 }

@@ -197,12 +197,12 @@ impl PacketProperties for PublishProperties {
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
 
     #[test]
-    fn test_serialization(){
-        let publish_properties = PublishProperties{
+    fn test_serialization() {
+        let publish_properties = PublishProperties {
             topic_name: "test".to_string(),
             packet_identifier: 1,
             payload_format_indicator: Some(1),
@@ -222,16 +222,40 @@ mod tests{
         let deserialized = PublishProperties::read_from(&mut buffer).unwrap();
 
         assert_eq!(publish_properties.topic_name, deserialized.topic_name);
-        assert_eq!(publish_properties.packet_identifier, deserialized.packet_identifier);
-        assert_eq!(publish_properties.payload_format_indicator, deserialized.payload_format_indicator);
-        assert_eq!(publish_properties.message_expiry_interval, deserialized.message_expiry_interval);
+        assert_eq!(
+            publish_properties.packet_identifier,
+            deserialized.packet_identifier
+        );
+        assert_eq!(
+            publish_properties.payload_format_indicator,
+            deserialized.payload_format_indicator
+        );
+        assert_eq!(
+            publish_properties.message_expiry_interval,
+            deserialized.message_expiry_interval
+        );
         assert_eq!(publish_properties.topic_alias, deserialized.topic_alias);
-        assert_eq!(publish_properties.response_topic, deserialized.response_topic);
-        assert_eq!(publish_properties.correlation_data, deserialized.correlation_data);
+        assert_eq!(
+            publish_properties.response_topic,
+            deserialized.response_topic
+        );
+        assert_eq!(
+            publish_properties.correlation_data,
+            deserialized.correlation_data
+        );
         assert_eq!(publish_properties.user_property, deserialized.user_property);
-        assert_eq!(publish_properties.subscription_identifier, deserialized.subscription_identifier);
+        assert_eq!(
+            publish_properties.subscription_identifier,
+            deserialized.subscription_identifier
+        );
         assert_eq!(publish_properties.content_type, deserialized.content_type);
-        assert_eq!(publish_properties.application_message, deserialized.application_message);
-        assert_eq!(publish_properties.is_will_message, deserialized.is_will_message);
+        assert_eq!(
+            publish_properties.application_message,
+            deserialized.application_message
+        );
+        assert_eq!(
+            publish_properties.is_will_message,
+            deserialized.is_will_message
+        );
     }
 }

@@ -1,7 +1,9 @@
 use std::io::Write;
 
-use crate::mqtt_packets::{packet::generic_packet::Serialization, packets::publish::Publish, properties::publish_properties::PublishProperties};
-
+use crate::mqtt_packets::{
+    packet::generic_packet::Serialization, packets::publish::Publish,
+    properties::publish_properties::PublishProperties,
+};
 
 /// ## WillMessage
 ///
@@ -123,13 +125,15 @@ mod test {
         };
 
         let bytes = will_message.as_bytes();
-        if let Some(will_message2) = WillMessage::from_be_bytes(bytes){
+        if let Some(will_message2) = WillMessage::from_be_bytes(bytes) {
             assert_eq!(will_message.will_topic, will_message2.will_topic);
-            assert_eq!(will_message.will_payload.len(), will_message2.will_payload.len());
+            assert_eq!(
+                will_message.will_payload.len(),
+                will_message2.will_payload.len()
+            );
             assert_eq!(will_message.will_payload, will_message2.will_payload);
-        }else{
+        } else {
             panic!("Error al deserializar")
         }
-        
     }
 }
