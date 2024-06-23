@@ -18,14 +18,14 @@ use std::net::{TcpListener, TcpStream};
     openssl s_client -showcerts -connect localhost:8443 | grep ^Verification
 */
 
-struct TlsServerConnector {
+pub struct TlsServerConnector {
     listener: TcpListener,
     acceptor: TlsAcceptor,
 }
 
 impl TlsServerConnector {
     // manejar unwraps
-    fn initialize(cert_path: &str, pass: &str, address: &str) -> Result<TlsServerConnector, Error> {
+    pub fn initialize(cert_path: &str, pass: &str, address: &str) -> Result<TlsServerConnector, Error> {
         let mut file = File::open(cert_path).unwrap();
         let mut buf: Vec<u8> = vec![];
 
@@ -43,11 +43,11 @@ impl TlsServerConnector {
         })
     }
 
-    fn get_listener(&self) -> Result<TcpListener, std::io::Error> {
+    pub fn get_listener(&self) -> Result<TcpListener, std::io::Error> {
         self.listener.try_clone()
     }
 
-    fn accept_tls_connection(&self, stream: TcpStream) -> Result<TlsStream<TcpStream>, HandshakeError<TcpStream>> {
+    pub fn accept_tls_connection(&self, stream: TcpStream) -> Result<TlsStream<TcpStream>, HandshakeError<TcpStream>> {
         self.acceptor.accept(stream)
     }
 }

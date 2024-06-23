@@ -13,3 +13,4 @@ publish_qos: 1
 publish_retain: false 
 subscribe_max_qos: 1
 domain_name: server
+

@@ -19,7 +19,7 @@ use super::server_handlers::{
     connect_handler, disconnect_handler, publish_handler, subscribe_handler, unsubscribe_handler,
 };
 use super::server_session::Session;
-// ver caso logger en drop ...
+use super::server_connector::TlsServerConnector;
 
 /// ## MqttServer
 ///
@@ -133,7 +133,7 @@ impl MqttServer {
     pub fn start_server(self, logger: Logger) -> Result<(), Error> {
         let id = self.config.general.id.clone();
         let logger_cpy = logger.clone();
-
+        /*
         let listener = match TcpListener::bind(self.config.get_socket_address()) {
             Ok(lis) => lis,
             Err(e) => {
@@ -146,6 +146,27 @@ impl MqttServer {
                 return Err(e);
             }
         };
+        */
+        let address = self.config.get_socket_address().to_string();
+        let cert_path = self.config.general.cert_path.clone();
+        let cert_pass = self.config.general.cert_pass.clone();
+        let server_connector = match TlsServerConnector::initialize(&cert_path, &cert_pass, &address) {
+            Ok(srv) => srv,
+            Err(e) => {
+                logger_cpy.log_event(
+                    &("Error al conectar con servidor: ".to_string() + &e.to_string()),
+                    &self.config.general.id,
+                );
+                logger_cpy.close();
+                logger.close();
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("TLS error de conexion: {}", e),
+                ));
+            }
+        };
+        
+        let listener = server_connector.get_listener()?;
 
         let (sender, receiver) = mpsc::channel();
 
@@ -154,11 +175,10 @@ impl MqttServer {
         let receiver = Arc::new(Mutex::new(receiver));
 
         // Iniciando el procesador de mesages que recibe el servidor
-        //self.server_listener_messages(Arc::clone(&receiver), log_path);
-
         self.server_listener_messages(Arc::clone(&receiver), logger_cpy.clone());
 
         // Iniciando el listener de conexiones que recibe el servidor dentro de un thread pool
+        // agregar tls connector
         client_handler(listener, Arc::clone(&sender))?;
 
         logger.log_event(

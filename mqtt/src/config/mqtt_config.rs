@@ -89,6 +89,8 @@ pub struct MqttConfig {
     pub log_path: String,
     pub log_in_term: bool,
     pub srv_name: String,
+    pub cert_path: String,
+    pub cert_pass: String,
 }
 
 impl Clone for MqttConfig {
@@ -100,6 +102,8 @@ impl Clone for MqttConfig {
             log_path: self.log_path.clone(),
             log_in_term: self.log_in_term,
             srv_name: self.srv_name.clone(),
+            cert_path: self.cert_path.clone(),
+            cert_pass: self.cert_pass.clone(),
         }
     }
 }
@@ -113,6 +117,8 @@ impl Config for MqttConfig {
         let mut log_path = None;
         let mut log_in_term = None;
         let mut srv_name = None;
+        let mut cert_path = None;
+        let mut cert_pass = None;
 
         for param in params.iter() {
             match param.0.as_str() {
@@ -158,12 +164,18 @@ impl Config for MqttConfig {
                 "domain_name" => {
                     srv_name = Some(param.1.clone());
                 }
+                "cert_path" => {
+                    cert_path = Some(param.1.clone());
+                }
+                "cert_pass" => {
+                    cert_pass = Some(param.1.clone());
+                }
                 _ => {}
             }
         }
 
-        match (id, ip, port, log_path, log_in_term, srv_name) {
-            (Some(id), Some(ip), Some(port), Some(log_path), Some(log_in_term), Some(srv_name)) => {
+        match (id, ip, port, log_path, log_in_term, srv_name, cert_path, cert_pass) {
+            (Some(id), Some(ip), Some(port), Some(log_path), Some(log_in_term), Some(srv_name),Some(cert_path), Some(cert_pass)) => {
                 Ok(MqttConfig {
                     id,
                     ip,
@@ -171,6 +183,8 @@ impl Config for MqttConfig {
                     log_path,
                     log_in_term,
                     srv_name,
+                    cert_path,
+                    cert_pass,
                 })
             }
             _ => Err(Error::new(

@@ -137,7 +137,7 @@ fn stablish_tls_connection(
 
             Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                format!("TLS connection error: {}", e),
+                format!("TLS error de conexion: {}", e),
             ))
         }
     }
