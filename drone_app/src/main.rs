@@ -4,7 +4,8 @@ use std::{
     io::{self, Error},
     process,
     sync::{mpsc::Receiver, Arc, Mutex},
-    thread::{self, JoinHandle}, time::Duration,
+    thread::{self, JoinHandle},
+    time::Duration,
 };
 
 use logger::logger_handler::{create_logger_handler, Logger};
@@ -179,26 +180,30 @@ fn main() -> Result<(), Error> {
         }
     };
 
-    let process_message_handler: JoinHandle<()> =
-        match process_messages(&mut client, listener.receiver, drone_ref.clone(), logger.clone()) {
-            Ok(r) => r,
-            Err(e) => {
-                logger.close();
-                logger_handler.close();
-                return Err(e);
-            }
-        };
-    
-        let _ = {
-            let drone_ref = drone_ref.clone();
-            let logger = logger.clone();
-            thread::spawn(move || loop {
-                thread::sleep(Duration::from_secs(10));
-                let mut drone = drone_ref.lock().unwrap();
-                drone.discharge(&mut client, logger.clone());
-                println!("Drone battery: {}", drone.nivel_de_bateria);
-            })
-        };
+    let process_message_handler: JoinHandle<()> = match process_messages(
+        &mut client,
+        listener.receiver,
+        drone_ref.clone(),
+        logger.clone(),
+    ) {
+        Ok(r) => r,
+        Err(e) => {
+            logger.close();
+            logger_handler.close();
+            return Err(e);
+        }
+    };
+
+    let _ = {
+        let drone_ref = drone_ref.clone();
+        let logger = logger.clone();
+        thread::spawn(move || loop {
+            thread::sleep(Duration::from_secs(10));
+            let mut drone = drone_ref.lock().unwrap();
+            drone.discharge(&mut client, logger.clone());
+            println!("Drone battery: {}", drone.nivel_de_bateria);
+        })
+    };
     logger.close();
     logger_handler.close();
 

@@ -1,4 +1,3 @@
-
 use std::time::Duration;
 use std::{
     fs,
@@ -132,7 +131,9 @@ fn process_messages(
                                 thread::sleep(Duration::from_secs(3));
                                 incident.state = IncidentState::Resolved;
                                 incident.drones_covering = 0;
-                                client.publish(incident.as_bytes(), "inc".to_string(), &logger).unwrap();
+                                client
+                                    .publish(incident.as_bytes(), "inc".to_string(), &logger)
+                                    .unwrap();
                             }
                         };
                     };
@@ -239,7 +240,7 @@ impl MonitoringApp {
             incident_list_ref.clone(),
             config.db_path.clone(),
             &mut client,
-            logger.clone()
+            logger.clone(),
         )?;
 
         client.subscribe(vec!["camaras"], &logger)?;

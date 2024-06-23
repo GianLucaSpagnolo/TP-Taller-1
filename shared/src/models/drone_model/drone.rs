@@ -1,6 +1,6 @@
-use std::{fs, io::Error};
 use std::thread;
 use std::time::Duration;
+use std::{fs, io::Error};
 
 use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
@@ -22,13 +22,13 @@ pub enum DroneState {
 
 #[derive(Debug)]
 pub struct Drone {
-    pub id: u8, //1
-    pub distancia_maxima_alcance: f64, //8
-    pub nivel_de_bateria: f64, //8
-    pub initial_pos: Position, //16
-    pub current_pos: Position, //16
-    pub charging_station_pos: Position, //16
-    pub state: DroneState, //1
+    pub id: u8,                           //1
+    pub distancia_maxima_alcance: f64,    //8
+    pub nivel_de_bateria: f64,            //8
+    pub initial_pos: Position,            //16
+    pub current_pos: Position,            //16
+    pub charging_station_pos: Position,   //16
+    pub state: DroneState,                //1
     pub id_incident_covering: Option<u8>, //1
     pub drones: DroneList,
     pub db_path: String,
@@ -94,16 +94,19 @@ impl Drone {
                 fs::write(self.db_path.clone(), bytes).unwrap();
             }
         } else if self.state == DroneState::Available {
-            
             let distance_to_incident =
                 get_distance_to_incident(self, incident.location.lat(), incident.location.lon());
-    
+
             if self.is_close_enough(distance_to_incident)
-                && self.is_closer_than_other_drones(distance_to_incident, incident.location.lat(), incident.location.lon())
+                && self.is_closer_than_other_drones(
+                    distance_to_incident,
+                    incident.location.lat(),
+                    incident.location.lon(),
+                )
             {
                 self.state = DroneState::GoingToIncident;
                 self.id_incident_covering = Some(incident.id);
-    
+
                 client
                     .publish(self.as_bytes(), "drone".to_string(), logger)
                     .unwrap();
@@ -116,7 +119,7 @@ impl Drone {
                 client
                     .publish(self.as_bytes(), "drone".to_string(), logger)
                     .unwrap();
-                
+
                 let bytes = self.as_bytes();
                 fs::write(self.db_path.clone(), bytes).unwrap();
             }
@@ -168,7 +171,7 @@ impl Drone {
         let id_incident_covering = self.id_incident_covering.unwrap_or(0);
 
         bytes.push(id_incident_covering);
-        
+
         bytes
     }
 
@@ -235,7 +238,7 @@ impl Drone {
             state,
             id_incident_covering,
             drones: DroneList::default(),
-            db_path: String::new()
+            db_path: String::new(),
         }
     }
 
@@ -247,7 +250,9 @@ impl Drone {
         let mut drones_closer = 0;
 
         for drone in self.drones.get_drones() {
-            if get_distance_to_incident(drone, lat, lon) < distance && drone.state == DroneState::Available {
+            if get_distance_to_incident(drone, lat, lon) < distance
+                && drone.state == DroneState::Available
+            {
                 drones_closer += 1;
                 if drones_closer == 2 {
                     return false;
@@ -259,8 +264,8 @@ impl Drone {
 
     pub fn discharge(&mut self, client: &mut MqttClient, logger: Logger) {
         self.nivel_de_bateria -= 5.0;
-        if self.nivel_de_bateria <= 35.0 && self.state == DroneState::Available{
-            self.state = DroneState::LowBattery;   
+        if self.nivel_de_bateria <= 35.0 && self.state == DroneState::Available {
+            self.state = DroneState::LowBattery;
             client
                 .publish(self.as_bytes(), "drone".to_string(), &logger)
                 .unwrap();
@@ -291,7 +296,6 @@ pub fn get_distance_to_incident(drone: &Drone, lat: f64, lon: f64) -> f64 {
     (x * x + y * y).sqrt()
 }
 
-
 #[cfg(test)]
 mod tests {
 
@@ -315,15 +319,26 @@ mod tests {
         let dron_deserialized = Drone::from_be_bytes(&bytes);
 
         assert_eq!(dron.id, dron_deserialized.id);
-        assert_eq!(dron.distancia_maxima_alcance, dron_deserialized.distancia_maxima_alcance);
+        assert_eq!(
+            dron.distancia_maxima_alcance,
+            dron_deserialized.distancia_maxima_alcance
+        );
         assert_eq!(dron.nivel_de_bateria, dron_deserialized.nivel_de_bateria);
         assert_eq!(dron.initial_pos.lat(), dron_deserialized.initial_pos.lat());
         assert_eq!(dron.initial_pos.lon(), dron_deserialized.initial_pos.lon());
         assert_eq!(dron.current_pos.lat(), dron_deserialized.current_pos.lat());
         assert_eq!(dron.current_pos.lon(), dron_deserialized.current_pos.lon());
-        assert_eq!(dron.charging_station_pos.lat(), dron_deserialized.charging_station_pos.lat());
-        assert_eq!(dron.charging_station_pos.lon(), dron_deserialized.charging_station_pos.lon());
-        assert_eq!(dron.id_incident_covering, dron_deserialized.id_incident_covering);
-        
+        assert_eq!(
+            dron.charging_station_pos.lat(),
+            dron_deserialized.charging_station_pos.lat()
+        );
+        assert_eq!(
+            dron.charging_station_pos.lon(),
+            dron_deserialized.charging_station_pos.lon()
+        );
+        assert_eq!(
+            dron.id_incident_covering,
+            dron_deserialized.id_incident_covering
+        );
     }
 }
