@@ -1,14 +1,20 @@
 use std::{fs, io::Error};
 
 use logger::logger_handler::Logger;
-use mqtt::client::mqtt_client::MqttClient;
-use shared::models::{
-    cam_model::{
-        cam::{Cam, CamState},
-        cam_list::CamList,
+use mqtt::{
+    client::mqtt_client::MqttClient,
+    config::{client_config::ClientConfig, mqtt_config::Config},
+};
+use shared::{
+    models::{
+        cam_model::{
+            cam::{Cam, CamState},
+            cam_list::CamList,
+        },
+        coordenates::Coordenates,
+        inc_model::incident::Incident,
     },
-    coordenates::Coordenates,
-    inc_model::incident::Incident,
+    will_message::serialize_will_message_payload,
 };
 
 pub struct CamsSystem {
@@ -24,7 +30,6 @@ impl CamsSystem {
         range_alert_between_cameras: f64,
         db_path: String,
     ) -> Result<Self, Error> {
-
         let bytes = match fs::read(&db_path) {
             Ok(bytes) => bytes,
             Err(_) => Vec::new(),
@@ -210,4 +215,14 @@ impl CamsSystem {
         }
         self.list_cameras();
     }
+}
+
+pub fn create_cams_system_client_config(path: &str) -> Result<ClientConfig, Error> {
+    let mut config = ClientConfig::from_file(String::from(path))?;
+    config.set_will_message(
+        "camaras".to_string(),
+        serialize_will_message_payload(config.general.id.clone()),
+    );
+
+    Ok(config)
 }

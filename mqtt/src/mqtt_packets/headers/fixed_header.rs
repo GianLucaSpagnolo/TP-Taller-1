@@ -3,6 +3,7 @@ use std::io::{Error, Read};
 use crate::{
     common::data_types::data_representation::{
         read_byte, variable_byte_integer_decode, variable_byte_integer_encode,
+        variable_byte_integer_length,
     },
     mqtt_packets::packet::generic_packet::PacketType,
 };
@@ -136,5 +137,11 @@ impl PacketFixedHeader {
     /// - `bool`: bits reservados activos
     pub fn verify_reserved_bits_for_subscribe_packets(&self) -> bool {
         self.packet_type & 2 == 2
+    }
+
+    pub fn size_of(&self) -> usize {
+        let mut size = 1;
+        size += variable_byte_integer_length(self.remaining_length) as usize;
+        size
     }
 }

@@ -8,7 +8,10 @@ pub mod server {
     pub mod acknowledge_handler;
     pub mod mqtt_server;
     pub mod server_handlers;
+    pub mod server_network;
+    pub mod server_register;
     pub mod server_session;
+    pub mod will_message;
 }
 
 pub mod logging {

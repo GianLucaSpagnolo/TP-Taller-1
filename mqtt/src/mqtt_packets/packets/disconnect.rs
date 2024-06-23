@@ -75,6 +75,7 @@ mod test {
     #[test]
     fn test_disconnect() {
         let disconnect = Disconnect::new(DisconnectProperties {
+            id: "disconnect".to_string(),
             disconnect_reason_code: 0,
             session_expiry_interval: Some(10),
             reason_string: Some("reason".to_string()),
@@ -93,6 +94,7 @@ mod test {
         let disconnect =
             Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
 
+        assert_eq!(disconnect.properties.id, "disconnect".to_string());
         assert_eq!(disconnect.properties.disconnect_reason_code, 0);
 
         let props = disconnect.properties;
@@ -126,6 +128,7 @@ mod test {
     #[test]
     fn test_disconnect_empty_properties() {
         let properties = DisconnectProperties {
+            id: "matt".to_string(),
             disconnect_reason_code: 1,
             ..Default::default()
         };
@@ -143,6 +146,7 @@ mod test {
         let disconnect =
             Disconnect::read_from(&mut buffer, disconnect_fixed_header.remaining_length).unwrap();
 
+        assert_eq!(disconnect.properties.id, "matt".to_string());
         assert_eq!(disconnect.properties.disconnect_reason_code, 1);
 
         assert_eq!(disconnect.properties.session_expiry_interval, None);

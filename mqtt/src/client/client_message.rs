@@ -9,4 +9,5 @@
 pub struct MqttClientMessage {
     pub topic: String,
     pub data: Vec<u8>,
+    pub is_will_message: bool,
 }
