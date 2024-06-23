@@ -1,8 +1,10 @@
 pub mod connect_handler {
     use std::{io::Error, net::TcpStream};
 
+    use logger::logger_handler::Logger;
+
     use crate::{
-        logging::server_actions::MqttServerActions,
+        logging::{actions::MqttActions, server_actions::MqttServerActions},
         mqtt_packets::{
             packet::generic_packet::Serialization,
             packets::{connack::Connack, connect::Connect},
@@ -23,6 +25,7 @@ pub mod connect_handler {
         server: &mut MqttServer,
         mut stream: TcpStream,
         connect: Connect,
+        logger: &Logger,
     ) -> Result<MqttServerActions, Error> {
         let client = connect.payload.client_id.clone();
         let connack_properties: ConnackProperties =
@@ -31,13 +34,35 @@ pub mod connect_handler {
                 connect,
                 stream.try_clone()?,
             )?;
+        let connack_flags = connack_properties.connect_acknowledge_flags;
+        MqttServerActions::Connection(client.clone()).log_action(
+            &server.config.general.id,
+            logger,
+            &server.config.general.log_in_term,
+        );
         Connack::new(connack_properties).send(&mut stream)?;
-        Ok(MqttServerActions::Connection(client))
+        let action = if connack_flags == 0 {
+            MqttServerActions::CreateSession(client.clone())
+        }else{
+            let messages = server.register.get_pending_messages(&client);
+            if let Some(messages) = messages {
+                while let Some(message) = messages.pop_front() {
+                    MqttServerActions::SendPendingMessage(client.clone()).log_action(
+                        &server.config.general.id,
+                        logger,
+                        &server.config.general.log_in_term,
+                    );
+                    message.send(&mut stream)?;
+                }
+            }
+            MqttServerActions::ReconnectSession(client.clone())
+        };
+        Ok(action)
     }
 }
 
 pub mod publish_handler {
-    use std::{collections::HashMap, io::Error, net::TcpStream};
+    use std::{io::Error, net::TcpStream};
 
     use logger::logger_handler::Logger;
 
@@ -47,7 +72,7 @@ pub mod publish_handler {
             packet::generic_packet::Serialization,
             packets::{puback::Puback, publish::Publish},
         },
-        server::{acknowledge_handler, mqtt_server::MqttServer, server_session::Session},
+        server::{acknowledge_handler, mqtt_server::MqttServer},
     };
 
     /// ### resend_publish_to_subscribers
@@ -76,14 +101,32 @@ pub mod publish_handler {
             &server.config.general.log_in_term,
         );
 
-        <HashMap<String, Session> as Clone>::clone(&server.sessions)
-            .into_iter()
-            .for_each(|(id, s)| {
-                if s.active && s.subscriptions.iter().any(|t| t.topic_filter == topic) {
-                    let _ = pub_packet.send(&mut s.stream_connection.try_clone().unwrap());
-                    receivers.push(id.clone());
+        let subscribers = server.register.get_subscribers(&topic);
+           
+        subscribers.into_iter().for_each(|(id, s)| {
+            if s.active {
+                let stream = server.network.connections.get_mut(&id).unwrap();
+                let _ = pub_packet.send(&mut stream.try_clone().unwrap());
+                receivers.push(id.clone());
+            }else {
+                MqttServerActions::SendToQueueSession(id.clone()).log_action(
+                    &server.config.general.id,
+                    logger,
+                    &server.config.general.log_in_term,
+                );
+                match server.register.store_message(&id, pub_packet.clone()){
+                    Ok(_) => (),
+                    Err(_) => {
+                        MqttServerActions::ErrorWhileSendingWillMessage().log_action(
+                            &server.config.general.id,
+                            logger,
+                            &server.config.general.log_in_term,
+                        );
+                    }
+                
                 }
-            });
+            }
+        });
 
         MqttServerActions::SendPublish(topic.clone(), receivers).log_action(
             &server.config.general.id,
@@ -179,16 +222,7 @@ pub mod subscribe_handler {
     ) -> Result<MqttServerActions, Error> {
         let client_id = get_sub_id_and_topics(&mut sub_packet.properties.topic_filters)?;
 
-        if let Some(session) = server.sessions.get_mut(&client_id) {
-            session
-                .subscriptions
-                .append(&mut sub_packet.properties.topic_filters.clone());
-        } else {
-            return Err(Error::new(
-                std::io::ErrorKind::Other,
-                "Server - Cliente no encontrado",
-            ));
-        }
+        server.register.add_subscription(&client_id, sub_packet.properties.topic_filters.clone())?;
 
         MqttServerActions::ReceiveSubscribe(
             client_id.clone(),
@@ -283,20 +317,8 @@ pub mod unsubscribe_handler {
     ) -> Result<MqttServerActions, Error> {
         let client_id = get_unsub_id_and_topics(&mut unsub_packet.properties.topic_filters)?;
 
-        if let Some(session) = server.sessions.get_mut(&client_id) {
-            session.subscriptions.retain(|t| {
-                !unsub_packet
-                    .properties
-                    .topic_filters
-                    .iter()
-                    .any(|u| u == &t.topic_filter)
-            });
-        } else {
-            return Err(Error::new(
-                std::io::ErrorKind::Other,
-                "Server - Cliente no encontrado",
-            ));
-        }
+        server.register.remove_subscription(&client_id, unsub_packet.properties.topic_filters.clone())?;
+
         MqttServerActions::ReceiveUnsubscribe(
             client_id.clone(),
             unsub_packet.properties.topic_filters.clone(),
@@ -317,7 +339,7 @@ pub mod unsubscribe_handler {
 }
 
 pub mod disconnect_handler {
-    use std::{collections::HashMap, io::Error, net::TcpStream};
+    use std::{io::Error, net::TcpStream};
 
     use logger::logger_handler::Logger;
 
@@ -328,7 +350,7 @@ pub mod disconnect_handler {
             packet::generic_packet::Serialization, packets::disconnect::Disconnect,
             properties::disconnect_properties::DisconnectProperties,
         },
-        server::{mqtt_server::MqttServer, server_session::Session},
+        server::mqtt_server::MqttServer,
     };
 
     /// ### receive_disconnect
@@ -358,43 +380,8 @@ pub mod disconnect_handler {
             logger,
             &server.config.general.log_in_term,
         );
+        server.register.disconnect_session(&mut server.network, &packet, &server.config.general.id, &server.config.general.log_in_term, logger)
 
-        let hash_sessions = <HashMap<String, Session> as Clone>::clone(&server.sessions);
-        let session = server
-            .sessions
-            .get_mut(packet.properties.id.clone().as_str())
-            .unwrap();
-
-        if let Some(will_message) = session.will_message.clone() {
-            let mut receivers = Vec::new();
-            let mut will_message_sent = false;
-
-            hash_sessions.into_iter().for_each(|(id, s)| {
-                if s.active
-                    && id != packet.properties.id
-                    && s.subscriptions
-                        .iter()
-                        .any(|t| t.topic_filter == will_message.will_topic)
-                {
-                    will_message_sent =
-                        will_message.send_message(&mut s.stream_connection.try_clone().unwrap());
-                    receivers.push(id.clone());
-                }
-            });
-
-            session.disconnect()?;
-            if will_message_sent {
-                Ok(MqttServerActions::SendWillMessage(
-                    will_message.will_topic,
-                    receivers,
-                ))
-            } else {
-                Ok(MqttServerActions::ErrorWhileSendingWillMessage())
-            }
-        } else {
-            session.disconnect()?;
-            Ok(MqttServerActions::NoSendWillMessage())
-        }
     }
 
     /// ### send_disconnect

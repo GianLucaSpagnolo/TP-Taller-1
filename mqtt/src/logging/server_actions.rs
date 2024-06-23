@@ -43,6 +43,12 @@ pub enum MqttServerActions {
     ReceivePingReq,
     SendPingResp,
     CloseServer,
+    RecoverSessions(Vec<String>),
+    CreateSession(String),
+    ReconnectSession(String),
+    DisconnectSession(String),
+    SendToQueueSession(String),
+    SendPendingMessage(String),
 }
 
 impl fmt::Display for MqttServerActions {
@@ -142,6 +148,31 @@ impl fmt::Display for MqttServerActions {
                     "SUBACK - Servidor envió confirmación de suscripcion al cliente '{}'",
                     id
                 )
+            }
+            MqttServerActions::RecoverSessions(sessions) => {
+                let mut msg = "RECOVER - Servidor recuperando sesiones: [ ".to_string();
+                for id in sessions {
+                    msg += " '";
+                    msg += id;
+                    msg += "' ";
+                }
+                msg += " ]";
+                write!(f, "{}", msg)
+            }
+            MqttServerActions::CreateSession(id) => {
+                write!(f, "SESSION - Servidor creando sesión de '{}'", id)
+            }
+            MqttServerActions::ReconnectSession(id) => {
+                write!(f, "SESSION - Servidor reconectando sesión de '{}'", id)
+            }
+            MqttServerActions::DisconnectSession(id) => {
+                write!(f, "SESSION - Servidor desconectando sesión de '{}'", id)
+            }
+            MqttServerActions::SendToQueueSession(id) => {
+                write!(f, "SESSION - Servidor enviando mensajes en cola a '{}'", id)
+            }
+            MqttServerActions::SendPendingMessage(id) => {
+                write!(f, "SESSION - Servidor enviando mensaje pendiente a '{}'", id)
             }
         }
     }

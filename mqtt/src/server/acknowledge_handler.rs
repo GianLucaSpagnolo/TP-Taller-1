@@ -1,8 +1,7 @@
 use std::{io::Error, net::TcpStream};
 
 use crate::{
-    common::{flags::flags_handler, reason_codes::ReasonCode},
-    mqtt_packets::{
+    common::{flags::flags_handler, reason_codes::ReasonCode}, mqtt_packets::{
         packets::{
             connect::Connect, publish::Publish, subscribe::Subscribe, unsubscribe::Unsubscribe,
         },
@@ -10,10 +9,10 @@ use crate::{
             connack_properties::ConnackProperties, puback_properties::PubackProperties,
             suback_properties::SubackProperties, unsuback_properties::UnsubackProperties,
         },
-    },
+    }
 };
 
-use super::{mqtt_server::MqttServer, server_session::open_new_session};
+use super::mqtt_server::MqttServer;
 
 pub fn determinate_connect_acknowledge(
     server: &mut MqttServer,
@@ -48,15 +47,15 @@ pub fn determinate_connect_acknowledge(
     // Clean Start: si es 0, el cliente y servidor deben mantener el session state asociado con el Client Identifier.
     // En caso de que no exista dicha sesion, hay que crearla
     if flags_handler::get_connect_flag_clean_start(connect.properties.connect_flags) == 1 {
-        server.sessions.remove(&connect.payload.client_id);
+        server.register.clean_session(&connect.payload.client_id);
     }
     // - Will Flag: si es 1, un Will Message debe ser almacenado en el servidor y asociado a la sesion.
     // El will message esta compuesto de will properties, will topic y will payload fields del payload del CONNECT packet.
     // El will message debe ser publicado despues de que una network connection se cierra y la sesion expira, o el willdelay interval haya pasado
     // El will message debe ser borrado en caso de que el servidor reciba un DISCONNECT packet con reason code 0x00, o una nueva Network Connection con Clean Start = 1
     // con el mismo client identifier. Tambien debe ser borrado de la session state en caso de que ya haya sido publicado
-    connack_properties.connect_acknowledge_flags =
-        open_new_session(server, connect, stream_connection);
+    server.network.connections.insert(connect.payload.client_id.clone(), stream_connection);
+    connack_properties.connect_acknowledge_flags = server.register.open_session(connect);
 
     Ok(connack_properties)
 }

@@ -73,6 +73,7 @@ use crate::mqtt_packets::{
 /// The PUBLISH PACKET contains the Subscription Identifier carried by the SUBSCRIBE PACKET
 /// But a PUBLISH PACKET sent from a client to a server must not contain that Subscription Identifier
 ///
+#[derive(Clone, Debug)]
 pub struct Publish {
     pub fixed_header_flags: u8, // Fixed Header Flags
     pub properties: PublishProperties,
@@ -148,6 +149,42 @@ impl Publish {
             fixed_header_flags,
             properties,
         }
+    }
+
+    pub fn as_bytes(&self) -> Result<Vec<u8>, Error> {
+        let mut bytes = Vec::new();
+         
+        let fixed_header_content = PUBLISH_PACKET | self.fixed_header_flags;
+        let fixed_header = PacketFixedHeader::new(fixed_header_content, self.properties.size_of());
+        bytes.extend_from_slice(&fixed_header.as_bytes());
+
+        let properties = self.properties.as_bytes()?;
+        bytes.extend_from_slice(&properties);
+
+        Ok(bytes)
+    }
+
+    pub fn from_be_bytes(buffer: Vec<u8>) -> Result<Publish, Error> {
+        let mut index = 0;
+        let fixed_header = PacketFixedHeader::read_from(&mut &buffer[index..]).unwrap();
+        index += fixed_header.size_of();
+
+        let limit = fixed_header.remaining_length as usize + index;
+
+        let properties = PublishProperties::read_from(&mut &buffer[index..limit])?;
+
+        Ok(Publish {
+            fixed_header_flags: 0,
+            properties,
+        })
+    }
+
+    pub fn size_of(&self) -> usize {
+        let fixed_header = PacketFixedHeader::new(
+            PUBLISH_PACKET | self.fixed_header_flags,
+            self.properties.size_of(),
+        );
+        fixed_header.size_of() + self.properties.size_of() as usize
     }
 }
 
@@ -327,5 +364,33 @@ mod test {
             "".to_string()
         );
         assert!(!publish.properties.is_will_message);
+    }
+
+    #[test]
+    pub fn test_manual_serialization(){
+        let properties = PublishProperties {
+            topic_name: "test".to_string(),
+            packet_identifier: 0,
+            payload_format_indicator: Some(1),
+            application_message: "message".as_bytes().to_vec(),
+            ..Default::default()
+        };
+
+        let msg = Publish::new(
+            1,
+            1,
+            0,
+            properties,
+        );
+
+        let bytes = msg.as_bytes();
+
+        let publish = Publish::from_be_bytes(bytes.unwrap()).unwrap();
+        
+        assert_eq!(msg.properties.size_of(), publish.properties.size_of());
+        assert_eq!(msg.properties.topic_name, publish.properties.topic_name);
+        assert_eq!(msg.properties.packet_identifier, publish.properties.packet_identifier);
+        assert_eq!(msg.properties.payload_format_indicator, publish.properties.payload_format_indicator);
+        assert_eq!(msg.properties.application_message, publish.properties.application_message);
     }
 }

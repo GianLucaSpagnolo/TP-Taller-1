@@ -17,12 +17,14 @@ use super::mqtt_config::{Config, MqttConfig};
 ///
 pub struct ServerConfig {
     pub general: MqttConfig,
+    pub db_path: Option<String>,
 }
 
 impl Clone for ServerConfig {
     fn clone(&self) -> Self {
         ServerConfig {
             general: self.general.clone(),
+            db_path: self.db_path.clone(),
         }
     }
 }
@@ -37,6 +39,17 @@ impl Config for ServerConfig {
 
         let general = MqttConfig::set_params(params)?;
 
-        Ok(ServerConfig { general })
+        let mut db_path = None;
+
+        for param in params.iter() {
+            if param.0.as_str() == "db_path" {
+                db_path = Some(param.1.clone());
+                break;
+            }else{
+                db_path = None
+            }
+        };
+
+        Ok(ServerConfig { general, db_path })
     }
 }
