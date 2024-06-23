@@ -16,22 +16,15 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
     row.col(|ui| {
         if let DroneState::Available = drone.state {
             ui.label(egui::RichText::new("Disponible").color(egui::Color32::WHITE));
-        };
-        if let DroneState::GoingToIncident = drone.state {
+        }else if let DroneState::GoingToIncident = drone.state {
             ui.label(egui::RichText::new("Atacando incidente").color(egui::Color32::RED));
-        };
-        if let DroneState::GoingBack = drone.state {
-            ui.label(egui::RichText::new("Volviendo a la base").color(egui::Color32::DARK_GREEN));
-        };
-        if let DroneState::ResolvingIncident = drone.state {
+        }else if let DroneState::GoingBack = drone.state {
+            ui.label(egui::RichText::new("Volviendo a posicion").color(egui::Color32::DARK_GREEN));
+        }else if let DroneState::ResolvingIncident = drone.state {
             ui.label(egui::RichText::new("Resolviendo incidente").color(egui::Color32::YELLOW));
-        };
-        if let DroneState::LowBattery = drone.state {
-            ui.label(egui::RichText::new("Batería baja").color(egui::Color32::DARK_RED));
-        };
-        if let DroneState::Charging = drone.state {
-            ui.label(egui::RichText::new("Cargando").color(egui::Color32::GREEN));
-        };
+        }else{
+            ui.label(egui::RichText::new("Volviendo a central").color(egui::Color32::GRAY));
+        }
     });
     row.col(|ui| {
         ui.label(&format!(
@@ -47,6 +40,15 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
             COORDENATE_PRECISION
         ));
     });
+    row.col(|ui| {
+        if let DroneState::LowBattery = drone.state {
+            ui.label(egui::RichText::new("Batería baja").color(egui::Color32::DARK_RED));
+        }else if let DroneState::Charging = drone.state {
+            ui.label(egui::RichText::new("Cargando").color(egui::Color32::GREEN));
+        }else{
+            ui.label(egui::RichText::new("Con Batería").color(egui::Color32::WHITE));
+        }
+    });
 }
 
 fn drones_list(ui: &mut Ui, drone_list: &DroneList) {
@@ -55,6 +57,7 @@ fn drones_list(ui: &mut Ui, drone_list: &DroneList) {
         .column(Column::exact(250.0))
         .column(Column::exact(250.0))
         .column(Column::exact(250.0))
+        .column(Column::exact(200.0))
         .header(30.0, |mut header| {
             header.col(|ui| {
                 ui.heading("ID");
@@ -67,6 +70,9 @@ fn drones_list(ui: &mut Ui, drone_list: &DroneList) {
             });
             header.col(|ui| {
                 ui.heading("Longitud");
+            });
+            header.col(|ui| {
+                ui.heading("Bateria");
             });
         })
         .body(|mut body| {
