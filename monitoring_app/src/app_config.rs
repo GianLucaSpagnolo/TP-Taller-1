@@ -3,6 +3,8 @@ use std::{
     io::{Error, ErrorKind},
 };
 
+use mqtt::config::{client_config::ClientConfig, mqtt_config::Config};
+use shared::will_message::serialize_will_message_payload;
 use walkers::Position;
 
 pub struct MonitoringAppConfig {
@@ -19,6 +21,7 @@ pub struct MonitoringAppConfig {
     pub drone_charging_icon_path: String,
     pub drone_central_icon_path: String,
     pub db_path: String,
+    pub mqtt_config: ClientConfig,
 }
 
 impl MonitoringAppConfig {
@@ -38,6 +41,7 @@ impl MonitoringAppConfig {
         let mut drone_charging_icon_path = String::new();
         let mut drone_central_icon_path = String::new();
         let mut db_path = String::new();
+        let mut mqtt_config_path = String::new();
 
         for line in contents.lines() {
             let parts: Vec<&str> = line.split(':').collect();
@@ -100,6 +104,9 @@ impl MonitoringAppConfig {
                 "db_path" => {
                     db_path = parts[1].trim().to_string();
                 }
+                "mqtt_config" => {
+                    mqtt_config_path = parts[1].trim().to_string();
+                }
                 _ => (),
             }
         }
@@ -116,6 +123,12 @@ impl MonitoringAppConfig {
 
             let initial_position = Position::from_lat_lon(initial_lat, initial_lon);
 
+            let mut mqtt_config = ClientConfig::from_file(mqtt_config_path)?;
+            mqtt_config.set_will_message(
+                "inc".to_string(),
+                serialize_will_message_payload(mqtt_config.general.id.clone()),
+            );
+
             return Ok(MonitoringAppConfig {
                 initial_position,
                 app_icon_path,
@@ -130,6 +143,7 @@ impl MonitoringAppConfig {
                 drone_charging_icon_path,
                 drone_central_icon_path,
                 db_path,
+                mqtt_config,
             });
         }
 

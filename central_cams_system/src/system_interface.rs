@@ -79,7 +79,7 @@ pub mod interface {
         println!("Camera added: {:?} ", added_cam);
 
         let bytes = cam_system.system.as_bytes();
-        fs::write(cam_system.db_path.clone(), bytes)?;
+        fs::write(cam_system.config.db_path.clone(), bytes)?;
         client.publish(added_cam.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
@@ -129,7 +129,7 @@ pub mod interface {
         );
 
         let bytes = cam_system.system.as_bytes();
-        fs::write(cam_system.db_path.clone(), bytes)?;
+        fs::write(cam_system.config.db_path.clone(), bytes)?;
 
         client.publish(cam.as_bytes(), "camaras".to_string(), logger)?;
 
@@ -174,7 +174,7 @@ pub mod interface {
         println!("Cámara modificada correctamente");
 
         let bytes = cam_system.system.as_bytes();
-        fs::write(cam_system.db_path.clone(), bytes)?;
+        fs::write(cam_system.config.db_path.clone(), bytes)?;
         client.publish(modified_cam.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
@@ -205,7 +205,7 @@ pub mod interface {
                                 continue;
                             }
                         },
-                        "delete" => {
+                        "rm" => {
                             match delete_action(client, cam_system.clone(), parts, logger) {
                                 Ok(_) => cam_system.lock().unwrap().list_cameras(),
                                 Err(e) => {
@@ -214,7 +214,7 @@ pub mod interface {
                                 }
                             }
                         }
-                        "modify" => {
+                        "edit" => {
                             match modify_action(client, cam_system.clone(), parts, logger) {
                                 Ok(_) => cam_system.lock().unwrap().list_cameras(),
                                 Err(e) => {
@@ -228,7 +228,7 @@ pub mod interface {
                         "help" => {
                             show_menu_options();
                         }
-
+                        
                         _ => {
                             println!("Acción no válida");
                         }

@@ -2,13 +2,12 @@ mod cams_system;
 mod system_interface;
 
 use std::{
-    fs,
-    io::{self, Error},
+    io::Error,
     sync::{mpsc::Receiver, Arc, Mutex},
     thread::{self, JoinHandle},
 };
 
-use cams_system::{create_cams_system_client_config, CamsSystem};
+use cams_system::CamsSystem;
 use logger::logger_handler::{create_logger_handler, Logger};
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
@@ -18,7 +17,6 @@ use shared::{
 use system_interface::interface::{process_standard_input, show_start};
 
 const APP_CONFIG_PATH: &str = "central_cams_system/config/initial_config.txt";
-const CLIENT_CONFIG_PATH: &str = "central_cams_system/config/cams_config.txt";
 
 fn handle_inc_will_message(message_received: Vec<u8>) {
     let message = deserialize_will_message_payload(message_received);
@@ -58,44 +56,15 @@ pub fn process_messages(
 }
 
 fn main() -> Result<(), Error> {
-    let contents = fs::read_to_string(APP_CONFIG_PATH)?;
-    let mut range_alert = 0.0;
-    let mut range_alert_between_cameras = 0.0;
-    let mut db_path = String::new();
 
-    for line in contents.lines() {
-        let parts: Vec<&str> = line.split(':').collect();
-        match parts[0].trim() {
-            "range_alert" => {
-                range_alert = parts[1].trim().parse().map_err(|_| {
-                    io::Error::new(io::ErrorKind::InvalidData, "Invalid range_alert value")
-                })?
-            }
-            "range_alert_between_cameras" => {
-                range_alert_between_cameras = parts[1].trim().parse().map_err(|_| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "Invalid range_alert_between_cameras value",
-                    )
-                })?
-            }
-            "db_path" => {
-                db_path = parts[1].trim().to_string();
-            }
-            _ => (),
-        }
-    }
-
-    let cam_system = CamsSystem::init(range_alert, range_alert_between_cameras, db_path)?;
+    let cam_system = CamsSystem::init(APP_CONFIG_PATH.to_string())?;
 
     show_start(&cam_system);
 
-    let config = create_cams_system_client_config(CLIENT_CONFIG_PATH)?;
-
-    let logger_handler = create_logger_handler(&config.general.log_path)?;
+    let logger_handler = create_logger_handler(&cam_system.config.mqtt_config.general.log_path.clone())?;
     let logger = logger_handler.get_logger();
 
-    let mut client = match MqttClient::init(config) {
+    let mut client = match MqttClient::init(cam_system.config.mqtt_config.clone()) {
         Ok(r) => r,
         Err(e) => {
             logger.close();

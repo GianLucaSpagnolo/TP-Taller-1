@@ -8,10 +8,7 @@ use std::{
 
 use egui::Context;
 use logger::logger_handler::Logger;
-use mqtt::{
-    client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
-    config::{client_config::ClientConfig, mqtt_config::Config},
-};
+use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::interfaces::drone_interface::DroneIconsPath;
 use shared::{
     interfaces::{
@@ -30,7 +27,7 @@ use shared::{
         },
         inc_model::{incident::IncidentState, incident_list::IncidentList},
     },
-    will_message::{deserialize_will_message_payload, serialize_will_message_payload},
+    will_message::deserialize_will_message_payload,
 };
 
 use crate::{app_config::MonitoringAppConfig, app_interface::run_interface};
@@ -266,22 +263,4 @@ impl MonitoringApp {
             Err(e) => Err(Error::new(std::io::ErrorKind::Other, e.to_string())),
         }
     }
-}
-
-// ### create_monitoring_app_client_config
-//
-// Crea la configuración del cliente de la aplicación de monitoreo.
-// Tambien configura el mensaje de voluntad del cliente.
-//
-// #### Parametros
-// - `path`: ruta del archivo de configuración
-//
-pub fn create_monitoring_app_client_config(path: &str) -> Result<ClientConfig, Error> {
-    let mut config = ClientConfig::from_file(String::from(path))?;
-    config.set_will_message(
-        "inc".to_string(),
-        serialize_will_message_payload(config.general.id.clone()),
-    );
-
-    Ok(config)
 }

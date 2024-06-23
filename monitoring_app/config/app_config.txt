@@ -1,5 +1,6 @@
 initial_lat: -34.6177712
 initial_lon: -58.4426488
+mqtt_config: monitoring_app/config/client_config.txt
 db_path: monitoring_app/config/historial.db
 app_icon_path: monitoring_app/assets/app_icon.png
 cam_icon_path: monitoring_app/assets/cam.png
