@@ -341,4 +341,114 @@ mod tests {
             dron_deserialized.id_incident_covering
         );
     }
+
+    #[test]
+    fn test_distance_to_incident() {
+        let dron = Drone::init(
+            1,
+            100.0,
+            100.0,
+            Position::from_lat_lon(0.0, 0.0),
+            Position::from_lat_lon(0.0, 0.0),
+            String::new(),
+        )
+        .unwrap();
+
+        let distance = super::get_distance_to_incident(&dron, 2.0, 2.0);
+        assert_eq!(distance, 2.8284271247461903);
+    }
+
+    #[test]
+    fn test_is_close_enough() {
+        let dron = Drone::init(
+            1,
+            100.0,
+            100.0,
+            Position::from_lat_lon(0.0, 0.0),
+            Position::from_lat_lon(0.0, 0.0),
+            String::new(),
+        )
+        .unwrap();
+
+        assert!(dron.is_close_enough(99.0));
+        assert!(!dron.is_close_enough(101.0));
+    }
+
+    #[test]
+    fn test_is_closer_than_other_drones() {
+        let mut dron = Drone::init(
+            1,
+            100.0,
+            100.0,
+            Position::from_lat_lon(0.0, 0.0),
+            Position::from_lat_lon(0.0, 0.0),
+            String::new(),
+        )
+        .unwrap();
+
+        let dron2 = Drone::init(
+            2,
+            100.0,
+            100.0,
+            Position::from_lat_lon(5.0, 5.0),
+            Position::from_lat_lon(0.0, 0.0),
+            String::new(),
+        )
+        .unwrap();
+
+        let dron3 = Drone::init(
+            3,
+            100.0,
+            100.0,
+            Position::from_lat_lon(10.0, 10.0),
+            Position::from_lat_lon(0.0, 0.0),
+            String::new(),
+        )
+        .unwrap();
+
+        dron.drones.add(dron2.clone());
+        dron.drones.add(dron3.clone());
+
+        assert!(dron.is_closer_than_other_drones(2.8284271247461903, 2.0, 2.0));
+    }
+
+    #[test]
+    fn test_is_not_closer_than_other_drones() {
+        let mut dron = Drone::init(
+            1,
+            100.0,
+            100.0,
+            Position::from_lat_lon(25.0, 25.0),
+            Position::from_lat_lon(0.0, 0.0),
+            String::new(),
+        )
+        .unwrap();
+
+        let dron2 = Drone::init(
+            2,
+            100.0,
+            100.0,
+            Position::from_lat_lon(5.0, 5.0),
+            Position::from_lat_lon(0.0, 0.0),
+            String::new(),
+        )
+        .unwrap();
+
+        let dron3 = Drone::init(
+            3,
+            100.0,
+            100.0,
+            Position::from_lat_lon(10.0, 10.0),
+            Position::from_lat_lon(0.0, 0.0),
+            String::new(),
+        )
+        .unwrap();
+
+        dron.drones.add(dron2.clone());
+        dron.drones.add(dron3.clone());
+
+        let dron_distance_to_incident = super::get_distance_to_incident(&dron, 2.0, 2.0);
+
+        assert!(!dron.is_closer_than_other_drones(dron_distance_to_incident, 2.0, 2.0));
+    }
 }
