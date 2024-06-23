@@ -6,13 +6,15 @@ use mqtt::{
 
 use std::process::ExitCode;
 
+const CONFIG_PATH: &str = "broker/config/broker_config.txt";
+const AUTH_DATA_PATH: &str = "broker/config/broker_auth_data.txt";
+
 fn main() -> ExitCode {
     const CONFIGERROR: u8 = 3;
     const SERVER_LISTENERERROR: u8 = 4;
     const LOGGER_INITERROR: u8 = 5;
 
-    let config_path = "broker/config/broker_config.txt";
-    let config = match ServerConfig::from_file(String::from(config_path)) {
+    let config = match ServerConfig::from_file(String::from(CONFIG_PATH)) {
         Ok(conf) => conf,
         Err(e) => {
             eprintln!("Error al obtener configuracion del servidor: {}", e);

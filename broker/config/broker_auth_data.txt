@@ -1,0 +1,2 @@
+broker_registered_usernames: monitoringapp, camssystem
+broker_password: 1234
