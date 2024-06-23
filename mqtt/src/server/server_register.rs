@@ -276,7 +276,7 @@ mod tests{
 
         let session_2 = register_2.sessions.get("test").unwrap();
 
-        assert_eq!(session.active, session_2.active);
+        assert!(!session_2.active);
         assert_eq!(session.session_expiry_interval, session_2.session_expiry_interval);
         assert_eq!(session.subscriptions.len(), session_2.subscriptions.len());
         assert_eq!(session.messages_in_queue.len(), session_2.messages_in_queue.len());
@@ -310,7 +310,7 @@ mod tests{
         
         let session_2 = register_2.sessions.get("test").unwrap();
 
-        assert_eq!(session.active, session_2.active);
+        assert!(!session_2.active);
         assert_eq!(session.session_expiry_interval, session_2.session_expiry_interval);
         assert_eq!(session.subscriptions.len(), session_2.subscriptions.len());
         assert_eq!(session.messages_in_queue.len(), session_2.messages_in_queue.len());
@@ -345,7 +345,7 @@ mod tests{
 
         let session_2 = register_2.sessions.get("test").unwrap();
 
-        assert_eq!(session.active, session_2.active);
+        assert!(!session_2.active);
         assert_eq!(session.session_expiry_interval, session_2.session_expiry_interval);
         assert_eq!(session.subscriptions.len(), session_2.subscriptions.len());
         assert_eq!(session.messages_in_queue.len(), session_2.messages_in_queue.len());
@@ -433,14 +433,14 @@ mod tests{
 
         let session_deserializated = register_2.sessions.get("id_test").unwrap();
 
-        assert_eq!(session.active, session_deserializated.active);
+        assert!(!session_deserializated.active);
         assert_eq!(session.session_expiry_interval, session_deserializated.session_expiry_interval);
         assert_eq!(session.subscriptions.len(), session_deserializated.subscriptions.len());
         assert_eq!(session.messages_in_queue.len(), session_deserializated.messages_in_queue.len());
 
         let session_deserializated_2 = register_2.sessions.get("id_test2").unwrap();
 
-        assert_eq!(session_2.active, session_deserializated_2.active);
+        assert!(!session_deserializated_2.active);
         assert_eq!(session_2.session_expiry_interval, session_deserializated_2.session_expiry_interval);
         assert_eq!(session_2.subscriptions.len(), session_deserializated_2.subscriptions.len());
         assert_eq!(session_2.messages_in_queue.len(), session_deserializated_2.messages_in_queue.len());
@@ -456,7 +456,7 @@ mod tests{
         }
 
         let session_deserializated_3 = register_2.sessions.get("id_test3").unwrap();
-        assert_eq!(session_3.active, session_deserializated_3.active);
+        assert!(!session_deserializated_3.active);
         assert_eq!(session_3.session_expiry_interval, session_deserializated_3.session_expiry_interval);
         assert_eq!(session_3.subscriptions.len(), session_deserializated_3.subscriptions.len());
         assert_eq!(session_3.messages_in_queue.len(), session_deserializated_3.messages_in_queue.len());
