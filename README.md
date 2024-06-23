@@ -1,26 +1,30 @@
 # Taller de Programacion
 
-## Grupo
-* 
-* 
-* 
-* 
+## Grupo "La Krupoviesa"
+
+* Rafael Ortegano - 108313
+* Martin Gonzalez Prieto - 105738
+* Gian Luca Spagnolo - 108072
+* Alexis Martin Ramos - 98891
 
 ## Instalacion de dependencias
+
 Para instalar las dependencias necesarias *step* y *libssl-dev* se debe ejecutar:
 
     cd data/scripts
     ./install_reqs.sh
 
-### Certificados
+## Certificados
 
-#### Instalacion de certificado raiz
+### Instalacion de certificado raiz
+
 Cuando los certificados ya existen (en data/certificates), *solo* se debe instalar el certificado raiz en el S.O. corriendo el comando:
 
     cd data/scripts
     ./install_ca.sh    
 
-#### Actualizacion de certificados
+### Actualizacion de certificados
+
 Para actualizar/crear los certificados, se deben borrar los certificados de la carpeta *data/certificates* y ejecutar:
 
     cd data/scripts
