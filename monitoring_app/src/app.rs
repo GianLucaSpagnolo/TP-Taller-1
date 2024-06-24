@@ -8,6 +8,7 @@ use std::{
 use egui::Context;
 use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
+use mqtt::common::reason_codes::ReasonCode;
 use shared::{
     interfaces::{
         cam_interface::CamInterface, drone_interface::DroneInterface,
@@ -238,17 +239,23 @@ impl MonitoringApp {
         client.subscribe(vec!["camaras"], &logger)?;
         client.subscribe(vec!["drone"], &logger)?;
         match run_interface(
-            client,
-            logger,
+            client.clone(),
+            logger.clone(),
             config,
             cam_list_ref,
             dron_list_ref,
             incident_list_ref,
         ) {
-            Ok(_) => Ok(MonitoringHandler {
-                broker_listener: listener.handler,
-                message_handler: handler,
-            }),
+            Ok(_) => {
+                println!("Saliendo del sistema...");
+                client
+                    .disconnect(ReasonCode::NormalDisconnection, &logger)
+                    .unwrap();
+                Ok(MonitoringHandler {
+                    broker_listener: listener.handler,
+                    message_handler: handler,
+                })
+            }
             Err(e) => Err(Error::new(std::io::ErrorKind::Other, e.to_string())),
         }
     }

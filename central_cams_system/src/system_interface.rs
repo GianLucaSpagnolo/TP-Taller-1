@@ -5,7 +5,7 @@ pub mod interface {
     };
 
     use logger::logger_handler::Logger;
-    use mqtt::client::mqtt_client::MqttClient;
+    use mqtt::{client::mqtt_client::MqttClient, common::reason_codes::ReasonCode};
     use shared::models::cam_model::cam::{Cam, CamState};
     use walkers::Position;
 
@@ -219,6 +219,14 @@ pub mod interface {
 
                         "help" => {
                             show_menu_options();
+                        }
+
+                        "exit" => {
+                            println!("Saliendo del sistema...");
+                            client
+                                .disconnect(ReasonCode::NormalDisconnection, logger)
+                                .unwrap();
+                            break;
                         }
 
                         _ => {
