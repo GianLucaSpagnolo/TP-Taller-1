@@ -4,23 +4,31 @@ use std::{
 };
 
 use mqtt::config::{client_config::ClientConfig, mqtt_config::Config};
-use shared::will_message::serialize_will_message_payload;
+use shared::{
+    interfaces::drone_interface::DroneIconsPath, will_message::serialize_will_message_payload,
+};
 use walkers::Position;
+
+#[derive(Clone, Default)]
+pub struct IconsPaths {
+    pub app_icon: String,
+    pub cam_icon: String,
+    pub cam_alert_icon: String,
+    pub inc_icon: String,
+    pub drone_icon_paths: DroneIconsPath,
+}
+
+#[derive(Clone, Default)]
+pub struct DBPaths {
+    pub inc_db_path: String,
+    pub cam_db_path: String,
+    pub drone_db_path: String,
+}
 
 pub struct MonitoringAppConfig {
     pub initial_position: Position,
-    pub app_icon_path: String,
-    pub cam_icon_path: String,
-    pub cam_alert_icon_path: String,
-    pub inc_icon_path: String,
-    pub drone_icon_path: String,
-    pub drone_alert_icon_path: String,
-    pub drone_back_icon_path: String,
-    pub drone_resolving_icon_path: String,
-    pub drone_low_battery_icon_path: String,
-    pub drone_charging_icon_path: String,
-    pub drone_central_icon_path: String,
-    pub db_path: String,
+    pub icons_paths: IconsPaths,
+    pub db_paths: DBPaths,
     pub mqtt_config: ClientConfig,
 }
 
@@ -33,14 +41,16 @@ impl MonitoringAppConfig {
         let mut cam_icon_path = String::new();
         let mut cam_alert_icon_path = String::new();
         let mut inc_icon_path = String::new();
-        let mut drone_icon_path = String::new();
+        let mut drone_default_icon_path = String::new();
         let mut drone_alert_icon_path = String::new();
-        let mut drone_back_icon_path = String::new();
+        let mut drone_going_back_icon_path = String::new();
         let mut drone_resolving_icon_path = String::new();
         let mut drone_low_battery_icon_path = String::new();
         let mut drone_charging_icon_path = String::new();
         let mut drone_central_icon_path = String::new();
-        let mut db_path = String::new();
+        let mut inc_db_path = String::new();
+        let mut cam_db_path = String::new();
+        let mut drone_db_path = String::new();
         let mut mqtt_config_path = String::new();
 
         for line in contents.lines() {
@@ -68,41 +78,47 @@ impl MonitoringAppConfig {
                         }
                     }
                 }
-                "app_icon_path" => {
+                "app_icon" => {
                     app_icon_path = parts[1].trim().to_string();
                 }
-                "cam_icon_path" => {
+                "cam_icon" => {
                     cam_icon_path = parts[1].trim().to_string();
                 }
-                "cam_alert_icon_path" => {
+                "cam_alert_icon" => {
                     cam_alert_icon_path = parts[1].trim().to_string();
                 }
-                "inc_icon_path" => {
+                "inc_icon" => {
                     inc_icon_path = parts[1].trim().to_string();
                 }
-                "drone_icon_path" => {
-                    drone_icon_path = parts[1].trim().to_string();
+                "drone_icon" => {
+                    drone_default_icon_path = parts[1].trim().to_string();
                 }
-                "drone_alert_icon_path" => {
+                "drone_alert_icon" => {
                     drone_alert_icon_path = parts[1].trim().to_string();
                 }
-                "drone_back_icon_path" => {
-                    drone_back_icon_path = parts[1].trim().to_string();
+                "drone_going_back_icon" => {
+                    drone_going_back_icon_path = parts[1].trim().to_string();
                 }
-                "drone_resolving_icon_path" => {
+                "drone_resolving_icon" => {
                     drone_resolving_icon_path = parts[1].trim().to_string();
                 }
-                "drone_low_battery_icon_path" => {
+                "drone_low_battery_icon" => {
                     drone_low_battery_icon_path = parts[1].trim().to_string();
                 }
-                "drone_charging_icon_path" => {
+                "drone_charging_icon" => {
                     drone_charging_icon_path = parts[1].trim().to_string();
                 }
-                "drone_central_icon_path" => {
+                "drone_central_icon" => {
                     drone_central_icon_path = parts[1].trim().to_string();
                 }
-                "db_path" => {
-                    db_path = parts[1].trim().to_string();
+                "inc_db" => {
+                    inc_db_path = parts[1].trim().to_string();
+                }
+                "cam_db" => {
+                    cam_db_path = parts[1].trim().to_string();
+                }
+                "drone_db" => {
+                    drone_db_path = parts[1].trim().to_string();
                 }
                 "mqtt_config" => {
                     mqtt_config_path = parts[1].trim().to_string();
@@ -112,13 +128,23 @@ impl MonitoringAppConfig {
         }
 
         if let (Some(initial_lat), Some(initial_lon)) = (initial_lat, initial_lon) {
-            if db_path.is_empty()
-                || cam_icon_path.is_empty()
+            if inc_db_path.is_empty() || cam_db_path.is_empty() || drone_db_path.is_empty() {
+                return Err(Error::new(ErrorKind::InvalidData, "Missing db_path"));
+            }
+
+            if cam_icon_path.is_empty()
                 || cam_alert_icon_path.is_empty()
                 || inc_icon_path.is_empty()
                 || app_icon_path.is_empty()
+                || drone_default_icon_path.is_empty()
+                || drone_alert_icon_path.is_empty()
+                || drone_going_back_icon_path.is_empty()
+                || drone_resolving_icon_path.is_empty()
+                || drone_low_battery_icon_path.is_empty()
+                || drone_charging_icon_path.is_empty()
+                || drone_central_icon_path.is_empty()
             {
-                return Err(Error::new(ErrorKind::InvalidData, "Missing db_path"));
+                return Err(Error::new(ErrorKind::InvalidData, "Missing any icon path"));
             }
 
             let initial_position = Position::from_lat_lon(initial_lat, initial_lon);
@@ -131,18 +157,26 @@ impl MonitoringAppConfig {
 
             return Ok(MonitoringAppConfig {
                 initial_position,
-                app_icon_path,
-                cam_icon_path,
-                cam_alert_icon_path,
-                inc_icon_path,
-                drone_icon_path,
-                drone_alert_icon_path,
-                drone_back_icon_path,
-                drone_resolving_icon_path,
-                drone_low_battery_icon_path,
-                drone_charging_icon_path,
-                drone_central_icon_path,
-                db_path,
+                icons_paths: IconsPaths {
+                    app_icon: app_icon_path,
+                    cam_icon: cam_icon_path,
+                    cam_alert_icon: cam_alert_icon_path,
+                    inc_icon: inc_icon_path,
+                    drone_icon_paths: DroneIconsPath {
+                        default: drone_default_icon_path,
+                        alert: drone_alert_icon_path,
+                        going_back: drone_going_back_icon_path,
+                        resolving: drone_resolving_icon_path,
+                        low_battery: drone_low_battery_icon_path,
+                        charging: drone_charging_icon_path,
+                        central: drone_central_icon_path,
+                    },
+                },
+                db_paths: DBPaths {
+                    inc_db_path,
+                    cam_db_path,
+                    drone_db_path,
+                },
                 mqtt_config,
             });
         }

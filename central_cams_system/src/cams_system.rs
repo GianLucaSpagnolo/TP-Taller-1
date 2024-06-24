@@ -1,4 +1,4 @@
-use std::{fs, io::Error};
+use std::io::Error;
 
 use central_cams_system::cams_system_config::CamSystemConfig;
 use logger::logger_handler::Logger;
@@ -21,16 +21,7 @@ impl CamsSystem {
     pub fn init(path: String) -> Result<Self, Error> {
         let config = CamSystemConfig::from_file(path)?;
 
-        let bytes = match fs::read(&config.db_path) {
-            Ok(bytes) => bytes,
-            Err(_) => Vec::new(),
-        };
-
-        let system = if bytes.is_empty() {
-            CamList { cams: Vec::new() }
-        } else {
-            CamList::from_be_bytes(bytes)
-        };
+        let system = CamList::init(&config.db_path);
 
         Ok(CamsSystem { system, config })
     }
@@ -149,6 +140,10 @@ impl CamsSystem {
     }
 
     pub fn list_cameras(&self) {
+        if self.system.cams.is_empty() {
+            println!("  No hay cámaras registradas");
+            return;
+        }
         println!("{}", self.system);
     }
 
@@ -160,8 +155,7 @@ impl CamsSystem {
     ) {
         let modified_cams = self.modify_cameras_state(incident.location, CamState::Alert);
 
-        let bytes = self.system.as_bytes();
-        fs::write(self.config.db_path.clone(), bytes).unwrap();
+        self.system.save(&self.config.db_path).unwrap();
 
         for cam in modified_cams {
             match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {
@@ -184,8 +178,7 @@ impl CamsSystem {
     ) {
         let modified_cams = self.modify_cameras_state(incident.location, CamState::SavingEnergy);
 
-        let bytes = self.system.as_bytes();
-        fs::write(self.config.db_path.clone(), bytes).unwrap();
+        self.system.save(&self.config.db_path).unwrap();
 
         for cam in modified_cams {
             match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {

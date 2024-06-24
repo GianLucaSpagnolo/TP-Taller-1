@@ -16,7 +16,7 @@ use shared::{
 };
 use system_interface::interface::{process_standard_input, show_start};
 
-const APP_CONFIG_PATH: &str = "central_cams_system/config/initial_config.txt";
+const SYSTEM_CONFIG_PATH: &str = "central_cams_system/config/system_config.txt";
 
 fn handle_inc_will_message(message_received: Vec<u8>) {
     let message = deserialize_will_message_payload(message_received);
@@ -56,7 +56,7 @@ pub fn process_messages(
 }
 
 fn main() -> Result<(), Error> {
-    let cam_system = CamsSystem::init(APP_CONFIG_PATH.to_string())?;
+    let cam_system = CamsSystem::init(SYSTEM_CONFIG_PATH.to_string())?;
 
     show_start(&cam_system);
 

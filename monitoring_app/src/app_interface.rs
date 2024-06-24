@@ -39,7 +39,7 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
                     &mut app.client,
                     &mut app.global_interface.inc_interface,
                     &app.logger,
-                    &app.config.db_path,
+                    &app.config.db_paths.inc_db_path,
                 );
             });
             egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
@@ -123,14 +123,14 @@ pub fn get_style() -> Style {
 pub fn run_interface(
     client: MqttClient,
     logger: Logger,
+    config: MonitoringAppConfig,
     cam_list_ref: Arc<Mutex<CamList>>,
     drone_list_ref: Arc<Mutex<DroneList>>,
-    config: MonitoringAppConfig,
     incident_list: Arc<Mutex<IncidentList>>,
 ) -> Result<(), eframe::Error> {
     eframe::run_native(
         "Apliación de monitoreo",
-        get_options(&config.app_icon_path),
+        get_options(&config.icons_paths.app_icon),
         Box::new(|creation_context| {
             creation_context.egui_ctx.set_style(get_style());
             egui_extras::install_image_loaders(&creation_context.egui_ctx);
@@ -138,9 +138,9 @@ pub fn run_interface(
                 config,
                 client,
                 logger,
+                creation_context.egui_ctx.to_owned(),
                 cam_list_ref,
                 drone_list_ref,
-                creation_context.egui_ctx.to_owned(),
                 incident_list,
             ))
         }),

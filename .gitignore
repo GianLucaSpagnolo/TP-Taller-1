@@ -22,7 +22,4 @@ Cargo.lock
 
 #test files
 mqtt/tests/files/*.db
-broker/config/*.db
-central_cams_system/config/*.db
-monitoring_app/config/*.db
-drone_app/config/*.db
+data/db/*.db

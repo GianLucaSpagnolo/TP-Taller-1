@@ -1,0 +1,4 @@
+range_alert: 0.015
+range_alert_between_cameras: 0.035
+db_path: data/db/cams_system.db
+mqtt_config: central_cams_system/config/mqtt_client_config.txt
