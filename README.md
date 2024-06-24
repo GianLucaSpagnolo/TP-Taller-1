@@ -17,7 +17,8 @@ Antes que nada se debe cambiar a modo ejecución los archivos .sh :
 
 Para instalar las dependencias necesarias *step* y *libssl-dev* se debe ejecutar:
 
-    ./data/scripts/install_reqs.sh
+    cd /data/scripts
+    ./install_reqs.sh
 
 ### Certificados
 
@@ -25,13 +26,15 @@ Para instalar las dependencias necesarias *step* y *libssl-dev* se debe ejecutar
 
 Cuando los certificados ya existen (en data/certificates), *solo* se debe instalar el certificado raiz en el S.O. corriendo el comando:
 
-    ./data/scripts/install_ca.sh    
+    cd /data/scripts
+    ./install_ca.sh    
 
 #### Actualizacion de certificados
 
 Para actualizar/crear los certificados, se deben borrar los certificados de la carpeta *data/certificates* y ejecutar:
 
-    ./data/scripts/load_certs.sh
+    cd /data/scripts
+    ./load_certs.sh
 
 ## Como usar
 
