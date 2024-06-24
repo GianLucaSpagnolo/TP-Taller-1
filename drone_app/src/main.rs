@@ -99,7 +99,7 @@ fn main() -> Result<(), Error> {
     };
 
     client
-        .publish(drone.as_bytes(), "drone".to_string(), &logger)
+        .publish(drone.as_bytes(false), "drone".to_string(), &logger)
         .unwrap();
     let drone_ref = Arc::new(Mutex::new(drone));
 

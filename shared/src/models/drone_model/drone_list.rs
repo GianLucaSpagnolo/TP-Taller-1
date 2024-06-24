@@ -59,7 +59,7 @@ impl DroneList {
         bytes.extend_from_slice(drones_len.to_be_bytes().as_ref());
 
         for drone in self.drones.iter() {
-            bytes.extend_from_slice(drone.as_bytes().as_ref());
+            bytes.extend_from_slice(drone.as_bytes(false).as_ref());
         }
         bytes
     }

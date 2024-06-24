@@ -114,6 +114,10 @@ fn process_messages(
                 "drone" => {
                     let dron = Drone::from_be_bytes(&message_received.data);
 
+                    if dron.sending_for_drone {
+                        continue;
+                    }
+
                     let incidents_historial = &mut incident_list.lock().unwrap();
 
                     let inc_id = dron.id_incident_covering;

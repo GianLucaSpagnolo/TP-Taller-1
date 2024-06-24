@@ -31,6 +31,7 @@ pub struct Drone {
     pub charging_station_pos: Position,   //16
     pub state: DroneState,                //1
     pub id_incident_covering: Option<u8>, //1
+    pub sending_for_drone: bool,
     pub drones: DroneList,
     pub db_path: String,
 }
@@ -59,6 +60,7 @@ impl Drone {
                 charging_station_pos,
                 state: DroneState::Available,
                 id_incident_covering: None,
+                sending_for_drone: false,
                 drones: DroneList::default(),
                 db_path: db_path.clone(),
             }
@@ -71,7 +73,7 @@ impl Drone {
     }
 
     pub fn save(&self) {
-        let bytes = self.as_bytes();
+        let bytes = self.as_bytes(false);
         fs::write(self.db_path.clone(), bytes).unwrap();
     }
 
@@ -86,7 +88,7 @@ impl Drone {
                 println!("\x1b[32m  Incidente Resuelto, en camino a la posición inicial \x1b[0m");
                 self.state = DroneState::GoingBack;
                 client
-                    .publish(self.as_bytes(), "drone".to_string(), logger)
+                    .publish(self.as_bytes(false), "drone".to_string(), logger)
                     .unwrap();
 
                 thread::sleep(Duration::from_secs(3));
@@ -96,7 +98,7 @@ impl Drone {
                 self.state = DroneState::Available;
                 self.id_incident_covering = None;
                 client
-                    .publish(self.as_bytes(), "drone".to_string(), logger)
+                    .publish(self.as_bytes(false), "drone".to_string(), logger)
                     .unwrap();
 
                 self.save();
@@ -117,7 +119,7 @@ impl Drone {
                 println!("\x1b[33m  Incidente en progreso, en camino a la posición del incidente \x1b[0m");
 
                 client
-                    .publish(self.as_bytes(), "drone".to_string(), logger)
+                    .publish(self.as_bytes(false), "drone".to_string(), logger)
                     .unwrap();
                 thread::sleep(Duration::from_millis(distance_to_incident as u64 * 1000));
 
@@ -130,7 +132,7 @@ impl Drone {
                     incident.location.lon() + 0.0001,
                 );
                 client
-                    .publish(self.as_bytes(), "drone".to_string(), logger)
+                    .publish(self.as_bytes(false), "drone".to_string(), logger)
                     .unwrap();
 
                 self.save();
@@ -149,14 +151,14 @@ impl Drone {
         } else {
             self.drones.add(drone_received);
             client
-                .publish(self.as_bytes(), "drone".to_string(), logger)
+                .publish(self.as_bytes(true), "drone".to_string(), logger)
                 .unwrap();
         }
 
         self.save();
     }
 
-    pub fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self, sending_for_drone: bool) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.push(self.id);
@@ -183,6 +185,8 @@ impl Drone {
         let id_incident_covering = self.id_incident_covering.unwrap_or(0);
 
         bytes.push(id_incident_covering);
+
+        bytes.push(sending_for_drone as u8);
 
         bytes
     }
@@ -236,6 +240,8 @@ impl Drone {
             id => Some(id),
         };
 
+        let sending_for_drone = bytes[index + 1] == 1;
+
         let current_pos = Position::from_lat_lon(current_lat, current_lon);
         let initial_pos = Position::from_lat_lon(initial_lat, initial_lon);
         let charging_station_pos =
@@ -250,6 +256,7 @@ impl Drone {
             charging_station_pos,
             state,
             id_incident_covering,
+            sending_for_drone,
             drones: DroneList::default(),
             db_path: String::new(),
         }
@@ -285,14 +292,14 @@ impl Drone {
             self.state = DroneState::LowBattery;
             println!("\x1b[31m  Batería baja, cuidado!\x1b[0m");
             client
-                .publish(self.as_bytes(), "drone".to_string(), &logger)
+                .publish(self.as_bytes(false), "drone".to_string(), &logger)
                 .unwrap();
             thread::sleep(Duration::from_secs(3));
             println!("\x1b[33m  Cargando batería\x1b[0m");
             self.current_pos = self.charging_station_pos;
             self.state = DroneState::Charging;
             client
-                .publish(self.as_bytes(), "drone".to_string(), &logger)
+                .publish(self.as_bytes(false), "drone".to_string(), &logger)
                 .unwrap();
 
             thread::sleep(Duration::from_secs(3));
@@ -302,7 +309,7 @@ impl Drone {
             self.current_pos = self.initial_pos;
 
             client
-                .publish(self.as_bytes(), "drone".to_string(), &logger)
+                .publish(self.as_bytes(false), "drone".to_string(), &logger)
                 .unwrap();
         }
         self.save();
@@ -334,7 +341,7 @@ mod tests {
         )
         .unwrap();
 
-        let bytes = dron.as_bytes();
+        let bytes = dron.as_bytes(false);
         let dron_deserialized = Drone::from_be_bytes(&bytes);
 
         assert_eq!(dron.id, dron_deserialized.id);
@@ -359,6 +366,7 @@ mod tests {
             dron.id_incident_covering,
             dron_deserialized.id_incident_covering
         );
+        assert_eq!(dron.sending_for_drone, dron_deserialized.sending_for_drone);
     }
 
     #[test]
