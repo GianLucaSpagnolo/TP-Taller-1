@@ -1,9 +1,9 @@
 id: drone3
 password: 1234
-ip: 127.0.0.1
+ip: 192.168.0.13
 port: 5000
 log_path: data/logs/drone_3_log.csv
-log_in_terminal: false
+log_in_terminal: true
 protocol_name: MQTT
 protocol_version: 5
 keep_alive: 60
