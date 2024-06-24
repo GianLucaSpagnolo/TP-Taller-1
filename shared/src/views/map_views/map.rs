@@ -41,7 +41,7 @@ pub fn show_map(
             egui_ctx.clone(),
             &mut inc.inc_historial.lock().unwrap(),
             inc.inc_icon.clone(),
-        ))      
+        ))
         .with_plugin(drone_images(
             egui_ctx.clone(),
             &mut drones_list,

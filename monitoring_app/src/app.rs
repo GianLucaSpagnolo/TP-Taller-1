@@ -114,21 +114,21 @@ fn process_messages(
                     let dron = Drone::from_be_bytes(&message_received.data);
 
                     if !dron.sending_for_drone {
-
                         let incidents_historial = &mut incident_list.lock().unwrap();
-                        
+
                         let inc_id = dron.id_incident_covering;
 
                         let drone_state = dron.state.clone();
-                        
+
                         let msg = format!("Drone {} - {:?}", dron.id, dron.state);
-                        logger.log_event( &msg, &client.config.general.id);
+                        logger.log_event(&msg, &client.config.general.id);
 
                         drone_list.lock().unwrap().update_drone(dron);
 
                         if let DroneState::ResolvingIncident = drone_state {
                             if let Some(inc_id) = inc_id {
-                                let incident = incidents_historial.incidents.get_mut(&inc_id).unwrap();
+                                let incident =
+                                    incidents_historial.incidents.get_mut(&inc_id).unwrap();
                                 incident.drones_covering += 1;
                                 if incident.drones_covering == 2 {
                                     incident.state = IncidentState::Resolved;
