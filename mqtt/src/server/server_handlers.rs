@@ -4,10 +4,11 @@ pub mod connect_handler {
     use logger::logger_handler::Logger;
 
     use crate::{
+        common::authentication::deserialize_username_password,
         logging::{actions::MqttActions, server_actions::MqttServerActions},
         mqtt_packets::{
             packet::generic_packet::Serialization,
-            packets::{connack::Connack, connect::Connect},
+            packets::{auth::Auth, connack::Connack, connect::Connect},
             properties::connack_properties::ConnackProperties,
         },
         server::{acknowledge_handler, mqtt_server::MqttServer},
@@ -58,6 +59,27 @@ pub mod connect_handler {
             MqttServerActions::ReconnectSession(client.clone())
         };
         Ok(action)
+    }
+
+    pub fn authenticate_client(
+        server: &mut MqttServer,
+        auth: Auth,
+    ) -> Result<MqttServerActions, Error> {
+        if auth.properties.authentication_data.is_none() {
+            return Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - No se recibieron datos de autenticación",
+            ));
+        }
+
+        let (username, password) =
+            deserialize_username_password(auth.properties.authentication_data.unwrap());
+
+        if server.users.contains(&username) && server.config.general.password == password {
+            Ok(MqttServerActions::ValidAuthentication(username))
+        } else {
+            Ok(MqttServerActions::InvalidAuthentication(username))
+        }
     }
 }
 

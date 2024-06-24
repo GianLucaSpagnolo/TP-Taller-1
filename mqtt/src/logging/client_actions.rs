@@ -28,6 +28,7 @@ use super::actions::MqttActions;
 ///
 pub enum MqttClientActions {
     Connection(String, u8),
+    SendAuthentication(String),
     ReceivePublish(String),
     ReceiveDisconnect(ReasonCode),
     ReceivePinresp,
@@ -53,6 +54,9 @@ impl fmt::Display for MqttClientActions {
                     "CONNACK - Conexion establecida con '{}' - reason code: [{}]",
                     addrs, reason_code
                 )
+            }
+            MqttClientActions::SendAuthentication(user) => {
+                write!(f, "AUTH - Cliente intenta autenticarse como '{}'", user)
             }
             MqttClientActions::ReceivePublish(topic) => write!(
                 f,

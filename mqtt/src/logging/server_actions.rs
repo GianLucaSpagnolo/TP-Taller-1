@@ -28,6 +28,8 @@ use super::actions::MqttActions;
 ///
 pub enum MqttServerActions {
     Connection(String),
+    ValidAuthentication(String),
+    InvalidAuthentication(String),
     SendDisconnect(ReasonCode),
     SendWillMessage(String, Vec<String>),
     NoSendWillMessage(),
@@ -56,6 +58,20 @@ impl fmt::Display for MqttServerActions {
         match self {
             MqttServerActions::Connection(id) => {
                 write!(f, "CONNECT - Conexion establecida con '{}'", id)
+            }
+            MqttServerActions::ValidAuthentication(user) => {
+                write!(
+                    f,
+                    "AUTH - Servidor recibió autenticación de '{}' valida",
+                    user
+                )
+            }
+            MqttServerActions::InvalidAuthentication(user) => {
+                write!(
+                    f,
+                    "AUTH - Servidor recibió autenticación de '{}' invalida",
+                    user
+                )
             }
 
             MqttServerActions::ReceivePublish(topic) => {
