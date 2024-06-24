@@ -6,9 +6,12 @@ log_in_terminal: true
 protocol_name: MQTT
 protocol_version: 5
 keep_alive: 60
-flag_clean_start: true
+flag_clean_start: false
 flag_will_qos: 2
 publish_dup: false
 publish_qos: 1
 publish_retain: false 
 subscribe_max_qos: 1
+domain_name: server
+cert_path: ""
+cert_pass: ""

@@ -3,14 +3,12 @@ use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
 
 use egui_extras::{Column, TableBuilder, TableRow};
+use walkers::Position;
 
 use crate::{
     controllers::incident::incident_controller::{add_incident, resolve_incident},
     interfaces::incident_interface::IncidentInterface,
-    models::{
-        coordenates::Coordenates,
-        inc_model::incident::{Incident, IncidentState},
-    },
+    models::inc_model::incident::{Incident, IncidentState},
 };
 
 static COORDENATE_PRECISION: usize = 4;
@@ -42,14 +40,11 @@ pub fn add_incident_button(
         if latitude.is_none() || longitude.is_none() {
             inc_interface.show_data_alert = true;
         } else {
-            let field = Coordenates {
-                latitude: latitude.unwrap(),
-                longitude: longitude.unwrap(),
-            };
+            let field = Position::from_lat_lon(latitude.unwrap(), longitude.unwrap());
             add_incident(
                 client,
-                &mut inc_interface.historial,
-                field.clone(),
+                &mut inc_interface.historial.lock().unwrap(),
+                field,
                 logger,
                 db_path,
             )
@@ -129,20 +124,28 @@ fn incident_row(
     row.col(|ui| {
         ui.label(&format!(
             "{:.1$}",
-            incident.location.latitude, COORDENATE_PRECISION
+            incident.location.lat(),
+            COORDENATE_PRECISION
         ));
     });
     row.col(|ui| {
         ui.label(&format!(
             "{:.1$}",
-            incident.location.longitude, COORDENATE_PRECISION
+            incident.location.lon(),
+            COORDENATE_PRECISION
         ));
     });
     if inc_interface.editable {
         row.col(|ui| {
             if ui.button("Resolver").clicked() {
-                resolve_incident(client, &mut inc_interface.historial, id, logger, db_path)
-                    .unwrap();
+                resolve_incident(
+                    client,
+                    &mut inc_interface.historial.lock().unwrap(),
+                    id,
+                    logger,
+                    db_path,
+                )
+                .unwrap();
             }
         });
     }
@@ -164,6 +167,7 @@ pub fn incident_list(
     logger: &Logger,
     db_path: &str,
 ) {
+    let incidents = &inc_interface.historial.lock().unwrap().incidents.clone();
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
         .column(Column::exact(200.0))
@@ -185,14 +189,14 @@ pub fn incident_list(
             });
         })
         .body(|mut body| {
-            if inc_interface.historial.incidents.is_empty() {
+            if incidents.is_empty() {
                 body.row(20.0, |mut row| {
                     row.col(|ui| {
                         ui.label("No hay incidentes");
                     });
                 });
             } else {
-                for (id, incident) in &inc_interface.historial.incidents.clone() {
+                for (id, incident) in &incidents.clone() {
                     body.row(20.0, |row| {
                         incident_row(row, client, inc_interface, incident, id, logger, db_path);
                     });

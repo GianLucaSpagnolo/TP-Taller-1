@@ -1,7 +1,9 @@
 use std::io::{Error, Read};
 
 use crate::{
-    common::data_types::data_representation::read_byte,
+    common::data_types::data_representation::{
+        read_byte, read_two_byte_integer, read_utf8_encoded_string,
+    },
     mqtt_packets::{
         headers::variable_header_properties::VariableHeaderProperties,
         packet_properties::PacketProperties, packet_property::*,
@@ -10,6 +12,7 @@ use crate::{
 
 #[derive(Default)]
 pub struct DisconnectProperties {
+    pub id: String,
     pub disconnect_reason_code: u8,
     pub session_expiry_interval: Option<u32>,
     pub reason_string: Option<String>,
@@ -20,6 +23,7 @@ pub struct DisconnectProperties {
 impl Clone for DisconnectProperties {
     fn clone(&self) -> Self {
         DisconnectProperties {
+            id: self.id.clone(),
             disconnect_reason_code: self.disconnect_reason_code,
             session_expiry_interval: self.session_expiry_interval,
             reason_string: self.reason_string.clone(),
@@ -32,7 +36,9 @@ impl Clone for DisconnectProperties {
 impl PacketProperties for DisconnectProperties {
     fn size_of(&self) -> u32 {
         let variable_props = self.as_variable_header_properties().unwrap();
-        let fixed_props_size = std::mem::size_of::<u8>();
+        let fixed_props_size =
+            std::mem::size_of::<u16>() + self.id.len() + std::mem::size_of::<u8>();
+
         fixed_props_size as u32 + variable_props.size_of()
     }
 
@@ -64,6 +70,9 @@ impl PacketProperties for DisconnectProperties {
         let mut bytes: Vec<u8> = Vec::new();
         let variable_header_properties = self.as_variable_header_properties()?;
 
+        let id_len = self.id.len() as u16;
+        bytes.extend_from_slice(&id_len.to_be_bytes());
+        bytes.extend_from_slice(self.id.as_bytes());
         bytes.push(self.disconnect_reason_code);
         bytes.extend_from_slice(&variable_header_properties.as_bytes());
 
@@ -71,7 +80,9 @@ impl PacketProperties for DisconnectProperties {
     }
 
     fn read_from(stream: &mut dyn Read) -> Result<Self, Error> {
-        //fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
+        let id_len = read_two_byte_integer(stream)?;
+        let id = read_utf8_encoded_string(stream, id_len)?;
+
         let disconnect_reason_code = read_byte(stream)?;
         let variable_header_properties = VariableHeaderProperties::read_from(stream)?;
 
@@ -99,6 +110,7 @@ impl PacketProperties for DisconnectProperties {
         }
 
         Ok(DisconnectProperties {
+            id,
             disconnect_reason_code,
             session_expiry_interval,
             reason_string,

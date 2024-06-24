@@ -36,6 +36,7 @@ pub enum MqttClientActions {
     SendSubscribe(Vec<TopicFilter>),
     SendUnsubscribe(Vec<String>),
     SendDisconnect(String, ReasonCode),
+    ReceiveWillMessage(String),
     SendPinreq,
     AcknowledgePublish(String, u8),
     AcknowledgeSubscribe(String, Vec<u8>),
@@ -104,6 +105,13 @@ impl fmt::Display for MqttClientActions {
                     f,
                     "DISCONNECT - Cliente se desconectó de '{}' por: {}",
                     addrs, reason_code
+                )
+            }
+            MqttClientActions::ReceiveWillMessage(topic) => {
+                write!(
+                    f,
+                    "DISCONNECT - Cliente recibió Will Message del topico: '{}'",
+                    topic
                 )
             }
             MqttClientActions::ReceiveDisconnect(reason_code) => {

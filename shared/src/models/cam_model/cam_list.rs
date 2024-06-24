@@ -1,8 +1,6 @@
 use std::fmt::Display;
 
-use crate::models::coordenates::Coordenates;
-
-use super::cam::{Cam, CamState};
+use super::cam::Cam;
 
 //use rand::Rng;
 use walkers::Position;
@@ -44,17 +42,7 @@ impl CamList {
         bytes.extend_from_slice(cams_len.to_be_bytes().as_ref());
 
         for cam in &self.cams {
-            bytes.push(cam.id);
-            bytes.extend_from_slice(cam.location.latitude.to_be_bytes().as_ref());
-            bytes.extend_from_slice(cam.location.longitude.to_be_bytes().as_ref());
-
-            let state = match cam.state {
-                CamState::SavingEnergy => 0,
-                CamState::Alert => 1,
-                CamState::Removed => 2,
-            };
-            bytes.push(state);
-            bytes.push(cam.incidents_covering);
+            bytes.extend_from_slice(&cam.as_bytes());
         }
 
         bytes
@@ -78,105 +66,84 @@ impl CamList {
         index += 2;
 
         for _ in 0..cams_len {
-            let id = bytes[index];
-            index += 1;
-
-            let latitude = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
-            index += 8;
-            let longitude = f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
-            index += 8;
-
-            let state = match bytes[index] {
-                0 => CamState::SavingEnergy,
-                1 => CamState::Alert,
-                2 => CamState::Removed,
-                _ => panic!("Invalid state"),
-            };
-            index += 1;
-
-            let incidents_covering = bytes[index];
-            index += 1;
-
-            cams.push(Cam {
-                id,
-                location: Coordenates {
-                    latitude,
-                    longitude,
-                },
-                state,
-                incidents_covering,
-            });
+            let cam = Cam::from_be_bytes(bytes[index..index + Cam::len_in_bytes()].into());
+            index += Cam::len_in_bytes();
+            cams.push(cam);
         }
 
         CamList { cams }
     }
 
-    pub fn generate_cams() -> Self {
-        let mut cams = Vec::new();
+    pub fn get_positions(&self) -> Vec<Position> {
+        self.cams.iter().map(|cam| cam.location).collect()
+    }
+}
 
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::models::cam_model::cam::CamState;
+
+    #[test]
+    fn test_serialization() {
         let cam1 = Cam {
-            id: 1,
-            location: Coordenates {
-                latitude: -34.581568266649754,
-                longitude: -58.4744644927824,
-            },
+            id: 0,
+            location: Position::from_lat_lon(-34.581568266649754, -58.4744644927824),
             state: CamState::SavingEnergy,
             incidents_covering: 0,
         };
 
         let cam2 = Cam {
-            id: 2,
-            location: Coordenates {
-                latitude: -34.631345851866776,
-                longitude: -58.41585822580699,
-            },
-            state: CamState::SavingEnergy,
+            id: 1,
+            location: Position::from_lat_lon(-34.631345851866776, -58.41585822580699),
+            state: CamState::Removed,
             incidents_covering: 0,
         };
 
         let cam3 = Cam {
-            id: 3,
-            location: Coordenates {
-                latitude: -34.61863371802939,
-                longitude: -58.45012545762901,
-            },
-            state: CamState::SavingEnergy,
+            id: 2,
+            location: Position::from_lat_lon(-34.61863371802939, -58.45012545762901),
+            state: CamState::Alert,
             incidents_covering: 0,
         };
 
-        let cam4 = Cam {
-            id: 4,
-            location: Coordenates {
-                latitude: -34.58153624609583,
-                longitude: -58.42089675544147,
-            },
-            state: CamState::SavingEnergy,
-            incidents_covering: 0,
+        let cam_list = CamList {
+            cams: vec![cam1, cam2, cam3],
         };
 
-        let cam5 = Cam {
-            id: 5,
-            location: Coordenates {
-                latitude: -34.608203436360505,
-                longitude: -58.37366305468922,
-            },
-            state: CamState::SavingEnergy,
-            incidents_covering: 0,
-        };
+        let bytes = cam_list.as_bytes();
+        let new_cam_list = CamList::from_be_bytes(bytes);
 
-        cams.push(cam1);
-        cams.push(cam2);
-        cams.push(cam3);
-        cams.push(cam4);
-        cams.push(cam5);
+        assert_eq!(cam_list.cams[0].id, new_cam_list.cams[0].id);
+        assert_eq!(cam_list.cams[0].location, new_cam_list.cams[0].location);
+        assert_eq!(cam_list.cams[0].state, new_cam_list.cams[0].state);
+        assert_eq!(
+            cam_list.cams[0].incidents_covering,
+            new_cam_list.cams[0].incidents_covering
+        );
 
-        CamList { cams }
-    }
+        assert_eq!(cam_list.cams[1].id, new_cam_list.cams[1].id);
+        assert_eq!(cam_list.cams[1].location, new_cam_list.cams[1].location);
+        assert_eq!(cam_list.cams[1].state, new_cam_list.cams[1].state);
+        assert_eq!(
+            cam_list.cams[1].incidents_covering,
+            new_cam_list.cams[1].incidents_covering
+        );
 
-    pub fn get_positions(&self) -> Vec<Position> {
-        self.cams
-            .iter()
-            .map(|cam| Position::from_lat_lon(cam.location.latitude, cam.location.longitude))
-            .collect()
+        assert_eq!(cam_list.cams[2].id, new_cam_list.cams[2].id);
+        assert_eq!(cam_list.cams[2].location, new_cam_list.cams[2].location);
+        assert_eq!(cam_list.cams[2].state, new_cam_list.cams[2].state);
+        assert_eq!(
+            cam_list.cams[2].incidents_covering,
+            new_cam_list.cams[2].incidents_covering
+        );
     }
 }
+
+/*
+    add;-34.581568266649754;-58.4744644927824
+    add;-34.631345851866776;-58.41585822580699
+    add;-34.61863371802939;-58.45012545762901
+    add;-34.58153624609583;-58.42089675544147
+    add;-34.608203436360505;-58.37366305468922
+*/

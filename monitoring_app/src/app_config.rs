@@ -3,6 +3,8 @@ use std::{
     io::{Error, ErrorKind},
 };
 
+use mqtt::config::{client_config::ClientConfig, mqtt_config::Config};
+use shared::will_message::serialize_will_message_payload;
 use walkers::Position;
 
 pub struct MonitoringAppConfig {
@@ -11,7 +13,15 @@ pub struct MonitoringAppConfig {
     pub cam_icon_path: String,
     pub cam_alert_icon_path: String,
     pub inc_icon_path: String,
+    pub drone_icon_path: String,
+    pub drone_alert_icon_path: String,
+    pub drone_back_icon_path: String,
+    pub drone_resolving_icon_path: String,
+    pub drone_low_battery_icon_path: String,
+    pub drone_charging_icon_path: String,
+    pub drone_central_icon_path: String,
     pub db_path: String,
+    pub mqtt_config: ClientConfig,
 }
 
 impl MonitoringAppConfig {
@@ -23,7 +33,15 @@ impl MonitoringAppConfig {
         let mut cam_icon_path = String::new();
         let mut cam_alert_icon_path = String::new();
         let mut inc_icon_path = String::new();
+        let mut drone_icon_path = String::new();
+        let mut drone_alert_icon_path = String::new();
+        let mut drone_back_icon_path = String::new();
+        let mut drone_resolving_icon_path = String::new();
+        let mut drone_low_battery_icon_path = String::new();
+        let mut drone_charging_icon_path = String::new();
+        let mut drone_central_icon_path = String::new();
         let mut db_path = String::new();
+        let mut mqtt_config_path = String::new();
 
         for line in contents.lines() {
             let parts: Vec<&str> = line.split(':').collect();
@@ -62,8 +80,32 @@ impl MonitoringAppConfig {
                 "inc_icon_path" => {
                     inc_icon_path = parts[1].trim().to_string();
                 }
+                "drone_icon_path" => {
+                    drone_icon_path = parts[1].trim().to_string();
+                }
+                "drone_alert_icon_path" => {
+                    drone_alert_icon_path = parts[1].trim().to_string();
+                }
+                "drone_back_icon_path" => {
+                    drone_back_icon_path = parts[1].trim().to_string();
+                }
+                "drone_resolving_icon_path" => {
+                    drone_resolving_icon_path = parts[1].trim().to_string();
+                }
+                "drone_low_battery_icon_path" => {
+                    drone_low_battery_icon_path = parts[1].trim().to_string();
+                }
+                "drone_charging_icon_path" => {
+                    drone_charging_icon_path = parts[1].trim().to_string();
+                }
+                "drone_central_icon_path" => {
+                    drone_central_icon_path = parts[1].trim().to_string();
+                }
                 "db_path" => {
                     db_path = parts[1].trim().to_string();
+                }
+                "mqtt_config" => {
+                    mqtt_config_path = parts[1].trim().to_string();
                 }
                 _ => (),
             }
@@ -81,13 +123,27 @@ impl MonitoringAppConfig {
 
             let initial_position = Position::from_lat_lon(initial_lat, initial_lon);
 
+            let mut mqtt_config = ClientConfig::from_file(mqtt_config_path)?;
+            mqtt_config.set_will_message(
+                "inc".to_string(),
+                serialize_will_message_payload(mqtt_config.general.id.clone()),
+            );
+
             return Ok(MonitoringAppConfig {
                 initial_position,
                 app_icon_path,
                 cam_icon_path,
                 cam_alert_icon_path,
                 inc_icon_path,
+                drone_icon_path,
+                drone_alert_icon_path,
+                drone_back_icon_path,
+                drone_resolving_icon_path,
+                drone_low_battery_icon_path,
+                drone_charging_icon_path,
+                drone_central_icon_path,
                 db_path,
+                mqtt_config,
             });
         }
 

@@ -2,5 +2,5 @@
 
 members = [ "broker", "central_cams_system", "logger", "monitoring_app",
 	"mqtt", "shared", "logger"
-]
+, "drone_app"]
 resolver = "2"

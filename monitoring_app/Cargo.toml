@@ -9,6 +9,7 @@ edition = "2021"
 mqtt = { path = "../mqtt" }
 shared = { path = "../shared" }
 logger = { path = "../logger" }
+drone_app = { path = "../drone_app"}
 
 image = "0.25.1"
 eframe = "0.27.2"

@@ -12,3 +12,6 @@ publish_dup: false
 publish_qos: 1
 publish_retain: false 
 subscribe_max_qos: 1
+cert_path: data/certificates/identity.pfx
+cert_pass: 1234
+domain_name: server

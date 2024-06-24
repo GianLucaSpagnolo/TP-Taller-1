@@ -4,3 +4,6 @@ port: 6000
 maximum_threads: 20
 log_path: log_server.tmp
 log_in_terminal: false
+cert_path: data/certificates/identity.pfx
+cert_pass: 1234
+domain_name: server

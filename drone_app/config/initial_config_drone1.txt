@@ -1,0 +1,9 @@
+distancia_maxima_alcance: 0.015
+duracion_de_bateria: 100
+initial_lat: -34.6177712
+initial_lon: -58.4426488
+charging_station_lat: -34.6
+charging_station_lon: -58.4
+id: 0
+db_path: drone_app/config/drone1.db
+mqtt_drone_config: drone_app/config/drone_config1.txt

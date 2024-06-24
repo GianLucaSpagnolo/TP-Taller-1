@@ -21,6 +21,7 @@ use crate::{
     },
 };
 
+use super::client_connector::connect;
 use super::client_listener::MqttClientListener;
 
 /// ## MqttClient
@@ -103,26 +104,28 @@ fn receive_connack_packet(stream: &mut TcpStream) -> Result<Connack, Error> {
 /// ### Retorno
 /// Resultado de la operación.
 ///
-fn stablish_tcp_connection(
+fn stablish_tls_connection(
     config: &ClientConfig,
     client_id: &String,
     logger: &Logger,
 ) -> Result<TcpStream, Error> {
-    //let logger = create_logger_handler(&log_path)?;
+    let address = config.get_socket_address().to_string();
+    let srv_name = &config.general.srv_name;
 
-    let stream = match TcpStream::connect(config.get_socket_address()) {
-        Ok(stream) => stream,
+    match connect(&address, srv_name) {
+        Ok(mut stream) => Ok(stream.get_mut().try_clone().unwrap()),
         Err(e) => {
             logger.log_event(
                 &("Error al conectar con servidor: ".to_string() + &e.to_string()),
                 client_id,
             );
-            //logger.close();
-            return Err(e);
+
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("TLS error de conexion: {}", e),
+            ))
         }
-    };
-    //logger.close();
-    Ok(stream)
+    }
 }
 
 /// ## send_connect_packet
@@ -139,7 +142,7 @@ fn stablish_tcp_connection(
 ///
 /// ### Retorno
 /// Resultado de la operación.
-
+///
 fn send_connect_packet(
     client_id: &String,
     log_path: String,
@@ -211,10 +214,12 @@ impl MqttClient {
 
         let payload = ConnectPayload {
             client_id: config.general.id.clone(),
+            will_topic: config.will_topic.clone(),
+            will_payload: config.will_payload.clone(),
             ..Default::default()
         };
 
-        let mut stream = match stablish_tcp_connection(&config, &client_id, &logger) {
+        let mut stream = match stablish_tls_connection(&config, &client_id, &logger) {
             Ok(s) => s,
             Err(e) => {
                 logger.close();
@@ -225,7 +230,7 @@ impl MqttClient {
 
         send_connect_packet(&client_id, log_path, &mut stream, payload, &config)?;
 
-        let current_packet_id = 0;
+        let current_packet_id = 1;
 
         let client = MqttClient {
             config,
@@ -397,6 +402,7 @@ impl MqttClient {
         }
 
         let properties = DisconnectProperties {
+            id: self.config.general.id.clone(),
             disconnect_reason_code,
             session_expiry_interval: None,
             reason_string: None,

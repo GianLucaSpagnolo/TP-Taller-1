@@ -1,13 +1,11 @@
-use std::collections::HashMap;
 use std::io::Error;
-use std::net::{TcpListener, TcpStream};
+use std::net::TcpStream;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use logger::logger_handler::{create_logger_handler, Logger};
+use logger::logger_handler::Logger;
 
-use crate::common::reason_codes::ReasonCode;
 use crate::config::{mqtt_config::Config, server_config::ServerConfig};
 use crate::logging::actions::MqttActions;
 use crate::logging::server_actions::MqttServerActions;
@@ -15,11 +13,13 @@ use crate::mqtt_packets::headers::fixed_header::PacketFixedHeader;
 use crate::mqtt_packets::packet::generic_packet::{get_packet, PacketReceived, Serialization};
 use crate::mqtt_packets::packets::pingresp::PingResp;
 
+use super::server_connector::TlsServerConnector;
 use super::server_handlers::{
     connect_handler, disconnect_handler, publish_handler, subscribe_handler, unsubscribe_handler,
 };
-use super::server_session::Session;
-// ver caso logger en drop ...
+
+use super::server_network::ServerNetwork;
+use super::server_register::SessionRegister;
 
 /// ## MqttServer
 ///
@@ -32,7 +32,8 @@ use super::server_session::Session;
 ///
 pub struct MqttServer {
     pub config: ServerConfig,
-    pub sessions: HashMap<String, Session>,
+    pub register: SessionRegister,
+    pub network: ServerNetwork,
     pub connect_received: bool,
 }
 
@@ -40,7 +41,8 @@ impl Clone for MqttServer {
     fn clone(&self) -> Self {
         MqttServer {
             config: self.config.clone(),
-            sessions: self.sessions.clone(),
+            register: self.register.clone(),
+            network: self.network.clone(),
             connect_received: self.connect_received,
         }
     }
@@ -61,7 +63,6 @@ pub fn message_catcher(
     mut stream: TcpStream,
     sender: Arc<Mutex<Sender<(PacketReceived, TcpStream)>>>,
 ) -> Result<(), Error> {
-    // averiguo el tipo de paquete:
     let sender = sender.lock().unwrap().clone();
 
     let fixed_header = PacketFixedHeader::read_from(&mut stream)?;
@@ -91,11 +92,28 @@ pub fn message_catcher(
 /// - `sender`: Sender del servidor (envia los mensajes para que sean procesados)
 ///
 fn client_handler(
-    listener: TcpListener,
+    //listener: TcpListener,
+    server_connector: TlsServerConnector,
     sender: Arc<Mutex<Sender<(PacketReceived, TcpStream)>>>,
 ) -> Result<(), Error> {
+    let listener = server_connector.get_listener().unwrap();
+    let srv_cpy = Arc::new(server_connector);
+
     for client_stream in listener.incoming() {
-        let stream = client_stream?.try_clone()?;
+        let client_stream = match client_stream {
+            Err(e) => return Err(e),
+            Ok(client_stream) => client_stream,
+        };
+
+        let srv = srv_cpy.clone();
+        //let srv = srv_cpy.clone();
+        let mut stream = srv
+            .accept_tls_connection(client_stream)
+            .expect("error al aceptar conexion");
+
+        let stream = stream.get_mut();
+
+        let stream = stream.try_clone()?;
         let sender_clone = Arc::clone(&sender);
         thread::spawn(move || -> Result<(), Error> {
             loop {
@@ -104,6 +122,7 @@ fn client_handler(
             }
         });
     }
+
     Ok(())
 }
 
@@ -116,9 +135,13 @@ impl MqttServer {
     /// - `config`: Configuración del servidor
     ///
     pub fn new(config: ServerConfig) -> Self {
+        let register = SessionRegister::new(config.db_path.clone());
+        let network = ServerNetwork::default();
+
         MqttServer {
             config,
-            sessions: HashMap::new(),
+            register,
+            network,
             connect_received: false,
         }
     }
@@ -134,18 +157,33 @@ impl MqttServer {
         let id = self.config.general.id.clone();
         let logger_cpy = logger.clone();
 
-        let listener = match TcpListener::bind(self.config.get_socket_address()) {
-            Ok(lis) => lis,
-            Err(e) => {
-                logger_cpy.log_event(
-                    &("Error al conectar con servidor: ".to_string() + &e.to_string()),
-                    &self.config.general.id,
-                );
-                logger_cpy.close();
-                logger.close();
-                return Err(e);
-            }
-        };
+        self.register.log_sessions(
+            &self.config.general.id,
+            &self.config.general.log_in_term,
+            &logger,
+        );
+
+        let address = self.config.get_socket_address().to_string();
+        let cert_path = self.config.general.cert_path.clone();
+        let cert_pass = self.config.general.cert_pass.clone();
+        let server_connector =
+            match TlsServerConnector::initialize(&cert_path, &cert_pass, &address) {
+                Ok(srv) => srv,
+                Err(e) => {
+                    logger_cpy.log_event(
+                        &("Error al conectar con servidor: ".to_string() + &e.to_string()),
+                        &self.config.general.id,
+                    );
+                    logger_cpy.close();
+                    logger.close();
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("TLS error de conexion: {}", e),
+                    ));
+                }
+            };
+
+        //let listener = server_connector.get_listener()?;
 
         let (sender, receiver) = mpsc::channel();
 
@@ -154,12 +192,11 @@ impl MqttServer {
         let receiver = Arc::new(Mutex::new(receiver));
 
         // Iniciando el procesador de mesages que recibe el servidor
-        //self.server_listener_messages(Arc::clone(&receiver), log_path);
-
         self.server_listener_messages(Arc::clone(&receiver), logger_cpy.clone());
 
         // Iniciando el listener de conexiones que recibe el servidor dentro de un thread pool
-        client_handler(listener, Arc::clone(&sender))?;
+        // agregar tls connector
+        client_handler(server_connector, Arc::clone(&sender))?;
 
         logger.log_event(
             &("Cerrando servidor ... no se reciben mas paquetes".to_string()),
@@ -189,10 +226,10 @@ impl MqttServer {
         let (pack, mut stream) = receiver.lock().unwrap().recv().unwrap();
         match pack {
             PacketReceived::Connect(connect_pack) => {
-                connect_handler::stablish_connection(self, stream, *connect_pack)
+                connect_handler::stablish_connection(self, stream, *connect_pack, logger)
             }
             PacketReceived::Disconnect(disconnect_pack) => {
-                disconnect_handler::receive_disconnect(stream, *disconnect_pack)
+                disconnect_handler::receive_disconnect(self, *disconnect_pack, logger)
             }
             PacketReceived::Publish(pub_packet) => {
                 publish_handler::resend_publish_to_subscribers(self, stream, *pub_packet, logger)
@@ -258,35 +295,5 @@ impl MqttServer {
             }
         });
         logger.close();
-    }
-}
-
-// no se puede extender drop, necesita crear su logger
-impl Drop for MqttServer {
-    fn drop(&mut self) {
-        let logger_handler = create_logger_handler(&self.config.general.log_path).unwrap();
-        let logger = logger_handler.get_logger();
-        for (_, session) in self.sessions.iter_mut() {
-            match disconnect_handler::send_disconnect(
-                &mut session.stream_connection,
-                ReasonCode::Success,
-            ) {
-                Ok(a) => a.log_action(
-                    &self.config.general.id,
-                    &logger,
-                    &self.config.general.log_in_term,
-                ),
-                Err(e) => eprintln!("Error al enviar el paquete de desconexión: {}", e),
-            };
-            let _ = session.disconnect();
-        }
-
-        MqttServerActions::CloseServer.log_action(
-            &self.config.general.id,
-            &logger,
-            &self.config.general.log_in_term,
-        );
-        logger.close();
-        logger_handler.close();
     }
 }

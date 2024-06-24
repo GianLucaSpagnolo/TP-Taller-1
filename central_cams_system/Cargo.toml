@@ -10,6 +10,8 @@ mqtt = { path = "../mqtt" }
 shared = { path = "../shared" }
 logger = { path = "../logger" }
 
+walkers = "0.22.0"
+
 [[bin]]
 name = "cams_system"
 path = "src/main.rs"

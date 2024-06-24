@@ -1,5 +1,6 @@
 use std::{fs, io::Error};
 
+use central_cams_system::cams_system_config::CamSystemConfig;
 use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
 use shared::models::{
@@ -7,25 +8,20 @@ use shared::models::{
         cam::{Cam, CamState},
         cam_list::CamList,
     },
-    coordenates::Coordenates,
     inc_model::incident::Incident,
 };
+use walkers::Position;
 
 pub struct CamsSystem {
     pub system: CamList,
-    pub range_alert: f64,
-    pub range_alert_between_cameras: f64,
-    pub db_path: String,
+    pub config: CamSystemConfig,
 }
 
 impl CamsSystem {
-    pub fn init(
-        range_alert: f64,
-        range_alert_between_cameras: f64,
-        db_path: String,
-    ) -> Result<Self, Error> {
+    pub fn init(path: String) -> Result<Self, Error> {
+        let config = CamSystemConfig::from_file(path)?;
 
-        let bytes = match fs::read(&db_path) {
+        let bytes = match fs::read(&config.db_path) {
             Ok(bytes) => bytes,
             Err(_) => Vec::new(),
         };
@@ -36,12 +32,7 @@ impl CamsSystem {
             CamList::from_be_bytes(bytes)
         };
 
-        Ok(CamsSystem {
-            system,
-            range_alert,
-            range_alert_between_cameras,
-            db_path,
-        })
+        Ok(CamsSystem { system, config })
     }
 
     pub fn add_new_camara(&mut self, cam: Cam) -> Cam {
@@ -71,7 +62,7 @@ impl CamsSystem {
         Ok(cam)
     }
 
-    pub fn modify_cam_position(&mut self, id: u8, new_pos: Coordenates) -> Result<Cam, Error> {
+    pub fn modify_cam_position(&mut self, id: u8, new_pos: Position) -> Result<Cam, Error> {
         match self.system.cams.iter_mut().find(|cam| cam.id == id) {
             Some(cam) => {
                 if cam.state == CamState::Alert {
@@ -80,8 +71,7 @@ impl CamsSystem {
                         "ERROR - No se puede modificar la posición de una cámara en modo alerta",
                     ));
                 }
-                cam.location.latitude = new_pos.latitude;
-                cam.location.longitude = new_pos.longitude;
+                cam.location = new_pos;
                 Ok(cam.clone())
             }
             None => Err(Error::new(
@@ -93,14 +83,14 @@ impl CamsSystem {
 
     pub fn modify_cameras_state(
         &mut self,
-        incident_location: Coordenates,
+        incident_location: Position,
         new_state: CamState,
     ) -> Vec<Cam> {
         let mut modified_cams = Vec::new();
 
         for cam in self.system.cams.iter_mut() {
-            if (incident_location.latitude - cam.location.latitude).abs() < self.range_alert
-                && (incident_location.longitude - cam.location.longitude).abs() < self.range_alert
+            if (incident_location.lat() - cam.location.lat()).abs() < self.config.range_alert
+                && (incident_location.lon() - cam.location.lon()).abs() < self.config.range_alert
             {
                 match new_state {
                     CamState::Alert => {
@@ -126,10 +116,10 @@ impl CamsSystem {
 
         for cam in self.system.cams.iter_mut() {
             for modified_cam in &modified_cams {
-                if (modified_cam.location.latitude - cam.location.latitude).abs()
-                    < self.range_alert_between_cameras
-                    && (modified_cam.location.longitude - cam.location.longitude).abs()
-                        < self.range_alert_between_cameras
+                if (modified_cam.location.lat() - cam.location.lat()).abs()
+                    < self.config.range_alert_between_cameras
+                    && (modified_cam.location.lon() - cam.location.lon()).abs()
+                        < self.config.range_alert_between_cameras
                 {
                     if !modified_cams.contains(cam) && new_state == CamState::Alert {
                         cam.incidents_covering += 1;
@@ -168,10 +158,10 @@ impl CamsSystem {
         incident: Incident,
         logger: &Logger,
     ) {
-        let modified_cams = self.modify_cameras_state(incident.location.clone(), CamState::Alert);
+        let modified_cams = self.modify_cameras_state(incident.location, CamState::Alert);
 
         let bytes = self.system.as_bytes();
-        fs::write(self.db_path.clone(), bytes).unwrap();
+        fs::write(self.config.db_path.clone(), bytes).unwrap();
 
         for cam in modified_cams {
             match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {
@@ -192,11 +182,10 @@ impl CamsSystem {
         incident: Incident,
         logger: &Logger,
     ) {
-        let modified_cams =
-            self.modify_cameras_state(incident.location.clone(), CamState::SavingEnergy);
+        let modified_cams = self.modify_cameras_state(incident.location, CamState::SavingEnergy);
 
         let bytes = self.system.as_bytes();
-        fs::write(self.db_path.clone(), bytes).unwrap();
+        fs::write(self.config.db_path.clone(), bytes).unwrap();
 
         for cam in modified_cams {
             match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {

@@ -29,6 +29,9 @@ use super::actions::MqttActions;
 pub enum MqttServerActions {
     Connection(String),
     SendDisconnect(ReasonCode),
+    SendWillMessage(String, Vec<String>),
+    NoSendWillMessage(),
+    ErrorWhileSendingWillMessage(),
     SendPublish(String, Vec<String>),
     SendPuback(String),
     ReceivePublish(String),
@@ -40,6 +43,12 @@ pub enum MqttServerActions {
     ReceivePingReq,
     SendPingResp,
     CloseServer,
+    RecoverSessions(Vec<String>),
+    CreateSession(String),
+    ReconnectSession(String),
+    DisconnectSession(String),
+    SendToQueueSession(String),
+    SendPendingMessage(String),
 }
 
 impl fmt::Display for MqttServerActions {
@@ -115,6 +124,19 @@ impl fmt::Display for MqttServerActions {
                 "DISCONNECT - Servidor recibió una desconección debido a: [{}]",
                 reason_code
             ),
+            MqttServerActions::SendWillMessage(topic, receivers) => {
+                write!(
+                    f,
+                    "DISCONNECT - Servidor envió mensaje de voluntad del topico '{}' a los clientes {:?}",
+                    topic, receivers
+                )
+            }
+            MqttServerActions::NoSendWillMessage() => {
+                write!(f, "DISCONNECT - Servidor no envió mensaje de voluntad")
+            }
+            MqttServerActions::ErrorWhileSendingWillMessage() => {
+                write!(f, "DISCONNECT - No se ha podido enviar mensaje de voluntad")
+            }
             MqttServerActions::CloseServer => write!(f, "SHUTDOWN - Servidor apagandose"),
             MqttServerActions::SendPingResp => {
                 write!(f, "PINGRESP - Servidor envió respuesta de ping")
@@ -124,6 +146,35 @@ impl fmt::Display for MqttServerActions {
                 write!(
                     f,
                     "SUBACK - Servidor envió confirmación de suscripcion al cliente '{}'",
+                    id
+                )
+            }
+            MqttServerActions::RecoverSessions(sessions) => {
+                let mut msg = "RECOVER - Servidor recuperando sesiones: [ ".to_string();
+                for id in sessions {
+                    msg += " '";
+                    msg += id;
+                    msg += "' ";
+                }
+                msg += " ]";
+                write!(f, "{}", msg)
+            }
+            MqttServerActions::CreateSession(id) => {
+                write!(f, "SESSION - Servidor creando sesión de '{}'", id)
+            }
+            MqttServerActions::ReconnectSession(id) => {
+                write!(f, "SESSION - Servidor reconectando sesión de '{}'", id)
+            }
+            MqttServerActions::DisconnectSession(id) => {
+                write!(f, "SESSION - Servidor desconectando sesión de '{}'", id)
+            }
+            MqttServerActions::SendToQueueSession(id) => {
+                write!(f, "SESSION - Servidor enviando mensajes en cola a '{}'", id)
+            }
+            MqttServerActions::SendPendingMessage(id) => {
+                write!(
+                    f,
+                    "SESSION - Servidor enviando mensaje pendiente a '{}'",
                     id
                 )
             }
