@@ -1,4 +1,3 @@
-use std::time::Duration;
 use std::{
     io::Error,
     sync::{mpsc::Receiver, Arc, Mutex},
@@ -114,38 +113,39 @@ fn process_messages(
                 "drone" => {
                     let dron = Drone::from_be_bytes(&message_received.data);
 
-                    if dron.sending_for_drone {
-                        continue;
-                    }
+                    if !dron.sending_for_drone {
 
-                    let incidents_historial = &mut incident_list.lock().unwrap();
+                        let incidents_historial = &mut incident_list.lock().unwrap();
+                        
+                        let inc_id = dron.id_incident_covering;
 
-                    let inc_id = dron.id_incident_covering;
+                        let drone_state = dron.state.clone();
+                        
+                        let msg = format!("Drone {} - {:?}", dron.id, dron.state);
+                        logger.log_event( &msg, &client.config.general.id);
 
-                    let drone_state = dron.state.clone();
+                        drone_list.lock().unwrap().update_drone(dron);
 
-                    drone_list.lock().unwrap().update_drone(dron);
-                    drone_list
-                        .lock()
-                        .unwrap()
-                        .save(&db_paths.drone_db_path)
-                        .unwrap();
-
-                    if let DroneState::ResolvingIncident = drone_state {
-                        if let Some(inc_id) = inc_id {
-                            let incident = incidents_historial.incidents.get_mut(&inc_id).unwrap();
-                            incident.drones_covering += 1;
-                            if incident.drones_covering == 2 {
-                                thread::sleep(Duration::from_secs(3));
-                                incident.state = IncidentState::Resolved;
-                                incident.drones_covering = 0;
-                                client
-                                    .publish(incident.as_bytes(), "inc".to_string(), &logger)
-                                    .unwrap();
-                            }
+                        if let DroneState::ResolvingIncident = drone_state {
+                            if let Some(inc_id) = inc_id {
+                                let incident = incidents_historial.incidents.get_mut(&inc_id).unwrap();
+                                incident.drones_covering += 1;
+                                if incident.drones_covering == 2 {
+                                    incident.state = IncidentState::Resolved;
+                                    incident.drones_covering = 0;
+                                    client
+                                        .publish(incident.as_bytes(), "inc".to_string(), &logger)
+                                        .unwrap();
+                                }
+                            };
                         };
-                    };
-                    incidents_historial.save(&db_paths.inc_db_path).unwrap();
+                        drone_list
+                            .lock()
+                            .unwrap()
+                            .save(&db_paths.drone_db_path)
+                            .unwrap();
+                        incidents_historial.save(&db_paths.inc_db_path).unwrap();
+                    }
                 }
                 _ => {}
             }

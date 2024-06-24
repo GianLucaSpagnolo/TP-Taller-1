@@ -263,7 +263,7 @@ impl Drone {
     }
 
     pub fn size_of(&self) -> usize {
-        1 + 8 + 8 + 16 + 16 + 16 + 1 + 1
+        1 + 8 + 8 + 16 + 16 + 16 + 1 + 1 + 1
     }
 
     fn is_close_enough(&self, distance: f64) -> bool {
