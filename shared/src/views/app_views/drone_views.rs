@@ -22,7 +22,9 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
             ui.label(egui::RichText::new("Volviendo a posicion").color(egui::Color32::DARK_GREEN));
         } else if let DroneState::ResolvingIncident = drone.state {
             ui.label(egui::RichText::new("Resolviendo incidente").color(egui::Color32::YELLOW));
-        } else {
+        } else if let DroneState::Disconnected = drone.state {
+            ui.label(egui::RichText::new("Desconectado").color(egui::Color32::DARK_GRAY));          
+        }else {
             ui.label(egui::RichText::new("Volviendo a central").color(egui::Color32::GRAY));
         }
     });

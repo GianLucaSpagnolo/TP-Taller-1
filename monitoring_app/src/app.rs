@@ -218,7 +218,11 @@ impl MonitoringApp {
 
         let cam_list_ref = Arc::new(Mutex::new(cam_list));
 
-        let dron_list = DroneList::init(&config.db_paths.drone_db_path);
+        let mut dron_list = DroneList::init(&config.db_paths.drone_db_path);
+
+        for drone in dron_list.drones.iter_mut() {
+            drone.state = DroneState::Disconnected;
+        }
 
         let dron_list_ref = Arc::new(Mutex::new(dron_list));
 

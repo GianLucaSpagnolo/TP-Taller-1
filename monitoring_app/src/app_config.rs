@@ -48,6 +48,7 @@ impl MonitoringAppConfig {
         let mut drone_low_battery_icon_path = String::new();
         let mut drone_charging_icon_path = String::new();
         let mut drone_central_icon_path = String::new();
+        let mut drone_disconnected_icon_path = String::new();
         let mut inc_db_path = String::new();
         let mut cam_db_path = String::new();
         let mut drone_db_path = String::new();
@@ -111,6 +112,9 @@ impl MonitoringAppConfig {
                 "drone_central_icon" => {
                     drone_central_icon_path = parts[1].trim().to_string();
                 }
+                "drone_disconnected_icon" => {
+                    drone_disconnected_icon_path = parts[1].trim().to_string();
+                }
                 "inc_db" => {
                     inc_db_path = parts[1].trim().to_string();
                 }
@@ -170,6 +174,7 @@ impl MonitoringAppConfig {
                         low_battery: drone_low_battery_icon_path,
                         charging: drone_charging_icon_path,
                         central: drone_central_icon_path,
+                        disconnected: drone_disconnected_icon_path,
                     },
                 },
                 db_paths: DBPaths {

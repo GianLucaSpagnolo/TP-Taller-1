@@ -56,6 +56,7 @@ pub struct DroneIcons {
     pub resolving: ColorImage,
     pub low_battery: ColorImage,
     pub charging: ColorImage,
+    pub disconnected: ColorImage,
 }
 
 pub fn drone_images(egui_ctx: Context, drones: &mut DroneList, icons: DroneIcons) -> impl Plugin {
@@ -79,6 +80,8 @@ pub fn drone_images(egui_ctx: Context, drones: &mut DroneList, icons: DroneIcons
                     Texture::from_color_image(icons.low_battery.clone(), &egui_ctx)
                 } else if let DroneState::Charging = drone.state {
                     Texture::from_color_image(icons.charging.clone(), &egui_ctx)
+                } else if let DroneState::Disconnected = drone.state {
+                    Texture::from_color_image(icons.disconnected.clone(), &egui_ctx)
                 } else {
                     Texture::from_color_image(icons.default.clone(), &egui_ctx)
                 };

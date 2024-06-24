@@ -18,6 +18,7 @@ pub enum DroneState {
     ResolvingIncident,
     LowBattery,
     Charging,
+    Disconnected,
 }
 
 #[derive(Debug, Clone)]
@@ -175,6 +176,7 @@ impl Drone {
             DroneState::ResolvingIncident => 3,
             DroneState::LowBattery => 4,
             DroneState::Charging => 5,
+            DroneState::Disconnected => 6,
         };
         bytes.push(state);
 
@@ -223,6 +225,7 @@ impl Drone {
             3 => DroneState::ResolvingIncident,
             4 => DroneState::LowBattery,
             5 => DroneState::Charging,
+            6 => DroneState::Disconnected,
             _ => panic!("Invalid state"),
         };
 
