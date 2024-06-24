@@ -113,7 +113,7 @@ fn stablish_tls_connection(
     let srv_name = &config.general.srv_name;
 
     match connect(&address, srv_name) {
-        Ok(mut stream) => Ok(stream.get_mut().try_clone().unwrap()),
+        Ok(mut stream) => Ok(stream.get_mut().try_clone()?),
         Err(e) => {
             logger.log_event(
                 &("Error al conectar con servidor: ".to_string() + &e.to_string()),
@@ -122,7 +122,7 @@ fn stablish_tls_connection(
 
             Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                format!("TLS error de conexion: {}", e),
+                format!("Error de conexion con el servidor: {}", e),
             ))
         }
     }
