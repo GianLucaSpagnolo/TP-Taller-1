@@ -7,7 +7,7 @@ use mqtt::{
 
 use std::process::ExitCode;
 
-const CONFIG_PATH: &str = "broker/config/broker_config.txt";
+const CONFIG_PATH: &str = "broker/config/mqtt_server_config.txt";
 const AUTH_DATA_PATH: &str = "broker/config/broker_auth_data.txt";
 
 fn main() -> ExitCode {
