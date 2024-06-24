@@ -14,8 +14,10 @@ pub struct DroneInterface {
     pub drone_low_battery_icon: ColorImage,
     pub drone_charging_icon: ColorImage,
     pub drone_central_icon: ColorImage,
+    pub drone_disconnected_icon: ColorImage,
 }
 
+#[derive(Default, Clone)]
 pub struct DroneIconsPath {
     pub default: String,
     pub alert: String,
@@ -24,6 +26,7 @@ pub struct DroneIconsPath {
     pub low_battery: String,
     pub charging: String,
     pub central: String,
+    pub disconnected: String,
 }
 
 impl DroneInterface {
@@ -42,6 +45,8 @@ impl DroneInterface {
             load_image_from_path(std::path::Path::new(&drone_icons_path.charging)).unwrap();
         let drone_central_icon =
             load_image_from_path(std::path::Path::new(&drone_icons_path.central)).unwrap();
+        let drone_disconnected_icon =
+            load_image_from_path(std::path::Path::new(&drone_icons_path.disconnected)).unwrap();
 
         Self {
             drone_list,
@@ -52,6 +57,7 @@ impl DroneInterface {
             drone_low_battery_icon,
             drone_charging_icon,
             drone_central_icon,
+            drone_disconnected_icon,
         }
     }
 }

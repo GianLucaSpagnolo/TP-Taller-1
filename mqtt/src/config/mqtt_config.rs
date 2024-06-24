@@ -84,6 +84,7 @@ pub trait Config<Config = Self> {
 ///
 pub struct MqttConfig {
     pub id: String,
+    pub password: String,
     pub ip: IpAddr,
     pub port: u16,
     pub log_path: String,
@@ -97,6 +98,7 @@ impl Clone for MqttConfig {
     fn clone(&self) -> Self {
         MqttConfig {
             id: self.id.clone(),
+            password: self.password.clone(),
             ip: self.ip,
             port: self.port,
             log_path: self.log_path.clone(),
@@ -112,6 +114,7 @@ impl Config for MqttConfig {
     fn set_params(params: &[(String, String)]) -> Result<Self, Error> {
         // seteo los parametros obligatorios del servidor:
         let mut id = None;
+        let mut password = None;
         let mut ip = None;
         let mut port = None;
         let mut log_path = None;
@@ -124,6 +127,9 @@ impl Config for MqttConfig {
             match param.0.as_str() {
                 "id" => {
                     id = Some(param.1.clone());
+                }
+                "password" => {
+                    password = Some(param.1.clone());
                 }
                 "ip" => {
                     ip = match param.1.parse::<IpAddr>() {
@@ -176,6 +182,7 @@ impl Config for MqttConfig {
 
         match (
             id,
+            password,
             ip,
             port,
             log_path,
@@ -186,6 +193,7 @@ impl Config for MqttConfig {
         ) {
             (
                 Some(id),
+                Some(password),
                 Some(ip),
                 Some(port),
                 Some(log_path),
@@ -195,6 +203,7 @@ impl Config for MqttConfig {
                 Some(cert_pass),
             ) => Ok(MqttConfig {
                 id,
+                password,
                 ip,
                 port,
                 log_path,

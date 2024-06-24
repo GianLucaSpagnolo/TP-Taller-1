@@ -1,12 +1,11 @@
 pub mod interface {
     use std::{
-        fs,
         io::{BufRead, Error},
         sync::{Arc, Mutex},
     };
 
     use logger::logger_handler::Logger;
-    use mqtt::client::mqtt_client::MqttClient;
+    use mqtt::{client::mqtt_client::MqttClient, common::reason_codes::ReasonCode};
     use shared::models::cam_model::cam::{Cam, CamState};
     use walkers::Position;
 
@@ -76,10 +75,9 @@ pub mod interface {
             incidents_covering: 0,
         };
         let added_cam = cam_system.add_new_camara(cam);
-        println!("Camera added: {:?} ", added_cam);
+        println!("Camera added: {} ", added_cam);
 
-        let bytes = cam_system.system.as_bytes();
-        fs::write(cam_system.config.db_path.clone(), bytes)?;
+        cam_system.system.save(&cam_system.config.db_path.clone())?;
         client.publish(added_cam.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
@@ -121,15 +119,14 @@ pub mod interface {
         let mut cam = cam_system.delete_camara(id)?;
         cam.state = CamState::Removed;
         println!(
-            "Cámara eliminada: id:{} - modo:{:?} - latitud:{} - longitud:{}",
+            "Cámara eliminada: id: {} - modo: {:?} - latitud: {} - longitud: {}",
             cam.id,
             cam.state,
             cam.location.lat(),
             cam.location.lon()
         );
 
-        let bytes = cam_system.system.as_bytes();
-        fs::write(cam_system.config.db_path.clone(), bytes)?;
+        cam_system.system.save(&cam_system.config.db_path.clone())?;
 
         client.publish(cam.as_bytes(), "camaras".to_string(), logger)?;
 
@@ -173,8 +170,7 @@ pub mod interface {
         let modified_cam = cam_system.modify_cam_position(id, new_coordenate)?;
         println!("Cámara modificada correctamente");
 
-        let bytes = cam_system.system.as_bytes();
-        fs::write(cam_system.config.db_path.clone(), bytes)?;
+        cam_system.system.save(&cam_system.config.db_path.clone())?;
         client.publish(modified_cam.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
@@ -223,6 +219,14 @@ pub mod interface {
 
                         "help" => {
                             show_menu_options();
+                        }
+
+                        "exit" => {
+                            println!("Saliendo del sistema...");
+                            client
+                                .disconnect(ReasonCode::NormalDisconnection, logger)
+                                .unwrap();
+                            break;
                         }
 
                         _ => {

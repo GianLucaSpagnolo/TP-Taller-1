@@ -1,0 +1,6 @@
+broker_registered_apps: 
+monitoringapp
+camssystem
+drone1
+drone2
+drone3

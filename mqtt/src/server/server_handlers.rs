@@ -4,10 +4,11 @@ pub mod connect_handler {
     use logger::logger_handler::Logger;
 
     use crate::{
+        common::authentication::deserialize_username_password,
         logging::{actions::MqttActions, server_actions::MqttServerActions},
         mqtt_packets::{
             packet::generic_packet::Serialization,
-            packets::{connack::Connack, connect::Connect},
+            packets::{auth::Auth, connack::Connack, connect::Connect},
             properties::connack_properties::ConnackProperties,
         },
         server::{acknowledge_handler, mqtt_server::MqttServer},
@@ -59,6 +60,27 @@ pub mod connect_handler {
         };
         Ok(action)
     }
+
+    pub fn authenticate_client(
+        server: &mut MqttServer,
+        auth: Auth,
+    ) -> Result<MqttServerActions, Error> {
+        if auth.properties.authentication_data.is_none() {
+            return Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - No se recibieron datos de autenticación",
+            ));
+        }
+
+        let (username, password) =
+            deserialize_username_password(auth.properties.authentication_data.unwrap());
+
+        if server.users.contains(&username) && server.config.general.password == password {
+            Ok(MqttServerActions::ValidAuthentication(username))
+        } else {
+            Ok(MqttServerActions::InvalidAuthentication(username))
+        }
+    }
 }
 
 pub mod publish_handler {
@@ -74,6 +96,29 @@ pub mod publish_handler {
         },
         server::{acknowledge_handler, mqtt_server::MqttServer},
     };
+
+    fn send_to_queue_session(
+        id: String,
+        server: &mut MqttServer,
+        pub_packet: Publish,
+        logger: &Logger,
+    ) {
+        MqttServerActions::SendToQueueSession(id.clone()).log_action(
+            &server.config.general.id,
+            logger,
+            &server.config.general.log_in_term,
+        );
+        match server.register.store_message(&id, pub_packet.clone()) {
+            Ok(_) => (),
+            Err(_) => {
+                MqttServerActions::ErrorWhileSendingWillMessage().log_action(
+                    &server.config.general.id,
+                    logger,
+                    &server.config.general.log_in_term,
+                );
+            }
+        }
+    }
 
     /// ### resend_publish_to_subscribers
     ///
@@ -103,27 +148,20 @@ pub mod publish_handler {
 
         let subscribers = server.register.get_subscribers(&topic);
 
-        subscribers.into_iter().for_each(|(id, s)| {
+        subscribers.into_iter().for_each(|(id, mut s)| {
             if s.active {
                 let stream = server.network.connections.get_mut(&id).unwrap();
-                let _ = pub_packet.send(&mut stream.try_clone().unwrap());
-                receivers.push(id.clone());
-            } else {
-                MqttServerActions::SendToQueueSession(id.clone()).log_action(
-                    &server.config.general.id,
-                    logger,
-                    &server.config.general.log_in_term,
-                );
-                match server.register.store_message(&id, pub_packet.clone()) {
-                    Ok(_) => (),
+                match pub_packet.send(stream) {
+                    Ok(_) => {
+                        receivers.push(id.clone());
+                    }
                     Err(_) => {
-                        MqttServerActions::ErrorWhileSendingWillMessage().log_action(
-                            &server.config.general.id,
-                            logger,
-                            &server.config.general.log_in_term,
-                        );
+                        s.disconnect();
+                        send_to_queue_session(id.clone(), server, pub_packet.clone(), logger);
                     }
                 }
+            } else {
+                send_to_queue_session(id.clone(), server, pub_packet.clone(), logger);
             }
         });
 

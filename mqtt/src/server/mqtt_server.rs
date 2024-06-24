@@ -35,6 +35,7 @@ pub struct MqttServer {
     pub register: SessionRegister,
     pub network: ServerNetwork,
     pub connect_received: bool,
+    pub users: Vec<String>,
 }
 
 impl Clone for MqttServer {
@@ -44,6 +45,7 @@ impl Clone for MqttServer {
             register: self.register.clone(),
             network: self.network.clone(),
             connect_received: self.connect_received,
+            users: self.users.clone(),
         }
     }
 }
@@ -134,7 +136,7 @@ impl MqttServer {
     /// ### Parametros
     /// - `config`: Configuración del servidor
     ///
-    pub fn new(config: ServerConfig) -> Self {
+    pub fn new(config: ServerConfig, users: Vec<String>) -> Self {
         let register = SessionRegister::new(config.db_path.clone());
         let network = ServerNetwork::default();
 
@@ -143,6 +145,7 @@ impl MqttServer {
             register,
             network,
             connect_received: false,
+            users,
         }
     }
 
@@ -211,6 +214,17 @@ impl MqttServer {
         ))
     }
 
+    pub fn disconnect(&mut self, logger: &Logger) {
+        self.register
+            .disconnect_all_sessions(&mut self.network, &mut self.config, logger);
+
+        MqttServerActions::CloseServer.log_action(
+            &self.config.general.id,
+            logger,
+            &self.config.general.log_in_term,
+        );
+    }
+
     /// ### process_messages
     ///
     /// Procesa los mensajes recibidos por el servidor
@@ -227,6 +241,9 @@ impl MqttServer {
         match pack {
             PacketReceived::Connect(connect_pack) => {
                 connect_handler::stablish_connection(self, stream, *connect_pack, logger)
+            }
+            PacketReceived::Auth(auth_packet) => {
+                connect_handler::authenticate_client(self, *auth_packet)
             }
             PacketReceived::Disconnect(disconnect_pack) => {
                 disconnect_handler::receive_disconnect(self, *disconnect_pack, logger)

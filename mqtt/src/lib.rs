@@ -67,6 +67,7 @@ pub mod mqtt_packets {
 }
 
 pub mod common {
+    pub mod authentication;
     pub mod data_types;
     pub mod flags;
     pub mod reason_codes;

@@ -24,6 +24,7 @@ pub fn show_map(
         resolving: drones.drone_resolving_icon.clone(),
         low_battery: drones.drone_low_battery_icon.clone(),
         charging: drones.drone_charging_icon.clone(),
+        disconnected: drones.drone_disconnected_icon.clone(),
     };
 
     let mut drones_list = drones.drone_list.lock().unwrap();
@@ -36,6 +37,11 @@ pub fn show_map(
             cams.cam_icon.clone(),
             cams.cam_alert_icon.clone(),
         ))
+        .with_plugin(inc_images(
+            egui_ctx.clone(),
+            &mut inc.inc_historial.lock().unwrap(),
+            inc.inc_icon.clone(),
+        ))
         .with_plugin(drone_images(
             egui_ctx.clone(),
             &mut drones_list,
@@ -45,11 +51,6 @@ pub fn show_map(
             egui_ctx.clone(),
             &mut drones_list,
             drones.drone_central_icon.clone(),
-        ))
-        .with_plugin(inc_images(
-            egui_ctx.clone(),
-            &mut inc.historial.lock().unwrap(),
-            inc.inc_icon.clone(),
         ));
 
     ui.add(map);

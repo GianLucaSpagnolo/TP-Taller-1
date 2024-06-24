@@ -314,8 +314,8 @@ impl Config for ClientConfig {
                     }
                 }
 
-                "id" | "ip" | "port" | "log_path" | "log_in_terminal" | "domain_name"
-                | "cert_path" | "cert_pass" => {}
+                "id" | "password" | "ip" | "port" | "log_path" | "log_in_terminal"
+                | "domain_name" | "cert_path" | "cert_pass" => {}
 
                 _ => {
                     return Err(Error::new(

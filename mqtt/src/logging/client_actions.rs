@@ -28,6 +28,7 @@ use super::actions::MqttActions;
 ///
 pub enum MqttClientActions {
     Connection(String, u8),
+    SendAuthentication(String),
     ReceivePublish(String),
     ReceiveDisconnect(ReasonCode),
     ReceivePinresp,
@@ -41,6 +42,7 @@ pub enum MqttClientActions {
     AcknowledgePublish(String, u8),
     AcknowledgeSubscribe(String, Vec<u8>),
     AcknowledgeUnsubscribe(String, Vec<u8>),
+    AcknowledgeNotReceived,
 }
 
 impl fmt::Display for MqttClientActions {
@@ -53,6 +55,9 @@ impl fmt::Display for MqttClientActions {
                     "CONNACK - Conexion establecida con '{}' - reason code: [{}]",
                     addrs, reason_code
                 )
+            }
+            MqttClientActions::SendAuthentication(user) => {
+                write!(f, "AUTH - Cliente intenta autenticarse como '{}'", user)
             }
             MqttClientActions::ReceivePublish(topic) => write!(
                 f,
@@ -150,6 +155,9 @@ impl fmt::Display for MqttClientActions {
                 msg += "]";
 
                 write!(f, "{}", msg)
+            }
+            MqttClientActions::AcknowledgeNotReceived => {
+                write!(f, "ACKNOWLEDGE - Cliente no recibió confirmación")
             }
             MqttClientActions::ReceivePinresp => {
                 write!(f, "PINGRESP - Cliente recibió respuesta de ping")

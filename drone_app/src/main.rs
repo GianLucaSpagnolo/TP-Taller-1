@@ -1,20 +1,19 @@
 use std::{
     env::args,
-    fs,
-    io::{self, Error},
+    io::Error,
     process,
     sync::{mpsc::Receiver, Arc, Mutex},
     thread::{self, JoinHandle},
     time::Duration,
 };
 
+use drone_app::drone_config::DroneConfig;
 use logger::logger_handler::{create_logger_handler, Logger};
 use mqtt::{
     client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
     config::{client_config::ClientConfig, mqtt_config::Config},
 };
 use shared::models::{drone_model::drone::Drone, inc_model::incident::Incident};
-use walkers::Position;
 
 pub fn process_messages(
     client: &mut MqttClient,
@@ -53,88 +52,18 @@ fn main() -> Result<(), Error> {
         process::exit(1);
     }
 
-    let contents = fs::read_to_string(&args[1])?;
-    let mut config_path = String::new();
-
-    let mut distancia_maxima_alcance: f64 = 0.0;
-    let mut duracion_de_bateria: f64 = 0.0;
-    let mut initial_lat: f64 = 0.0;
-    let mut initial_lon: f64 = 0.0;
-    let mut charging_station_lat: f64 = 0.0;
-    let mut charging_station_lon: f64 = 0.0;
-    let mut id = 0;
-    let mut db_path = String::new();
-    for line in contents.lines() {
-        let parts: Vec<&str> = line.split(':').collect();
-        match parts[0].trim() {
-            "distancia_maxima_alcance" => {
-                distancia_maxima_alcance = parts[1].trim().parse().map_err(|_| {
-                    io::Error::new(io::ErrorKind::InvalidData, "Invalid range_alert value")
-                })?
-            }
-            "duracion_de_bateria" => {
-                duracion_de_bateria = parts[1].trim().parse().map_err(|_| {
-                    io::Error::new(io::ErrorKind::InvalidData, "Invalid battery duration value")
-                })?
-            }
-            "initial_lat" => {
-                initial_lat = parts[1]
-                    .trim()
-                    .parse()
-                    .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid latitude"))?
-            }
-            "initial_lon" => {
-                initial_lon = parts[1]
-                    .trim()
-                    .parse()
-                    .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid longitude"))?
-            }
-            "charging_station_lat" => {
-                charging_station_lat = parts[1]
-                    .trim()
-                    .parse()
-                    .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid latitude"))?
-            }
-            "charging_station_lon" => {
-                charging_station_lon = parts[1]
-                    .trim()
-                    .parse()
-                    .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid longitude"))?
-            }
-            "id" => {
-                id = parts[1]
-                    .trim()
-                    .parse()
-                    .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid id"))?
-            }
-            "db_path" => {
-                db_path = parts[1].trim().to_string();
-            }
-            "mqtt_drone_config" => {
-                config_path = parts[1].trim().to_string();
-            }
-            _ => {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "Invalid configuration file",
-                ))
-            }
-        }
-    }
-
-    let initial_pos = Position::from_lat_lon(initial_lat, initial_lon);
-    let charging_station_pos = Position::from_lat_lon(charging_station_lat, charging_station_lon);
+    let config = DroneConfig::from_file(&args[1])?;
 
     let drone = Drone::init(
-        id,
-        distancia_maxima_alcance,
-        duracion_de_bateria,
-        initial_pos,
-        charging_station_pos,
-        db_path,
+        config.id,
+        config.distancia_maxima_alcance,
+        config.duracion_de_bateria,
+        config.initial_pos,
+        config.charging_station_pos,
+        config.db_path,
     )?;
 
-    let config = ClientConfig::from_file(config_path)?;
+    let config = ClientConfig::from_file(config.mqtt_config_path)?;
 
     let logger_handler = create_logger_handler(&config.general.log_path)?;
     let logger = logger_handler.get_logger();
@@ -147,6 +76,9 @@ fn main() -> Result<(), Error> {
             return Err(e);
         }
     };
+
+    println!("Conectado con MQTT broker");
+    println!("Patruya iniciada...");
 
     match client.subscribe(vec!["inc"], &logger) {
         Ok(r) => r,
@@ -167,7 +99,7 @@ fn main() -> Result<(), Error> {
     };
 
     client
-        .publish(drone.as_bytes(), "drone".to_string(), &logger)
+        .publish(drone.as_bytes(false), "drone".to_string(), &logger)
         .unwrap();
     let drone_ref = Arc::new(Mutex::new(drone));
 

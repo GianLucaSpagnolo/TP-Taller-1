@@ -3,19 +3,20 @@ use std::{io::Error, net::TcpStream};
 use logger::logger_handler::{create_logger_handler, Logger};
 
 use crate::{
-    common::reason_codes::ReasonCode,
+    common::{authentication::serialize_username_password, reason_codes::ReasonCode},
     config::{client_config::ClientConfig, mqtt_config::Config},
     logging::{actions::MqttActions, client_actions::MqttClientActions},
     mqtt_packets::{
         headers::fixed_header::PacketFixedHeader,
         packet::generic_packet::{get_packet, PacketReceived, Serialization},
         packets::{
-            connack::Connack, connect::Connect, disconnect::Disconnect, pingreq::PingReq,
-            publish::Publish, subscribe::Subscribe, unsubscribe::Unsubscribe,
+            auth::Auth, connack::Connack, connect::Connect, disconnect::Disconnect,
+            pingreq::PingReq, publish::Publish, subscribe::Subscribe, unsubscribe::Unsubscribe,
         },
         properties::{
-            connect_payload::ConnectPayload, disconnect_properties::DisconnectProperties,
-            publish_properties::PublishProperties, subscribe_properties::SubscribeProperties,
+            auth_properties, connect_payload::ConnectPayload,
+            disconnect_properties::DisconnectProperties, publish_properties::PublishProperties,
+            subscribe_properties::SubscribeProperties,
             unsubscribe_properties::UnsubscribeProperties,
         },
     },
@@ -113,7 +114,7 @@ fn stablish_tls_connection(
     let srv_name = &config.general.srv_name;
 
     match connect(&address, srv_name) {
-        Ok(mut stream) => Ok(stream.get_mut().try_clone().unwrap()),
+        Ok(mut stream) => Ok(stream.get_mut().try_clone()?),
         Err(e) => {
             logger.log_event(
                 &("Error al conectar con servidor: ".to_string() + &e.to_string()),
@@ -122,7 +123,7 @@ fn stablish_tls_connection(
 
             Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                format!("TLS error de conexion: {}", e),
+                format!("Error de conexion con el servidor: {}", e),
             ))
         }
     }
@@ -193,6 +194,37 @@ fn send_connect_packet(
     Ok(())
 }
 
+fn send_auth_packet(
+    stream: &mut TcpStream,
+    config: &ClientConfig,
+    log_path: String,
+) -> Result<(), Error> {
+    let logger_handler = create_logger_handler(&log_path)?;
+    let logger = logger_handler.get_logger();
+
+    let properties = auth_properties::AuthProperties {
+        reason_code: ReasonCode::Success.get_id(),
+        authentication_data: Some(serialize_username_password(
+            &config.general.id,
+            &config.general.password,
+        )),
+        ..Default::default()
+    };
+
+    let auth_packet = Auth::new(properties);
+    auth_packet.send(stream)?;
+
+    MqttClientActions::SendAuthentication(config.general.id.clone()).log_action(
+        &config.general.id,
+        &logger,
+        &config.general.log_in_term,
+    );
+
+    logger.close();
+    logger_handler.close();
+    Ok(())
+}
+
 impl MqttClient {
     /// ## init
     ///
@@ -228,9 +260,11 @@ impl MqttClient {
             }
         };
 
-        send_connect_packet(&client_id, log_path, &mut stream, payload, &config)?;
+        send_connect_packet(&client_id, log_path.clone(), &mut stream, payload, &config)?;
 
-        let current_packet_id = 1;
+        send_auth_packet(&mut stream, &config, log_path)?;
+
+        let current_packet_id = 2;
 
         let client = MqttClient {
             config,

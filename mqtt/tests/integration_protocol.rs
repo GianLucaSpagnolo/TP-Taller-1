@@ -126,7 +126,9 @@ mod test {
             let log_path = server_config.general.log_path.to_string();
             let logger = create_logger_handler(&log_path).unwrap();
 
-            let server = MqttServer::new(server_config.clone());
+            let users = vec!["app1".to_string()];
+
+            let server = MqttServer::new(server_config.clone(), users);
             if let Err(e) = server.clone().start_server(logger.get_logger()) {
                 logger.close();
                 panic!("Server fails with error: {}", e);
