@@ -41,6 +41,7 @@ pub enum MqttClientActions {
     AcknowledgePublish(String, u8),
     AcknowledgeSubscribe(String, Vec<u8>),
     AcknowledgeUnsubscribe(String, Vec<u8>),
+    AcknowledgeNotReceived,
 }
 
 impl fmt::Display for MqttClientActions {
@@ -150,6 +151,9 @@ impl fmt::Display for MqttClientActions {
                 msg += "]";
 
                 write!(f, "{}", msg)
+            }
+            MqttClientActions::AcknowledgeNotReceived => {
+                write!(f, "ACKNOWLEDGE - Cliente no recibió confirmación")
             }
             MqttClientActions::ReceivePinresp => {
                 write!(f, "PINGRESP - Cliente recibió respuesta de ping")
