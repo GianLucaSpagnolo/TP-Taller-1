@@ -16,6 +16,7 @@ pub struct DroneInterface {
     pub drone_central_icon: ColorImage,
 }
 
+#[derive(Default, Clone)]
 pub struct DroneIconsPath {
     pub default: String,
     pub alert: String,

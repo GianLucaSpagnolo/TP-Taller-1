@@ -214,6 +214,17 @@ impl MqttServer {
         ))
     }
 
+    pub fn disconnect(&mut self, logger: &Logger) {
+        self.register
+            .disconnect_all_sessions(&mut self.network, &mut self.config, logger);
+
+        MqttServerActions::CloseServer.log_action(
+            &self.config.general.id,
+            logger,
+            &self.config.general.log_in_term,
+        );
+    }
+
     /// ### process_messages
     ///
     /// Procesa los mensajes recibidos por el servidor

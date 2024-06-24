@@ -7,12 +7,16 @@ use std::{
 use logger::logger_handler::Logger;
 
 use crate::{
-    common::{flags::flags_handler, topic_filter::TopicFilter},
+    common::{flags::flags_handler, reason_codes::ReasonCode, topic_filter::TopicFilter},
+    config::server_config::ServerConfig,
     logging::{actions::MqttActions, server_actions::MqttServerActions},
     mqtt_packets::packets::{connect::Connect, disconnect::Disconnect, publish::Publish},
 };
 
-use super::{server_network::ServerNetwork, server_session::Session, will_message::WillMessage};
+use super::{
+    server_handlers::disconnect_handler, server_network::ServerNetwork, server_session::Session,
+    will_message::WillMessage,
+};
 
 #[derive(Clone, Default)]
 pub struct SessionRegister {
@@ -204,11 +208,10 @@ impl SessionRegister {
     ) -> Result<MqttServerActions, Error> {
         let client_id = packet.properties.id.clone();
 
-        let mut sessions = self.sessions.clone();
+        let sessions = self.sessions.clone();
 
-        if let Some(session) = sessions.get_mut(&client_id) {
+        let action = if let Some(session) = self.sessions.get_mut(&client_id) {
             session.disconnect();
-            self.save();
 
             MqttServerActions::DisconnectSession(packet.properties.id.clone()).log_action(
                 server_id,
@@ -235,21 +238,50 @@ impl SessionRegister {
                     }
                 });
                 if will_message_sent {
-                    return Ok(MqttServerActions::SendWillMessage(
+                    Ok(MqttServerActions::SendWillMessage(
                         will_message.will_topic,
                         receivers,
-                    ));
+                    ))
                 } else {
-                    return Ok(MqttServerActions::ErrorWhileSendingWillMessage());
+                    Ok(MqttServerActions::ErrorWhileSendingWillMessage())
                 }
             } else {
-                return Ok(MqttServerActions::NoSendWillMessage());
+                Ok(MqttServerActions::NoSendWillMessage())
             }
+        } else {
+            Err(Error::new(
+                std::io::ErrorKind::Other,
+                "Server - Cliente no encontrado",
+            ))
+        };
+
+        self.save();
+        action
+    }
+
+    pub fn disconnect_all_sessions(
+        &mut self,
+        network: &mut ServerNetwork,
+        config: &mut ServerConfig,
+        logger: &Logger,
+    ) {
+        for (id, session) in &mut self.sessions {
+            println!("Intenta desconectar cliente {}", id);
+
+            let stream = match network.connections.get_mut(id) {
+                Some(stream) => stream,
+                None => continue,
+            };
+
+            println!("Desconectando cliente {}", id);
+
+            match disconnect_handler::send_disconnect(stream, ReasonCode::NormalDisconnection) {
+                Ok(a) => a.log_action(&config.general.id, logger, &config.general.log_in_term),
+                Err(e) => eprintln!("Error al enviar el paquete de desconexión: {}", e),
+            };
+            session.disconnect();
         }
-        Err(Error::new(
-            std::io::ErrorKind::Other,
-            "Server - Cliente no encontrado",
-        ))
+        self.save();
     }
 
     pub fn get_pending_messages(&mut self, client_id: &str) -> Option<&mut VecDeque<Publish>> {

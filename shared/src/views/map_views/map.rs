@@ -48,7 +48,7 @@ pub fn show_map(
         ))
         .with_plugin(inc_images(
             egui_ctx.clone(),
-            &mut inc.historial.lock().unwrap(),
+            &mut inc.inc_historial.lock().unwrap(),
             inc.inc_icon.clone(),
         ));
 
