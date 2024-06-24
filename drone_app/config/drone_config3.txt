@@ -1,4 +1,5 @@
 id: drone3
+password: 1234
 ip: 127.0.0.1
 port: 5000
 log_path: data/logs/drone_log.csv
