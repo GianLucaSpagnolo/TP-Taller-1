@@ -75,6 +75,29 @@ pub mod publish_handler {
         server::{acknowledge_handler, mqtt_server::MqttServer},
     };
 
+    fn send_to_queue_session(
+        id: String,
+        server: &mut MqttServer,
+        pub_packet: Publish,
+        logger: &Logger,
+    ) {
+        MqttServerActions::SendToQueueSession(id.clone()).log_action(
+            &server.config.general.id,
+            logger,
+            &server.config.general.log_in_term,
+        );
+        match server.register.store_message(&id, pub_packet.clone()) {
+            Ok(_) => (),
+            Err(_) => {
+                MqttServerActions::ErrorWhileSendingWillMessage().log_action(
+                    &server.config.general.id,
+                    logger,
+                    &server.config.general.log_in_term,
+                );
+            }
+        }
+    }
+
     /// ### resend_publish_to_subscribers
     ///
     /// Reenvia un mensaje a los suscriptores
@@ -103,27 +126,20 @@ pub mod publish_handler {
 
         let subscribers = server.register.get_subscribers(&topic);
 
-        subscribers.into_iter().for_each(|(id, s)| {
+        subscribers.into_iter().for_each(|(id, mut s)| {
             if s.active {
                 let stream = server.network.connections.get_mut(&id).unwrap();
-                let _ = pub_packet.send(&mut stream.try_clone().unwrap());
-                receivers.push(id.clone());
-            } else {
-                MqttServerActions::SendToQueueSession(id.clone()).log_action(
-                    &server.config.general.id,
-                    logger,
-                    &server.config.general.log_in_term,
-                );
-                match server.register.store_message(&id, pub_packet.clone()) {
-                    Ok(_) => (),
+                match pub_packet.send(stream) {
+                    Ok(_) => {
+                        receivers.push(id.clone());
+                    }
                     Err(_) => {
-                        MqttServerActions::ErrorWhileSendingWillMessage().log_action(
-                            &server.config.general.id,
-                            logger,
-                            &server.config.general.log_in_term,
-                        );
+                        s.disconnect();
+                        send_to_queue_session(id.clone(), server, pub_packet.clone(), logger);
                     }
                 }
+            } else {
+                send_to_queue_session(id.clone(), server, pub_packet.clone(), logger);
             }
         });
 
