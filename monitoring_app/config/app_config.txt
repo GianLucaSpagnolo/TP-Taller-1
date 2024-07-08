@@ -7,6 +7,7 @@ drone_db: data/db/app_drones_register.db
 app_icon: monitoring_app/assets/app_icon.png
 cam_icon: monitoring_app/assets/cam.png
 cam_alert_icon: monitoring_app/assets/cam_alert.png
+cam_disconnect_icon: monitoring_app/assets/cam_disconnected.png
 inc_icon: monitoring_app/assets/incident.png
 drone_icon: monitoring_app/assets/drone.png
 drone_alert_icon: monitoring_app/assets/drone_alert.png

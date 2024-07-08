@@ -167,6 +167,7 @@ impl MonitoringApp {
             cam_list_ref,
             &config.icons_paths.cam_icon,
             &config.icons_paths.cam_alert_icon,
+            &config.icons_paths.cam_disconnect_icon,
         );
 
         let drone_icons_path = config.icons_paths.drone_icon_paths.clone();

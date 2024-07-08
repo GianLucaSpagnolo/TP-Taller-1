@@ -14,6 +14,7 @@ pub struct IconsPaths {
     pub app_icon: String,
     pub cam_icon: String,
     pub cam_alert_icon: String,
+    pub cam_disconnect_icon: String,
     pub inc_icon: String,
     pub drone_icon_paths: DroneIconsPath,
 }
@@ -40,6 +41,7 @@ impl MonitoringAppConfig {
         let mut app_icon_path = String::new();
         let mut cam_icon_path = String::new();
         let mut cam_alert_icon_path = String::new();
+        let mut cam_disconnect_icon_path = String::new();
         let mut inc_icon_path = String::new();
         let mut drone_default_icon_path = String::new();
         let mut drone_alert_icon_path = String::new();
@@ -87,6 +89,9 @@ impl MonitoringAppConfig {
                 }
                 "cam_alert_icon" => {
                     cam_alert_icon_path = parts[1].trim().to_string();
+                }
+                "cam_disconnect_icon" => {
+                    cam_disconnect_icon_path = parts[1].trim().to_string();
                 }
                 "inc_icon" => {
                     inc_icon_path = parts[1].trim().to_string();
@@ -165,6 +170,7 @@ impl MonitoringAppConfig {
                     app_icon: app_icon_path,
                     cam_icon: cam_icon_path,
                     cam_alert_icon: cam_alert_icon_path,
+                    cam_disconnect_icon: cam_disconnect_icon_path,
                     inc_icon: inc_icon_path,
                     drone_icon_paths: DroneIconsPath {
                         default: drone_default_icon_path,
