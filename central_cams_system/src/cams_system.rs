@@ -74,7 +74,7 @@ impl CamsSystem {
             {
                 match new_state {
                     CamState::Alert => {
-                        cam.state = new_state.clone();
+                        cam.to_alert();
                         cam.incidents_covering += 1;
                     }
                     CamState::SavingEnergy => {
@@ -83,7 +83,7 @@ impl CamsSystem {
                         }
                         cam.incidents_covering -= 1;
                         if cam.incidents_covering == 0 {
-                            cam.state = new_state.clone();
+                            cam.to_saving_energy();
                         }
                     }
                     _ => {}
@@ -103,7 +103,7 @@ impl CamsSystem {
                 {
                     if !modified_cams.contains(cam) && new_state == CamState::Alert {
                         cam.incidents_covering += 1;
-                        cam.state = new_state.clone();
+                        cam.to_alert();
                         close_cameras_modified.push(cam.clone());
                     }
 
@@ -113,7 +113,7 @@ impl CamsSystem {
                         }
                         cam.incidents_covering -= 1;
                         if cam.incidents_covering == 0 {
-                            cam.state = new_state.clone();
+                            cam.to_saving_energy();
                             close_cameras_modified.push(cam.clone());
                         }
                     }

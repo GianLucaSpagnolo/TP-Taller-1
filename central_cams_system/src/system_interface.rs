@@ -6,7 +6,7 @@ pub mod interface {
 
     use logger::logger_handler::Logger;
     use mqtt::{client::mqtt_client::MqttClient, common::reason_codes::ReasonCode};
-    use shared::models::cam_model::cam::{Cam, CamState};
+    use shared::models::cam_model::cam::Cam;
     use walkers::Position;
 
     use crate::cams_system::CamsSystem;
@@ -63,12 +63,7 @@ pub mod interface {
         let lon = lon.parse().unwrap();
 
         let location = Position::from_lat_lon(lat, lon);
-        let cam = Cam {
-            id,
-            location,
-            state: CamState::SavingEnergy,
-            incidents_covering: 0,
-        };
+        let cam = Cam::new(id, location);
         let added_cam = cam_system.add_new_camara(cam);
         println!("Camera added: {} ", added_cam);
 
@@ -112,7 +107,7 @@ pub mod interface {
         };
 
         let mut cam = cam_system.delete_camara(&id)?;
-        cam.state = CamState::Removed;
+        cam.remove();
         println!(
             "Cámara eliminada: id: {} - modo: {:?} - latitud: {} - longitud: {}",
             cam.id,

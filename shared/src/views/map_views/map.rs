@@ -36,6 +36,7 @@ pub fn show_map(
             &mut cams.cam_list.lock().unwrap(),
             cams.cam_icon.clone(),
             cams.cam_alert_icon.clone(),
+            cams.cam_disconnect_icon.clone(),
         ))
         .with_plugin(inc_images(
             egui_ctx.clone(),

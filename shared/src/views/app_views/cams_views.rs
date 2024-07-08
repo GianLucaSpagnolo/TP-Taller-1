@@ -24,10 +24,13 @@ fn cam_row(mut row: egui_extras::TableRow, cam: &Cam) {
     row.col(|ui| {
         if CamState::Alert == cam.state {
             ui.label(egui::RichText::new("Alerta").color(egui::Color32::RED));
-        } else {
+        } else if CamState::SavingEnergy == cam.state {
             ui.label(egui::RichText::new("Ahorro de energía").color(egui::Color32::GREEN));
+        } else if CamState::Disconnected == cam.state {
+            ui.label(egui::RichText::new("Desconectada").color(egui::Color32::GRAY));
         }
     });
+
     row.col(|ui| {
         ui.label(&format!("{:.1$}", cam.location.lat(), COORDENATE_PRECISION));
     });
@@ -48,8 +51,8 @@ fn cams_list(ui: &mut Ui, cam_list: &CamList) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
         .column(Column::exact(150.0))
-        .column(Column::exact(150.0))
-        .column(Column::exact(150.0))
+        .column(Column::exact(200.0))
+        .column(Column::exact(200.0))
         .header(30.0, |mut header| {
             header.col(|ui| {
                 ui.heading("ID");

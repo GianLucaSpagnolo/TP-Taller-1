@@ -207,7 +207,9 @@ impl MonitoringApp {
     ) -> Result<MonitoringHandler, Error> {
         let listener = client.run_listener()?;
 
-        let cam_list = CamList::init(&config.db_paths.cam_db_path);
+        let mut cam_list = CamList::init(&config.db_paths.cam_db_path);
+
+        cam_list.disconnect_all();
 
         let cam_list_ref = Arc::new(Mutex::new(cam_list));
 

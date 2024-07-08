@@ -86,6 +86,12 @@ impl CamList {
         }
     }
 
+    pub fn disconnect_all(&mut self) {
+        for cam in self.cams.values_mut() {
+            cam.disconnect();
+        }
+    }
+
     pub fn init(db_path: &str) -> Self {
         let bytes = match std::fs::read(db_path) {
             Ok(bytes) => bytes,
@@ -110,30 +116,24 @@ impl CamList {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::models::cam_model::cam::CamState;
 
     #[test]
     fn test_serialization() {
-        let cam1 = Cam {
-            id: 0,
-            location: Position::from_lat_lon(-34.581568266649754, -58.4744644927824),
-            state: CamState::SavingEnergy,
-            incidents_covering: 0,
-        };
+        let cam1 = Cam::new(
+            0,
+            Position::from_lat_lon(-34.581568266649754, -58.4744644927824),
+        );
 
-        let cam2 = Cam {
-            id: 1,
-            location: Position::from_lat_lon(-34.631345851866776, -58.41585822580699),
-            state: CamState::Removed,
-            incidents_covering: 0,
-        };
-
-        let cam3 = Cam {
-            id: 2,
-            location: Position::from_lat_lon(-34.61863371802939, -58.45012545762901),
-            state: CamState::Alert,
-            incidents_covering: 0,
-        };
+        let mut cam2 = Cam::new(
+            1,
+            Position::from_lat_lon(-34.631345851866776, -58.41585822580699),
+        );
+        cam2.to_alert();
+        let mut cam3 = Cam::new(
+            2,
+            Position::from_lat_lon(-34.61863371802939, -58.45012545762901),
+        );
+        cam3.remove();
 
         let mut cams = HashMap::new();
         cams.insert(cam1.id, cam1);

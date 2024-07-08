@@ -25,6 +25,7 @@ pub fn cam_images(
     cams: &mut CamList,
     default_icon: ColorImage,
     alert_icon: ColorImage,
+    disconnect_icon: ColorImage,
 ) -> impl Plugin {
     let angle = 0.0;
     let x_scale = 0.1;
@@ -35,7 +36,9 @@ pub fn cam_images(
             .values()
             .map(|cam| {
                 let pos = cam.location;
-                let texture = if let CamState::Alert = cam.state {
+                let texture = if let CamState::Disconnected = cam.state {
+                    Texture::from_color_image(disconnect_icon.clone(), &egui_ctx)
+                } else if let CamState::Alert = cam.state {
                     Texture::from_color_image(alert_icon.clone(), &egui_ctx)
                 } else {
                     Texture::from_color_image(default_icon.clone(), &egui_ctx)
