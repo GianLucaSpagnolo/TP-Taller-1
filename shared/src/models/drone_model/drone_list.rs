@@ -220,7 +220,7 @@ mod tests {
     #[test]
     fn test_serialization() {
         let dron1 = Drone::init(
-            1,
+            0,
             100.0,
             100.0,
             Position::from_lat_lon(0.0, 0.0),
@@ -230,7 +230,7 @@ mod tests {
         .unwrap();
 
         let dron2 = Drone::init(
-            2,
+            1,
             100.0,
             100.0,
             Position::from_lat_lon(0.0, 0.0),
@@ -240,7 +240,7 @@ mod tests {
         .unwrap();
 
         let dron3 = Drone::init(
-            3,
+            2,
             100.0,
             100.0,
             Position::from_lat_lon(0.0, 0.0),
