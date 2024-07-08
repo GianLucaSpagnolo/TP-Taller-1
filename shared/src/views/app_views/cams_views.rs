@@ -47,9 +47,9 @@ fn cam_row(mut row: egui_extras::TableRow, cam: &Cam) {
 fn cams_list(ui: &mut Ui, cam_list: &CamList) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
-        .column(Column::exact(250.0))
-        .column(Column::exact(250.0))
-        .column(Column::exact(250.0))
+        .column(Column::exact(150.0))
+        .column(Column::exact(150.0))
+        .column(Column::exact(150.0))
         .header(30.0, |mut header| {
             header.col(|ui| {
                 ui.heading("ID");
