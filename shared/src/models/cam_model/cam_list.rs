@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
-use super::cam::Cam;
+use super::cam::{Cam, CamState};
 
 //use rand::Rng;
 use walkers::Position;
@@ -14,13 +14,13 @@ use walkers::Position;
 ///
 #[derive(Default)]
 pub struct CamList {
-    pub cams: Vec<Cam>,
+    pub cams: HashMap<u8, Cam>,
 }
 
 impl Display for CamList {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut str = String::new();
-        for cam in &self.cams {
+        for cam in self.cams.values() {
             str.push_str(&format!("{}\n", cam));
         }
         write!(f, "{}", str)
@@ -41,7 +41,7 @@ impl CamList {
         let cams_len = self.cams.len() as u16;
         bytes.extend_from_slice(cams_len.to_be_bytes().as_ref());
 
-        for cam in &self.cams {
+        for cam in self.cams.values() {
             bytes.extend_from_slice(&cam.as_bytes());
         }
 
@@ -59,7 +59,7 @@ impl CamList {
     /// - `CamList`: Lista de cámaras creada
     ///
     pub fn from_be_bytes(bytes: Vec<u8>) -> Self {
-        let mut cams = Vec::new();
+        let mut cams = HashMap::new();
         let mut index = 0;
 
         let cams_len = u16::from_be_bytes([bytes[index], bytes[index + 1]]);
@@ -68,14 +68,22 @@ impl CamList {
         for _ in 0..cams_len {
             let cam = Cam::from_be_bytes(bytes[index..index + Cam::len_in_bytes()].into());
             index += Cam::len_in_bytes();
-            cams.push(cam);
+            cams.insert(cam.id, cam);
         }
 
         CamList { cams }
     }
 
     pub fn get_positions(&self) -> Vec<Position> {
-        self.cams.iter().map(|cam| cam.location).collect()
+        self.cams.values().map(|cam| cam.location).collect()
+    }
+
+    pub fn update_cam(&mut self, new_cam: Cam) {
+        if CamState::Removed == new_cam.state {
+            self.cams.remove(&new_cam.id);
+        } else {
+            self.cams.insert(new_cam.id, new_cam);
+        }
     }
 
     pub fn init(db_path: &str) -> Self {
@@ -85,7 +93,9 @@ impl CamList {
         };
 
         if bytes.is_empty() {
-            CamList { cams: Vec::new() }
+            CamList {
+                cams: HashMap::new(),
+            }
         } else {
             CamList::from_be_bytes(bytes)
         }
@@ -125,35 +135,65 @@ mod test {
             incidents_covering: 0,
         };
 
-        let cam_list = CamList {
-            cams: vec![cam1, cam2, cam3],
-        };
+        let mut cams = HashMap::new();
+        cams.insert(cam1.id, cam1);
+        cams.insert(cam2.id, cam2);
+        cams.insert(cam3.id, cam3);
+
+        let cam_list = CamList { cams };
 
         let bytes = cam_list.as_bytes();
         let new_cam_list = CamList::from_be_bytes(bytes);
 
-        assert_eq!(cam_list.cams[0].id, new_cam_list.cams[0].id);
-        assert_eq!(cam_list.cams[0].location, new_cam_list.cams[0].location);
-        assert_eq!(cam_list.cams[0].state, new_cam_list.cams[0].state);
         assert_eq!(
-            cam_list.cams[0].incidents_covering,
-            new_cam_list.cams[0].incidents_covering
+            cam_list.cams.get(&0).unwrap().id,
+            new_cam_list.cams.get(&0).unwrap().id
+        );
+        assert_eq!(
+            cam_list.cams.get(&0).unwrap().location,
+            new_cam_list.cams.get(&0).unwrap().location
+        );
+        assert_eq!(
+            cam_list.cams.get(&0).unwrap().state,
+            new_cam_list.cams.get(&0).unwrap().state
+        );
+        assert_eq!(
+            cam_list.cams.get(&0).unwrap().incidents_covering,
+            new_cam_list.cams.get(&0).unwrap().incidents_covering
         );
 
-        assert_eq!(cam_list.cams[1].id, new_cam_list.cams[1].id);
-        assert_eq!(cam_list.cams[1].location, new_cam_list.cams[1].location);
-        assert_eq!(cam_list.cams[1].state, new_cam_list.cams[1].state);
         assert_eq!(
-            cam_list.cams[1].incidents_covering,
-            new_cam_list.cams[1].incidents_covering
+            cam_list.cams.get(&1).unwrap().id,
+            new_cam_list.cams.get(&1).unwrap().id
+        );
+        assert_eq!(
+            cam_list.cams.get(&1).unwrap().location,
+            new_cam_list.cams.get(&1).unwrap().location
+        );
+        assert_eq!(
+            cam_list.cams.get(&1).unwrap().state,
+            new_cam_list.cams.get(&1).unwrap().state
+        );
+        assert_eq!(
+            cam_list.cams.get(&1).unwrap().incidents_covering,
+            new_cam_list.cams.get(&1).unwrap().incidents_covering
         );
 
-        assert_eq!(cam_list.cams[2].id, new_cam_list.cams[2].id);
-        assert_eq!(cam_list.cams[2].location, new_cam_list.cams[2].location);
-        assert_eq!(cam_list.cams[2].state, new_cam_list.cams[2].state);
         assert_eq!(
-            cam_list.cams[2].incidents_covering,
-            new_cam_list.cams[2].incidents_covering
+            cam_list.cams.get(&2).unwrap().id,
+            new_cam_list.cams.get(&2).unwrap().id
+        );
+        assert_eq!(
+            cam_list.cams.get(&2).unwrap().location,
+            new_cam_list.cams.get(&2).unwrap().location
+        );
+        assert_eq!(
+            cam_list.cams.get(&2).unwrap().state,
+            new_cam_list.cams.get(&2).unwrap().state
+        );
+        assert_eq!(
+            cam_list.cams.get(&2).unwrap().incidents_covering,
+            new_cam_list.cams.get(&2).unwrap().incidents_covering
         );
     }
 }

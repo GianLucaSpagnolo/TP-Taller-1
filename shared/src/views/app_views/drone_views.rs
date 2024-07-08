@@ -85,7 +85,7 @@ fn drones_list(ui: &mut Ui, drone_list: &DroneList) {
                     });
                 });
             } else {
-                for drone in &drone_list.drones {
+                for drone in drone_list.drones.values() {
                     body.row(20.0, |row| {
                         drone_row(row, drone);
                     });

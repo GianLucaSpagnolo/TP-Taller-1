@@ -73,7 +73,7 @@ fn main() -> Result<(), Error> {
         }
     };
 
-    for cam in cam_system.system.cams.iter() {
+    for cam in cam_system.system.cams.values() {
         match client.publish(cam.as_bytes(), "camaras".to_string(), &logger) {
             Ok(r) => r,
             Err(e) => {

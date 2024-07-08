@@ -15,10 +15,7 @@ use shared::{
         map_interface::MapInterface,
     },
     models::{
-        cam_model::{
-            cam::{Cam, CamState},
-            cam_list::CamList,
-        },
+        cam_model::{cam::Cam, cam_list::CamList},
         drone_model::{
             drone::{Drone, DroneState},
             drone_list::DroneList,
@@ -98,15 +95,7 @@ fn process_messages(
                     } else {
                         let data = Cam::from_be_bytes(message_received.data);
                         let system_lock = &mut cam_list.lock().unwrap();
-                        if let Some(cam) = system_lock.cams.iter_mut().find(|c| c.id == data.id) {
-                            if data.state != CamState::Removed {
-                                *cam = data;
-                            } else {
-                                system_lock.cams.retain(|c| c.id != data.id);
-                            }
-                        } else {
-                            system_lock.cams.push(data);
-                        }
+                        system_lock.update_cam(data);
                         system_lock.save(&db_paths.cam_db_path).unwrap();
                     }
                 }
@@ -222,11 +211,7 @@ impl MonitoringApp {
 
         let cam_list_ref = Arc::new(Mutex::new(cam_list));
 
-        let mut dron_list = DroneList::init(&config.db_paths.drone_db_path);
-
-        for drone in dron_list.drones.iter_mut() {
-            drone.state = DroneState::Disconnected;
-        }
+        let dron_list = DroneList::init(&config.db_paths.drone_db_path);
 
         let dron_list_ref = Arc::new(Mutex::new(dron_list));
 

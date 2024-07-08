@@ -72,7 +72,7 @@ fn cams_list(ui: &mut Ui, cam_list: &CamList) {
                     });
                 });
             } else {
-                for cam in &cam_list.cams {
+                for cam in cam_list.cams.values() {
                     body.row(20.0, |row| {
                         cam_row(row, cam);
                     });

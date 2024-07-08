@@ -32,7 +32,7 @@ pub fn cam_images(
 
     Images::new(
         cams.cams
-            .iter()
+            .values()
             .map(|cam| {
                 let pos = cam.location;
                 let texture = if let CamState::Alert = cam.state {
@@ -67,7 +67,7 @@ pub fn drone_images(egui_ctx: Context, drones: &mut DroneList, icons: DroneIcons
     Images::new(
         drones
             .drones
-            .iter()
+            .values()
             .map(|drone| {
                 let pos = drone.current_pos;
                 let texture = if let DroneState::GoingToIncident = drone.state {
@@ -106,7 +106,7 @@ pub fn drone_central_images(
     Images::new(
         drones
             .drones
-            .iter()
+            .values()
             .map(|drone| {
                 let pos = drone.charging_station_pos;
                 let texture = Texture::from_color_image(icon.clone(), &egui_ctx);

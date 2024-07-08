@@ -146,8 +146,8 @@ impl Drone {
         drone_received: Drone,
         logger: &Logger,
     ) {
-        if let Some(index) = self.drones.contais(&drone_received) {
-            self.drones.modify(index, drone_received);
+        if self.drones.contais(&drone_received) {
+            self.drones.update_drone(drone_received);
         } else {
             self.drones.add(drone_received);
             client
@@ -274,8 +274,8 @@ impl Drone {
         let mut drones_closer = 0;
 
         for drone in self.drones.get_drones() {
-            if get_distance_to_incident(drone, lat, lon) < distance
-                && drone.state == DroneState::Available
+            if get_distance_to_incident(drone.1, lat, lon) < distance
+                && drone.1.state == DroneState::Available
             {
                 drones_closer += 1;
                 if drones_closer == 2 {

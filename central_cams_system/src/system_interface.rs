@@ -22,12 +22,7 @@ pub mod interface {
     }
 
     fn generate_id(cam_system: &CamsSystem) -> Result<u8, Error> {
-        let id = cam_system
-            .system
-            .cams
-            .iter()
-            .max_by_key(|cam| cam.id)
-            .map(|cam| cam.id + 1);
+        let id = cam_system.system.cams.keys().max().map(|id| id + 1);
         match id {
             Some(id) => Ok(id),
             None => Ok(0),
@@ -116,7 +111,7 @@ pub mod interface {
             }
         };
 
-        let mut cam = cam_system.delete_camara(id)?;
+        let mut cam = cam_system.delete_camara(&id)?;
         cam.state = CamState::Removed;
         println!(
             "Cámara eliminada: id: {} - modo: {:?} - latitud: {} - longitud: {}",
@@ -167,7 +162,7 @@ pub mod interface {
 
         let mut cam_system = cam_system.lock().unwrap();
 
-        let modified_cam = cam_system.modify_cam_position(id, new_coordenate)?;
+        let modified_cam = cam_system.modify_cam_position(&id, new_coordenate)?;
         println!("Cámara modificada correctamente");
 
         cam_system.system.save(&cam_system.config.db_path.clone())?;

@@ -28,48 +28,37 @@ impl CamsSystem {
 
     pub fn add_new_camara(&mut self, cam: Cam) -> Cam {
         let new_cam = cam.clone();
-        self.system.cams.push(cam);
+        self.system.cams.insert(cam.id, cam);
         new_cam
     }
 
-    pub fn delete_camara(&mut self, id: u8) -> Result<Cam, Error> {
-        let pos = match self.system.cams.iter().position(|cam| cam.id == id) {
-            Some(pos) => pos,
-            None => {
-                return Err(Error::new(
-                    std::io::ErrorKind::Other,
-                    "ERROR - No se encontró la cámara a eliminar",
-                ))
-            }
-        };
-        let cam = self.system.cams.get(pos).unwrap();
+    pub fn delete_camara(&mut self, id: &u8) -> Result<Cam, Error> {
+        let cam = self.system.cams.get(id).unwrap();
         if cam.state == CamState::Alert {
             return Err(Error::new(
                 std::io::ErrorKind::Other,
                 "ERROR - No se puede eliminar una cámara en modo alerta",
             ));
         }
-        let cam = self.system.cams.remove(pos);
+        let cam = self.system.cams.remove(id).unwrap();
         Ok(cam)
     }
 
-    pub fn modify_cam_position(&mut self, id: u8, new_pos: Position) -> Result<Cam, Error> {
-        match self.system.cams.iter_mut().find(|cam| cam.id == id) {
-            Some(cam) => {
-                if cam.state == CamState::Alert {
-                    return Err(Error::new(
-                        std::io::ErrorKind::Other,
-                        "ERROR - No se puede modificar la posición de una cámara en modo alerta",
-                    ));
-                }
-                cam.location = new_pos;
-                Ok(cam.clone())
+    pub fn modify_cam_position(&mut self, id: &u8, new_pos: Position) -> Result<Cam, Error> {
+        if let Some(cam) = self.system.cams.get_mut(id) {
+            if cam.state == CamState::Alert {
+                return Err(Error::new(
+                    std::io::ErrorKind::Other,
+                    "ERROR - No se puede modificar la posición de una cámara en modo alerta",
+                ));
             }
-            None => Err(Error::new(
-                std::io::ErrorKind::Other,
-                "No se encontró la cámara",
-            )),
+            cam.location = new_pos;
+            return Ok(cam.clone());
         }
+        Err(Error::new(
+            std::io::ErrorKind::Other,
+            "No se encontró la cámara",
+        ))
     }
 
     pub fn modify_cameras_state(
@@ -79,7 +68,7 @@ impl CamsSystem {
     ) -> Vec<Cam> {
         let mut modified_cams = Vec::new();
 
-        for cam in self.system.cams.iter_mut() {
+        for cam in self.system.cams.values_mut() {
             if (incident_location.lat() - cam.location.lat()).abs() < self.config.range_alert
                 && (incident_location.lon() - cam.location.lon()).abs() < self.config.range_alert
             {
@@ -105,7 +94,7 @@ impl CamsSystem {
 
         let mut close_cameras_modified = Vec::new();
 
-        for cam in self.system.cams.iter_mut() {
+        for cam in self.system.cams.values_mut() {
             for modified_cam in &modified_cams {
                 if (modified_cam.location.lat() - cam.location.lat()).abs()
                     < self.config.range_alert_between_cameras
