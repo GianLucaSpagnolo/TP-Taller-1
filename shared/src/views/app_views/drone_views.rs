@@ -29,6 +29,15 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
         }
     });
     row.col(|ui| {
+        if let DroneState::LowBattery = drone.state {
+            ui.label(egui::RichText::new("Batería baja").color(egui::Color32::DARK_RED));
+        } else if let DroneState::Charging = drone.state {
+            ui.label(egui::RichText::new("Cargando").color(egui::Color32::GREEN));
+        } else {
+            ui.label(egui::RichText::new("Con Batería").color(egui::Color32::WHITE));
+        }
+    });
+    row.col(|ui| {
         ui.label(&format!(
             "{:.1$}",
             drone.current_pos.lat(),
@@ -42,24 +51,15 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
             COORDENATE_PRECISION
         ));
     });
-    row.col(|ui| {
-        if let DroneState::LowBattery = drone.state {
-            ui.label(egui::RichText::new("Batería baja").color(egui::Color32::DARK_RED));
-        } else if let DroneState::Charging = drone.state {
-            ui.label(egui::RichText::new("Cargando").color(egui::Color32::GREEN));
-        } else {
-            ui.label(egui::RichText::new("Con Batería").color(egui::Color32::WHITE));
-        }
-    });
 }
 
 fn drones_list(ui: &mut Ui, drone_list: &DroneList) {
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
-        .column(Column::exact(250.0))
-        .column(Column::exact(250.0))
-        .column(Column::exact(250.0))
-        .column(Column::exact(200.0))
+        .column(Column::exact(150.0))
+        .column(Column::exact(150.0))
+        .column(Column::exact(150.0))
+        .column(Column::exact(100.0))
         .header(30.0, |mut header| {
             header.col(|ui| {
                 ui.heading("ID");
@@ -68,13 +68,13 @@ fn drones_list(ui: &mut Ui, drone_list: &DroneList) {
                 ui.heading("Estado");
             });
             header.col(|ui| {
+                ui.heading("Bateria");
+            });
+            header.col(|ui| {
                 ui.heading("Latitud");
             });
             header.col(|ui| {
                 ui.heading("Longitud");
-            });
-            header.col(|ui| {
-                ui.heading("Bateria");
             });
         })
         .body(|mut body| {
