@@ -115,6 +115,19 @@ mod tests {
         drone_list.add(dron.clone());
         assert_eq!(drone_list.drones.len(), 1);
         drone_list.add(dron.clone());
+        assert_eq!(drone_list.drones.len(), 1);
+
+        let dron2 = Drone::init(
+            2,
+            100.0,
+            100.0,
+            Position::from_lat_lon(0.0, 0.0),
+            Position::from_lat_lon(0.0, 0.0),
+            String::new(),
+        )
+        .unwrap();
+
+        drone_list.add(dron2.clone());
         assert_eq!(drone_list.drones.len(), 2);
     }
 
