@@ -5,10 +5,7 @@ pub mod incident_controller {
     use rand::Error;
     use walkers::Position;
 
-    use crate::models::inc_model::{
-        incident::Incident,
-        incident_list::IncidentList,
-    };
+    use crate::models::inc_model::{incident::Incident, incident_list::IncidentList};
 
     fn send_incident(client: &mut MqttClient, incident_received: Incident, logger: &Logger) {
         client
@@ -31,7 +28,7 @@ pub mod incident_controller {
         send_incident(client, incident.clone(), logger);
         historial.incidents.insert(incident.id, incident);
 
-        match historial.save(db_path){
+        match historial.save(db_path) {
             Ok(_) => Ok(()),
             Err(e) => Err(Error::new(e.to_string())),
         }
@@ -52,7 +49,7 @@ pub mod incident_controller {
             .publish(incident.as_bytes().clone(), "inc".to_string(), logger)
             .unwrap();
 
-        match historial.save(db_path){
+        match historial.save(db_path) {
             Ok(_) => Ok(()),
             Err(e) => Err(Error::new(e.to_string())),
         }

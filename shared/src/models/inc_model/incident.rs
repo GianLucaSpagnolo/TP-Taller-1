@@ -1,7 +1,7 @@
-use walkers::Position;
-use std::time::{SystemTime, Duration}; // Add this line to import SystemTime and Duration
 use chrono::offset::Utc;
 use chrono::{DateTime, Local};
+use std::time::{Duration, SystemTime}; // Add this line to import SystemTime and Duration
+use walkers::Position;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum IncidentState {
@@ -15,14 +15,15 @@ pub struct Incident {
     pub location: Position,
     pub state: IncidentState,
     pub drones_covering: u8,
-    pub creation_time: u64, 
-    pub resolution_time: Option<u64>, 
+    pub creation_time: u64,
+    pub resolution_time: Option<u64>,
 }
 
 impl Incident {
-
     pub fn new(id: u8, location: Position) -> Self {
-        let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap();
         Incident {
             id,
             location,
@@ -33,10 +34,10 @@ impl Incident {
         }
     }
 
-    pub fn cover(&mut self){
+    pub fn cover(&mut self) {
         self.drones_covering += 1;
     }
-    
+
     pub fn get_creation_time(&self) -> String {
         let system_time = SystemTime::UNIX_EPOCH + Duration::from_secs(self.creation_time);
         let time: DateTime<Utc> = system_time.into();
@@ -47,13 +48,15 @@ impl Incident {
         if let Some(resolution_time) = self.resolution_time {
             let system_time = SystemTime::UNIX_EPOCH + Duration::from_secs(resolution_time);
             let time: DateTime<Utc> = system_time.into();
-            return format!("{}", time.with_timezone(&Local).format("%d/%m/%Y %T"))
+            return format!("{}", time.with_timezone(&Local).format("%d/%m/%Y %T"));
         }
         "--/--/-- --:--:--".to_string()
     }
 
     pub fn resolve(&mut self) {
-        let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap();
         self.state = IncidentState::Resolved;
         self.drones_covering = 0;
         self.resolution_time = Some(now.as_secs());
@@ -86,13 +89,8 @@ impl Incident {
         bytes.push(self.drones_covering);
 
         bytes.extend_from_slice(self.creation_time.to_be_bytes().as_ref());
-        
-        bytes.extend_from_slice(
-            self.resolution_time
-                .unwrap_or(0)
-                .to_be_bytes()
-                .as_ref(),
-        );
+
+        bytes.extend_from_slice(self.resolution_time.unwrap_or(0).to_be_bytes().as_ref());
 
         bytes
     }
@@ -155,20 +153,19 @@ mod test {
 
     #[test]
     fn test_serialization() {
-        let incident = Incident::new(0,Position::from_lat_lon(1.0, 1.0));
+        let incident = Incident::new(0, Position::from_lat_lon(1.0, 1.0));
 
         let bytes = incident.as_bytes();
         let incident2 = Incident::from_be_bytes(bytes);
 
         assert_eq!(incident, incident2);
 
-        let mut incident = Incident::new(1,Position::from_lat_lon(10.0, 10.0));
+        let mut incident = Incident::new(1, Position::from_lat_lon(10.0, 10.0));
         incident.resolve();
 
         let bytes = incident.as_bytes();
         let incident2 = Incident::from_be_bytes(bytes);
 
         assert_eq!(incident, incident2);
-        
     }
 }
