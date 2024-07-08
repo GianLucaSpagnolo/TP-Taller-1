@@ -20,7 +20,7 @@ use shared::{
             drone::{Drone, DroneState},
             drone_list::DroneList,
         },
-        inc_model::{incident::IncidentState, incident_list::IncidentList},
+        inc_model::incident_list::IncidentList,
     },
     will_message::deserialize_will_message_payload,
 };
@@ -118,10 +118,9 @@ fn process_messages(
                             if let Some(inc_id) = inc_id {
                                 let incident =
                                     incidents_historial.incidents.get_mut(&inc_id).unwrap();
-                                incident.drones_covering += 1;
+                                incident.cover();
                                 if incident.drones_covering == 2 {
-                                    incident.state = IncidentState::Resolved;
-                                    incident.drones_covering = 0;
+                                    incident.resolve();
                                     client
                                         .publish(incident.as_bytes(), "inc".to_string(), &logger)
                                         .unwrap();

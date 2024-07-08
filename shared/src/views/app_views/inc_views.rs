@@ -135,6 +135,12 @@ fn incident_row(
             COORDENATE_PRECISION
         ));
     });
+    row.col(|ui| {
+        ui.label(incident.get_creation_time());
+    });
+    row.col(|ui| {
+        ui.label(incident.get_resolve_time());
+    });
     if inc_interface.editable {
         row.col(|ui| {
             if ui.button("Resolver").clicked() {
@@ -175,9 +181,11 @@ pub fn incident_list(
         .clone();
     TableBuilder::new(ui)
         .column(Column::exact(100.0))
-        .column(Column::exact(200.0))
-        .column(Column::exact(250.0))
-        .column(Column::exact(250.0))
+        .column(Column::exact(150.0))
+        .column(Column::exact(150.0))
+        .column(Column::exact(150.0))
+        .column(Column::exact(175.0))
+        .column(Column::exact(175.0))
         .column(Column::exact(100.0))
         .header(30.0, |mut header| {
             header.col(|ui| {
@@ -191,6 +199,12 @@ pub fn incident_list(
             });
             header.col(|ui| {
                 ui.heading("Longitud");
+            });
+            header.col(|ui| {
+                ui.heading("Creación");
+            });
+            header.col(|ui| {
+                ui.heading("Resolución");
             });
         })
         .body(|mut body| {
