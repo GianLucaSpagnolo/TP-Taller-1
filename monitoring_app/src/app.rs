@@ -160,13 +160,15 @@ impl MonitoringApp {
         egui_ctx: Context,
         cam_list_ref: Arc<Mutex<CamList>>,
         drone_list_ref: Arc<Mutex<DroneList>>,
-        incident_list: Arc<Mutex<IncidentList>>,
+        incident_list_ref: Arc<Mutex<IncidentList>>,
     ) -> Self {
+        let cam_icons_path = config.icons_paths.cam_icon_paths.clone();
+
         let cam_interface = CamInterface::new(
             cam_list_ref,
-            &config.icons_paths.cam_icon,
-            &config.icons_paths.cam_alert_icon,
-            &config.icons_paths.cam_disconnect_icon,
+            cam_icons_path,
+            true,
+            &config.db_paths.cam_db_path,
         );
 
         let drone_icons_path = config.icons_paths.drone_icon_paths.clone();
@@ -174,7 +176,7 @@ impl MonitoringApp {
         let drone_interface = DroneInterface::new(drone_list_ref, drone_icons_path);
 
         let inc_interface =
-            IncidentInterface::new(true, &config.icons_paths.inc_icon, incident_list);
+            IncidentInterface::new(true, &config.icons_paths.inc_icon, incident_list_ref, &config.db_paths.inc_db_path);
 
         Self {
             client,

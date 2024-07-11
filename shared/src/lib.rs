@@ -41,6 +41,7 @@ pub mod views {
 
 pub mod controllers {
     pub mod incident;
+    pub mod cam;
 }
 
 pub mod utils;

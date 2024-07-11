@@ -43,9 +43,12 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
                 );
             });
             egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
-                show_cams(
+                show_cams( 
                     ui,
-                    &app.global_interface.cam_interface.cam_list.lock().unwrap(),
+                    &mut app.client,
+                    &mut app.global_interface.cam_interface,
+                    &app.logger,
+                    &app.config.db_paths.inc_db_path,
                 );
             });
             egui::CollapsingHeader::new("Drones").show(ui, |ui| {

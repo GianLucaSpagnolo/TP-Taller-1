@@ -92,6 +92,31 @@ impl CamList {
         }
     }
 
+    pub fn delete_cam(&mut self, id: &u8) {
+        self.cams.remove(id);
+    }
+
+    pub fn get_cam(&self, id: &u8) -> Option<&Cam> {
+        self.cams.get(id)
+    }
+
+    fn generate_id(&self) -> u8 {
+        let id = self.cams.keys().max().map(|id| id + 1);
+        id.unwrap_or(0)
+    }
+
+    pub fn add_cam(&mut self, pos: Position) -> u8 {
+        let id = self.generate_id();
+        let cam = Cam::new(id, pos);
+        self.cams.insert(id, cam);
+        id
+    }
+
+    pub fn edit_cam(&mut self, id: &u8, pos: Position) {
+        let new_cam = Cam::new(*id, pos);
+        self.update_cam(new_cam);
+    }
+
     pub fn init(db_path: &str) -> Self {
         let bytes = match std::fs::read(db_path) {
             Ok(bytes) => bytes,
