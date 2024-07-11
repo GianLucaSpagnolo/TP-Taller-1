@@ -26,6 +26,7 @@ pub struct IncidentInterface {
     pub show_data_alert: bool,
     pub editable: bool,
     pub click_incident: ClickIncidentEvent,
+    pub db_path: String,
 }
 
 impl IncidentInterface {
@@ -41,13 +42,14 @@ impl IncidentInterface {
     /// ### Retorno
     /// Estructura de la interfaz de incidentes
     ///
-    pub fn new(editable: bool, icon_path: &str, inc_historial: Arc<Mutex<IncidentList>>) -> Self {
+    pub fn new(editable: bool, icon_path: &str, inc_historial: Arc<Mutex<IncidentList>>, db_path: &str) -> Self {
         let icon = load_image_from_path(std::path::Path::new(icon_path)).unwrap();
 
         Self {
             inc_historial,
             editable,
             inc_icon: icon,
+            db_path: db_path.to_string(),
             ..Default::default()
         }
     }

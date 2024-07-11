@@ -17,10 +17,26 @@ pub struct IncidentList {
 }
 
 impl IncidentList {
-    pub fn add(&mut self, location: Position) -> Incident {
-        let incident = Incident::new(self.incidents.len() as u8, location);
+    
+    fn generate_id(&self) -> u8 {
+        let id = self.incidents.keys().max().map(|id| id + 1);
+        id.unwrap_or(0)
+    }
+
+    pub fn add_inc(&mut self, location: Position) -> u8 {
+        let incident = Incident::new(self.generate_id(), location);
         self.incidents.insert(incident.id, incident.clone());
-        incident
+        incident.id
+    }
+
+    pub fn get_inc(&self, id: &u8) -> Option<&Incident> {
+        self.incidents.get(id)
+    }
+
+    pub fn resolve_inc(&mut self, id: &u8) {
+        if let Some(incident) = self.incidents.get_mut(id) {
+            incident.resolve();
+        }
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
