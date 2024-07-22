@@ -51,11 +51,7 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
             egui::CollapsingHeader::new("Drones").show(ui, |ui| {
                 show_drones(
                     ui,
-                    &app.global_interface
-                        .drone_interface
-                        .drone_list
-                        .lock()
-                        .unwrap(),
+                    &mut app.global_interface.drone_interface
                 );
             });
         });

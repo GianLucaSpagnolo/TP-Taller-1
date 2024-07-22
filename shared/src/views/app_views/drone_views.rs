@@ -2,10 +2,7 @@ use eframe::egui::Ui;
 
 use egui_extras::{Column, TableBuilder};
 
-use crate::models::drone_model::{
-    drone::{Drone, DroneState},
-    drone_list::DroneList,
-};
+use crate::{interfaces::drone_interface::DroneInterface, models::drone_model::drone::{Drone, DroneState}};
 
 static COORDENATE_PRECISION: usize = 4;
 
@@ -63,7 +60,10 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
     });
 }
 
-fn drones_list(ui: &mut Ui, drone_list: &DroneList) {
+fn drones_list(ui: &mut Ui,  interface: &mut DroneInterface) {
+
+    let drone_list = interface.drone_list.lock().unwrap();
+
     if drone_list.drones.is_empty() {
         ui.label("No hay drones");
     } else {
@@ -110,10 +110,10 @@ fn drones_list(ui: &mut Ui, drone_list: &DroneList) {
     }
 }
 
-pub fn show_drones(ui: &mut Ui, drone_list: &DroneList) {
+pub fn show_drones(ui: &mut Ui, dron_interface: &mut DroneInterface) {
     ui.heading("Listado de drones");
     ui.separator();
     ui.add_space(10.0);
-    drones_list(ui, drone_list);
+    drones_list(ui, dron_interface);
     ui.add_space(10.0);
 }
