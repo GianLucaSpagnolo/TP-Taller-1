@@ -8,10 +8,10 @@ use std::{
 };
 
 use cams_system::CamsSystem;
-use logger::logger_handler::{create_logger_handler, Logger};
+use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
-    models::inc_model::incident::{Incident, IncidentState},
+    models::inc_model::incident::Incident,
     will_message::deserialize_will_message_payload,
 };
 use system_interface::interface::{process_standard_input, show_start};
@@ -38,16 +38,11 @@ pub fn process_messages(
                 } else {
                     let incident = Incident::from_be_bytes(message_received.data);
                     println!("Mensaje recibido: {:?}", incident);
-                    match incident.state {
-                        IncidentState::InProgess => cams_system
-                            .lock()
-                            .unwrap()
-                            .process_incident_in_progress(&mut client, incident, &logger),
-                        IncidentState::Resolved => cams_system
-                            .lock()
-                            .unwrap()
-                            .process_incident_resolved(&mut client, incident, &logger),
-                    }
+                    cams_system
+                        .lock()
+                        .unwrap()
+                        .process_incident(&mut client, incident, &logger)
+                        .unwrap();
                 }
             }
         }
@@ -56,78 +51,47 @@ pub fn process_messages(
 }
 
 fn main() -> Result<(), Error> {
-    let cam_system = CamsSystem::init(SYSTEM_CONFIG_PATH.to_string())?;
+    let cam_system = CamsSystem::new(SYSTEM_CONFIG_PATH.to_string())?;
 
     show_start(&cam_system);
 
-    let logger_handler =
-        create_logger_handler(&cam_system.config.mqtt_config.general.log_path.clone())?;
-    let logger = logger_handler.get_logger();
-
-    let mut client = match MqttClient::init(cam_system.config.mqtt_config.clone()) {
-        Ok(r) => r,
-        Err(e) => {
-            logger.close();
-            logger_handler.close();
-            return Err(e);
-        }
-    };
-
-    for cam in cam_system.system.cams.values() {
-        match client.publish(cam.as_bytes(), "camaras".to_string(), &logger) {
-            Ok(r) => r,
-            Err(e) => {
-                logger.close();
-                logger_handler.close();
-                return Err(e);
-            }
-        };
-    }
-
-    match client.subscribe(vec!["inc"], &logger) {
-        Ok(r) => r,
-        Err(e) => {
-            logger.close();
-            logger_handler.close();
-            return Err(e);
-        }
-    };
+    let mut system_handler = cam_system.init()?;
 
     let cams_system_ref = Arc::new(Mutex::new(cam_system));
     let cam_system_clone = cams_system_ref.clone();
 
-    let mut client_clone = client.clone();
-    let logger_cpy = logger.clone();
+    let mut client_clone = system_handler.client.clone();
+    let logger_cpy = system_handler.logger.clone();
     let handle = thread::spawn(move || {
         process_standard_input(&mut client_clone, cam_system_clone, &logger_cpy);
         logger_cpy.close();
     });
 
-    let listener = match client.run_listener() {
+    let listener = match system_handler.client.run_listener() {
         Ok(r) => r,
         Err(e) => {
-            logger.close();
-            logger_handler.close();
+            system_handler.logger.close();
+            system_handler.logger_handler.close();
             return Err(e);
         }
     };
 
     let process_message_handler: JoinHandle<()> = match process_messages(
-        &mut client,
+        &mut system_handler.client,
         listener.receiver,
         cams_system_ref,
-        logger.clone(),
+         system_handler.logger.clone(),
     ) {
         Ok(r) => r,
         Err(e) => {
-            logger.close();
-            logger_handler.close();
+            system_handler.logger.close();
+            system_handler.logger_handler.close();
             return Err(e);
         }
     };
 
-    logger.close();
-    logger_handler.close();
+    system_handler.logger.close();
+    system_handler.logger_handler.close();
 
     handle.join().unwrap();
     listener.handler.join().unwrap()?;

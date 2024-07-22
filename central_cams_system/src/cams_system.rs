@@ -1,24 +1,30 @@
 use std::io::Error;
 
 use central_cams_system::cams_system_config::CamSystemConfig;
-use logger::logger_handler::Logger;
+use logger::logger_handler::{create_logger_handler, Logger, LoggerHandler};
 use mqtt::client::mqtt_client::MqttClient;
 use shared::models::{
     cam_model::{
         cam::{Cam, CamState},
         cam_list::CamList,
     },
-    inc_model::incident::Incident,
+    inc_model::incident::{Incident, IncidentState},
 };
 use walkers::Position;
 
+pub struct SystemHandler {
+    pub client: MqttClient,
+    pub logger: Logger,
+    pub logger_handler: LoggerHandler,
+}
 pub struct CamsSystem {
     pub system: CamList,
     pub config: CamSystemConfig,
 }
 
 impl CamsSystem {
-    pub fn init(path: String) -> Result<Self, Error> {
+
+    pub fn new(path: String) -> Result<Self, Error>{
         let config = CamSystemConfig::from_file(path)?;
 
         let system = CamList::init(&config.db_path);
@@ -26,106 +32,91 @@ impl CamsSystem {
         Ok(CamsSystem { system, config })
     }
 
-    pub fn add_new_camara(&mut self, cam: Cam) -> Cam {
-        let new_cam = cam.clone();
-        self.system.cams.insert(cam.id, cam);
-        new_cam
+    fn send_save_data(&self, client: &mut MqttClient, logger: &Logger) -> Result<(), Error>{
+        for cam in self.system.cams.values() {
+            match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {
+                Ok(r) => r,
+                Err(e) => {
+                    return Err(e);
+                }
+            };
+        }
+        Ok(())
     }
 
-    pub fn delete_camara(&mut self, id: &u8) -> Result<Cam, Error> {
-        let cam = self.system.cams.get(id).unwrap();
-        if cam.state == CamState::Alert {
-            return Err(Error::new(
-                std::io::ErrorKind::Other,
-                "ERROR - No se puede eliminar una cámara en modo alerta",
-            ));
-        }
-        let cam = self.system.cams.remove(id).unwrap();
+    pub fn init(&self) -> Result<SystemHandler, Error> {
+
+        let logger_handler = create_logger_handler(&self.config.mqtt_config.general.log_path.clone())?;
+        let logger = logger_handler.get_logger();
+
+        let mut client = match MqttClient::init(self.config.mqtt_config.clone()) {
+            Ok(mut r) => match r.subscribe(vec!["inc"], &logger) {
+                Ok(_) => r,
+                Err(e) => return Err(e),
+            },
+            Err(e) => {
+                logger.close();
+                logger_handler.close();
+                return Err(e);
+            }
+        };
+
+        self.send_save_data(&mut client, &logger)?;
+
+        Ok(SystemHandler {
+            client,
+            logger,
+            logger_handler,
+        })
+    }
+
+    pub fn add_new_camara(&mut self, position: Position) -> Result<Cam, Error> {
+        let cam = self.system.add_cam(position);
+        self.system.save(&self.config.db_path)?;
         Ok(cam)
     }
 
-    pub fn modify_cam_position(&mut self, id: &u8, new_pos: Position) -> Result<Cam, Error> {
-        if let Some(cam) = self.system.cams.get_mut(id) {
-            if cam.state == CamState::Alert {
-                return Err(Error::new(
-                    std::io::ErrorKind::Other,
-                    "ERROR - No se puede modificar la posición de una cámara en modo alerta",
-                ));
+    pub fn delete_camara(&mut self, id: &u8) -> Result<Cam, Error> {
+        match self.system.delete_cam(id){
+            Some(mut cam) => {
+                cam.remove();
+                self.system.save(&self.config.db_path)?;
+                Ok(cam)
             }
-            cam.location = new_pos;
-            return Ok(cam.clone());
+            None => Err(Error::new(
+                std::io::ErrorKind::Other,
+                "No se pudo eliminar la cámara",
+            )),
         }
-        Err(Error::new(
-            std::io::ErrorKind::Other,
-            "No se encontró la cámara",
-        ))
+    }
+
+    pub fn modify_cam_position(&mut self, id: &u8, new_pos: Position) -> Result<Cam, Error> {
+        if self.system.is_cam_in_alert(id) {
+            return Err(Error::new(
+                std::io::ErrorKind::Other,
+                "ERROR - No se puede modificar la posición de una cámara en modo alerta",
+            ));
+        }
+        match self.system.edit_cam_position(id, new_pos) {
+            Some(cam) => {
+                self.system.save(&self.config.db_path)?;
+                Ok(cam)
+            }
+            None => Err(Error::new(
+                std::io::ErrorKind::Other,
+                "ERROR - No se pudo modificar la cámara",
+            )),
+        }
     }
 
     pub fn modify_cameras_state(
         &mut self,
         incident_location: Position,
         new_state: CamState,
-    ) -> Vec<Cam> {
-        let mut modified_cams = Vec::new();
-
-        for cam in self.system.cams.values_mut() {
-            if (incident_location.lat() - cam.location.lat()).abs() < self.config.range_alert
-                && (incident_location.lon() - cam.location.lon()).abs() < self.config.range_alert
-            {
-                match new_state {
-                    CamState::Alert => {
-                        cam.to_alert();
-                        cam.incidents_covering += 1;
-                    }
-                    CamState::SavingEnergy => {
-                        if cam.incidents_covering == 0 {
-                            continue;
-                        }
-                        cam.incidents_covering -= 1;
-                        if cam.incidents_covering == 0 {
-                            cam.to_saving_energy();
-                        }
-                    }
-                    _ => {}
-                }
-                modified_cams.push(cam.clone());
-            }
-        }
-
-        let mut close_cameras_modified = Vec::new();
-
-        for cam in self.system.cams.values_mut() {
-            for modified_cam in &modified_cams {
-                if (modified_cam.location.lat() - cam.location.lat()).abs()
-                    < self.config.range_alert_between_cameras
-                    && (modified_cam.location.lon() - cam.location.lon()).abs()
-                        < self.config.range_alert_between_cameras
-                {
-                    if !modified_cams.contains(cam) && new_state == CamState::Alert {
-                        cam.incidents_covering += 1;
-                        cam.to_alert();
-                        close_cameras_modified.push(cam.clone());
-                    }
-
-                    if !modified_cams.contains(cam) && new_state == CamState::SavingEnergy {
-                        if cam.incidents_covering == 0 {
-                            continue;
-                        }
-                        cam.incidents_covering -= 1;
-                        if cam.incidents_covering == 0 {
-                            cam.to_saving_energy();
-                            close_cameras_modified.push(cam.clone());
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-        for cam in close_cameras_modified {
-            modified_cams.push(cam);
-        }
-
-        modified_cams
+    ) -> Result<Vec<Cam>, Error> {
+        let modified_cams = self.system.update_cams_state(incident_location, new_state, &self.config.range_alert, &self.config.range_alert_between_cameras);
+        self.system.save(&self.config.db_path)?;
+        Ok(modified_cams)
     }
 
     pub fn list_cameras(&self) {
@@ -136,20 +127,28 @@ impl CamsSystem {
         println!("{}", self.system);
     }
 
-    pub fn process_incident_in_progress(
+    pub fn process_incident(
         &mut self,
         client: &mut MqttClient,
         incident: Incident,
         logger: &Logger,
-    ) {
-        let modified_cams = self.modify_cameras_state(incident.location, CamState::Alert);
+    ) -> Result<(), Error> {
 
-        self.system.save(&self.config.db_path).unwrap();
+        let new_cam_state = match incident.state {
+            IncidentState::InProgess => CamState::Alert,
+            IncidentState::Resolved => CamState::SavingEnergy,
+        };
+        let system_message = match incident.state {
+            IncidentState::InProgess => "Modifica estado de la cámara en modo alerta",
+            IncidentState::Resolved => "Modifica estado de la cámara en modo ahorro de energía",
+        };
+
+        let modified_cams = self.modify_cameras_state(incident.location, new_cam_state)?;
 
         for cam in modified_cams {
             match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {
                 Ok(_) => {
-                    println!("Modifica estado de la cámara en modo alerta");
+                    println!("{}", system_message);
                 }
                 Err(e) => {
                     println!("Error al publicar mensaje: {}", e);
@@ -157,28 +156,6 @@ impl CamsSystem {
             }
         }
         self.list_cameras();
-    }
-
-    pub fn process_incident_resolved(
-        &mut self,
-        client: &mut MqttClient,
-        incident: Incident,
-        logger: &Logger,
-    ) {
-        let modified_cams = self.modify_cameras_state(incident.location, CamState::SavingEnergy);
-
-        self.system.save(&self.config.db_path).unwrap();
-
-        for cam in modified_cams {
-            match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {
-                Ok(_) => {
-                    println!("Modifica estado de la cámara en modo ahorro de energía");
-                }
-                Err(e) => {
-                    println!("Error al publicar mensaje: {}", e);
-                }
-            }
-        }
-        self.list_cameras();
+        Ok(())
     }
 }

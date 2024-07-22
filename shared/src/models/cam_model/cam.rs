@@ -84,8 +84,34 @@ impl Cam {
         self.state = CamState::SavingEnergy;
     }
 
+    pub fn change_state(&mut self, new_state: &CamState) -> bool {
+        match new_state {
+            CamState::Alert => {
+                self.to_alert();
+                self.incidents_covering += 1;
+                true
+            }
+            CamState::SavingEnergy => {
+                if self.incidents_covering > 0 {
+                    self.incidents_covering -= 1;
+                    if self.incidents_covering == 0 {
+                        self.to_saving_energy();
+                        return true
+                    }
+                }
+                false
+            }
+            _ => false,
+        }
+    }
+
     pub fn disconnect(&mut self) {
         self.state = CamState::Disconnected;
+    }
+
+    pub fn is_near(&self, position: Position, range: &f64) -> bool {
+        (position.lat() - self.location.lat()).abs() < *range
+            && (position.lon() - self.location.lon()).abs() < *range
     }
 
     pub fn len_in_bytes() -> usize {

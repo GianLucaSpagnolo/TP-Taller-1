@@ -86,14 +86,70 @@ impl CamList {
         }
     }
 
+    pub fn update_cams_state(
+        &mut self, 
+        incident_location: Position,
+        new_state: CamState,
+        range_alert: &f64,
+        range_alert_between_cameras: &f64
+    ) -> Vec<Cam> {
+        let mut modified_cams = Vec::new();
+
+        for cam in self.cams.values_mut() {
+            if cam.is_near(incident_location, range_alert)
+            {
+                cam.change_state(&new_state);
+                modified_cams.push(cam.clone());
+            }
+        }
+
+        let mut close_cameras_modified = Vec::new();
+
+        for cam in self.cams.values_mut() {
+            for modified_cam in &modified_cams {
+                if cam.is_near(modified_cam.location, range_alert_between_cameras)
+                {
+                    if !modified_cams.contains(cam) && cam.change_state(&new_state){
+                        close_cameras_modified.push(cam.clone());
+                    }
+                    break;
+                }
+            }
+        }
+        for cam in close_cameras_modified {
+            modified_cams.push(cam);
+        }
+
+        modified_cams
+    }
+
     pub fn disconnect_all(&mut self) {
         for cam in self.cams.values_mut() {
             cam.disconnect();
         }
     }
 
-    pub fn delete_cam(&mut self, id: &u8) {
-        self.cams.remove(id);
+    pub fn delete_cam(&mut self, id: &u8)  -> Option<Cam> {
+        let cam = self.cams.get(id)?;
+        if cam.state == CamState::Alert {
+            return None;
+        }
+        self.cams.remove(id)
+    }
+
+    pub fn is_cam_in_alert(&self, id: &u8) -> bool {
+        if let Some(cam) = self.cams.get(id) {
+            return cam.state == CamState::Alert;
+        }
+        false
+    }
+
+    pub fn edit_cam_position(&mut self, id: &u8, new_pos: Position) -> Option<Cam> {
+        if let Some(cam) = self.cams.get_mut(id) {
+            cam.location = new_pos;
+            return Some(cam.clone())
+        }
+        None
     }
 
     pub fn get_cam(&self, id: &u8) -> Option<&Cam> {
@@ -105,16 +161,12 @@ impl CamList {
         id.unwrap_or(0)
     }
 
-    pub fn add_cam(&mut self, pos: Position) -> u8 {
+    pub fn add_cam(&mut self, pos: Position) -> Cam {
         let id = self.generate_id();
         let cam = Cam::new(id, pos);
-        self.cams.insert(id, cam);
-        id
-    }
-
-    pub fn edit_cam(&mut self, id: &u8, pos: Position) {
-        let new_cam = Cam::new(*id, pos);
-        self.update_cam(new_cam);
+        // No puede devolver None ya que el id generado no está en uso
+        self.cams.insert(id, cam.clone());
+        cam
     }
 
     pub fn init(db_path: &str) -> Self {

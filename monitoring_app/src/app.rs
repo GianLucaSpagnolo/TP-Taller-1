@@ -167,7 +167,6 @@ impl MonitoringApp {
         let cam_interface = CamInterface::new(
             cam_list_ref,
             cam_icons_path,
-            true,
             &config.db_paths.cam_db_path,
         );
 
