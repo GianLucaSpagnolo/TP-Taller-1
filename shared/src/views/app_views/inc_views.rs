@@ -112,34 +112,46 @@ fn incident_row(
     db_path: &str,
 ) {
     row.col(|ui| {
-        ui.label(incident.id.to_string());
+        ui.centered_and_justified(|ui| {
+            ui.label(incident.id.to_string());
+        }); 
     });
     row.col(|ui| {
-        if IncidentState::InProgess == incident.state {
-            ui.label(egui::RichText::new("En Progreso").color(egui::Color32::LIGHT_RED));
-        } else {
-            ui.label(egui::RichText::new("Resuelto").color(egui::Color32::GREEN));
-        }
+        ui.centered_and_justified(|ui| {
+            if IncidentState::InProgess == incident.state {
+                ui.label(egui::RichText::new("En Progreso").color(egui::Color32::LIGHT_RED));
+            } else {
+                ui.label(egui::RichText::new("Resuelto").color(egui::Color32::GREEN));
+            }
+        }); 
     });
     row.col(|ui| {
-        ui.label(&format!(
-            "{:.1$}",
-            incident.location.lat(),
-            COORDENATE_PRECISION
-        ));
+        ui.centered_and_justified(|ui| {
+            ui.label(&format!(
+                "{:.1$}",
+                incident.location.lat(),
+                COORDENATE_PRECISION
+            ));
+        }); 
     });
     row.col(|ui| {
-        ui.label(&format!(
-            "{:.1$}",
-            incident.location.lon(),
-            COORDENATE_PRECISION
-        ));
+        ui.centered_and_justified(|ui| {
+            ui.label(&format!(
+                "{:.1$}",
+                incident.location.lon(),
+                COORDENATE_PRECISION
+            ));
+        }); 
     });
     row.col(|ui| {
-        ui.label(incident.get_creation_time());
+        ui.centered_and_justified(|ui| {
+            ui.label(incident.get_creation_time());
+        }); 
     });
     row.col(|ui| {
-        ui.label(incident.get_resolve_time());
+        ui.centered_and_justified(|ui| {
+            ui.label(incident.get_resolve_time());
+        }); 
     });
     if inc_interface.editable {
         row.col(|ui| {
@@ -179,49 +191,58 @@ pub fn incident_list(
         .unwrap()
         .incidents
         .clone();
-    TableBuilder::new(ui)
-        .column(Column::exact(100.0))
-        .column(Column::exact(150.0))
-        .column(Column::exact(150.0))
-        .column(Column::exact(150.0))
-        .column(Column::exact(175.0))
-        .column(Column::exact(175.0))
-        .column(Column::exact(100.0))
-        .header(30.0, |mut header| {
-            header.col(|ui| {
-                ui.heading("ID");
-            });
-            header.col(|ui| {
-                ui.heading("Estado");
-            });
-            header.col(|ui| {
-                ui.heading("Latitud");
-            });
-            header.col(|ui| {
-                ui.heading("Longitud");
-            });
-            header.col(|ui| {
-                ui.heading("Creación");
-            });
-            header.col(|ui| {
-                ui.heading("Resolución");
-            });
-        })
-        .body(|mut body| {
-            if incidents.is_empty() {
-                body.row(20.0, |mut row| {
-                    row.col(|ui| {
-                        ui.label("No hay incidentes");
-                    });
+
+    if incidents.is_empty() {
+        ui.label("No hay incidentes");
+    } else {
+        TableBuilder::new(ui)
+            .column(Column::exact(100.0))
+            .column(Column::exact(150.0))
+            .column(Column::exact(150.0))
+            .column(Column::exact(150.0))
+            .column(Column::exact(175.0))
+            .column(Column::exact(175.0))
+            .column(Column::exact(100.0))
+            .header(30.0, |mut header| {
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("ID");
+                    }); 
                 });
-            } else {
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Estado");
+                    }); 
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Latitud");
+                    }); 
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Longitud");
+                    }); 
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Creación");
+                    }); 
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Resolución");
+                    }); 
+                });
+            })
+            .body(|mut body| {
                 for (id, incident) in &incidents.clone() {
                     body.row(20.0, |row| {
                         incident_row(row, client, inc_interface, incident, id, logger, db_path);
                     });
                 }
-            }
-        });
+            });
+    }
 }
 
 /// ## show_incidents
@@ -254,4 +275,5 @@ pub fn show_incidents(
     ui.separator();
     ui.add_space(10.0);
     incident_list(ui, client, incident_interface, logger, db_path);
+    ui.add_space(10.0);
 }

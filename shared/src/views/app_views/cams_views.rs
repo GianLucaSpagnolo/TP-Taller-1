@@ -30,14 +30,8 @@ fn cam_row(
             } else if CamState::SavingEnergy == cam.state {
                 ui.label(egui::RichText::new("Ahorro de energía").color(egui::Color32::GREEN));
             } else if CamState::Disconnected == cam.state {
-                ui.label(egui::RichText::new("Desconectada").color(egui::Color32::GRAY));
+                ui.label(egui::RichText::new("Desconectada").color(egui::Color32::DARK_GRAY));
             }
-        }); 
-    });
-
-    row.col(|ui| {
-        ui.centered_and_justified(|ui| {
-            ui.label(&format!("{}", cam.incidents_covering));
         }); 
     });
     row.col(|ui| {
@@ -49,6 +43,11 @@ fn cam_row(
         ui.centered_and_justified(|ui| {
             ui.label(&format!("{:.1$}", cam.location.lon(), COORDENATE_PRECISION));
         });  
+    });
+    row.col(|ui| {
+        ui.centered_and_justified(|ui| {
+            ui.label(&format!("{}", cam.incidents_covering));
+        }); 
     });
 }
 
@@ -67,54 +66,50 @@ fn cams_list(
 
     let cam_list = cam_interface.cam_list.lock().unwrap();
 
-    TableBuilder::new(ui)
-        .column(Column::exact(100.0))
-        .column(Column::exact(150.0))
-        .column(Column::exact(150.0))
-        .column(Column::exact(200.0))
-        .column(Column::exact(200.0))
-        .header(30.0, |mut header| {
-            header.col(|ui| {
-                ui.centered_and_justified(|ui| {
-                    ui.heading("ID");
-                });
-            });
-            header.col(|ui| {
-                ui.centered_and_justified(|ui| {
-                    ui.heading("Estado");
-                });
-            });
-            header.col(|ui| {
-                ui.centered_and_justified(|ui| {
-                    ui.heading("# Incidentes");
-                });
-            });
-            header.col(|ui| {
-                ui.centered_and_justified(|ui| {
-                    ui.heading("Latitud");
-                });
-            });
-            header.col(|ui| {
-                ui.centered_and_justified(|ui| {
-                    ui.heading("Longitud");
-                });
-            });
-        })
-        .body(|mut body| {
-            if cam_list.cams.is_empty() {
-                body.row(20.0, |mut row| {
-                    row.col(|ui| {
-                        ui.label("No hay camaras");
+    if cam_list.cams.is_empty() {
+        ui.label("No hay camaras");
+    } else {
+        TableBuilder::new(ui)
+            .column(Column::exact(100.0))
+            .column(Column::exact(150.0))
+            .column(Column::exact(150.0))
+            .column(Column::exact(150.0))
+            .column(Column::exact(150.0))
+            .header(30.0, |mut header| {
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("ID");
                     });
                 });
-            } else {
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Estado");
+                    });
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Latitud");
+                    });
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Longitud");
+                    });
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("# Incidentes");
+                    });
+                });
+            })
+            .body(|mut body| {
                 for cam in cam_list.cams.values() {
                     body.row(20.0, |row| {
                         cam_row(row, cam);
                     });
                 }
-            }
-        });
+            });
+    }
 }
 
 /// ## show_cams
@@ -133,4 +128,5 @@ pub fn show_cams(
     ui.separator();
     ui.add_space(10.0);
     cams_list(ui, cam_interface);
+    ui.add_space(10.0);
 }
