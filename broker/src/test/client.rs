@@ -99,7 +99,7 @@ fn main() -> Result<(), Error> {
         }
     };
 
-    let listener = match client.run_listener() {
+    let listener = match client.run_listener(&logger) {
         Ok(r) => r,
         Err(e) => {
             logger.close();

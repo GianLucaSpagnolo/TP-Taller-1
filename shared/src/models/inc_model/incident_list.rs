@@ -81,6 +81,7 @@ impl IncidentList {
             Ok(incidents)
         }
     }
+    
     pub fn save(&self, path: &str) -> std::io::Result<()> {
         let bytes = self.as_bytes();
         std::fs::write(path, bytes)

@@ -30,8 +30,8 @@ pub fn process_messages(
     logger: Logger,
 ) -> Result<JoinHandle<()>, Error> {
     let mut client = client.clone();
-    let handler = thread::spawn(move || loop {
-        for message_received in receiver.try_iter() {
+    let handler = thread::spawn(move || {
+        for message_received in receiver.iter() {
             if message_received.topic.as_str() == "inc" {
                 if message_received.is_will_message {
                     handle_inc_will_message(message_received.data);
@@ -67,7 +67,8 @@ fn main() -> Result<(), Error> {
         logger_cpy.close();
     });
 
-    let listener = match system_handler.client.run_listener() {
+    let logger_cpy2 = system_handler.logger.clone();
+    let listener = match system_handler.client.run_listener(&logger_cpy2) {
         Ok(r) => r,
         Err(e) => {
             system_handler.logger.close();

@@ -21,8 +21,8 @@ pub fn process_messages(
     logger: Logger,
 ) -> Result<JoinHandle<()>, Error> {
     let mut client = client.clone();
-    let handler = thread::spawn(move || loop {
-        for message_received in receiver.try_iter() {
+    let handler = thread::spawn(move || {
+        for message_received in receiver.iter() {
             if message_received.topic.as_str() == "inc" {
                 let incident = Incident::from_be_bytes(message_received.data);
                 drone
@@ -147,7 +147,7 @@ fn main() -> Result<(), Error> {
         .unwrap();
     let drone_ref = Arc::new(Mutex::new(drone));
 
-    let listener = match client.run_listener() {
+    let listener = match client.run_listener(&logger) {
         Ok(r) => r,
         Err(e) => {
             logger.close();

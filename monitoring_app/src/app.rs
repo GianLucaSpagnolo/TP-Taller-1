@@ -86,8 +86,19 @@ fn process_messages(
     logger: Logger,
 ) -> Result<JoinHandle<()>, Error> {
     let mut client = client.clone();
-    let handler: JoinHandle<()> = thread::spawn(move || loop {
-        for message_received in receiver.try_iter() {
+    let handler: JoinHandle<()> = thread::spawn(move ||  {
+      
+        //for message_received in receiver.try_iter() {
+        for message_received in receiver.iter() {
+            /*
+            // se corto la comunicacion se debe hacer un break, cuando ite()
+            // devuelve None, ya que indica una desconexion / cuelgue
+            let aux = message_received;
+            if let None = Some(message_received) {
+                break;
+            }
+            */
+
             match message_received.topic.as_str() {
                 "camaras" => {
                     if message_received.is_will_message {
@@ -206,7 +217,7 @@ impl MonitoringApp {
         logger: Logger,
         config: MonitoringAppConfig,
     ) -> Result<MonitoringHandler, Error> {
-        let listener = client.run_listener()?;
+        let listener = client.run_listener(&logger)?;
 
         let mut cam_list = CamList::init(&config.db_paths.cam_db_path);
 

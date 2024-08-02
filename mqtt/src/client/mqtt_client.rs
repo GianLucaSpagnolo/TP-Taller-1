@@ -146,13 +146,11 @@ fn stablish_tls_connection(
 ///
 fn send_connect_packet(
     client_id: &String,
-    log_path: String,
+    logger: &Logger,
     stream: &mut TcpStream,
     payload: ConnectPayload,
     config: &ClientConfig,
 ) -> Result<(), Error> {
-    let logger_handler = create_logger_handler(&log_path)?;
-    let logger = logger_handler.get_logger();
     match Connect::new(config.connect_properties.clone(), payload).send(stream) {
         Ok(_) => (),
         Err(e) => {
@@ -160,14 +158,13 @@ fn send_connect_packet(
                 &("Error al conectar con servidor: ".to_string() + &e.to_string()),
                 client_id,
             );
-            logger.close();
             return Err(e);
         }
     };
 
     MqttClientActions::SendConnect(config.get_socket_address().to_string()).log_action(
         client_id,
-        &logger,
+        logger,
         &config.general.log_in_term,
     );
 
@@ -177,31 +174,25 @@ fn send_connect_packet(
                 config.get_socket_address().to_string(),
                 connack.properties.connect_reason_code,
             )
-            .log_action(client_id, &logger, &config.general.log_in_term);
+            .log_action(client_id, logger, &config.general.log_in_term);
         }
         Err(e) => {
             logger.log_event(
                 &("Error al procesar connack: ".to_string() + &e.to_string()),
                 client_id,
             );
-            logger.close();
             return Err(e);
         }
     };
 
-    logger.close();
-    logger_handler.close();
     Ok(())
 }
 
 fn send_auth_packet(
     stream: &mut TcpStream,
     config: &ClientConfig,
-    log_path: String,
+    logger: &Logger,
 ) -> Result<(), Error> {
-    let logger_handler = create_logger_handler(&log_path)?;
-    let logger = logger_handler.get_logger();
-
     let properties = auth_properties::AuthProperties {
         reason_code: ReasonCode::Success.get_id(),
         authentication_data: Some(serialize_username_password(
@@ -216,12 +207,10 @@ fn send_auth_packet(
 
     MqttClientActions::SendAuthentication(config.general.id.clone()).log_action(
         &config.general.id,
-        &logger,
+        logger,
         &config.general.log_in_term,
     );
 
-    logger.close();
-    logger_handler.close();
     Ok(())
 }
 
@@ -260,9 +249,9 @@ impl MqttClient {
             }
         };
 
-        send_connect_packet(&client_id, log_path.clone(), &mut stream, payload, &config)?;
+        send_connect_packet(&client_id, &logger, &mut stream, payload, &config)?;
 
-        send_auth_packet(&mut stream, &config, log_path)?;
+        send_auth_packet(&mut stream, &config, &logger)?;
 
         let current_packet_id = 2;
 
@@ -284,8 +273,8 @@ impl MqttClient {
     /// ### Retorno
     /// Resultado de la operación con el listener.
     ///
-    pub fn run_listener(&mut self) -> Result<MqttClientListener, Error> {
-        MqttClientListener::run(self)
+    pub fn run_listener(&mut self, logger: &Logger,) -> Result<MqttClientListener, Error> {
+        MqttClientListener::run(self, logger)
     }
 
     /// ## publish
