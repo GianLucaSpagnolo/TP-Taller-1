@@ -5,13 +5,14 @@ CA_NAME="ca-native"
 SRV_NAME="server"
 CERT_CHAIN_NAME="server-cert-chain"
 IDENTITY_PFX="identity.pfx"
+TIME="3600h"
 
 echo "ingresa pass: 1234"
 step certificate create $CA_NAME $CERTS_FOLDER$CA_NAME.crt $CERTS_FOLDER$CA_NAME.key --profile root-ca #pass = 1234
 
 # $SRV_NAME = DNS name, debe ser localhost
 echo "ingresa pass: 1234"
-step certificate create $SRV_NAME $CERTS_FOLDER$SRV_NAME.crt $CERTS_FOLDER$SRV_NAME.key --ca ./$CERTS_FOLDER$CA_NAME.crt --ca-key ./$CERTS_FOLDER$CA_NAME.key #pass = 1234
+step certificate create --kty=RSA --not-after=$TIME $SRV_NAME $CERTS_FOLDER$SRV_NAME.crt $CERTS_FOLDER$SRV_NAME.key --insecure  --no-password --ca ./$CERTS_FOLDER$CA_NAME.crt --ca-key ./$CERTS_FOLDER$CA_NAME.key #pass = 1234
 
 echo "verificacion de certificado"
 #step certificate inspect ./$SRV_NAME.crt
