@@ -42,7 +42,7 @@ impl MqttClientListener {
     /// ### Retorno
     /// Resultado de la operación con el listener.
     ///
-    pub fn run(client: &mut MqttClient, logger: &Logger,) -> Result<MqttClientListener, Error> {
+    pub fn run(client: &mut MqttClient, logger: &Logger) -> Result<MqttClientListener, Error> {
         let client = client.clone();
 
         let (sender, receiver) = mpsc::channel();

@@ -21,11 +21,7 @@ pub struct CamIconsPath {
 }
 
 impl CamInterface {
-    pub fn new(
-        cam_list: Arc<Mutex<CamList>>,
-        cam_icon_paths: CamIconsPath,
-        db_path: &str,
-    ) -> Self {
+    pub fn new(cam_list: Arc<Mutex<CamList>>, cam_icon_paths: CamIconsPath, db_path: &str) -> Self {
         let cam_icon = load_image_from_path(std::path::Path::new(&cam_icon_paths.default)).unwrap();
         let cam_alert_icon =
             load_image_from_path(std::path::Path::new(&cam_icon_paths.alert)).unwrap();

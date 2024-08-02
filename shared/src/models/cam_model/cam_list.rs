@@ -87,17 +87,16 @@ impl CamList {
     }
 
     pub fn update_cams_state(
-        &mut self, 
+        &mut self,
         incident_location: Position,
         new_state: CamState,
         range_alert: &f64,
-        range_alert_between_cameras: &f64
+        range_alert_between_cameras: &f64,
     ) -> Vec<Cam> {
         let mut modified_cams = Vec::new();
 
         for cam in self.cams.values_mut() {
-            if cam.is_near(incident_location, range_alert)
-            {
+            if cam.is_near(incident_location, range_alert) {
                 cam.change_state(&new_state);
                 modified_cams.push(cam.clone());
             }
@@ -107,9 +106,8 @@ impl CamList {
 
         for cam in self.cams.values_mut() {
             for modified_cam in &modified_cams {
-                if cam.is_near(modified_cam.location, range_alert_between_cameras)
-                {
-                    if !modified_cams.contains(cam) && cam.change_state(&new_state){
+                if cam.is_near(modified_cam.location, range_alert_between_cameras) {
+                    if !modified_cams.contains(cam) && cam.change_state(&new_state) {
                         close_cameras_modified.push(cam.clone());
                     }
                     break;
@@ -129,7 +127,7 @@ impl CamList {
         }
     }
 
-    pub fn delete_cam(&mut self, id: &u8)  -> Option<Cam> {
+    pub fn delete_cam(&mut self, id: &u8) -> Option<Cam> {
         let cam = self.cams.get(id)?;
         if cam.state == CamState::Alert {
             return None;
@@ -147,7 +145,7 @@ impl CamList {
     pub fn edit_cam_position(&mut self, id: &u8, new_pos: Position) -> Option<Cam> {
         if let Some(cam) = self.cams.get_mut(id) {
             cam.location = new_pos;
-            return Some(cam.clone())
+            return Some(cam.clone());
         }
         None
     }

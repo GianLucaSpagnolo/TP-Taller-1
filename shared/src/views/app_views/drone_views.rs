@@ -2,13 +2,16 @@ use eframe::egui::Ui;
 
 use egui_extras::{Column, TableBuilder};
 
-use crate::{interfaces::drone_interface::DroneInterface, models::drone_model::drone::{Drone, DroneState}};
+use crate::{
+    interfaces::drone_interface::DroneInterface,
+    models::drone_model::drone::{Drone, DroneState},
+};
 
 static COORDENATE_PRECISION: usize = 4;
 
 fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
     row.col(|ui| {
-        ui.centered_and_justified(|ui| {     
+        ui.centered_and_justified(|ui| {
             ui.label(drone.id.to_string());
         });
     });
@@ -19,7 +22,9 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
             } else if let DroneState::GoingToIncident = drone.state {
                 ui.label(egui::RichText::new("Atacando incidente").color(egui::Color32::RED));
             } else if let DroneState::GoingBack = drone.state {
-                ui.label(egui::RichText::new("Volviendo a posicion").color(egui::Color32::DARK_GREEN));
+                ui.label(
+                    egui::RichText::new("Volviendo a posicion").color(egui::Color32::DARK_GREEN),
+                );
             } else if let DroneState::ResolvingIncident = drone.state {
                 ui.label(egui::RichText::new("Resolviendo incidente").color(egui::Color32::YELLOW));
             } else if let DroneState::Disconnected = drone.state {
@@ -27,7 +32,7 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
             } else {
                 ui.label(egui::RichText::new("Volviendo a central").color(egui::Color32::GRAY));
             }
-        }); 
+        });
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
@@ -37,7 +42,7 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
                 COORDENATE_PRECISION
             ));
         });
-    }); 
+    });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
             ui.label(&format!(
@@ -45,7 +50,7 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
                 drone.current_pos.lon(),
                 COORDENATE_PRECISION
             ));
-        }); 
+        });
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
@@ -56,12 +61,11 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
             } else {
                 ui.label(egui::RichText::new("Con Batería").color(egui::Color32::WHITE));
             }
-        }); 
+        });
     });
 }
 
-fn drones_list(ui: &mut Ui,  interface: &mut DroneInterface) {
-
+fn drones_list(ui: &mut Ui, interface: &mut DroneInterface) {
     let drone_list = interface.drone_list.lock().unwrap();
 
     if drone_list.drones.is_empty() {
@@ -77,27 +81,27 @@ fn drones_list(ui: &mut Ui,  interface: &mut DroneInterface) {
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("ID");
-                    }); 
+                    });
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Estado");
-                    }); 
+                    });
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Latitud");
-                    }); 
+                    });
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Longitud");
-                    }); 
+                    });
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Bateria");
-                    }); 
+                    });
                 });
             })
             .body(|mut body| {

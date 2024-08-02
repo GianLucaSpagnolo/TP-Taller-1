@@ -10,7 +10,9 @@ use std::{
 use drone_app::drone_config::DroneConfig;
 use logger::logger_handler::{create_logger_handler, Logger};
 use mqtt::{
-    client::{client_message::MqttClientMessage, mqtt_client::MqttClient}, common::reason_codes::ReasonCode, config::{client_config::ClientConfig, mqtt_config::Config}
+    client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
+    common::reason_codes::ReasonCode,
+    config::{client_config::ClientConfig, mqtt_config::Config},
 };
 use shared::models::{drone_model::drone::Drone, inc_model::incident::Incident};
 
@@ -44,43 +46,40 @@ pub fn process_messages(
     Ok(handler)
 }
 
- pub fn process_standard_input(
-        client: &mut MqttClient,
-        logger: &Logger,
-    ) {
-        let stdin = std::io::stdin();
-        let stdin = stdin.lock();
-        for line in stdin.lines() {
-            match line {
-                Ok(line) => {
-                    let parts: Vec<&str> = line.split(';').collect();
-                    let action = match parts.first() {
-                        Some(action) => action,
-                        None => {
-                            println!("Hubo un error en la lectura del comando. Por favor, intente nuevamente.");
-                            continue;
-                        }
-                    };
-                    match *action {
-                        "exit" => {
-                            println!("Saliendo del sistema...");
-                            client
-                                .disconnect(ReasonCode::NormalDisconnection, logger)
-                                .unwrap();
-                            break;
-                        }
+pub fn process_standard_input(client: &mut MqttClient, logger: &Logger) {
+    let stdin = std::io::stdin();
+    let stdin = stdin.lock();
+    for line in stdin.lines() {
+        match line {
+            Ok(line) => {
+                let parts: Vec<&str> = line.split(';').collect();
+                let action = match parts.first() {
+                    Some(action) => action,
+                    None => {
+                        println!("Hubo un error en la lectura del comando. Por favor, intente nuevamente.");
+                        continue;
+                    }
+                };
+                match *action {
+                    "exit" => {
+                        println!("Saliendo del sistema...");
+                        client
+                            .disconnect(ReasonCode::NormalDisconnection, logger)
+                            .unwrap();
+                        break;
+                    }
 
-                        _ => {
-                            println!("Acción no válida");
-                        }
+                    _ => {
+                        println!("Acción no válida");
                     }
                 }
-                Err(err) => {
-                    eprintln!("Error reading line: {}", err);
-                }
+            }
+            Err(err) => {
+                eprintln!("Error reading line: {}", err);
             }
         }
     }
+}
 
 fn main() -> Result<(), Error> {
     let args: Vec<String> = args().collect();
@@ -125,7 +124,7 @@ fn main() -> Result<(), Error> {
             return Err(e);
         }
     };
-    
+
     match client.subscribe(vec!["drone"], &logger) {
         Ok(r) => r,
         Err(e) => {
@@ -134,7 +133,7 @@ fn main() -> Result<(), Error> {
             return Err(e);
         }
     };
-    
+
     let mut client_clone = client.clone();
     let logger_cpy = logger.clone();
     let interface_handle = thread::spawn(move || {
@@ -180,7 +179,6 @@ fn main() -> Result<(), Error> {
             println!("Drone battery: {}", drone.nivel_de_bateria);
         })
     };
-
 
     logger.close();
     logger_handler.close();

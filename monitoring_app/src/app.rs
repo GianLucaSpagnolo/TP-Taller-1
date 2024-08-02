@@ -85,19 +85,11 @@ fn process_messages(
     client: &mut MqttClient,
     logger: Logger,
 ) -> Result<JoinHandle<()>, Error> {
+    
     let mut client = client.clone();
-    let handler: JoinHandle<()> = thread::spawn(move ||  {
-      
+    let handler: JoinHandle<()> = thread::spawn(move || {
         //for message_received in receiver.try_iter() {
         for message_received in receiver.iter() {
-            /*
-            // se corto la comunicacion se debe hacer un break, cuando ite()
-            // devuelve None, ya que indica una desconexion / cuelgue
-            let aux = message_received;
-            if let None = Some(message_received) {
-                break;
-            }
-            */
 
             match message_received.topic.as_str() {
                 "camaras" => {
@@ -175,18 +167,19 @@ impl MonitoringApp {
     ) -> Self {
         let cam_icons_path = config.icons_paths.cam_icon_paths.clone();
 
-        let cam_interface = CamInterface::new(
-            cam_list_ref,
-            cam_icons_path,
-            &config.db_paths.cam_db_path,
-        );
+        let cam_interface =
+            CamInterface::new(cam_list_ref, cam_icons_path, &config.db_paths.cam_db_path);
 
         let drone_icons_path = config.icons_paths.drone_icon_paths.clone();
 
         let drone_interface = DroneInterface::new(drone_list_ref, drone_icons_path);
 
-        let inc_interface =
-            IncidentInterface::new(true, &config.icons_paths.inc_icon, incident_list_ref, &config.db_paths.inc_db_path);
+        let inc_interface = IncidentInterface::new(
+            true,
+            &config.icons_paths.inc_icon,
+            incident_list_ref,
+            &config.db_paths.inc_db_path,
+        );
 
         Self {
             client,

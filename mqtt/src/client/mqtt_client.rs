@@ -273,7 +273,7 @@ impl MqttClient {
     /// ### Retorno
     /// Resultado de la operación con el listener.
     ///
-    pub fn run_listener(&mut self, logger: &Logger,) -> Result<MqttClientListener, Error> {
+    pub fn run_listener(&mut self, logger: &Logger) -> Result<MqttClientListener, Error> {
         MqttClientListener::run(self, logger)
     }
 

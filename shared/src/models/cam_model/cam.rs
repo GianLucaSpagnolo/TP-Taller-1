@@ -96,7 +96,7 @@ impl Cam {
                     self.incidents_covering -= 1;
                     if self.incidents_covering == 0 {
                         self.to_saving_energy();
-                        return true
+                        return true;
                     }
                 }
                 false

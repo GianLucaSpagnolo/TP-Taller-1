@@ -2,7 +2,10 @@ use eframe::egui::Ui;
 
 use egui_extras::{Column, TableBuilder, TableRow};
 
-use crate::{interfaces::cam_interface::CamInterface, models::cam_model::cam::{Cam, CamState}};
+use crate::{
+    interfaces::cam_interface::CamInterface,
+    models::cam_model::cam::{Cam, CamState},
+};
 
 static COORDENATE_PRECISION: usize = 4;
 
@@ -14,14 +17,11 @@ static COORDENATE_PRECISION: usize = 4;
 /// - `row`: Fila de la tabla
 /// - `cam`: Cámara
 ///
-fn cam_row(
-    mut row: TableRow,
-    cam: &Cam, 
-) {
+fn cam_row(mut row: TableRow, cam: &Cam) {
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
             ui.label(cam.id.to_string());
-        });    
+        });
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
@@ -32,22 +32,22 @@ fn cam_row(
             } else if CamState::Disconnected == cam.state {
                 ui.label(egui::RichText::new("Desconectada").color(egui::Color32::DARK_GRAY));
             }
-        }); 
+        });
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
             ui.label(&format!("{:.1$}", cam.location.lat(), COORDENATE_PRECISION));
-        });   
+        });
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
             ui.label(&format!("{:.1$}", cam.location.lon(), COORDENATE_PRECISION));
-        });  
+        });
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
             ui.label(&format!("{}", cam.incidents_covering));
-        }); 
+        });
     });
 }
 
@@ -59,11 +59,7 @@ fn cam_row(
 /// - `ui`: Interfaz de usuario
 /// - `cam_list`: Lista de cámaras
 ///
-fn cams_list(
-    ui: &mut Ui,
-    cam_interface: &mut CamInterface,
-) {
-
+fn cams_list(ui: &mut Ui, cam_interface: &mut CamInterface) {
     let cam_list = cam_interface.cam_list.lock().unwrap();
 
     if cam_list.cams.is_empty() {
@@ -120,10 +116,7 @@ fn cams_list(
 /// - `ui`: Interfaz de usuario
 /// - `cam_list`: Lista de cámaras
 ///
-pub fn show_cams(
-    ui: &mut Ui,
-    cam_interface: &mut CamInterface
-) {
+pub fn show_cams(ui: &mut Ui, cam_interface: &mut CamInterface) {
     ui.heading("Listado de cámaras");
     ui.separator();
     ui.add_space(10.0);

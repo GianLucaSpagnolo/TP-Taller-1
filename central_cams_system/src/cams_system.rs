@@ -23,8 +23,7 @@ pub struct CamsSystem {
 }
 
 impl CamsSystem {
-
-    pub fn new(path: String) -> Result<Self, Error>{
+    pub fn new(path: String) -> Result<Self, Error> {
         let config = CamSystemConfig::from_file(path)?;
 
         let system = CamList::init(&config.db_path);
@@ -32,7 +31,7 @@ impl CamsSystem {
         Ok(CamsSystem { system, config })
     }
 
-    fn send_save_data(&self, client: &mut MqttClient, logger: &Logger) -> Result<(), Error>{
+    fn send_save_data(&self, client: &mut MqttClient, logger: &Logger) -> Result<(), Error> {
         for cam in self.system.cams.values() {
             match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {
                 Ok(r) => r,
@@ -45,8 +44,8 @@ impl CamsSystem {
     }
 
     pub fn init(&self) -> Result<SystemHandler, Error> {
-
-        let logger_handler = create_logger_handler(&self.config.mqtt_config.general.log_path.clone())?;
+        let logger_handler =
+            create_logger_handler(&self.config.mqtt_config.general.log_path.clone())?;
         let logger = logger_handler.get_logger();
 
         let mut client = match MqttClient::init(self.config.mqtt_config.clone()) {
@@ -77,7 +76,7 @@ impl CamsSystem {
     }
 
     pub fn delete_camara(&mut self, id: &u8) -> Result<Cam, Error> {
-        match self.system.delete_cam(id){
+        match self.system.delete_cam(id) {
             Some(mut cam) => {
                 cam.remove();
                 self.system.save(&self.config.db_path)?;
@@ -114,7 +113,12 @@ impl CamsSystem {
         incident_location: Position,
         new_state: CamState,
     ) -> Result<Vec<Cam>, Error> {
-        let modified_cams = self.system.update_cams_state(incident_location, new_state, &self.config.range_alert, &self.config.range_alert_between_cameras);
+        let modified_cams = self.system.update_cams_state(
+            incident_location,
+            new_state,
+            &self.config.range_alert,
+            &self.config.range_alert_between_cameras,
+        );
         self.system.save(&self.config.db_path)?;
         Ok(modified_cams)
     }
@@ -133,7 +137,6 @@ impl CamsSystem {
         incident: Incident,
         logger: &Logger,
     ) -> Result<(), Error> {
-
         let new_cam_state = match incident.state {
             IncidentState::InProgess => CamState::Alert,
             IncidentState::Resolved => CamState::SavingEnergy,

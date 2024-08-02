@@ -114,7 +114,7 @@ fn incident_row(
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
             ui.label(incident.id.to_string());
-        }); 
+        });
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
@@ -123,7 +123,7 @@ fn incident_row(
             } else {
                 ui.label(egui::RichText::new("Resuelto").color(egui::Color32::GREEN));
             }
-        }); 
+        });
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
@@ -132,7 +132,7 @@ fn incident_row(
                 incident.location.lat(),
                 COORDENATE_PRECISION
             ));
-        }); 
+        });
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
@@ -141,17 +141,17 @@ fn incident_row(
                 incident.location.lon(),
                 COORDENATE_PRECISION
             ));
-        }); 
+        });
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
             ui.label(incident.get_creation_time());
-        }); 
+        });
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
             ui.label(incident.get_resolve_time());
-        }); 
+        });
     });
     if inc_interface.editable {
         row.col(|ui| {
@@ -207,32 +207,32 @@ pub fn incident_list(
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("ID");
-                    }); 
+                    });
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Estado");
-                    }); 
+                    });
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Latitud");
-                    }); 
+                    });
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Longitud");
-                    }); 
+                    });
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Creación");
-                    }); 
+                    });
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Resolución");
-                    }); 
+                    });
                 });
             })
             .body(|mut body| {

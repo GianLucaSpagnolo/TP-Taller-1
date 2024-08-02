@@ -17,7 +17,6 @@ pub struct IncidentList {
 }
 
 impl IncidentList {
-    
     fn generate_id(&self) -> u8 {
         let id = self.incidents.keys().max().map(|id| id + 1);
         id.unwrap_or(0)
@@ -81,7 +80,7 @@ impl IncidentList {
             Ok(incidents)
         }
     }
-    
+
     pub fn save(&self, path: &str) -> std::io::Result<()> {
         let bytes = self.as_bytes();
         std::fs::write(path, bytes)

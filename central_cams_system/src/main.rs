@@ -11,8 +11,7 @@ use cams_system::CamsSystem;
 use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
-    models::inc_model::incident::Incident,
-    will_message::deserialize_will_message_payload,
+    models::inc_model::incident::Incident, will_message::deserialize_will_message_payload,
 };
 use system_interface::interface::{process_standard_input, show_start};
 
@@ -81,7 +80,7 @@ fn main() -> Result<(), Error> {
         &mut system_handler.client,
         listener.receiver,
         cams_system_ref,
-         system_handler.logger.clone(),
+        system_handler.logger.clone(),
     ) {
         Ok(r) => r,
         Err(e) => {

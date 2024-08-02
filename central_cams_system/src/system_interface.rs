@@ -133,7 +133,7 @@ pub mod interface {
         // Se utilizar unwrap() porque ya se validó que la cantidad de argumentos es correcta
         let id = parse_id(id)?;
 
-        let (lat, lon) = match (lat.parse(), lon.parse()){
+        let (lat, lon) = match (lat.parse(), lon.parse()) {
             (Ok(lat), Ok(lon)) => (lat, lon),
             _ => {
                 return Err(Error::new(

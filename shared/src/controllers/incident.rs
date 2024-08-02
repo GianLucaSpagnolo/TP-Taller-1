@@ -7,18 +7,18 @@ pub mod incident_controller {
 
     use crate::models::inc_model::incident_list::IncidentList;
 
-    fn send_incident(client: &mut MqttClient, inc_list: &IncidentList, id: &u8, logger: &Logger, db_path: &str) -> Result<(), Error>{
-        
+    fn send_incident(
+        client: &mut MqttClient,
+        inc_list: &IncidentList,
+        id: &u8,
+        logger: &Logger,
+        db_path: &str,
+    ) -> Result<(), Error> {
         let inc = inc_list.get_inc(id).unwrap().clone();
-        
-        client.publish(
-                inc.as_bytes().clone(),
-                "inc".to_string(),
-                logger,
-            )?;
-        
-        inc_list.save(db_path)
 
+        client.publish(inc.as_bytes().clone(), "inc".to_string(), logger)?;
+
+        inc_list.save(db_path)
     }
 
     pub fn add_incident(
@@ -31,7 +31,7 @@ pub mod incident_controller {
         let inc_id = historial.add_inc(location);
         send_incident(client, historial, &inc_id, logger, db_path)
     }
-    
+
     pub fn resolve_incident(
         client: &mut MqttClient,
         historial: &mut IncidentList,
