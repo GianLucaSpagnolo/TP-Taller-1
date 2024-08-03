@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CERTS_FOLDER="../certificates/"
+CERTS_FOLDER="data/certificates/"
 CA_NAME="ca-native"
 SRV_NAME="server"
 CERT_CHAIN_NAME="server-cert-chain"

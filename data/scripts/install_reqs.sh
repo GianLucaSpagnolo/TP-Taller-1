@@ -9,5 +9,5 @@ sudo dpkg -i step-cli_amd64.deb
 rm step-cli_amd64.deb
 
 echo "installing CA in System .. "
-step certificate install ../certificates/ca-native.crt
+step certificate install data/certificates/ca-native.crt
 
