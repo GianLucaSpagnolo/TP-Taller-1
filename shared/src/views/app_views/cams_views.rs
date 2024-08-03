@@ -60,7 +60,7 @@ fn cam_row(mut row: TableRow, cam: &Cam) {
 /// - `cam_list`: Lista de cámaras
 ///
 fn cams_list(ui: &mut Ui, cam_interface: &mut CamInterface) {
-    let cam_list = cam_interface.cam_list.lock().unwrap();
+    let cam_list = &mut cam_interface.cam_list;
 
     if cam_list.cams.is_empty() {
         ui.label("No hay camaras");

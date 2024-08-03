@@ -1,15 +1,15 @@
+use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 
 use egui::{Style, Visuals};
 use logger::logger_handler::Logger;
+use mqtt::client::client_message::MqttClientMessage;
 use mqtt::client::mqtt_client::MqttClient;
-use shared::models::drone_model::drone_list::DroneList;
-use shared::models::inc_model::incident_list::IncidentList;
 use shared::views::app_views::drone_views::show_drones;
 use shared::views::app_views::inc_views::show_incidents;
 use shared::views::icon::get_icon_data;
 use shared::views::map_views::map::show_map;
-use shared::{models::cam_model::cam_list::CamList, views::app_views::cams_views::show_cams};
+use shared::views::app_views::cams_views::show_cams;
 
 use crate::app::MonitoringApp;
 use crate::app_config::MonitoringAppConfig;
@@ -66,6 +66,8 @@ pub fn map(app: &mut MonitoringApp, ctx: &egui::Context) {
 
 impl eframe::App for MonitoringApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.update_interface();
+
         let frame = egui::Frame {
             inner_margin: Margin {
                 top: 30.0,
@@ -114,9 +116,7 @@ pub fn run_interface(
     client: MqttClient,
     logger: Logger,
     config: MonitoringAppConfig,
-    cam_list_ref: Arc<Mutex<CamList>>,
-    drone_list_ref: Arc<Mutex<DroneList>>,
-    incident_list: Arc<Mutex<IncidentList>>,
+    receiver: Arc<Mutex<Receiver<MqttClientMessage>>>,
 ) -> Result<(), eframe::Error> {
     eframe::run_native(
         "Apliación de monitoreo",
@@ -129,9 +129,7 @@ pub fn run_interface(
                 client,
                 logger,
                 creation_context.egui_ctx.to_owned(),
-                cam_list_ref,
-                drone_list_ref,
-                incident_list,
+                receiver,
             ))
         }),
     )

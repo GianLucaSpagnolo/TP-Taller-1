@@ -27,30 +27,28 @@ pub fn show_map(
         disconnected: drones.drone_disconnected_icon.clone(),
     };
 
-    let mut drones_list = drones.drone_list.lock().unwrap();
-
     let map = Map::new(Some(tiles), map_memory, initial_position)
         .with_plugin(&mut inc.click_incident)
         .with_plugin(cam_images(
             egui_ctx.clone(),
-            &mut cams.cam_list.lock().unwrap(),
+            &mut cams.cam_list,
             cams.cam_icon.clone(),
             cams.cam_alert_icon.clone(),
             cams.cam_disconnect_icon.clone(),
         ))
         .with_plugin(inc_images(
             egui_ctx.clone(),
-            &mut inc.inc_historial.lock().unwrap(),
+            &mut inc.inc_historial,
             inc.inc_icon.clone(),
         ))
         .with_plugin(drone_images(
             egui_ctx.clone(),
-            &mut drones_list,
+            &mut drones.drone_list,
             drone_icons,
         ))
         .with_plugin(drone_central_images(
             egui_ctx.clone(),
-            &mut drones_list,
+            &mut drones.drone_list,
             drones.drone_central_icon.clone(),
         ));
 

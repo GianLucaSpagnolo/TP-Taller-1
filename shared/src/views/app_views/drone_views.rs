@@ -66,7 +66,7 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
 }
 
 fn drones_list(ui: &mut Ui, interface: &mut DroneInterface) {
-    let drone_list = interface.drone_list.lock().unwrap();
+    let drone_list = &mut interface.drone_list;
 
     if drone_list.drones.is_empty() {
         ui.label("No hay drones");
