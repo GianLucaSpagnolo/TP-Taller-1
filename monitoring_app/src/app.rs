@@ -85,7 +85,7 @@ fn process_messages(
     client: &mut MqttClient,
     logger: Logger,
 ) -> Result<JoinHandle<()>, Error> {
-    
+
     let mut client = client.clone();
     let handler: JoinHandle<()> = thread::spawn(move || {
         //for message_received in receiver.try_iter() {
@@ -103,22 +103,26 @@ fn process_messages(
                     }
                 }
                 "drone" => {
+                    //println!("Drone message received");
+
                     let dron = Drone::from_be_bytes(&message_received.data);
 
                     if !dron.sending_for_drone {
+                        //println!("Drone message received for monitoring app");
+
                         let incidents_historial = &mut incident_list.lock().unwrap();
-
-                        let inc_id = dron.id_incident_covering;
-
-                        let drone_state = dron.state.clone();
 
                         let msg = format!("Drone {} - {:?}", dron.id, dron.state);
                         logger.log_event(&msg, &client.config.general.id);
 
-                        drone_list.lock().unwrap().update_drone(dron);
+                        //println!("logger - message: {}", msg);
 
-                        if let DroneState::ResolvingIncident = drone_state {
-                            if let Some(inc_id) = inc_id {
+                        let drone_lock = &mut drone_list.lock().unwrap();
+
+                        //println!("Drone locked");
+
+                        if let DroneState::ResolvingIncident = dron.state {
+                            if let Some(inc_id) = dron.id_incident_covering {
                                 let incident =
                                     incidents_historial.incidents.get_mut(&inc_id).unwrap();
                                 incident.cover();
@@ -130,11 +134,19 @@ fn process_messages(
                                 }
                             };
                         };
-                        drone_list
-                            .lock()
-                            .unwrap()
+
+                        //println!("Incident updated");
+
+                        drone_lock.update_drone(dron);
+
+                        //println!("Drone updated");
+
+                        drone_lock
                             .save(&db_paths.drone_db_path)
                             .unwrap();
+
+                        //println!("Drone saved");
+
                         incidents_historial.save(&db_paths.inc_db_path).unwrap();
                     }
                 }
