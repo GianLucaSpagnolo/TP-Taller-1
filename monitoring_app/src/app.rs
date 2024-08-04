@@ -133,7 +133,14 @@ fn process_messages(
                                         .unwrap();
                                 }
                             };
-                        };
+                        } else if let DroneState::Charging = dron.state {
+                            if let Some(inc_id) = dron.id_incident_covering {
+                                let incident =
+                                    incidents_historial.incidents.get_mut(&inc_id).unwrap();
+                                incident.drones_covering -= 1;
+                            }
+                            
+                        }
 
                         //println!("Incident updated");
 

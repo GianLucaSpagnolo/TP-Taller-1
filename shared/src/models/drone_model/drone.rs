@@ -288,7 +288,9 @@ impl Drone {
 
     pub fn discharge(&mut self, client: &mut MqttClient, logger: Logger) {
         self.nivel_de_bateria -= 5.0;
-        if self.nivel_de_bateria <= 35.0 && self.state == DroneState::Available {
+        if self.nivel_de_bateria <= 35.0 {
+            let pos = self.current_pos;
+            let state_before_charging = self.state.clone();
             self.state = DroneState::LowBattery;
             println!("\x1b[31m  Batería baja, cuidado!\x1b[0m");
             client
@@ -305,8 +307,8 @@ impl Drone {
             thread::sleep(Duration::from_secs(3));
             println!("\x1b[32m  Batería cargada al 100%!\x1b[0m");
             self.nivel_de_bateria = 100.0;
-            self.state = DroneState::Available;
-            self.current_pos = self.initial_pos;
+            self.state = state_before_charging;
+            self.current_pos = pos;
 
             client
                 .publish(self.as_bytes(false), "drone".to_string(), &logger)
