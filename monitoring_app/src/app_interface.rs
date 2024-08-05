@@ -5,7 +5,7 @@ use egui::{Style, Visuals};
 use logger::logger_handler::Logger;
 use mqtt::client::client_message::MqttClientMessage;
 use mqtt::client::mqtt_client::MqttClient;
-use shared::views::app_views::drone_views::show_drones;
+use shared::views::app_views::{drone_views::show_drones, inc_views::show_incident_editor};
 use shared::views::app_views::inc_views::show_incidents;
 use shared::views::icon::get_icon_data;
 use shared::views::map_views::map::show_map;
@@ -33,20 +33,36 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
         .resizable(false)
         .frame(frame)
         .show(ctx, |ui| {
-            egui::CollapsingHeader::new("Incidentes").show(ui, |ui| {
-                show_incidents(
-                    ui,
-                    &mut app.client,
-                    &mut app.global_interface.inc_interface,
-                    &app.logger,
-                    &app.config.db_paths.inc_db_path,
-                );
-            });
-            egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
-                show_cams(ui, &mut app.global_interface.cam_interface);
-            });
-            egui::CollapsingHeader::new("Drones").show(ui, |ui| {
-                show_drones(ui, &mut app.global_interface.drone_interface);
+            show_incident_editor(
+                ui,
+                &mut app.client,
+                &mut app.global_interface.inc_interface,
+                &app.logger,
+                &app.config.db_paths.inc_db_path,
+            );
+            ui.add_space(5.0);
+            ui.separator();
+            ui.add_space(10.0);
+            ui.heading("Sistema de monitoreo");
+            ui.add_space(10.0);
+            ui.separator();
+            ui.add_space(10.0);
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                egui::CollapsingHeader::new("Incidentes").show(ui, |ui| {
+                    show_incidents(
+                        ui,
+                        &mut app.client,
+                        &mut app.global_interface.inc_interface,
+                        &app.logger,
+                        &app.config.db_paths.inc_db_path,
+                    );
+                });
+                egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
+                    show_cams(ui, &mut app.global_interface.cam_interface);
+                });
+                egui::CollapsingHeader::new("Drones").show(ui, |ui| {
+                    show_drones(ui, &mut app.global_interface.drone_interface);
+                });
             });
         });
 }

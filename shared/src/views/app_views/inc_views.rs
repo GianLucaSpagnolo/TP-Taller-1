@@ -85,6 +85,7 @@ pub fn incident_editor(
         };
         ui.label(RichText::new(lon)).labelled_by(name_label.id);
     });
+    ui.add_space(5.0);
     add_incident_button(ui, client, inc_interface, logger, db_path);
 }
 
@@ -251,6 +252,7 @@ pub fn incident_list(
 /// - `ui`: Interfaz de usuario
 /// - `client`: Cliente MQTT
 /// - `incident_interface`: Interfaz de incidente
+/// - `logger`: Logger
 ///
 /// ### Consideraciones
 /// - Si la interfaz de incidente es editable, se mostrará el editor de incidentes y se podrán resolver los incidentes
@@ -262,16 +264,40 @@ pub fn show_incidents(
     logger: &Logger,
     db_path: &str,
 ) {
-    if incident_interface.editable {
-        ui.heading("Gestor de incidentes");
-        ui.separator();
-        ui.add_space(10.0);
-        incident_editor(ui, client, incident_interface, logger, db_path);
-        ui.add_space(10.0);
-    }
     ui.heading("Historial de incidentes");
     ui.separator();
     ui.add_space(10.0);
     incident_list(ui, client, incident_interface, logger, db_path);
     ui.add_space(10.0);
+}
+
+/// ## show_incident_editor
+/// 
+/// Muestra el editor de incidentes
+/// 
+/// ### Parametros
+/// 
+/// - `ui`: Interfaz de usuario
+/// - `client`: Cliente MQTT
+/// - `incident_interface`: Interfaz de incidente
+/// - `logger`: Logger
+/// 
+/// ### Consideraciones
+/// - Si la interfaz de incidente es editable, se mostrará el editor de incidentes
+/// 
+pub fn show_incident_editor(
+    ui: &mut Ui,
+    client: &mut MqttClient,
+    incident_interface: &mut IncidentInterface,
+    logger: &Logger,
+    db_path: &str,
+) {
+    if incident_interface.editable {
+        ui.heading("Gestor de incidentes");
+        ui.add_space(10.0);
+        ui.separator();
+        ui.add_space(10.0);
+        incident_editor(ui, client, incident_interface, logger, db_path);
+        ui.add_space(10.0);
+    }
 }
