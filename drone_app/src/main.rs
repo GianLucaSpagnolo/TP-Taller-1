@@ -2,7 +2,7 @@ use std::{
     env::args,
     io::{BufRead, Error},
     process,
-    sync::{mpsc::Receiver, Arc, Mutex},
+    sync::{mpsc::{self, Receiver, Sender}, Arc, Mutex},
     thread::{self, JoinHandle},
     time::Duration,
 };
@@ -46,7 +46,7 @@ pub fn process_messages(
     Ok(handler)
 }
 
-pub fn process_standard_input(client: &mut MqttClient, logger: &Logger) {
+pub fn process_standard_input(client: &mut MqttClient, logger: &Logger, battery_tx: Sender<()>, battery_handler: thread::JoinHandle<()>) {
     let stdin = std::io::stdin();
     let stdin = stdin.lock();
     for line in stdin.lines() {
@@ -63,9 +63,11 @@ pub fn process_standard_input(client: &mut MqttClient, logger: &Logger) {
                 match *action {
                     "exit" => {
                         println!("Saliendo del sistema...");
+                        battery_tx.send(()).unwrap(); 
                         client
                             .disconnect(ReasonCode::NormalDisconnection, logger)
                             .unwrap();
+                        battery_handler.join().unwrap();
                         break;
                     }
 
@@ -118,7 +120,7 @@ fn main() -> Result<(), Error> {
 
     match client.subscribe(vec!["inc"], &logger) {
         Ok(r) => r,
-        Err(e) => {
+        Err(e) => { 
             logger.close();
             logger_handler.close();
             return Err(e);
@@ -134,12 +136,11 @@ fn main() -> Result<(), Error> {
         }
     };
 
+    let (battery_tx, battery_rx) = mpsc::channel();
+
+
     let mut client_clone = client.clone();
     let logger_cpy = logger.clone();
-    let interface_handle = thread::spawn(move || {
-        process_standard_input(&mut client_clone, &logger_cpy);
-        logger_cpy.close();
-    });
 
     client
         .publish(drone.as_bytes(false), "drone".to_string(), &logger)
@@ -168,8 +169,8 @@ fn main() -> Result<(), Error> {
             return Err(e);
         }
     };
-
-    let _ = {
+    
+    let battery_handle = {
         let drone_ref = drone_ref.clone();
         let logger = logger.clone();
         thread::spawn(move || loop {
@@ -177,8 +178,18 @@ fn main() -> Result<(), Error> {
             let mut drone = drone_ref.lock().unwrap();
             drone.discharge(&mut client, logger.clone());
             println!("Drone battery: {}", drone.nivel_de_bateria);
+
+            if battery_rx.try_recv().is_ok() {
+                println!("Drone apagado.");
+                break;
+            } 
         })
     };
+
+    let interface_handle = thread::spawn(move || {
+        process_standard_input(&mut client_clone, &logger_cpy, battery_tx, battery_handle);
+        logger_cpy.close();
+    });
 
     logger.close();
     logger_handler.close();
