@@ -121,11 +121,14 @@ impl Drone {
                 client
                     .publish(self.as_bytes(false), "drone".to_string(), logger)
                     .unwrap();
-                thread::sleep(Duration::from_millis(distance_to_incident as u64 * 1000));
+
+                println!("duracion: {}", (distance_to_incident * 500.00) as u64);
+                thread::sleep(Duration::from_secs((distance_to_incident * 500.00) as u64));
 
                 println!(
                     "\x1b[36m  Ya en la posición del incidente, listo para resolverlo! \x1b[0m"
                 );
+
                 self.state = DroneState::ResolvingIncident;
                 self.current_pos = Position::from_lat_lon(
                     incident.location.lat() + 0.0001,
@@ -136,6 +139,8 @@ impl Drone {
                     .unwrap();
 
                 self.save();
+
+                thread::sleep(Duration::from_secs(3));
             }
         }
     }

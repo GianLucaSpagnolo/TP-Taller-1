@@ -43,7 +43,7 @@ pub fn add_incident_button(
             let field = Position::from_lat_lon(latitude.unwrap(), longitude.unwrap());
             add_incident(
                 client,
-                &mut inc_interface.inc_historial.lock().unwrap(),
+                &mut inc_interface.inc_historial,
                 field,
                 logger,
                 db_path,
@@ -158,7 +158,7 @@ fn incident_row(
             if ui.button("Resolver").clicked() {
                 resolve_incident(
                     client,
-                    &mut inc_interface.inc_historial.lock().unwrap(),
+                    &mut inc_interface.inc_historial,
                     id,
                     logger,
                     db_path,
@@ -185,10 +185,8 @@ pub fn incident_list(
     logger: &Logger,
     db_path: &str,
 ) {
-    let incidents = &inc_interface
+    let incidents = &mut inc_interface
         .inc_historial
-        .lock()
-        .unwrap()
         .incidents
         .clone();
 

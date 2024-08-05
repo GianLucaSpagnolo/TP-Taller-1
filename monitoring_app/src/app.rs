@@ -1,6 +1,6 @@
 use std::{
     io::Error,
-    sync::{mpsc::Receiver, Arc, Mutex},
+    sync::mpsc::{self, Receiver, Sender},
     thread::{self, JoinHandle},
 };
 
@@ -25,7 +25,6 @@ use shared::{
     will_message::deserialize_will_message_payload,
 };
 
-use crate::app_config::DBPaths;
 use crate::{app_config::MonitoringAppConfig, app_interface::run_interface};
 
 /// ## MonitoringApp
@@ -44,6 +43,7 @@ pub struct MonitoringApp {
     pub logger: Logger,
     pub global_interface: GlobalInterface,
     pub map_interface: MapInterface,
+    pub message_receiver: Receiver<MqttClientMessage>,
 }
 
 /// ## MonitoringHandler
@@ -78,88 +78,12 @@ fn handle_camaras_will_message(message_received: Vec<u8>) {
 ///
 fn process_messages(
     receiver: Receiver<MqttClientMessage>,
-    cam_list: Arc<Mutex<CamList>>,
-    drone_list: Arc<Mutex<DroneList>>,
-    incident_list: Arc<Mutex<IncidentList>>,
-    db_paths: DBPaths,
-    client: &mut MqttClient,
-    logger: Logger,
+    sender: Sender<MqttClientMessage>,
 ) -> Result<JoinHandle<()>, Error> {
 
-    let mut client = client.clone();
     let handler: JoinHandle<()> = thread::spawn(move || {
-        //for message_received in receiver.try_iter() {
         for message_received in receiver.iter() {
-
-            match message_received.topic.as_str() {
-                "camaras" => {
-                    if message_received.is_will_message {
-                        handle_camaras_will_message(message_received.data);
-                    } else {
-                        let data = Cam::from_be_bytes(message_received.data);
-                        let system_lock = &mut cam_list.lock().unwrap();
-                        system_lock.update_cam(data);
-                        system_lock.save(&db_paths.cam_db_path).unwrap();
-                    }
-                }
-                "drone" => {
-                    //println!("Drone message received");
-
-                    let dron = Drone::from_be_bytes(&message_received.data);
-
-                    if !dron.sending_for_drone {
-                        //println!("Drone message received for monitoring app");
-
-                        let incidents_historial = &mut incident_list.lock().unwrap();
-
-                        let msg = format!("Drone {} - {:?}", dron.id, dron.state);
-                        logger.log_event(&msg, &client.config.general.id);
-
-                        //println!("logger - message: {}", msg);
-
-                        let drone_lock = &mut drone_list.lock().unwrap();
-
-                        //println!("Drone locked");
-
-                        if let DroneState::ResolvingIncident = dron.state {
-                            if let Some(inc_id) = dron.id_incident_covering {
-                                let incident =
-                                    incidents_historial.incidents.get_mut(&inc_id).unwrap();
-                                incident.cover();
-                                if incident.drones_covering == 2 {
-                                    incident.resolve();
-                                    client
-                                        .publish(incident.as_bytes(), "inc".to_string(), &logger)
-                                        .unwrap();
-                                }
-                            };
-                        } else if let DroneState::Charging = dron.state {
-                            if let Some(inc_id) = dron.id_incident_covering {
-                                let incident =
-                                    incidents_historial.incidents.get_mut(&inc_id).unwrap();
-                                incident.drones_covering -= 1;
-                            }
-                            
-                        }
-
-                        //println!("Incident updated");
-
-                        drone_lock.update_drone(dron);
-
-                        //println!("Drone updated");
-
-                        drone_lock
-                            .save(&db_paths.drone_db_path)
-                            .unwrap();
-
-                        //println!("Drone saved");
-
-                        incidents_historial.save(&db_paths.inc_db_path).unwrap();
-                    }
-                }
-                _ => {}
-            }
-            // leer el mensaje recibido y cambiar estados según corresponda
+            sender.send(message_received).unwrap();
         }
     });
 
@@ -180,23 +104,24 @@ impl MonitoringApp {
         client: MqttClient,
         logger: Logger,
         egui_ctx: Context,
-        cam_list_ref: Arc<Mutex<CamList>>,
-        drone_list_ref: Arc<Mutex<DroneList>>,
-        incident_list_ref: Arc<Mutex<IncidentList>>,
+        message_receiver: Receiver<MqttClientMessage>,
     ) -> Self {
         let cam_icons_path = config.icons_paths.cam_icon_paths.clone();
 
+        let mut cam_list = CamList::init(&config.db_paths.cam_db_path);
+        cam_list.disconnect_all();
+
         let cam_interface =
-            CamInterface::new(cam_list_ref, cam_icons_path, &config.db_paths.cam_db_path);
+            CamInterface::new(cam_list, cam_icons_path, &config.db_paths.cam_db_path);
 
         let drone_icons_path = config.icons_paths.drone_icon_paths.clone();
 
-        let drone_interface = DroneInterface::new(drone_list_ref, drone_icons_path);
+        let drone_interface = DroneInterface::new(DroneList::init(&config.db_paths.drone_db_path), drone_icons_path);
 
         let inc_interface = IncidentInterface::new(
             true,
             &config.icons_paths.inc_icon,
-            incident_list_ref,
+            IncidentList::init(&config.db_paths.inc_db_path).unwrap(),
             &config.db_paths.inc_db_path,
         );
 
@@ -210,6 +135,7 @@ impl MonitoringApp {
             },
             map_interface: MapInterface::new(egui_ctx.to_owned()),
             config,
+            message_receiver,
         }
     }
 
@@ -231,28 +157,11 @@ impl MonitoringApp {
     ) -> Result<MonitoringHandler, Error> {
         let listener = client.run_listener(&logger)?;
 
-        let mut cam_list = CamList::init(&config.db_paths.cam_db_path);
-
-        cam_list.disconnect_all();
-
-        let cam_list_ref = Arc::new(Mutex::new(cam_list));
-
-        let dron_list = DroneList::init(&config.db_paths.drone_db_path);
-
-        let dron_list_ref = Arc::new(Mutex::new(dron_list));
-
-        let incident_list = IncidentList::init(&config.db_paths.inc_db_path)?;
-
-        let incident_list_ref = Arc::new(Mutex::new(incident_list));
+        let (sender, receiver) = mpsc::channel();
 
         let handler = process_messages(
             listener.receiver,
-            cam_list_ref.clone(),
-            dron_list_ref.clone(),
-            incident_list_ref.clone(),
-            config.db_paths.clone(),
-            &mut client,
-            logger.clone(),
+            sender,
         )?;
 
         client.subscribe(vec!["camaras"], &logger)?;
@@ -261,9 +170,7 @@ impl MonitoringApp {
             client.clone(),
             logger.clone(),
             config,
-            cam_list_ref,
-            dron_list_ref,
-            incident_list_ref,
+            receiver,
         ) {
             Ok(_) => {
                 println!("Saliendo del sistema...");
@@ -278,4 +185,58 @@ impl MonitoringApp {
             Err(e) => Err(Error::new(std::io::ErrorKind::Other, e.to_string())),
         }
     }
+
+
+    pub fn update_interface(&mut self, message_received: MqttClientMessage) {
+
+        match message_received.topic.as_str() {
+            "camaras" => {
+                if message_received.is_will_message {
+                    handle_camaras_will_message(message_received.data);
+                } else {
+                    let data = Cam::from_be_bytes(message_received.data);
+                    let system_lock = &mut self.global_interface.cam_interface.cam_list;
+                    system_lock.update_cam(data);
+                    system_lock.save(&self.config.db_paths.cam_db_path).unwrap();
+                }
+            }
+            "drone" => {
+
+                let dron = Drone::from_be_bytes(&message_received.data);
+
+                if !dron.sending_for_drone {
+
+                    let incidents_historial = &mut self.global_interface.inc_interface.inc_historial;
+
+                    let msg = format!("Drone {} - {:?}", dron.id, dron.state);
+                    self.logger.log_event(&msg, &self.client.config.general.id);
+
+                    let drone_lock = &mut self.global_interface.drone_interface.drone_list;
+
+                    if let DroneState::ResolvingIncident = dron.state {
+                        if let Some(inc_id) = dron.id_incident_covering {
+                            let incident =
+                                incidents_historial.incidents.get_mut(&inc_id).unwrap();
+                            incident.cover();
+                            if incident.drones_covering == 2 {
+                                incident.resolve();
+                                self.client
+                                    .publish(incident.as_bytes(), "inc".to_string(), &self.logger)
+                                    .unwrap();
+                            }
+                        };
+                    };
+
+                    drone_lock.update_drone(dron);
+
+                    drone_lock
+                        .save(&self.config.db_paths.drone_db_path)
+                        .unwrap();
+
+                    incidents_historial.save(&self.config.db_paths.inc_db_path).unwrap();
+                }
+            }
+            _ => {}
+        }
+    } 
 }

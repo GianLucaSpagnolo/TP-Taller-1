@@ -1,6 +1,4 @@
 use egui::ColorImage;
-use std::sync::{Arc, Mutex};
-
 use crate::{
     models::inc_model::incident_list::IncidentList, utils::load_image_from_path,
     views::map_views::plugins::ClickIncidentEvent,
@@ -20,7 +18,7 @@ use crate::{
 ///
 #[derive(Default)]
 pub struct IncidentInterface {
-    pub inc_historial: Arc<Mutex<IncidentList>>,
+    pub inc_historial: IncidentList,
     pub inc_icon: ColorImage,
     pub wrong_data: bool,
     pub show_data_alert: bool,
@@ -45,7 +43,7 @@ impl IncidentInterface {
     pub fn new(
         editable: bool,
         icon_path: &str,
-        inc_historial: Arc<Mutex<IncidentList>>,
+        inc_historial: IncidentList,
         db_path: &str,
     ) -> Self {
         let icon = load_image_from_path(std::path::Path::new(icon_path)).unwrap();
