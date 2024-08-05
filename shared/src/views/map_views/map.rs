@@ -36,6 +36,11 @@ pub fn show_map(
             cams.cam_alert_icon.clone(),
             cams.cam_disconnect_icon.clone(),
         ))
+        .with_plugin(drone_central_images(
+            egui_ctx.clone(),
+            &mut drones.drone_list,
+            drones.drone_central_icon.clone(),
+        ))
         .with_plugin(inc_images(
             egui_ctx.clone(),
             &mut inc.inc_historial,
@@ -45,11 +50,6 @@ pub fn show_map(
             egui_ctx.clone(),
             &mut drones.drone_list,
             drone_icons,
-        ))
-        .with_plugin(drone_central_images(
-            egui_ctx.clone(),
-            &mut drones.drone_list,
-            drones.drone_central_icon.clone(),
         ));
 
     ui.add(map);
