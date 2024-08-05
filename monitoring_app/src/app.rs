@@ -1,6 +1,6 @@
 use std::{
     io::Error,
-    sync::{mpsc::{self, Receiver, Sender}, Arc, Mutex},
+    sync::mpsc::{self, Receiver, Sender},
     thread::{self, JoinHandle},
 };
 
@@ -43,7 +43,7 @@ pub struct MonitoringApp {
     pub logger: Logger,
     pub global_interface: GlobalInterface,
     pub map_interface: MapInterface,
-    pub receiver: Arc<Mutex<Receiver<MqttClientMessage>>>,
+    pub message_receiver: Receiver<MqttClientMessage>,
 }
 
 /// ## MonitoringHandler
@@ -78,13 +78,10 @@ fn handle_camaras_will_message(message_received: Vec<u8>) {
 ///
 fn process_messages(
     receiver: Receiver<MqttClientMessage>,
-    sender: Arc<Mutex<Sender<MqttClientMessage>>>,
+    sender: Sender<MqttClientMessage>,
 ) -> Result<JoinHandle<()>, Error> {
 
-    let sender = sender.lock().unwrap().clone();
-
     let handler: JoinHandle<()> = thread::spawn(move || {
-        //for message_received in receiver.try_iter() {
         for message_received in receiver.iter() {
             sender.send(message_received).unwrap();
         }
@@ -107,7 +104,7 @@ impl MonitoringApp {
         client: MqttClient,
         logger: Logger,
         egui_ctx: Context,
-        receiver: Arc<Mutex<Receiver<MqttClientMessage>>>,
+        message_receiver: Receiver<MqttClientMessage>,
     ) -> Self {
         let cam_icons_path = config.icons_paths.cam_icon_paths.clone();
 
@@ -138,7 +135,7 @@ impl MonitoringApp {
             },
             map_interface: MapInterface::new(egui_ctx.to_owned()),
             config,
-            receiver,
+            message_receiver,
         }
     }
 
@@ -161,12 +158,10 @@ impl MonitoringApp {
         let listener = client.run_listener(&logger)?;
 
         let (sender, receiver) = mpsc::channel();
-        let sender = Arc::new(Mutex::new(sender));
-        let receiver = Arc::new(Mutex::new(receiver));
 
         let handler = process_messages(
             listener.receiver,
-            Arc::clone(&sender),
+            sender,
         )?;
 
         client.subscribe(vec!["camaras"], &logger)?;
@@ -175,7 +170,7 @@ impl MonitoringApp {
             client.clone(),
             logger.clone(),
             config,
-            Arc::clone(&receiver),
+            receiver,
         ) {
             Ok(_) => {
                 println!("Saliendo del sistema...");
@@ -192,9 +187,7 @@ impl MonitoringApp {
     }
 
 
-    pub fn update_interface(&mut self) {
-
-        let message_received = self.receiver.lock().unwrap().recv().unwrap();
+    pub fn update_interface(&mut self, message_received: MqttClientMessage) {
 
         match message_received.topic.as_str() {
             "camaras" => {

@@ -1,5 +1,5 @@
 use std::sync::mpsc::Receiver;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use egui::{Style, Visuals};
 use logger::logger_handler::Logger;
@@ -64,10 +64,20 @@ pub fn map(app: &mut MonitoringApp, ctx: &egui::Context) {
     });
 }
 
+fn updater(app: &mut MonitoringApp, ctx: &egui::Context) {
+    egui::CentralPanel::default().show(ctx, |_ui| {
+        ctx.request_repaint_after(std::time::Duration::from_millis(200));
+    });
+
+    egui::CentralPanel::default().show(ctx, |_ui| {
+        if let Ok(message) = app.message_receiver.try_recv() {
+            app.update_interface(message);
+        }
+    });
+}
+
 impl eframe::App for MonitoringApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.update_interface();
-
         let frame = egui::Frame {
             inner_margin: Margin {
                 top: 30.0,
@@ -77,6 +87,8 @@ impl eframe::App for MonitoringApp {
             },
             ..Default::default()
         };
+
+        updater(self, ctx);
 
         header(ctx, frame);
         side_menu(self, ctx, frame);
@@ -116,7 +128,7 @@ pub fn run_interface(
     client: MqttClient,
     logger: Logger,
     config: MonitoringAppConfig,
-    receiver: Arc<Mutex<Receiver<MqttClientMessage>>>,
+    message_receiver: Receiver<MqttClientMessage>,
 ) -> Result<(), eframe::Error> {
     eframe::run_native(
         "Apliación de monitoreo",
@@ -129,7 +141,7 @@ pub fn run_interface(
                 client,
                 logger,
                 creation_context.egui_ctx.to_owned(),
-                receiver,
+                message_receiver,
             ))
         }),
     )
