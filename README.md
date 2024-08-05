@@ -1,5 +1,3 @@
-<img src="data/readme_assets/rust.png" alt="drawing" width="270" height="270" align="right"/>
-
 # Taller de Programación
 
 ## Grupo "La Krupoviesa"
@@ -8,8 +6,6 @@
 * Martin Gonzalez Prieto - **105738**
 * Gian Luca Spagnolo - **108072**
 * Alexis Martin Ramos - **98891**
-
-<div align="right"><i>Un grupo bien rústico...</i></div>
 
 ---
 
