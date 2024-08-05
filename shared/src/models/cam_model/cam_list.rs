@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, thread, time::Duration};
 
 use super::cam::{Cam, CamState};
 
@@ -94,6 +94,10 @@ impl CamList {
         range_alert_between_cameras: &f64,
     ) -> Vec<Cam> {
         let mut modified_cams = Vec::new();
+
+        if new_state == CamState::SavingEnergy {
+            thread::sleep(Duration::from_secs(3));
+        }
 
         for cam in self.cams.values_mut() {
             if cam.is_near(incident_location, range_alert) {
