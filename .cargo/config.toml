@@ -1,0 +1,12 @@
+[alias]
+broker = "run --bin broker"
+monitoring_app = "run --bin monitoring_app"
+cams_system = "run --bin cams_system"
+
+drone1 = "run --bin drone drone_app/config/drone_config_1.txt"
+drone2 = "run --bin drone drone_app/config/drone_config_2.txt"
+drone3 = "run --bin drone drone_app/config/drone_config_3.txt"
+drone4 = "run --bin drone drone_app/config/drone_config_4.txt"
+drone5 = "run --bin drone drone_app/config/drone_config_5.txt"
+drone6 = "run --bin drone drone_app/config/drone_config_6.txt"
+drone7 = "run --bin drone drone_app/config/drone_config_7.txt"
