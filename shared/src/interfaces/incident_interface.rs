@@ -1,8 +1,8 @@
-use egui::ColorImage;
 use crate::{
     models::inc_model::incident_list::IncidentList, utils::load_image_from_path,
     views::map_views::plugins::ClickIncidentEvent,
 };
+use egui::ColorImage;
 
 /// ## IncidentInterface
 ///

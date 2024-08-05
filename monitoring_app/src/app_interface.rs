@@ -5,11 +5,11 @@ use egui::{Style, Visuals};
 use logger::logger_handler::Logger;
 use mqtt::client::client_message::MqttClientMessage;
 use mqtt::client::mqtt_client::MqttClient;
-use shared::views::app_views::{drone_views::show_drones, inc_views::show_incident_editor};
+use shared::views::app_views::cams_views::show_cams;
 use shared::views::app_views::inc_views::show_incidents;
+use shared::views::app_views::{drone_views::show_drones, inc_views::show_incident_editor};
 use shared::views::icon::get_icon_data;
 use shared::views::map_views::map::show_map;
-use shared::views::app_views::cams_views::show_cams;
 
 use crate::app::MonitoringApp;
 use crate::app_config::MonitoringAppConfig;

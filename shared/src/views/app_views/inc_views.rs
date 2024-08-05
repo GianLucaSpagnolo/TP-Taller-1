@@ -186,10 +186,7 @@ pub fn incident_list(
     logger: &Logger,
     db_path: &str,
 ) {
-    let incidents = &mut inc_interface
-        .inc_historial
-        .incidents
-        .clone();
+    let incidents = &mut inc_interface.inc_historial.incidents.clone();
 
     if incidents.is_empty() {
         ui.label("No hay incidentes");
@@ -272,19 +269,19 @@ pub fn show_incidents(
 }
 
 /// ## show_incident_editor
-/// 
+///
 /// Muestra el editor de incidentes
-/// 
+///
 /// ### Parametros
-/// 
+///
 /// - `ui`: Interfaz de usuario
 /// - `client`: Cliente MQTT
 /// - `incident_interface`: Interfaz de incidente
 /// - `logger`: Logger
-/// 
+///
 /// ### Consideraciones
 /// - Si la interfaz de incidente es editable, se mostrará el editor de incidentes
-/// 
+///
 pub fn show_incident_editor(
     ui: &mut Ui,
     client: &mut MqttClient,

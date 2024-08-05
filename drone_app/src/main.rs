@@ -2,7 +2,10 @@ use std::{
     env::args,
     io::{BufRead, Error},
     process,
-    sync::{mpsc::{self, Receiver, Sender}, Arc, Mutex},
+    sync::{
+        mpsc::{self, Receiver, Sender},
+        Arc, Mutex,
+    },
     thread::{self, JoinHandle},
     time::Duration,
 };
@@ -46,7 +49,12 @@ pub fn process_messages(
     Ok(handler)
 }
 
-pub fn process_standard_input(client: &mut MqttClient, logger: &Logger, battery_tx: Sender<()>, battery_handler: thread::JoinHandle<()>) {
+pub fn process_standard_input(
+    client: &mut MqttClient,
+    logger: &Logger,
+    battery_tx: Sender<()>,
+    battery_handler: thread::JoinHandle<()>,
+) {
     let stdin = std::io::stdin();
     let stdin = stdin.lock();
     for line in stdin.lines() {
@@ -63,7 +71,7 @@ pub fn process_standard_input(client: &mut MqttClient, logger: &Logger, battery_
                 match *action {
                     "exit" => {
                         println!("Saliendo del sistema...");
-                        battery_tx.send(()).unwrap(); 
+                        battery_tx.send(()).unwrap();
                         client
                             .disconnect(ReasonCode::NormalDisconnection, logger)
                             .unwrap();
@@ -120,7 +128,7 @@ fn main() -> Result<(), Error> {
 
     match client.subscribe(vec!["inc"], &logger) {
         Ok(r) => r,
-        Err(e) => { 
+        Err(e) => {
             logger.close();
             logger_handler.close();
             return Err(e);
@@ -137,7 +145,6 @@ fn main() -> Result<(), Error> {
     };
 
     let (battery_tx, battery_rx) = mpsc::channel();
-
 
     let mut client_clone = client.clone();
     let logger_cpy = logger.clone();
@@ -169,7 +176,7 @@ fn main() -> Result<(), Error> {
             return Err(e);
         }
     };
-    
+
     let battery_handle = {
         let drone_ref = drone_ref.clone();
         let logger = logger.clone();
@@ -182,7 +189,7 @@ fn main() -> Result<(), Error> {
             if battery_rx.try_recv().is_ok() {
                 println!("Drone apagado.");
                 break;
-            } 
+            }
         })
     };
 

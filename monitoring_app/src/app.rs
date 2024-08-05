@@ -80,7 +80,6 @@ fn process_messages(
     receiver: Receiver<MqttClientMessage>,
     sender: Sender<MqttClientMessage>,
 ) -> Result<JoinHandle<()>, Error> {
-
     let handler: JoinHandle<()> = thread::spawn(move || {
         for message_received in receiver.iter() {
             sender.send(message_received).unwrap();
@@ -116,7 +115,10 @@ impl MonitoringApp {
 
         let drone_icons_path = config.icons_paths.drone_icon_paths.clone();
 
-        let drone_interface = DroneInterface::new(DroneList::init(&config.db_paths.drone_db_path), drone_icons_path);
+        let drone_interface = DroneInterface::new(
+            DroneList::init(&config.db_paths.drone_db_path),
+            drone_icons_path,
+        );
 
         let inc_interface = IncidentInterface::new(
             true,
@@ -159,19 +161,11 @@ impl MonitoringApp {
 
         let (sender, receiver) = mpsc::channel();
 
-        let handler = process_messages(
-            listener.receiver,
-            sender,
-        )?;
+        let handler = process_messages(listener.receiver, sender)?;
 
         client.subscribe(vec!["camaras"], &logger)?;
         client.subscribe(vec!["drone"], &logger)?;
-        match run_interface(
-            client.clone(),
-            logger.clone(),
-            config,
-            receiver,
-        ) {
+        match run_interface(client.clone(), logger.clone(), config, receiver) {
             Ok(_) => {
                 println!("Saliendo del sistema...");
                 client
@@ -186,9 +180,7 @@ impl MonitoringApp {
         }
     }
 
-
     pub fn update_interface(&mut self, message_received: MqttClientMessage) {
-
         match message_received.topic.as_str() {
             "camaras" => {
                 if message_received.is_will_message {
@@ -201,12 +193,11 @@ impl MonitoringApp {
                 }
             }
             "drone" => {
-
                 let dron = Drone::from_be_bytes(&message_received.data);
 
                 if !dron.sending_for_drone {
-
-                    let incidents_historial = &mut self.global_interface.inc_interface.inc_historial;
+                    let incidents_historial =
+                        &mut self.global_interface.inc_interface.inc_historial;
 
                     let msg = format!("Drone {} - {:?}", dron.id, dron.state);
                     self.logger.log_event(&msg, &self.client.config.general.id);
@@ -215,8 +206,7 @@ impl MonitoringApp {
 
                     if let DroneState::ResolvingIncident = dron.state {
                         if let Some(inc_id) = dron.id_incident_covering {
-                            let incident =
-                                incidents_historial.incidents.get_mut(&inc_id).unwrap();
+                            let incident = incidents_historial.incidents.get_mut(&inc_id).unwrap();
                             incident.cover();
                             if incident.drones_covering == 2 {
                                 incident.resolve();
@@ -233,10 +223,12 @@ impl MonitoringApp {
                         .save(&self.config.db_paths.drone_db_path)
                         .unwrap();
 
-                    incidents_historial.save(&self.config.db_paths.inc_db_path).unwrap();
+                    incidents_historial
+                        .save(&self.config.db_paths.inc_db_path)
+                        .unwrap();
                 }
             }
             _ => {}
         }
-    } 
+    }
 }
