@@ -6,7 +6,6 @@ pub mod interface {
 
     use logger::logger_handler::Logger;
     use mqtt::{client::mqtt_client::MqttClient, common::reason_codes::ReasonCode};
-    use shared::models::cam_model::cam::{Cam, CamState};
     use walkers::Position;
 
     use crate::cams_system::CamsSystem;
@@ -18,19 +17,6 @@ pub mod interface {
                 std::io::ErrorKind::Other,
                 format!("Error al parsear id: {}", e),
             )),
-        }
-    }
-
-    fn generate_id(cam_system: &CamsSystem) -> Result<u8, Error> {
-        let id = cam_system
-            .system
-            .cams
-            .iter()
-            .max_by_key(|cam| cam.id)
-            .map(|cam| cam.id + 1);
-        match id {
-            Some(id) => Ok(id),
-            None => Ok(0),
         }
     }
 
@@ -57,8 +43,6 @@ pub mod interface {
         args: Vec<&str>,
         logger: &Logger,
     ) -> Result<(), Error> {
-        let id = generate_id(&cam_system.lock().unwrap())?;
-
         let mut cam_system = cam_system.lock().unwrap();
 
         let (lat, lon) = check_add_args(args)?;
@@ -68,16 +52,8 @@ pub mod interface {
         let lon = lon.parse().unwrap();
 
         let location = Position::from_lat_lon(lat, lon);
-        let cam = Cam {
-            id,
-            location,
-            state: CamState::SavingEnergy,
-            incidents_covering: 0,
-        };
-        let added_cam = cam_system.add_new_camara(cam);
+        let added_cam = cam_system.add_new_camara(location)?;
         println!("Camera added: {} ", added_cam);
-
-        cam_system.system.save(&cam_system.config.db_path.clone())?;
         client.publish(added_cam.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
@@ -116,8 +92,7 @@ pub mod interface {
             }
         };
 
-        let mut cam = cam_system.delete_camara(id)?;
-        cam.state = CamState::Removed;
+        let cam = cam_system.delete_camara(&id)?;
         println!(
             "Cámara eliminada: id: {} - modo: {:?} - latitud: {} - longitud: {}",
             cam.id,
@@ -125,8 +100,6 @@ pub mod interface {
             cam.location.lat(),
             cam.location.lon()
         );
-
-        cam_system.system.save(&cam_system.config.db_path.clone())?;
 
         client.publish(cam.as_bytes(), "camaras".to_string(), logger)?;
 
@@ -160,17 +133,22 @@ pub mod interface {
         // Se utilizar unwrap() porque ya se validó que la cantidad de argumentos es correcta
         let id = parse_id(id)?;
 
-        let lat = lat.parse().unwrap();
-        let lon = lon.parse().unwrap();
+        let (lat, lon) = match (lat.parse(), lon.parse()) {
+            (Ok(lat), Ok(lon)) => (lat, lon),
+            _ => {
+                return Err(Error::new(
+                    std::io::ErrorKind::Other,
+                    "Error al parsear latitud o longitud",
+                ));
+            }
+        };
 
         let new_coordenate = Position::from_lat_lon(lat, lon);
 
         let mut cam_system = cam_system.lock().unwrap();
 
-        let modified_cam = cam_system.modify_cam_position(id, new_coordenate)?;
+        let modified_cam = cam_system.modify_cam_position(&id, new_coordenate)?;
         println!("Cámara modificada correctamente");
-
-        cam_system.system.save(&cam_system.config.db_path.clone())?;
         client.publish(modified_cam.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }

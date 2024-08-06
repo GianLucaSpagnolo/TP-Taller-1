@@ -5,15 +5,15 @@ use std::{
 
 use mqtt::config::{client_config::ClientConfig, mqtt_config::Config};
 use shared::{
-    interfaces::drone_interface::DroneIconsPath, will_message::serialize_will_message_payload,
+    interfaces::{cam_interface::CamIconsPath, drone_interface::DroneIconsPath},
+    will_message::serialize_will_message_payload,
 };
 use walkers::Position;
 
 #[derive(Clone, Default)]
 pub struct IconsPaths {
     pub app_icon: String,
-    pub cam_icon: String,
-    pub cam_alert_icon: String,
+    pub cam_icon_paths: CamIconsPath,
     pub inc_icon: String,
     pub drone_icon_paths: DroneIconsPath,
 }
@@ -40,6 +40,7 @@ impl MonitoringAppConfig {
         let mut app_icon_path = String::new();
         let mut cam_icon_path = String::new();
         let mut cam_alert_icon_path = String::new();
+        let mut cam_disconnect_icon_path = String::new();
         let mut inc_icon_path = String::new();
         let mut drone_default_icon_path = String::new();
         let mut drone_alert_icon_path = String::new();
@@ -87,6 +88,9 @@ impl MonitoringAppConfig {
                 }
                 "cam_alert_icon" => {
                     cam_alert_icon_path = parts[1].trim().to_string();
+                }
+                "cam_disconnect_icon" => {
+                    cam_disconnect_icon_path = parts[1].trim().to_string();
                 }
                 "inc_icon" => {
                     inc_icon_path = parts[1].trim().to_string();
@@ -163,8 +167,11 @@ impl MonitoringAppConfig {
                 initial_position,
                 icons_paths: IconsPaths {
                     app_icon: app_icon_path,
-                    cam_icon: cam_icon_path,
-                    cam_alert_icon: cam_alert_icon_path,
+                    cam_icon_paths: CamIconsPath {
+                        default: cam_icon_path,
+                        alert: cam_alert_icon_path,
+                        disconnected: cam_disconnect_icon_path,
+                    },
                     inc_icon: inc_icon_path,
                     drone_icon_paths: DroneIconsPath {
                         default: drone_default_icon_path,

@@ -55,17 +55,15 @@ use crate::mqtt_packets::{
 /// #### Properties
 ///
 /// 1. Property Length
-/// BYTE 4: Property Length (Variable Byte Integer)
+///    BYTE 4: Property Length (Variable Byte Integer)
 ///
 /// 2. Reason String
-/// ID: 31 (0x1F)
-/// BYTE 5: Reason String (UTF-8 Encoded String)
-/// ...
+///    ID: 31 (0x1F)
+///    BYTE 5: Reason String (UTF-8 Encoded String)
 ///
 /// 3. User Property
-/// ID: 38 (0x26)
-/// BYTE n: User Property (UTF-8 string pair)
-/// ...
+///    ID: 38 (0x26)
+///    BYTE n: User Property (UTF-8 string pair)
 ///
 pub struct Puback {
     pub properties: PubackProperties,

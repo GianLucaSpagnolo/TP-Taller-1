@@ -10,6 +10,7 @@ mqtt = { path = "../mqtt" }
 logger = { path = "../logger"}
 
 rand = "0.8.4"
+chrono = "0.4.19"
 image = "0.25.1"
 eframe = "0.27.2"
 walkers = "0.22.0"

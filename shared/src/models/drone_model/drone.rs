@@ -121,11 +121,14 @@ impl Drone {
                 client
                     .publish(self.as_bytes(false), "drone".to_string(), logger)
                     .unwrap();
-                thread::sleep(Duration::from_millis(distance_to_incident as u64 * 1000));
+
+                println!("duracion: {}", (distance_to_incident * 500.00) as u64);
+                thread::sleep(Duration::from_secs((distance_to_incident * 500.00) as u64));
 
                 println!(
                     "\x1b[36m  Ya en la posición del incidente, listo para resolverlo! \x1b[0m"
                 );
+
                 self.state = DroneState::ResolvingIncident;
                 self.current_pos = Position::from_lat_lon(
                     incident.location.lat() + 0.0001,
@@ -136,6 +139,8 @@ impl Drone {
                     .unwrap();
 
                 self.save();
+
+                thread::sleep(Duration::from_secs(3));
             }
         }
     }
@@ -146,8 +151,8 @@ impl Drone {
         drone_received: Drone,
         logger: &Logger,
     ) {
-        if let Some(index) = self.drones.contais(&drone_received) {
-            self.drones.modify(index, drone_received);
+        if self.drones.contais(&drone_received) {
+            self.drones.update_drone(drone_received);
         } else {
             self.drones.add(drone_received);
             client
@@ -274,8 +279,8 @@ impl Drone {
         let mut drones_closer = 0;
 
         for drone in self.drones.get_drones() {
-            if get_distance_to_incident(drone, lat, lon) < distance
-                && drone.state == DroneState::Available
+            if get_distance_to_incident(drone.1, lat, lon) < distance
+                && drone.1.state == DroneState::Available
             {
                 drones_closer += 1;
                 if drones_closer == 2 {
@@ -288,7 +293,9 @@ impl Drone {
 
     pub fn discharge(&mut self, client: &mut MqttClient, logger: Logger) {
         self.nivel_de_bateria -= 5.0;
-        if self.nivel_de_bateria <= 35.0 && self.state == DroneState::Available {
+        if self.nivel_de_bateria <= 35.0 {
+            let pos = self.current_pos;
+            let state_before_charging = self.state.clone();
             self.state = DroneState::LowBattery;
             println!("\x1b[31m  Batería baja, cuidado!\x1b[0m");
             client
@@ -305,8 +312,8 @@ impl Drone {
             thread::sleep(Duration::from_secs(3));
             println!("\x1b[32m  Batería cargada al 100%!\x1b[0m");
             self.nivel_de_bateria = 100.0;
-            self.state = DroneState::Available;
-            self.current_pos = self.initial_pos;
+            self.state = state_before_charging;
+            self.current_pos = pos;
 
             client
                 .publish(self.as_bytes(false), "drone".to_string(), &logger)

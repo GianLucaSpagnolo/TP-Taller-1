@@ -1,12 +1,10 @@
-use std::sync::{Arc, Mutex};
-
 use egui::ColorImage;
 
 use crate::{models::drone_model::drone_list::DroneList, utils::load_image_from_path};
 
 #[derive(Default)]
 pub struct DroneInterface {
-    pub drone_list: Arc<Mutex<DroneList>>,
+    pub drone_list: DroneList,
     pub drone_icon: ColorImage,
     pub drone_alert_icon: ColorImage,
     pub drone_back_icon: ColorImage,
@@ -30,7 +28,7 @@ pub struct DroneIconsPath {
 }
 
 impl DroneInterface {
-    pub fn new(drone_list: Arc<Mutex<DroneList>>, drone_icons_path: DroneIconsPath) -> Self {
+    pub fn new(drone_list: DroneList, drone_icons_path: DroneIconsPath) -> Self {
         let drone_icon =
             load_image_from_path(std::path::Path::new(&drone_icons_path.default)).unwrap();
         let drone_alert_icon =

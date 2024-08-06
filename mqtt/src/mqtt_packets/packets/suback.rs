@@ -42,15 +42,15 @@ use crate::mqtt_packets::{
 /// #### Properties
 ///
 /// 1. Property Length
-/// BYTE 3: Property Length (Variable Byte Integer)
+///    BYTE 3: Property Length (Variable Byte Integer)
 ///
 /// 2. Reason String
-/// ID: 31 (0x1F)
-/// BYTE 4: Reason String (UTF-8 Encoded String)
+///    ID: 31 (0x1F)
+///    BYTE 4: Reason String (UTF-8 Encoded String)
 ///
 /// 3. User Property
-/// ID: 38 (0x26)
-/// Byte n: User Property (UTF-8 String Pair)
+///    ID: 38 (0x26)
+///    Byte n: User Property (UTF-8 String Pair)
 ///
 /// ### PAYLOAD
 ///

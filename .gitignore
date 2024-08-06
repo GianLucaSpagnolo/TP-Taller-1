@@ -20,6 +20,13 @@ Cargo.lock
 *.tmp
 *.csv
 
+#certificates
+data/certificates/*.crt
+data/certificates/*.key
+data/certificates/*.der
+data/certificates/*.pfx
+data/scripts/*.sh
+
 #test files
 mqtt/tests/files/*.db
 data/db/*.db

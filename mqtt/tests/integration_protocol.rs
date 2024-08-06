@@ -155,7 +155,7 @@ mod test {
             let logger_handler = create_logger_handler(&log_file_path.to_string()).unwrap();
             let logger = logger_handler.get_logger();
 
-            let client_listener = client.run_listener().unwrap();
+            let client_listener = client.run_listener(&logger).unwrap();
             let client_message_handler = process_messages(client_listener.receiver).unwrap();
 
             client.subscribe(vec!["messages"], &logger).unwrap();

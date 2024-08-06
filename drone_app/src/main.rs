@@ -1,8 +1,11 @@
 use std::{
     env::args,
-    io::Error,
+    io::{BufRead, Error},
     process,
-    sync::{mpsc::Receiver, Arc, Mutex},
+    sync::{
+        mpsc::{self, Receiver, Sender},
+        Arc, Mutex,
+    },
     thread::{self, JoinHandle},
     time::Duration,
 };
@@ -11,6 +14,7 @@ use drone_app::drone_config::DroneConfig;
 use logger::logger_handler::{create_logger_handler, Logger};
 use mqtt::{
     client::{client_message::MqttClientMessage, mqtt_client::MqttClient},
+    common::reason_codes::ReasonCode,
     config::{client_config::ClientConfig, mqtt_config::Config},
 };
 use shared::models::{drone_model::drone::Drone, inc_model::incident::Incident};
@@ -22,8 +26,8 @@ pub fn process_messages(
     logger: Logger,
 ) -> Result<JoinHandle<()>, Error> {
     let mut client = client.clone();
-    let handler = thread::spawn(move || loop {
-        for message_received in receiver.try_iter() {
+    let handler = thread::spawn(move || {
+        for message_received in receiver.iter() {
             if message_received.topic.as_str() == "inc" {
                 let incident = Incident::from_be_bytes(message_received.data);
                 drone
@@ -43,6 +47,48 @@ pub fn process_messages(
         }
     });
     Ok(handler)
+}
+
+pub fn process_standard_input(
+    client: &mut MqttClient,
+    logger: &Logger,
+    battery_tx: Sender<()>,
+    battery_handler: thread::JoinHandle<()>,
+) {
+    let stdin = std::io::stdin();
+    let stdin = stdin.lock();
+    for line in stdin.lines() {
+        match line {
+            Ok(line) => {
+                let parts: Vec<&str> = line.split(';').collect();
+                let action = match parts.first() {
+                    Some(action) => action,
+                    None => {
+                        println!("Hubo un error en la lectura del comando. Por favor, intente nuevamente.");
+                        continue;
+                    }
+                };
+                match *action {
+                    "exit" => {
+                        println!("Saliendo del sistema...");
+                        battery_tx.send(()).unwrap();
+                        client
+                            .disconnect(ReasonCode::NormalDisconnection, logger)
+                            .unwrap();
+                        battery_handler.join().unwrap();
+                        break;
+                    }
+
+                    _ => {
+                        println!("Acción no válida");
+                    }
+                }
+            }
+            Err(err) => {
+                eprintln!("Error reading line: {}", err);
+            }
+        }
+    }
 }
 
 fn main() -> Result<(), Error> {
@@ -98,12 +144,17 @@ fn main() -> Result<(), Error> {
         }
     };
 
+    let (battery_tx, battery_rx) = mpsc::channel();
+
+    let mut client_clone = client.clone();
+    let logger_cpy = logger.clone();
+
     client
         .publish(drone.as_bytes(false), "drone".to_string(), &logger)
         .unwrap();
     let drone_ref = Arc::new(Mutex::new(drone));
 
-    let listener = match client.run_listener() {
+    let listener = match client.run_listener(&logger) {
         Ok(r) => r,
         Err(e) => {
             logger.close();
@@ -126,7 +177,7 @@ fn main() -> Result<(), Error> {
         }
     };
 
-    let _ = {
+    let battery_handle = {
         let drone_ref = drone_ref.clone();
         let logger = logger.clone();
         thread::spawn(move || loop {
@@ -134,11 +185,22 @@ fn main() -> Result<(), Error> {
             let mut drone = drone_ref.lock().unwrap();
             drone.discharge(&mut client, logger.clone());
             println!("Drone battery: {}", drone.nivel_de_bateria);
+
+            if battery_rx.try_recv().is_ok() {
+                println!("Drone apagado.");
+                break;
+            }
         })
     };
+
+    let interface_handle = thread::spawn(move || {
+        process_standard_input(&mut client_clone, &logger_cpy, battery_tx, battery_handle);
+        logger_cpy.close();
+    });
+
     logger.close();
     logger_handler.close();
-
+    interface_handle.join().unwrap();
     listener.handler.join().unwrap()?;
     process_message_handler.join().unwrap();
     Ok(())

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use walkers::Position;
 
-use super::incident::{Incident, IncidentState};
+use super::incident::Incident;
 
 /// ## IncidentList
 ///
@@ -17,15 +17,25 @@ pub struct IncidentList {
 }
 
 impl IncidentList {
-    pub fn add(&mut self, location: Position) -> Incident {
-        let incident = Incident {
-            id: self.incidents.len() as u8,
-            location,
-            state: IncidentState::InProgess,
-            drones_covering: 0,
-        };
+    fn generate_id(&self) -> u8 {
+        let id = self.incidents.keys().max().map(|id| id + 1);
+        id.unwrap_or(0)
+    }
+
+    pub fn add_inc(&mut self, location: Position) -> u8 {
+        let incident = Incident::new(self.generate_id(), location);
         self.incidents.insert(incident.id, incident.clone());
-        incident
+        incident.id
+    }
+
+    pub fn get_inc(&self, id: &u8) -> Option<&Incident> {
+        self.incidents.get(id)
+    }
+
+    pub fn resolve_inc(&mut self, id: &u8) {
+        if let Some(incident) = self.incidents.get_mut(id) {
+            incident.resolve();
+        }
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
@@ -70,6 +80,7 @@ impl IncidentList {
             Ok(incidents)
         }
     }
+
     pub fn save(&self, path: &str) -> std::io::Result<()> {
         let bytes = self.as_bytes();
         std::fs::write(path, bytes)
@@ -83,18 +94,10 @@ mod test {
     #[test]
     fn test_serialization() {
         let mut incident_list = IncidentList::default();
-        let incident = Incident {
-            id: 0,
-            location: Position::from_lat_lon(0.0, 0.0),
-            state: IncidentState::InProgess,
-            drones_covering: 0,
-        };
-        let incident2 = Incident {
-            id: 1,
-            location: Position::from_lat_lon(10.0, 10.0),
-            state: IncidentState::Resolved,
-            drones_covering: 0,
-        };
+        let incident = Incident::new(0, Position::from_lat_lon(0.0, 0.0));
+        let mut incident2 = Incident::new(1, Position::from_lat_lon(1.0, 1.0));
+        incident2.resolve();
+
         incident_list.incidents.insert(incident.id, incident);
         incident_list.incidents.insert(incident2.id, incident2);
         let bytes = incident_list.as_bytes();

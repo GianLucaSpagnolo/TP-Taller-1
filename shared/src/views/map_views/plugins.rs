@@ -25,6 +25,7 @@ pub fn cam_images(
     cams: &mut CamList,
     default_icon: ColorImage,
     alert_icon: ColorImage,
+    disconnect_icon: ColorImage,
 ) -> impl Plugin {
     let angle = 0.0;
     let x_scale = 0.1;
@@ -32,10 +33,12 @@ pub fn cam_images(
 
     Images::new(
         cams.cams
-            .iter()
+            .values()
             .map(|cam| {
                 let pos = cam.location;
-                let texture = if let CamState::Alert = cam.state {
+                let texture = if let CamState::Disconnected = cam.state {
+                    Texture::from_color_image(disconnect_icon.clone(), &egui_ctx)
+                } else if let CamState::Alert = cam.state {
                     Texture::from_color_image(alert_icon.clone(), &egui_ctx)
                 } else {
                     Texture::from_color_image(default_icon.clone(), &egui_ctx)
@@ -67,7 +70,7 @@ pub fn drone_images(egui_ctx: Context, drones: &mut DroneList, icons: DroneIcons
     Images::new(
         drones
             .drones
-            .iter()
+            .values()
             .map(|drone| {
                 let pos = drone.current_pos;
                 let texture = if let DroneState::GoingToIncident = drone.state {
@@ -106,7 +109,7 @@ pub fn drone_central_images(
     Images::new(
         drones
             .drones
-            .iter()
+            .values()
             .map(|drone| {
                 let pos = drone.charging_station_pos;
                 let texture = Texture::from_color_image(icon.clone(), &egui_ctx);

@@ -1,15 +1,15 @@
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc::Receiver;
+use std::sync::Arc;
 
 use egui::{Style, Visuals};
 use logger::logger_handler::Logger;
+use mqtt::client::client_message::MqttClientMessage;
 use mqtt::client::mqtt_client::MqttClient;
-use shared::models::drone_model::drone_list::DroneList;
-use shared::models::inc_model::incident_list::IncidentList;
-use shared::views::app_views::drone_views::show_drones;
+use shared::views::app_views::cams_views::show_cams;
 use shared::views::app_views::inc_views::show_incidents;
+use shared::views::app_views::{drone_views::show_drones, inc_views::show_incident_editor};
 use shared::views::icon::get_icon_data;
 use shared::views::map_views::map::show_map;
-use shared::{models::cam_model::cam_list::CamList, views::app_views::cams_views::show_cams};
 
 use crate::app::MonitoringApp;
 use crate::app_config::MonitoringAppConfig;
@@ -33,30 +33,36 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
         .resizable(false)
         .frame(frame)
         .show(ctx, |ui| {
-            egui::CollapsingHeader::new("Incidentes").show(ui, |ui| {
-                show_incidents(
-                    ui,
-                    &mut app.client,
-                    &mut app.global_interface.inc_interface,
-                    &app.logger,
-                    &app.config.db_paths.inc_db_path,
-                );
-            });
-            egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
-                show_cams(
-                    ui,
-                    &app.global_interface.cam_interface.cam_list.lock().unwrap(),
-                );
-            });
-            egui::CollapsingHeader::new("Drones").show(ui, |ui| {
-                show_drones(
-                    ui,
-                    &app.global_interface
-                        .drone_interface
-                        .drone_list
-                        .lock()
-                        .unwrap(),
-                );
+            show_incident_editor(
+                ui,
+                &mut app.client,
+                &mut app.global_interface.inc_interface,
+                &app.logger,
+                &app.config.db_paths.inc_db_path,
+            );
+            ui.add_space(5.0);
+            ui.separator();
+            ui.add_space(10.0);
+            ui.heading("Sistema de monitoreo");
+            ui.add_space(10.0);
+            ui.separator();
+            ui.add_space(10.0);
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                egui::CollapsingHeader::new("Incidentes").show(ui, |ui| {
+                    show_incidents(
+                        ui,
+                        &mut app.client,
+                        &mut app.global_interface.inc_interface,
+                        &app.logger,
+                        &app.config.db_paths.inc_db_path,
+                    );
+                });
+                egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
+                    show_cams(ui, &mut app.global_interface.cam_interface);
+                });
+                egui::CollapsingHeader::new("Drones").show(ui, |ui| {
+                    show_drones(ui, &mut app.global_interface.drone_interface);
+                });
             });
         });
 }
@@ -74,6 +80,18 @@ pub fn map(app: &mut MonitoringApp, ctx: &egui::Context) {
     });
 }
 
+fn updater(app: &mut MonitoringApp, ctx: &egui::Context) {
+    egui::CentralPanel::default().show(ctx, |_ui| {
+        ctx.request_repaint_after(std::time::Duration::from_millis(200));
+    });
+
+    egui::CentralPanel::default().show(ctx, |_ui| {
+        if let Ok(message) = app.message_receiver.try_recv() {
+            app.update_interface(message);
+        }
+    });
+}
+
 impl eframe::App for MonitoringApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let frame = egui::Frame {
@@ -85,6 +103,8 @@ impl eframe::App for MonitoringApp {
             },
             ..Default::default()
         };
+
+        updater(self, ctx);
 
         header(ctx, frame);
         side_menu(self, ctx, frame);
@@ -124,9 +144,7 @@ pub fn run_interface(
     client: MqttClient,
     logger: Logger,
     config: MonitoringAppConfig,
-    cam_list_ref: Arc<Mutex<CamList>>,
-    drone_list_ref: Arc<Mutex<DroneList>>,
-    incident_list: Arc<Mutex<IncidentList>>,
+    message_receiver: Receiver<MqttClientMessage>,
 ) -> Result<(), eframe::Error> {
     eframe::run_native(
         "Apliación de monitoreo",
@@ -139,9 +157,7 @@ pub fn run_interface(
                 client,
                 logger,
                 creation_context.egui_ctx.to_owned(),
-                cam_list_ref,
-                drone_list_ref,
-                incident_list,
+                message_receiver,
             ))
         }),
     )

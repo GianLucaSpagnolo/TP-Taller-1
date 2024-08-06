@@ -5,7 +5,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use logger::logger_handler::create_logger_handler;
+use logger::logger_handler::Logger;
 
 use crate::{
     common::reason_codes::ReasonCode,
@@ -42,20 +42,21 @@ impl MqttClientListener {
     /// ### Retorno
     /// Resultado de la operación con el listener.
     ///
-    pub fn run(client: &mut MqttClient) -> Result<MqttClientListener, Error> {
+    pub fn run(client: &mut MqttClient, logger: &Logger) -> Result<MqttClientListener, Error> {
         let client = client.clone();
 
         let (sender, receiver) = mpsc::channel();
 
-        let log_path = client.config.general.log_path.to_string();
-
+        //let log_path = client.config.general.log_path.to_string();
+        let logger_cpy = logger.clone();
         let handler = thread::spawn(move || -> Result<(), Error> {
             loop {
                 match Self::listen_message(
                     &client,
                     client.stream.try_clone()?,
                     sender.clone(),
-                    &log_path.to_string(),
+                    //&log_path.to_string(),
+                    &logger_cpy,
                 ) {
                     Ok(_) => {}
                     Err(e) => {
@@ -87,9 +88,10 @@ impl MqttClientListener {
         client: &MqttClient,
         mut stream: TcpStream,
         sender: Sender<MqttClientMessage>,
-        log_path: &String,
+        //log_path: &String,
+        logger: &Logger,
     ) -> Result<(), Error> {
-        let logger = create_logger_handler(log_path)?;
+        //let logger = create_logger_handler(log_path)?;
 
         let header = match PacketFixedHeader::read_from(&mut stream) {
             Ok(r) => r,
@@ -98,17 +100,17 @@ impl MqttClientListener {
                     &(ReasonCode::MalformedPacket.to_string()),
                     &client.config.general.id,
                 );
-                logger.close();
+                //logger.close();
                 return Err(e);
             }
         };
 
-        let msg = match Self::packet_handler(client, &mut stream, header, log_path) {
+        let msg = match Self::packet_handler(client, &mut stream, header, logger) {
             Ok(res) => {
                 if let Some(res) = res {
                     res
                 } else {
-                    logger.close();
+                    //logger.close();
                     return Ok(());
                 }
             }
@@ -117,7 +119,7 @@ impl MqttClientListener {
                     &("Error al manejar el mensaje: ".to_string() + &e.to_string()),
                     &client.config.general.id,
                 );
-                logger.close();
+                //logger.close();
                 return Err(e);
             }
         };
@@ -127,13 +129,13 @@ impl MqttClientListener {
             Err(e) => {
                 let msg = "Error al recibir mensaje del servidor: ".to_string() + &e.to_string();
                 logger.log_event(&msg, &client.config.general.id);
-                logger.close();
+                //logger.close();
                 return Err(Error::new(std::io::ErrorKind::Other, msg));
             }
         };
 
-        thread::sleep(std::time::Duration::from_millis(1000));
-        logger.close();
+        //thread::sleep(std::time::Duration::from_millis(1000)); //?
+        //logger.close();
         Ok(())
     }
 
@@ -153,10 +155,11 @@ impl MqttClientListener {
         client: &MqttClient,
         mut stream: &mut TcpStream,
         fixed_header: PacketFixedHeader,
-        log_path: &String,
+        //log_path: &String,
+        logger: &Logger,
     ) -> Result<Option<MqttClientMessage>, Error> {
-        let logger_handler = create_logger_handler(log_path)?;
-        let logger = logger_handler.get_logger();
+        //let logger_handler = create_logger_handler(log_path)?;
+        //let logger = logger_handler.get_logger();
 
         let packet_recived = get_packet(
             &mut stream,
@@ -201,18 +204,18 @@ impl MqttClientListener {
                     &"Paquete desconocido recibido".to_string(),
                     &client.config.general.id,
                 );
-                logger.close();
+                //logger.close();
                 return Err(Error::new(std::io::ErrorKind::Other, "Paquete desconocido"));
             }
         };
 
         action.log_action(
             &client.config.general.id,
-            &logger,
+            logger,
             &client.config.general.log_in_term,
         );
-        logger.close();
-        logger_handler.close();
+        //logger.close();
+        //logger_handler.close();
         if let MqttClientActions::ReceivePublish(_) = action {
             return Ok(Some(MqttClientMessage {
                 topic,

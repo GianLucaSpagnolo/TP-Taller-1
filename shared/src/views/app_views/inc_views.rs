@@ -43,7 +43,7 @@ pub fn add_incident_button(
             let field = Position::from_lat_lon(latitude.unwrap(), longitude.unwrap());
             add_incident(
                 client,
-                &mut inc_interface.inc_historial.lock().unwrap(),
+                &mut inc_interface.inc_historial,
                 field,
                 logger,
                 db_path,
@@ -85,6 +85,7 @@ pub fn incident_editor(
         };
         ui.label(RichText::new(lon)).labelled_by(name_label.id);
     });
+    ui.add_space(5.0);
     add_incident_button(ui, client, inc_interface, logger, db_path);
 }
 
@@ -112,35 +113,53 @@ fn incident_row(
     db_path: &str,
 ) {
     row.col(|ui| {
-        ui.label(incident.id.to_string());
+        ui.centered_and_justified(|ui| {
+            ui.label(incident.id.to_string());
+        });
     });
     row.col(|ui| {
-        if IncidentState::InProgess == incident.state {
-            ui.label(egui::RichText::new("En Progreso").color(egui::Color32::LIGHT_RED));
-        } else {
-            ui.label(egui::RichText::new("Resuelto").color(egui::Color32::GREEN));
-        }
+        ui.centered_and_justified(|ui| {
+            if IncidentState::InProgess == incident.state {
+                ui.label(egui::RichText::new("En Progreso").color(egui::Color32::LIGHT_RED));
+            } else {
+                ui.label(egui::RichText::new("Resuelto").color(egui::Color32::GREEN));
+            }
+        });
     });
     row.col(|ui| {
-        ui.label(&format!(
-            "{:.1$}",
-            incident.location.lat(),
-            COORDENATE_PRECISION
-        ));
+        ui.centered_and_justified(|ui| {
+            ui.label(&format!(
+                "{:.1$}",
+                incident.location.lat(),
+                COORDENATE_PRECISION
+            ));
+        });
     });
     row.col(|ui| {
-        ui.label(&format!(
-            "{:.1$}",
-            incident.location.lon(),
-            COORDENATE_PRECISION
-        ));
+        ui.centered_and_justified(|ui| {
+            ui.label(&format!(
+                "{:.1$}",
+                incident.location.lon(),
+                COORDENATE_PRECISION
+            ));
+        });
+    });
+    row.col(|ui| {
+        ui.centered_and_justified(|ui| {
+            ui.label(incident.get_creation_time());
+        });
+    });
+    row.col(|ui| {
+        ui.centered_and_justified(|ui| {
+            ui.label(incident.get_resolve_time());
+        });
     });
     if inc_interface.editable {
         row.col(|ui| {
             if ui.button("Resolver").clicked() {
                 resolve_incident(
                     client,
-                    &mut inc_interface.inc_historial.lock().unwrap(),
+                    &mut inc_interface.inc_historial,
                     id,
                     logger,
                     db_path,
@@ -167,47 +186,59 @@ pub fn incident_list(
     logger: &Logger,
     db_path: &str,
 ) {
-    let incidents = &inc_interface
-        .inc_historial
-        .lock()
-        .unwrap()
-        .incidents
-        .clone();
-    TableBuilder::new(ui)
-        .column(Column::exact(100.0))
-        .column(Column::exact(200.0))
-        .column(Column::exact(250.0))
-        .column(Column::exact(250.0))
-        .column(Column::exact(100.0))
-        .header(30.0, |mut header| {
-            header.col(|ui| {
-                ui.heading("ID");
-            });
-            header.col(|ui| {
-                ui.heading("Estado");
-            });
-            header.col(|ui| {
-                ui.heading("Latitud");
-            });
-            header.col(|ui| {
-                ui.heading("Longitud");
-            });
-        })
-        .body(|mut body| {
-            if incidents.is_empty() {
-                body.row(20.0, |mut row| {
-                    row.col(|ui| {
-                        ui.label("No hay incidentes");
+    let incidents = &mut inc_interface.inc_historial.incidents.clone();
+
+    if incidents.is_empty() {
+        ui.label("No hay incidentes");
+    } else {
+        TableBuilder::new(ui)
+            .column(Column::exact(100.0))
+            .column(Column::exact(150.0))
+            .column(Column::exact(150.0))
+            .column(Column::exact(150.0))
+            .column(Column::exact(175.0))
+            .column(Column::exact(175.0))
+            .column(Column::exact(100.0))
+            .header(30.0, |mut header| {
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("ID");
                     });
                 });
-            } else {
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Estado");
+                    });
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Latitud");
+                    });
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Longitud");
+                    });
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Creación");
+                    });
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Resolución");
+                    });
+                });
+            })
+            .body(|mut body| {
                 for (id, incident) in &incidents.clone() {
                     body.row(20.0, |row| {
                         incident_row(row, client, inc_interface, incident, id, logger, db_path);
                     });
                 }
-            }
-        });
+            });
+    }
 }
 
 /// ## show_incidents
@@ -218,6 +249,7 @@ pub fn incident_list(
 /// - `ui`: Interfaz de usuario
 /// - `client`: Cliente MQTT
 /// - `incident_interface`: Interfaz de incidente
+/// - `logger`: Logger
 ///
 /// ### Consideraciones
 /// - Si la interfaz de incidente es editable, se mostrará el editor de incidentes y se podrán resolver los incidentes
@@ -229,15 +261,40 @@ pub fn show_incidents(
     logger: &Logger,
     db_path: &str,
 ) {
+    ui.heading("Historial de incidentes");
+    ui.separator();
+    ui.add_space(10.0);
+    incident_list(ui, client, incident_interface, logger, db_path);
+    ui.add_space(10.0);
+}
+
+/// ## show_incident_editor
+///
+/// Muestra el editor de incidentes
+///
+/// ### Parametros
+///
+/// - `ui`: Interfaz de usuario
+/// - `client`: Cliente MQTT
+/// - `incident_interface`: Interfaz de incidente
+/// - `logger`: Logger
+///
+/// ### Consideraciones
+/// - Si la interfaz de incidente es editable, se mostrará el editor de incidentes
+///
+pub fn show_incident_editor(
+    ui: &mut Ui,
+    client: &mut MqttClient,
+    incident_interface: &mut IncidentInterface,
+    logger: &Logger,
+    db_path: &str,
+) {
     if incident_interface.editable {
         ui.heading("Gestor de incidentes");
+        ui.add_space(10.0);
         ui.separator();
         ui.add_space(10.0);
         incident_editor(ui, client, incident_interface, logger, db_path);
         ui.add_space(10.0);
     }
-    ui.heading("Historial de incidentes");
-    ui.separator();
-    ui.add_space(10.0);
-    incident_list(ui, client, incident_interface, logger, db_path);
 }
