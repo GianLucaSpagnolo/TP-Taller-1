@@ -6,7 +6,7 @@ log_path: data/logs/drone_5_log.csv
 log_in_terminal: true
 protocol_name: MQTT
 protocol_version: 5
-keep_alive: 60
+keep_alive: 5
 flag_clean_start: false
 flag_will_qos: 2
 publish_dup: false
