@@ -1,3 +1,4 @@
+#[allow(deprecated)]
 pub fn load_image_from_path(path: &std::path::Path) -> Result<egui::ColorImage, image::ImageError> {
     let image = image::io::Reader::open(path)?.decode()?;
     let size = [image.width() as _, image.height() as _];
