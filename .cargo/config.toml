@@ -1,4 +1,11 @@
+# Archivo usado unicamente para configurar los alias de los comandos de cargo
+
 [alias]
+
+# Comandos de cargo
+linter = "clippy --verbose --all-targets --all-features"
+
+#Comandos de las aplicaciones
 broker = "run --bin broker"
 monitoring_app = "run --bin monitoring_app"
 cams_system = "run --bin cams_system"
