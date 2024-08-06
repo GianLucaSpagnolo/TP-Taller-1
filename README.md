@@ -11,15 +11,17 @@
 
 ## Instalaciones
 
+Todos estos comandos se deben realizar en el directorio root del proyecto.
+
 Antes que nada se debe cambiar a modo ejecución los archivos **.sh**:
 
-    chmod +x data/scripts/*.sh
+    make chmod
 
 ### Instalación de dependencias
 
 Para instalar las dependencias necesarias *step* y *libssl-dev* se debe ejecutar:
 
-    ./data/scripts/install_reqs.sh
+    make reqs
 
 ### Certificados
 
@@ -27,13 +29,13 @@ Para instalar las dependencias necesarias *step* y *libssl-dev* se debe ejecutar
 
 Para **actualizar/crear** los certificados, se deben borrar los certificados de la carpeta *data/certificates* y ejecutar:
 
-    ./data/scripts/load_certs.sh
+    make load
 
 #### Instalacion de certificado raiz
 
-Cuando los certificados ya existen (en data/certificates), *solo* se debe instalar el certificado raiz en el S.O. corriendo el comando:
+Cuando los certificados ya existen (en data/certificates), **solo** se debe instalar el certificado raiz en el S.O. corriendo el comando:
 
-    ./data/scripts/install_ca.sh    
+    make install  
 
 ---
 
@@ -45,9 +47,13 @@ Para compilar el proyecto
 
     cargo build --verbose
 
+Para ejecutar el `cargo clippy`
+
+    cargo linter
+
 Para ejecutar todos los tests
 
-    cargo test --all-targets --all-features
+    cargo test --verbose
 
 ### Message Broker
 
