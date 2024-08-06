@@ -113,7 +113,7 @@ fn stablish_tls_connection(
     let address = config.get_socket_address().to_string();
     let srv_name = &config.general.srv_name;
 
-    match connect(&address, srv_name) {
+    match connect(&address, srv_name, &config.keep_alive, client_id, &logger) {
         Ok(mut stream) => Ok(stream.get_mut().try_clone()?),
         Err(e) => {
             logger.log_event(
