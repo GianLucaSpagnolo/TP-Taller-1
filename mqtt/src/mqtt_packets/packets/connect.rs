@@ -68,7 +68,8 @@ use crate::mqtt_packets::{
 /// Password. All but the Client identifier can be omitted and their presence is determined based on flags in the Variable Header.
 ///
 /// These fields, if present, MUST appear in the order:
-/// Client Identifier: UTF-8 Encoded String (Obligatorio)
+/// Client Identifier: UTF-8 Encoded String (Obligatory)
+/// 
 /// Will Properties:
 ///  - Property Length
 ///  - 24(0x18) - Will Delay Interval
@@ -78,6 +79,7 @@ use crate::mqtt_packets::{
 ///  - 8(0x08) - Response Topic
 ///  - 9(0x09) - Correlation Data (String)
 ///  - 38(0x26) - User Property
+/// 
 /// Will Topic (Connect Flag - Will Flag = 1)
 /// Will Payload (Connect Flag - Will Flag = 1)
 /// Username (Connect Flag - Username = 1)
