@@ -216,6 +216,7 @@ impl MqttClientListener {
         );
         //logger.close();
         //logger_handler.close();
+        
         if let MqttClientActions::ReceivePublish(_) = action {
             return Ok(Some(MqttClientMessage {
                 topic,
@@ -223,6 +224,15 @@ impl MqttClientListener {
                 is_will_message,
             }));
         }
+
+        if let MqttClientActions::ReceiveWillMessage(_) = action {
+            return Ok(Some(MqttClientMessage {
+                topic,
+                data,
+                is_will_message,
+            }));
+        }
+        
         Ok(None)
     }
 }
