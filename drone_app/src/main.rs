@@ -19,7 +19,7 @@ use mqtt::{
 };
 use shared::{
     app_topics::AppTopics,
-    models::{drone_model::drone::Drone, inc_model::incident::Incident}, will_message::serialize_will_message_payload,
+    models::{drone_model::drone::Drone, inc_model::incident::Incident}, will_message::{deserialize_will_message_payload, serialize_will_message_payload},
 };
 
 pub fn process_messages(
@@ -38,6 +38,11 @@ pub fn process_messages(
                     .unwrap()
                     .process_incident(&mut client, incident.clone(), &logger);
             } else if message_received.topic == AppTopics::DroneTopic.get_topic() {
+                if message_received.is_will_message {
+                    handle_drones_will_message(message_received.data);
+                    continue;
+                }
+
                 let drone_received = Drone::from_be_bytes(&message_received.data);
                 if drone_received.id == drone.lock().unwrap().id {
                     continue;
@@ -50,6 +55,15 @@ pub fn process_messages(
         }
     });
     Ok(handler)
+}
+
+/// ### handle_drones_will_message
+/// 
+/// Maneja el mensaje de voluntad de los drones
+/// 
+fn handle_drones_will_message(message_received: Vec<u8>) {
+    let message = deserialize_will_message_payload(message_received);
+    println!("Will message received: {:?} disconnected", message);
 }
 
 pub fn process_standard_input(
