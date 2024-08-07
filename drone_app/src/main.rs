@@ -19,7 +19,7 @@ use mqtt::{
 };
 use shared::{
     app_topics::AppTopics,
-    models::{drone_model::drone::Drone, inc_model::incident::Incident},
+    models::{drone_model::drone::Drone, inc_model::incident::Incident}, will_message::serialize_will_message_payload,
 };
 
 pub fn process_messages(
@@ -112,7 +112,11 @@ fn main() -> Result<(), Error> {
         config.db_path,
     )?;
 
-    let config = ClientConfig::from_file(config.mqtt_config_path)?;
+    let mut config = ClientConfig::from_file(config.mqtt_config_path)?;
+    config.set_will_message(
+        AppTopics::DroneTopic.get_topic(),
+        serialize_will_message_payload(config.general.id.clone()),
+    );
 
     let logger_handler = create_logger_handler(&config.general.log_path)?;
     let logger = logger_handler.get_logger();

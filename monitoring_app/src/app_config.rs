@@ -5,8 +5,7 @@ use std::{
 
 use mqtt::config::{client_config::ClientConfig, mqtt_config::Config};
 use shared::{
-    interfaces::{cam_interface::CamIconsPath, drone_interface::DroneIconsPath},
-    will_message::serialize_will_message_payload,
+    app_topics::AppTopics, interfaces::{cam_interface::CamIconsPath, drone_interface::DroneIconsPath}, will_message::serialize_will_message_payload
 };
 use walkers::Position;
 
@@ -159,7 +158,7 @@ impl MonitoringAppConfig {
 
             let mut mqtt_config = ClientConfig::from_file(mqtt_config_path)?;
             mqtt_config.set_will_message(
-                "inc".to_string(),
+                AppTopics::IncTopic.get_topic(),
                 serialize_will_message_payload(mqtt_config.general.id.clone()),
             );
 
