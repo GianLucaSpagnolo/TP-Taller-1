@@ -9,6 +9,7 @@ protocol_version: 5
 keep_alive: 5
 flag_clean_start: false
 flag_will_qos: 2
+flag_will_flag: true
 publish_dup: false
 publish_qos: 1
 publish_retain: false 
