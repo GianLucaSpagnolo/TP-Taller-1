@@ -17,7 +17,10 @@ use mqtt::{
     common::reason_codes::ReasonCode,
     config::{client_config::ClientConfig, mqtt_config::Config},
 };
-use shared::models::{drone_model::drone::Drone, inc_model::incident::Incident};
+use shared::{
+    app_topics::AppTopics,
+    models::{drone_model::drone::Drone, inc_model::incident::Incident},
+};
 
 pub fn process_messages(
     client: &mut MqttClient,
@@ -28,13 +31,13 @@ pub fn process_messages(
     let mut client = client.clone();
     let handler = thread::spawn(move || {
         for message_received in receiver.iter() {
-            if message_received.topic.as_str() == "inc" {
+            if message_received.topic == AppTopics::IncTopic.get_topic() {
                 let incident = Incident::from_be_bytes(message_received.data);
                 drone
                     .lock()
                     .unwrap()
                     .process_incident(&mut client, incident.clone(), &logger);
-            } else if message_received.topic.as_str() == "drone" {
+            } else if message_received.topic == AppTopics::DroneTopic.get_topic() {
                 let drone_received = Drone::from_be_bytes(&message_received.data);
                 if drone_received.id == drone.lock().unwrap().id {
                     continue;
@@ -126,23 +129,20 @@ fn main() -> Result<(), Error> {
     println!("Conectado con MQTT broker");
     println!("Patruya iniciada...");
 
-    match client.subscribe(vec!["inc"], &logger) {
+    match client.subscribe(
+        vec![
+            &AppTopics::IncTopic.get_topic(),
+            &AppTopics::DroneTopic.get_topic(),
+        ],
+        &logger,
+    ) {
         Ok(r) => r,
         Err(e) => {
             logger.close();
             logger_handler.close();
             return Err(e);
         }
-    };
-
-    match client.subscribe(vec!["drone"], &logger) {
-        Ok(r) => r,
-        Err(e) => {
-            logger.close();
-            logger_handler.close();
-            return Err(e);
-        }
-    };
+    }
 
     let (battery_tx, battery_rx) = mpsc::channel();
 
@@ -150,7 +150,11 @@ fn main() -> Result<(), Error> {
     let logger_cpy = logger.clone();
 
     client
-        .publish(drone.as_bytes(false), "drone".to_string(), &logger)
+        .publish(
+            drone.as_bytes(false),
+            AppTopics::DroneTopic.get_topic().to_string(),
+            &logger,
+        )
         .unwrap();
     let drone_ref = Arc::new(Mutex::new(drone));
 

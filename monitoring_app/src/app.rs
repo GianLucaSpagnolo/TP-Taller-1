@@ -9,6 +9,7 @@ use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use mqtt::common::reason_codes::ReasonCode;
 use shared::{
+    app_topics::AppTopics,
     interfaces::{
         cam_interface::CamInterface, drone_interface::DroneInterface,
         global_interface::GlobalInterface, incident_interface::IncidentInterface,
@@ -163,8 +164,14 @@ impl MonitoringApp {
 
         let handler = process_messages(listener.receiver, sender)?;
 
-        client.subscribe(vec!["camaras"], &logger)?;
-        client.subscribe(vec!["drone"], &logger)?;
+        client.subscribe(
+            vec![
+                &AppTopics::CamTopic.get_topic(),
+                &AppTopics::DroneTopic.get_topic(),
+            ],
+            &logger,
+        )?;
+
         match run_interface(client.clone(), logger.clone(), config, receiver) {
             Ok(_) => {
                 println!("Saliendo del sistema...");
@@ -181,54 +188,53 @@ impl MonitoringApp {
     }
 
     pub fn update_interface(&mut self, message_received: MqttClientMessage) {
-        match message_received.topic.as_str() {
-            "camaras" => {
-                if message_received.is_will_message {
-                    handle_camaras_will_message(message_received.data);
-                } else {
-                    let data = Cam::from_be_bytes(message_received.data);
-                    let system_lock = &mut self.global_interface.cam_interface.cam_list;
-                    system_lock.update_cam(data);
-                    system_lock.save(&self.config.db_paths.cam_db_path).unwrap();
-                }
+        if message_received.topic == AppTopics::CamTopic.get_topic() {
+            if message_received.is_will_message {
+                handle_camaras_will_message(message_received.data);
+            } else {
+                let data = Cam::from_be_bytes(message_received.data);
+                let system_lock = &mut self.global_interface.cam_interface.cam_list;
+                system_lock.update_cam(data);
+                system_lock.save(&self.config.db_paths.cam_db_path).unwrap();
             }
-            "drone" => {
-                let dron = Drone::from_be_bytes(&message_received.data);
+        } else if message_received.topic == AppTopics::DroneTopic.get_topic() {
+            let dron = Drone::from_be_bytes(&message_received.data);
 
-                if !dron.sending_for_drone {
-                    let incidents_historial =
-                        &mut self.global_interface.inc_interface.inc_historial;
+            if !dron.sending_for_drone {
+                let incidents_historial = &mut self.global_interface.inc_interface.inc_historial;
 
-                    let msg = format!("Drone {} - {:?}", dron.id, dron.state);
-                    self.logger.log_event(&msg, &self.client.config.general.id);
+                let msg = format!("Drone {} - {:?}", dron.id, dron.state);
+                self.logger.log_event(&msg, &self.client.config.general.id);
 
-                    let drone_lock = &mut self.global_interface.drone_interface.drone_list;
+                let drone_lock = &mut self.global_interface.drone_interface.drone_list;
 
-                    if let DroneState::ResolvingIncident = dron.state {
-                        if let Some(inc_id) = dron.id_incident_covering {
-                            let incident = incidents_historial.incidents.get_mut(&inc_id).unwrap();
-                            incident.cover();
-                            if incident.drones_covering == 2 {
-                                incident.resolve();
-                                self.client
-                                    .publish(incident.as_bytes(), "inc".to_string(), &self.logger)
-                                    .unwrap();
-                            }
-                        };
+                if let DroneState::ResolvingIncident = dron.state {
+                    if let Some(inc_id) = dron.id_incident_covering {
+                        let incident = incidents_historial.incidents.get_mut(&inc_id).unwrap();
+                        incident.cover();
+                        if incident.drones_covering == 2 {
+                            incident.resolve();
+                            self.client
+                                .publish(
+                                    incident.as_bytes(),
+                                    AppTopics::IncTopic.get_topic(),
+                                    &self.logger,
+                                )
+                                .unwrap();
+                        }
                     };
+                };
 
-                    drone_lock.update_drone(dron);
+                drone_lock.update_drone(dron);
 
-                    drone_lock
-                        .save(&self.config.db_paths.drone_db_path)
-                        .unwrap();
+                drone_lock
+                    .save(&self.config.db_paths.drone_db_path)
+                    .unwrap();
 
-                    incidents_historial
-                        .save(&self.config.db_paths.inc_db_path)
-                        .unwrap();
-                }
+                incidents_historial
+                    .save(&self.config.db_paths.inc_db_path)
+                    .unwrap();
             }
-            _ => {}
         }
     }
 }

@@ -3,12 +3,15 @@ use std::io::Error;
 use central_cams_system::cams_system_config::CamSystemConfig;
 use logger::logger_handler::{create_logger_handler, Logger, LoggerHandler};
 use mqtt::client::mqtt_client::MqttClient;
-use shared::models::{
-    cam_model::{
-        cam::{Cam, CamState},
-        cam_list::CamList,
+use shared::{
+    app_topics::AppTopics,
+    models::{
+        cam_model::{
+            cam::{Cam, CamState},
+            cam_list::CamList,
+        },
+        inc_model::incident::{Incident, IncidentState},
     },
-    inc_model::incident::{Incident, IncidentState},
 };
 use walkers::Position;
 
@@ -33,7 +36,11 @@ impl CamsSystem {
 
     fn send_save_data(&self, client: &mut MqttClient, logger: &Logger) -> Result<(), Error> {
         for cam in self.system.cams.values() {
-            match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {
+            match client.publish(
+                cam.as_bytes(),
+                AppTopics::CamTopic.get_topic().to_string(),
+                logger,
+            ) {
                 Ok(r) => r,
                 Err(e) => {
                     return Err(e);
@@ -49,7 +56,7 @@ impl CamsSystem {
         let logger = logger_handler.get_logger();
 
         let mut client = match MqttClient::init(self.config.mqtt_config.clone()) {
-            Ok(mut r) => match r.subscribe(vec!["inc"], &logger) {
+            Ok(mut r) => match r.subscribe(vec![&AppTopics::IncTopic.get_topic()], &logger) {
                 Ok(_) => r,
                 Err(e) => return Err(e),
             },
@@ -149,7 +156,7 @@ impl CamsSystem {
         let modified_cams = self.modify_cameras_state(incident.location, new_cam_state)?;
 
         for cam in modified_cams {
-            match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {
+            match client.publish(cam.as_bytes(), AppTopics::CamTopic.get_topic(), logger) {
                 Ok(_) => {
                     println!("{}", system_message);
                 }
