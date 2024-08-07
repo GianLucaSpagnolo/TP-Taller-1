@@ -29,8 +29,6 @@ fn cam_row(mut row: TableRow, cam: &Cam) {
                 ui.label(egui::RichText::new("Alerta").color(egui::Color32::RED));
             } else if CamState::SavingEnergy == cam.state {
                 ui.label(egui::RichText::new("Ahorro de energía").color(egui::Color32::GREEN));
-            } else if CamState::Disconnected == cam.state {
-                ui.label(egui::RichText::new("Desconectada").color(egui::Color32::DARK_GRAY));
             }
         });
     });
@@ -46,7 +44,11 @@ fn cam_row(mut row: TableRow, cam: &Cam) {
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
-            ui.label(&format!("{}", cam.incidents_covering));
+            if cam.connected {
+                ui.label(egui::RichText::new("Conectada").color(egui::Color32::GREEN));
+            } else {
+                ui.label(egui::RichText::new("Desconectada").color(egui::Color32::DARK_GRAY));
+            }
         });
     });
 }
@@ -94,7 +96,7 @@ fn cams_list(ui: &mut Ui, cam_interface: &mut CamInterface) {
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
-                        ui.heading("# Incidentes");
+                        ui.heading("Conexión");
                     });
                 });
             })
@@ -117,7 +119,7 @@ fn cams_list(ui: &mut Ui, cam_interface: &mut CamInterface) {
 /// - `cam_list`: Lista de cámaras
 ///
 pub fn show_cams(ui: &mut Ui, cam_interface: &mut CamInterface) {
-    ui.heading("Listado de cámaras");
+    ui.heading("Sistema de cámaras");
     ui.separator();
     ui.add_space(10.0);
     cams_list(ui, cam_interface);
