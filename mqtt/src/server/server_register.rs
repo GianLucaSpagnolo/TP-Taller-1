@@ -144,7 +144,16 @@ impl SessionRegister {
         mut topics: Vec<TopicFilter>,
     ) -> Result<(), Error> {
         if let Some(session) = self.sessions.get_mut(client_id) {
-            session.subscriptions.append(&mut topics);
+            for topic in topics.iter_mut() {
+                if !session
+                    .subscriptions
+                    .iter()
+                    .any(|t| t.topic_filter == topic.topic_filter)
+                {
+                    session.subscriptions.push(topic.clone());
+                }
+            }
+
             self.save();
             return Ok(());
         }
