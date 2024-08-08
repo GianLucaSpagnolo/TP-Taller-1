@@ -5,7 +5,9 @@ use std::{
 
 use mqtt::config::{client_config::ClientConfig, mqtt_config::Config};
 use shared::{
-    app_topics::AppTopics, interfaces::{cam_interface::CamIconsPath, drone_interface::DroneIconsPath}, will_message::serialize_will_message_payload
+    app_topics::AppTopics,
+    interfaces::{cam_interface::CamIconsPath, drone_interface::DroneIconsPath},
+    will_message::serialize_will_message_payload,
 };
 use walkers::Position;
 

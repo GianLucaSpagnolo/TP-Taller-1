@@ -19,7 +19,8 @@ use mqtt::{
 };
 use shared::{
     app_topics::AppTopics,
-    models::{drone_model::drone::Drone, inc_model::incident::Incident}, will_message::serialize_will_message_payload,
+    models::{drone_model::drone::Drone, inc_model::incident::Incident},
+    will_message::serialize_will_message_payload,
 };
 
 pub fn process_messages(

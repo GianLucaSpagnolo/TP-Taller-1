@@ -153,13 +153,26 @@ mod tests {
         drone_list.update_drone(dron.clone());
 
         assert_eq!(drone_list.drones.len(), 1);
-        assert_eq!(drone_list.drones.get("drone1").unwrap().nivel_de_bateria, 50.0);
         assert_eq!(
-            drone_list.drones.get("drone1").unwrap().distancia_maxima_alcance,
+            drone_list.drones.get("drone1").unwrap().nivel_de_bateria,
             50.0
         );
-        assert_eq!(drone_list.drones.get("drone1").unwrap().current_pos.lat(), 1.0);
-        assert_eq!(drone_list.drones.get("drone1").unwrap().current_pos.lon(), 1.0);
+        assert_eq!(
+            drone_list
+                .drones
+                .get("drone1")
+                .unwrap()
+                .distancia_maxima_alcance,
+            50.0
+        );
+        assert_eq!(
+            drone_list.drones.get("drone1").unwrap().current_pos.lat(),
+            1.0
+        );
+        assert_eq!(
+            drone_list.drones.get("drone1").unwrap().current_pos.lon(),
+            1.0
+        );
     }
 
     #[test]
@@ -196,7 +209,11 @@ mod tests {
         assert_eq!(drone_list.get_drones().len(), 1);
         assert_eq!(drone_list.get_drones().get("drone1").unwrap().id, "drone1");
         assert_eq!(
-            drone_list.get_drones().get("drone1").unwrap().nivel_de_bateria,
+            drone_list
+                .get_drones()
+                .get("drone1")
+                .unwrap()
+                .nivel_de_bateria,
             100.0
         );
         assert_eq!(
@@ -208,11 +225,21 @@ mod tests {
             100.0
         );
         assert_eq!(
-            drone_list.get_drones().get("drone1").unwrap().current_pos.lat(),
+            drone_list
+                .get_drones()
+                .get("drone1")
+                .unwrap()
+                .current_pos
+                .lat(),
             0.0
         );
         assert_eq!(
-            drone_list.get_drones().get("drone1").unwrap().current_pos.lon(),
+            drone_list
+                .get_drones()
+                .get("drone1")
+                .unwrap()
+                .current_pos
+                .lon(),
             0.0
         );
     }
@@ -265,10 +292,18 @@ mod tests {
         );
         assert_eq!(
             drone_list.drones.get("drone1").unwrap().nivel_de_bateria,
-            new_drone_list.drones.get("drone1").unwrap().nivel_de_bateria
+            new_drone_list
+                .drones
+                .get("drone1")
+                .unwrap()
+                .nivel_de_bateria
         );
         assert_eq!(
-            drone_list.drones.get("drone1").unwrap().distancia_maxima_alcance,
+            drone_list
+                .drones
+                .get("drone1")
+                .unwrap()
+                .distancia_maxima_alcance,
             new_drone_list
                 .drones
                 .get("drone1")
@@ -277,11 +312,21 @@ mod tests {
         );
         assert_eq!(
             drone_list.drones.get("drone1").unwrap().current_pos.lat(),
-            new_drone_list.drones.get("drone1").unwrap().current_pos.lat()
+            new_drone_list
+                .drones
+                .get("drone1")
+                .unwrap()
+                .current_pos
+                .lat()
         );
         assert_eq!(
             drone_list.drones.get("drone1").unwrap().current_pos.lon(),
-            new_drone_list.drones.get("drone1").unwrap().current_pos.lon()
+            new_drone_list
+                .drones
+                .get("drone1")
+                .unwrap()
+                .current_pos
+                .lon()
         );
 
         assert_eq!(
@@ -290,10 +335,18 @@ mod tests {
         );
         assert_eq!(
             drone_list.drones.get("drone2").unwrap().nivel_de_bateria,
-            new_drone_list.drones.get("drone2").unwrap().nivel_de_bateria
+            new_drone_list
+                .drones
+                .get("drone2")
+                .unwrap()
+                .nivel_de_bateria
         );
         assert_eq!(
-            drone_list.drones.get("drone2").unwrap().distancia_maxima_alcance,
+            drone_list
+                .drones
+                .get("drone2")
+                .unwrap()
+                .distancia_maxima_alcance,
             new_drone_list
                 .drones
                 .get("drone2")
@@ -302,11 +355,21 @@ mod tests {
         );
         assert_eq!(
             drone_list.drones.get("drone2").unwrap().current_pos.lat(),
-            new_drone_list.drones.get("drone2").unwrap().current_pos.lat()
+            new_drone_list
+                .drones
+                .get("drone2")
+                .unwrap()
+                .current_pos
+                .lat()
         );
         assert_eq!(
             drone_list.drones.get("drone2").unwrap().current_pos.lon(),
-            new_drone_list.drones.get("drone2").unwrap().current_pos.lon()
+            new_drone_list
+                .drones
+                .get("drone2")
+                .unwrap()
+                .current_pos
+                .lon()
         );
     }
 }

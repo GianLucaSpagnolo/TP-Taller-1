@@ -23,7 +23,7 @@ impl CamInterface {
     pub fn new(cam_icon_paths: CamIconsPath, db_path: &str) -> Self {
         let mut cam_list = CamList::init(db_path);
         cam_list.disconnect_all();
-        
+
         let cam_icon = load_image_from_path(std::path::Path::new(&cam_icon_paths.default)).unwrap();
         let cam_alert_icon =
             load_image_from_path(std::path::Path::new(&cam_icon_paths.alert)).unwrap();

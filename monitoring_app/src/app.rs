@@ -45,6 +45,7 @@ pub struct MonitoringApp {
     pub global_interface: GlobalInterface,
     pub map_interface: MapInterface,
     pub message_receiver: Receiver<MqttClientMessage>,
+    pub disconnected: bool,
 }
 
 /// ## MonitoringHandler
@@ -99,8 +100,7 @@ impl MonitoringApp {
     ) -> Self {
         let cam_icons_path = config.icons_paths.cam_icon_paths.clone();
 
-        let cam_interface =
-            CamInterface::new(cam_icons_path, &config.db_paths.cam_db_path);
+        let cam_interface = CamInterface::new(cam_icons_path, &config.db_paths.cam_db_path);
 
         let drone_icons_path = config.icons_paths.drone_icon_paths.clone();
 
@@ -127,6 +127,7 @@ impl MonitoringApp {
             map_interface: MapInterface::new(egui_ctx.to_owned()),
             config,
             message_receiver,
+            disconnected: false,
         }
     }
 
@@ -162,10 +163,11 @@ impl MonitoringApp {
 
         match run_interface(client.clone(), logger.clone(), config, receiver) {
             Ok(_) => {
-                println!("Saliendo del sistema...");
-                client
-                    .disconnect(ReasonCode::NormalDisconnection, &logger)
-                    .unwrap();
+                match client.disconnect(ReasonCode::NormalDisconnection, &logger) {
+                    Ok(_) => println!("Desconectado del broker"),
+                    Err(e) => eprintln!("Error al desconectarse del broker: {}", e),
+                }
+
                 Ok(MonitoringHandler {
                     broker_listener: listener.handler,
                     message_handler: handler,
@@ -179,7 +181,6 @@ impl MonitoringApp {
         if message_received.topic == AppTopics::CamTopic.get_topic() {
             if message_received.is_will_message {
                 self.handle_camaras_will_message(message_received.data);
-
             } else {
                 if !self.global_interface.cam_interface.connected {
                     self.global_interface.cam_interface.connect();
@@ -193,12 +194,12 @@ impl MonitoringApp {
         } else if message_received.topic == AppTopics::DroneTopic.get_topic() {
             if message_received.is_will_message {
                 self.handle_drones_will_message(message_received.data);
-
             } else {
                 let dron = Drone::from_be_bytes(&message_received.data);
 
                 if !dron.sending_for_drone {
-                    let incidents_historial = &mut self.global_interface.inc_interface.inc_historial;
+                    let incidents_historial =
+                        &mut self.global_interface.inc_interface.inc_historial;
 
                     let msg = format!("Drone {} - {:?}", dron.id, dron.state);
                     self.logger.log_event(&msg, &self.client.config.general.id);
@@ -248,12 +249,17 @@ impl MonitoringApp {
     }
 
     /// ### handle_drones_will_message
-    /// 
+    ///
     /// Maneja el mensaje de voluntad de los drones
-    /// 
+    ///
     fn handle_drones_will_message(&mut self, message_received: Vec<u8>) {
         let message = deserialize_will_message_payload(message_received);
-        let drone = self.global_interface.drone_interface.drone_list.drones.get_mut(&message);
+        let drone = self
+            .global_interface
+            .drone_interface
+            .drone_list
+            .drones
+            .get_mut(&message);
         if let Some(drone) = drone {
             drone.disconnect();
         }

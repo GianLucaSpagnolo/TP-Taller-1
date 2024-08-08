@@ -8,6 +8,7 @@ use mqtt::client::mqtt_client::MqttClient;
 use shared::views::app_views::cams_views::show_cams;
 use shared::views::app_views::inc_views::show_incidents;
 use shared::views::app_views::{drone_views::show_drones, inc_views::show_incident_editor};
+use shared::views::dialog_alert::dialog_alert;
 use shared::views::icon::get_icon_data;
 use shared::views::map_views::map::show_map;
 
@@ -39,6 +40,7 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
                 &mut app.global_interface.inc_interface,
                 &app.logger,
                 &app.config.db_paths.inc_db_path,
+                &mut app.disconnected,
             );
             ui.add_space(5.0);
             ui.separator();
@@ -55,6 +57,7 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
                         &mut app.global_interface.inc_interface,
                         &app.logger,
                         &app.config.db_paths.inc_db_path,
+                        &mut app.disconnected,
                     );
                 });
                 egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
@@ -94,6 +97,12 @@ fn updater(app: &mut MonitoringApp, ctx: &egui::Context) {
 
 impl eframe::App for MonitoringApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        dialog_alert(
+            ctx,
+            &mut self.disconnected,
+            "Se ha perdido la conexión con el servidor",
+        );
+
         let frame = egui::Frame {
             inner_margin: Margin {
                 top: 30.0,

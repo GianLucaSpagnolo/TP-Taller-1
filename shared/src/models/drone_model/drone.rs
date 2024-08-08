@@ -338,9 +338,9 @@ impl Drone {
     }
 
     /// ### handle_drones_will_message
-    /// 
+    ///
     /// Maneja el mensaje de voluntad de los drones
-    /// 
+    ///
     pub fn handle_drones_will_message(&mut self, message_received: Vec<u8>) {
         let message = deserialize_will_message_payload(message_received);
         println!("\x1b[33m  Drone: {} se ha desconectado. \x1b[0m", message);
