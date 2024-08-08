@@ -39,12 +39,10 @@ pub fn cam_images(
 
                 let texture = if !cam.connected {
                     Texture::from_color_image(disconnect_icon.clone(), &egui_ctx)
+                } else if let CamState::Alert = cam.state {
+                    Texture::from_color_image(alert_icon.clone(), &egui_ctx)
                 } else {
-                    if let CamState::Alert = cam.state {
-                        Texture::from_color_image(alert_icon.clone(), &egui_ctx)
-                    } else {
-                        Texture::from_color_image(default_icon.clone(), &egui_ctx)
-                    }
+                    Texture::from_color_image(default_icon.clone(), &egui_ctx)
                 };
 
                 let mut image = Image::new(texture.clone(), pos);
@@ -77,25 +75,23 @@ pub fn drone_images(egui_ctx: Context, drones: &mut DroneList, icons: DroneIcons
             .values()
             .map(|drone| {
                 let pos = drone.current_pos;
-                
-                let texture =
-                if !drone.connected {
+
+                let texture = if !drone.connected {
                     Texture::from_color_image(icons.disconnected.clone(), &egui_ctx)
+                } else if let DroneState::GoingToIncident = drone.state {
+                    Texture::from_color_image(icons.alert.clone(), &egui_ctx)
+                } else if let DroneState::GoingBack = drone.state {
+                    Texture::from_color_image(icons.going_back.clone(), &egui_ctx)
+                } else if let DroneState::ResolvingIncident = drone.state {
+                    Texture::from_color_image(icons.resolving.clone(), &egui_ctx)
+                } else if let DroneState::LowBattery = drone.state {
+                    Texture::from_color_image(icons.low_battery.clone(), &egui_ctx)
+                } else if let DroneState::Charging = drone.state {
+                    Texture::from_color_image(icons.charging.clone(), &egui_ctx)
                 } else {
-                    if let DroneState::GoingToIncident = drone.state {
-                        Texture::from_color_image(icons.alert.clone(), &egui_ctx)
-                    } else if let DroneState::GoingBack = drone.state {
-                        Texture::from_color_image(icons.going_back.clone(), &egui_ctx)
-                    } else if let DroneState::ResolvingIncident = drone.state {
-                        Texture::from_color_image(icons.resolving.clone(), &egui_ctx)
-                    } else if let DroneState::LowBattery = drone.state {
-                        Texture::from_color_image(icons.low_battery.clone(), &egui_ctx)
-                    } else if let DroneState::Charging = drone.state {
-                        Texture::from_color_image(icons.charging.clone(), &egui_ctx)
-                    } else {
-                        Texture::from_color_image(icons.default.clone(), &egui_ctx)
-                    }
+                    Texture::from_color_image(icons.default.clone(), &egui_ctx)
                 };
+                
                 let mut image = Image::new(texture.clone(), pos);
                 image.scale(x_scale, y_scale);
                 image.angle(angle);

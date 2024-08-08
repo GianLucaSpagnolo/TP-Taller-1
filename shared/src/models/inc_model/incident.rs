@@ -62,6 +62,11 @@ impl Incident {
         self.resolution_time = Some(now.as_secs());
     }
 
+    pub fn unresolve(&mut self) {
+        self.state = IncidentState::Resolved;
+        self.resolution_time = None;
+    }
+
     pub fn len_in_bytes() -> usize {
         1 + 8 + 8 + 1 + 1 + 8 + 8
     }

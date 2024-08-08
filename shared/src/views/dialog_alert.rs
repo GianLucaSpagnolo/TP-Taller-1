@@ -17,6 +17,7 @@ pub fn dialog_alert(ctx: &Context, show_alert: &mut bool, description: &str) {
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     if ui.button("Ok").clicked() {
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                         *show_alert = false;
                     }
                 });
