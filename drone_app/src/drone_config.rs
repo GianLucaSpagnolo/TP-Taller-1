@@ -7,7 +7,6 @@ pub struct DroneConfig {
     pub duracion_de_bateria: f64,
     pub initial_pos: Position,
     pub charging_station_pos: Position,
-    pub id: u8,
     pub mqtt_config_path: String,
     pub db_path: String,
 }
@@ -23,7 +22,6 @@ impl DroneConfig {
         let mut initial_lon: f64 = 0.0;
         let mut charging_station_lat: f64 = 0.0;
         let mut charging_station_lon: f64 = 0.0;
-        let mut id = 0;
         let mut db_path = String::new();
         for line in contents.lines() {
             let parts: Vec<&str> = line.split(':').collect();
@@ -58,12 +56,6 @@ impl DroneConfig {
                         io::Error::new(io::ErrorKind::InvalidData, "Invalid longitude")
                     })?
                 }
-                "id" => {
-                    id = parts[1]
-                        .trim()
-                        .parse()
-                        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid id"))?
-                }
                 "db_path" => {
                     db_path = parts[1].trim().to_string();
                 }
@@ -88,7 +80,6 @@ impl DroneConfig {
             duracion_de_bateria,
             initial_pos,
             charging_station_pos,
-            id,
             db_path,
             mqtt_config_path,
         })

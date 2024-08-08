@@ -7,6 +7,7 @@ use mqtt::client::mqtt_client::MqttClient;
 use walkers::Position;
 
 use crate::models::inc_model::incident::{Incident, IncidentState};
+use crate::will_message::deserialize_will_message_payload;
 
 use super::drone_list::DroneList;
 
@@ -18,12 +19,11 @@ pub enum DroneState {
     ResolvingIncident,
     LowBattery,
     Charging,
-    Disconnected,
 }
 
 #[derive(Debug, Clone)]
 pub struct Drone {
-    pub id: u8,                           //1
+    pub id: String,                       //?
     pub distancia_maxima_alcance: f64,    //8
     pub nivel_de_bateria: f64,            //8
     pub initial_pos: Position,            //16
@@ -34,11 +34,13 @@ pub struct Drone {
     pub sending_for_drone: bool,
     pub drones: DroneList,
     pub db_path: String,
+
+    pub connected: bool,
 }
 
 impl Drone {
     pub fn init(
-        id: u8,
+        id: String,
         distancia_maxima_alcance: f64,
         nivel_de_bateria: f64,
         initial_pos: Position,
@@ -63,6 +65,7 @@ impl Drone {
                 sending_for_drone: false,
                 drones: DroneList::default(),
                 db_path: db_path.clone(),
+                connected: true,
             }
         } else {
             Drone::from_be_bytes(&bytes)
@@ -70,6 +73,14 @@ impl Drone {
 
         drone.db_path = db_path;
         Ok(drone)
+    }
+
+    pub fn connect(&mut self) {
+        self.connected = true;
+    }
+
+    pub fn disconnect(&mut self) {
+        self.connected = false;
     }
 
     pub fn save(&self) {
@@ -166,7 +177,10 @@ impl Drone {
     pub fn as_bytes(&self, sending_for_drone: bool) -> Vec<u8> {
         let mut bytes = Vec::new();
 
-        bytes.push(self.id);
+        let id_len = self.id.len() as u16;
+        bytes.extend_from_slice(id_len.to_be_bytes().as_ref());
+        bytes.extend_from_slice(self.id.as_bytes().as_ref());
+
         bytes.extend_from_slice(&self.distancia_maxima_alcance.to_be_bytes());
         bytes.extend_from_slice(&self.nivel_de_bateria.to_be_bytes());
         bytes.extend_from_slice(&self.initial_pos.lat().to_be_bytes());
@@ -183,7 +197,6 @@ impl Drone {
             DroneState::ResolvingIncident => 3,
             DroneState::LowBattery => 4,
             DroneState::Charging => 5,
-            DroneState::Disconnected => 6,
         };
         bytes.push(state);
 
@@ -199,8 +212,10 @@ impl Drone {
     pub fn from_be_bytes(bytes: &[u8]) -> Drone {
         let mut index = 0;
 
-        let id = bytes[index];
-        index += 1;
+        let id_len = u16::from_be_bytes([bytes[index], bytes[index + 1]]);
+        index += 2;
+        let id = String::from_utf8(bytes[index..id_len as usize + index].to_vec()).unwrap();
+        index += id_len as usize;
 
         let distancia_maxima_alcance =
             f64::from_be_bytes(bytes[index..index + 8].try_into().unwrap());
@@ -234,7 +249,6 @@ impl Drone {
             3 => DroneState::ResolvingIncident,
             4 => DroneState::LowBattery,
             5 => DroneState::Charging,
-            6 => DroneState::Disconnected,
             _ => panic!("Invalid state"),
         };
 
@@ -264,11 +278,12 @@ impl Drone {
             sending_for_drone,
             drones: DroneList::default(),
             db_path: String::new(),
+            connected: true,
         }
     }
 
     pub fn size_of(&self) -> usize {
-        1 + 8 + 8 + 16 + 16 + 16 + 1 + 1 + 1
+        2 + self.id.len() + 8 + 8 + 16 + 16 + 16 + 1 + 1 + 1
     }
 
     fn is_close_enough(&self, distance: f64) -> bool {
@@ -321,6 +336,16 @@ impl Drone {
         }
         self.save();
     }
+
+    /// ### handle_drones_will_message
+    /// 
+    /// Maneja el mensaje de voluntad de los drones
+    /// 
+    pub fn handle_drones_will_message(&mut self, message_received: Vec<u8>) {
+        let message = deserialize_will_message_payload(message_received);
+        println!("\x1b[33m  Drone: {} se ha desconectado. \x1b[0m", message);
+        self.drones.drones.remove(&message);
+    }
 }
 
 pub fn get_distance_to_incident(drone: &Drone, lat: f64, lon: f64) -> f64 {
@@ -339,7 +364,7 @@ mod tests {
     #[test]
     fn test_dron_serialization() {
         let dron = Drone::init(
-            1,
+            "drone1".to_string(),
             100.0,
             100.0,
             Position::from_lat_lon(0.0, 0.0),
@@ -379,7 +404,7 @@ mod tests {
     #[test]
     fn test_distance_to_incident() {
         let dron = Drone::init(
-            1,
+            "drone1".to_string(),
             100.0,
             100.0,
             Position::from_lat_lon(0.0, 0.0),
@@ -395,7 +420,7 @@ mod tests {
     #[test]
     fn test_is_close_enough() {
         let dron = Drone::init(
-            1,
+            "drone1".to_string(),
             100.0,
             100.0,
             Position::from_lat_lon(0.0, 0.0),
@@ -411,7 +436,7 @@ mod tests {
     #[test]
     fn test_is_closer_than_other_drones() {
         let mut dron = Drone::init(
-            1,
+            "drone1".to_string(),
             100.0,
             100.0,
             Position::from_lat_lon(0.0, 0.0),
@@ -421,7 +446,7 @@ mod tests {
         .unwrap();
 
         let dron2 = Drone::init(
-            2,
+            "drone2".to_string(),
             100.0,
             100.0,
             Position::from_lat_lon(5.0, 5.0),
@@ -431,7 +456,7 @@ mod tests {
         .unwrap();
 
         let dron3 = Drone::init(
-            3,
+            "drone3".to_string(),
             100.0,
             100.0,
             Position::from_lat_lon(10.0, 10.0),
@@ -449,7 +474,7 @@ mod tests {
     #[test]
     fn test_is_not_closer_than_other_drones() {
         let mut dron = Drone::init(
-            1,
+            "drone1".to_string(),
             100.0,
             100.0,
             Position::from_lat_lon(25.0, 25.0),
@@ -459,7 +484,7 @@ mod tests {
         .unwrap();
 
         let dron2 = Drone::init(
-            2,
+            "drone2".to_string(),
             100.0,
             100.0,
             Position::from_lat_lon(5.0, 5.0),
@@ -469,7 +494,7 @@ mod tests {
         .unwrap();
 
         let dron3 = Drone::init(
-            3,
+            "drone3".to_string(),
             100.0,
             100.0,
             Position::from_lat_lon(10.0, 10.0),

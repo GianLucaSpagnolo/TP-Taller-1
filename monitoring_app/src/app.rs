@@ -192,10 +192,6 @@ impl MonitoringApp {
             }
         } else if message_received.topic == AppTopics::DroneTopic.get_topic() {
             if message_received.is_will_message {
-                //let data = Drone::from_be_bytes(&message_received.data);
-                //let drone_lock = &mut self.global_interface.drone_interface.drone_list;
-                //drone_lock.update_drone(data);
-                //drone_lock.save(&self.config.db_paths.drone_db_path).unwrap();
                 self.handle_drones_will_message(message_received.data);
 
             } else {
@@ -257,6 +253,9 @@ impl MonitoringApp {
     /// 
     fn handle_drones_will_message(&mut self, message_received: Vec<u8>) {
         let message = deserialize_will_message_payload(message_received);
-        println!("Will message received: {:?} disconnected", message);
+        let drone = self.global_interface.drone_interface.drone_list.drones.get_mut(&message);
+        if let Some(drone) = drone {
+            drone.disconnect();
+        }
     }
 }

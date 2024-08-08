@@ -19,7 +19,7 @@ use mqtt::{
 };
 use shared::{
     app_topics::AppTopics,
-    models::{drone_model::drone::Drone, inc_model::incident::Incident}, will_message::{deserialize_will_message_payload, serialize_will_message_payload},
+    models::{drone_model::drone::Drone, inc_model::incident::Incident}, will_message::serialize_will_message_payload,
 };
 
 pub fn process_messages(
@@ -38,32 +38,21 @@ pub fn process_messages(
                     .unwrap()
                     .process_incident(&mut client, incident.clone(), &logger);
             } else if message_received.topic == AppTopics::DroneTopic.get_topic() {
+                let mut drone_lock = drone.lock().unwrap();
                 if message_received.is_will_message {
-                    handle_drones_will_message(message_received.data);
+                    drone_lock.handle_drones_will_message(message_received.data);
                     continue;
                 }
 
                 let drone_received = Drone::from_be_bytes(&message_received.data);
-                if drone_received.id == drone.lock().unwrap().id {
+                if drone_received.id == drone_lock.id {
                     continue;
                 }
-                drone
-                    .lock()
-                    .unwrap()
-                    .process_drone_message(&mut client, drone_received, &logger);
+                drone_lock.process_drone_message(&mut client, drone_received, &logger);
             }
         }
     });
     Ok(handler)
-}
-
-/// ### handle_drones_will_message
-/// 
-/// Maneja el mensaje de voluntad de los drones
-/// 
-fn handle_drones_will_message(message_received: Vec<u8>) {
-    let message = deserialize_will_message_payload(message_received);
-    println!("Will message received: {:?} disconnected", message);
 }
 
 pub fn process_standard_input(
@@ -115,18 +104,19 @@ fn main() -> Result<(), Error> {
         process::exit(1);
     }
 
-    let config = DroneConfig::from_file(&args[1])?;
+    let app_config = DroneConfig::from_file(&args[1])?;
+
+    let mut config = ClientConfig::from_file(app_config.mqtt_config_path)?;
 
     let drone = Drone::init(
-        config.id,
-        config.distancia_maxima_alcance,
-        config.duracion_de_bateria,
-        config.initial_pos,
-        config.charging_station_pos,
-        config.db_path,
+        config.general.id.clone(),
+        app_config.distancia_maxima_alcance,
+        app_config.duracion_de_bateria,
+        app_config.initial_pos,
+        app_config.charging_station_pos,
+        app_config.db_path,
     )?;
 
-    let mut config = ClientConfig::from_file(config.mqtt_config_path)?;
     config.set_will_message(
         AppTopics::DroneTopic.get_topic(),
         serialize_will_message_payload(config.general.id.clone()),
