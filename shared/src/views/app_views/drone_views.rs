@@ -108,12 +108,12 @@ fn drones_list(ui: &mut Ui, interface: &mut DroneInterface) {
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
-                        ui.heading("Bateria");
+                        ui.heading("Conexión");
                     });
                 });
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
-                        ui.heading("Conexión");
+                        ui.heading("Bateria");
                     });
                 });
             })
