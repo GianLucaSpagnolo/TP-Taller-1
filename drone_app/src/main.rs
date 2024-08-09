@@ -79,9 +79,14 @@ pub fn process_standard_input(
                     "exit" => {
                         println!("Saliendo del sistema...");
                         battery_tx.send(()).unwrap();
-                        client
-                            .disconnect(ReasonCode::NormalDisconnection, logger)
-                            .unwrap();
+                        match client.disconnect(ReasonCode::NormalDisconnection, logger) {
+                            Ok(_) => {
+                                println!("Desconexión exitosa del cliente");
+                            }
+                            Err(e) => {
+                                println!("Error al desconectar el cliente: {}", e);
+                            }
+                        }
                         battery_handler.join().unwrap();
                         break;
                     }

@@ -164,7 +164,7 @@ impl CamList {
         self.cams.get(id)
     }
 
-    fn generate_id(&self) -> u8 {
+    pub fn generate_id(&self) -> u8 {
         let id = self.cams.keys().max().map(|id| id + 1);
         id.unwrap_or(0)
     }
