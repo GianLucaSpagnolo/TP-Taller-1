@@ -52,21 +52,21 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
+            if drone.connected {
+                ui.label(egui::RichText::new("Conectado").color(egui::Color32::GREEN));
+            } else {
+                ui.label(egui::RichText::new("Desconectado").color(egui::Color32::DARK_GRAY));
+            }
+        });
+    });
+    row.col(|ui| {
+        ui.centered_and_justified(|ui| {
             if let DroneState::LowBattery = drone.state {
                 ui.label(egui::RichText::new("Batería baja").color(egui::Color32::DARK_RED));
             } else if let DroneState::Charging = drone.state {
                 ui.label(egui::RichText::new("Cargando").color(egui::Color32::GREEN));
             } else {
                 ui.label(egui::RichText::new("Con Batería").color(egui::Color32::WHITE));
-            }
-        });
-    });
-    row.col(|ui| {
-        ui.centered_and_justified(|ui| {
-            if drone.connected {
-                ui.label(egui::RichText::new("Conectado").color(egui::Color32::GREEN));
-            } else {
-                ui.label(egui::RichText::new("Desconectado").color(egui::Color32::DARK_GRAY));
             }
         });
     });
