@@ -47,7 +47,6 @@ pub fn add_incident_button(
                 &mut inc_interface.inc_historial,
                 field,
                 logger,
-                &inc_interface.db_path,
             )?;
         }
     }
@@ -162,7 +161,6 @@ fn incident_row(
                     &mut inc_interface.inc_historial,
                     &incident.id,
                     logger,
-                    &inc_interface.db_path,
                 ) {
                     Ok(_) => {}
                     Err(_) => {

@@ -8,6 +8,7 @@ use std::{
 };
 
 use cams_system::CamsSystem;
+use central_cams_system::vision::fs_listener::initiate_dir_listener;
 use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
@@ -15,6 +16,7 @@ use shared::{
     will_message::deserialize_will_message_payload,
 };
 use system_interface::interface::{process_standard_input, show_start};
+use walkers::Position;
 
 const SYSTEM_CONFIG_PATH: &str = "central_cams_system/config/system_config.txt";
 
@@ -36,7 +38,7 @@ pub fn process_messages(
                 if message_received.is_will_message {
                     handle_inc_will_message(message_received.data);
                 } else {
-                    let incident = Incident::from_be_bytes(message_received.data);
+                    let incident = Incident::from_be_bytes(&message_received.data);
                     println!("Mensaje recibido: {:?}", incident);
                     cams_system
                         .lock()
@@ -52,16 +54,57 @@ pub fn process_messages(
 
 fn main() -> Result<(), Error> {
     let cam_system = CamsSystem::new(SYSTEM_CONFIG_PATH.to_string())?;
+    
+    let video_path = cam_system.config.video_path.clone();
 
     show_start(&cam_system);
 
-    let mut system_handler = cam_system.init()?;
+    let (inc_tx, inc_rx) = std::sync::mpsc::channel::<bool>();
 
+    let mut system_handler = cam_system.init()?;
+    
     let cams_system_ref = Arc::new(Mutex::new(cam_system));
     let cam_system_clone = cams_system_ref.clone();
-
+    
     let mut client_clone = system_handler.client.clone();
     let logger_cpy = system_handler.logger.clone();
+    
+    let _ = thread::spawn(move || {
+        initiate_dir_listener(&video_path, inc_tx).unwrap();
+    });
+
+    let _ = thread::spawn(move || loop {
+        if inc_rx.try_recv().unwrap() {
+            println!("Mandando incidente al sistema de camaras ... ");
+            // Receive: cam_id, bool
+            
+            // let location = cam_system_ref.lock().unwrap().get_cam_location(cam_id);
+            
+            // let inc_id = cam_system_ref.lock().unwrap().get_new_inc_id();
+            /* 
+                cam_system.get_new_inc_id(){
+                    let list = IncidentList::init(self.inc_db_path);
+                    list.genereate_new_inc_id();
+                }
+
+            */
+                
+            let inc = Incident::new(0, Position::from_lat_lon(0.0, 0.0));
+                match client_clone.publish(inc.as_bytes(), AppTopics::IncTopic.get_topic(), &logger_cpy){
+                    Ok(_) => {
+                        println!("Incidente publicado");
+                    },
+                    Err(e) => {
+                        println!("Error al publicar incidente: {}", e);
+                        break;
+                    }
+                }
+            }
+    });
+    
+    let mut client_clone = system_handler.client.clone();
+    let logger_cpy = system_handler.logger.clone();
+    
     let handle = thread::spawn(move || {
         process_standard_input(&mut client_clone, cam_system_clone, &logger_cpy);
         logger_cpy.close();

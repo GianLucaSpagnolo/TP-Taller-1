@@ -59,7 +59,7 @@ impl IncidentList {
         index += 2;
 
         for _ in 0..incs_len {
-            let incident = Incident::from_be_bytes(bytes[index..].to_vec());
+            let incident = Incident::from_be_bytes(&bytes[index..]);
             index += Incident::len_in_bytes();
             incidents.insert(incident.id, incident);
         }

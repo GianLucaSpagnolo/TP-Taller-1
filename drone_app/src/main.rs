@@ -33,7 +33,7 @@ pub fn process_messages(
     let handler = thread::spawn(move || {
         for message_received in receiver.iter() {
             if message_received.topic == AppTopics::IncTopic.get_topic() {
-                let incident = Incident::from_be_bytes(message_received.data);
+                let incident = Incident::from_be_bytes(&message_received.data);
                 drone
                     .lock()
                     .unwrap()

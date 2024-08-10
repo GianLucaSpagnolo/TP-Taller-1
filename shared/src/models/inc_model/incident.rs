@@ -110,7 +110,7 @@ impl Incident {
     /// ### Retorno
     /// - `Incident`: Incidente creado
     ///
-    pub fn from_be_bytes(bytes: Vec<u8>) -> Self {
+    pub fn from_be_bytes(bytes: &[u8]) -> Self {
         let mut index = 0;
 
         let id = bytes[index];
@@ -161,7 +161,7 @@ mod test {
         let incident = Incident::new(0, Position::from_lat_lon(1.0, 1.0));
 
         let bytes = incident.as_bytes();
-        let incident2 = Incident::from_be_bytes(bytes);
+        let incident2 = Incident::from_be_bytes(&bytes);
 
         assert_eq!(incident, incident2);
 
@@ -169,7 +169,7 @@ mod test {
         incident.resolve();
 
         let bytes = incident.as_bytes();
-        let incident2 = Incident::from_be_bytes(bytes);
+        let incident2 = Incident::from_be_bytes(&bytes);
 
         assert_eq!(incident, incident2);
     }

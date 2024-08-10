@@ -54,7 +54,7 @@ pub fn detect_incidents(cam_path: &str) {
 /// * falla la configuracion del watcher
 /// 
 /// Devuelve OK cuando la comunicacion se cierra, desde el lado del sender
-fn initiate_dir_listener(
+pub fn initiate_dir_listener(
     str_path: &str,
     inc_sender: Sender<bool>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -77,6 +77,8 @@ fn initiate_dir_listener(
     // Recursive = tambien subdirectorios.
     watcher.watch(path, RecursiveMode::Recursive)?;
     
+    // let pool = ThreadPool::new(4);
+
     while let Ok(res) = rx.recv(){
         // Espera recibir un evento, es bloqueante.
         match res {
@@ -92,6 +94,26 @@ fn initiate_dir_listener(
                             None => continue,
                         };
 
+                        // path: .../camid/imagen.jpg
+                        // id: parse ".../camid/imagen.jpg" -> id
+                        // Send: id, bool
+
+                        // Llamar threadpool con el if dentro
+                        /*
+                        let sender_clone = inc_sender.clone();
+
+                        pool.execute(|| {
+                            if is_incident(image_path) {
+                                // Indica que se proceso la imagen de un incidente:
+                                match sender_clone.send(true) {
+                                    Ok(_) => continue,
+                                    Err(e) => {
+                                        eprintln!("Error de comunicacion con camara: {}", e);
+                                    }
+                                }
+                            }
+                        );
+                         */
                         if is_incident(image_path) {
                             // Indica que se proceso la imagen de un incidente:
                             match inc_sender.send(true) {
