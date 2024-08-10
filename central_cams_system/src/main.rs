@@ -95,7 +95,12 @@ fn main() -> Result<(), Error> {
     system_handler.logger_handler.close();
 
     handle.join().unwrap();
-    listener.handler.join().unwrap()?;
+    match listener.handler.join().unwrap() {
+        Ok(_) => (),
+        Err(e) => {
+            println!("Error al ejecutar el listener del broker: {}", e);
+        }
+    }
     process_message_handler.join().unwrap();
     Ok(())
 }
