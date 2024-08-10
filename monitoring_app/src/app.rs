@@ -9,13 +9,14 @@ use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use mqtt::common::reason_codes::ReasonCode;
 use shared::{
+    app_topics::AppTopics,
     interfaces::{
         cam_interface::CamInterface, drone_interface::DroneInterface,
         global_interface::GlobalInterface, incident_interface::IncidentInterface,
         map_interface::MapInterface,
     },
     models::{
-        cam_model::{cam::Cam, cam_list::CamList},
+        cam_model::cam::Cam,
         drone_model::{
             drone::{Drone, DroneState},
             drone_list::DroneList,
@@ -44,6 +45,7 @@ pub struct MonitoringApp {
     pub global_interface: GlobalInterface,
     pub map_interface: MapInterface,
     pub message_receiver: Receiver<MqttClientMessage>,
+    pub disconnected: bool,
 }
 
 /// ## MonitoringHandler
@@ -57,15 +59,6 @@ pub struct MonitoringApp {
 pub struct MonitoringHandler {
     pub broker_listener: JoinHandle<Result<(), Error>>,
     pub message_handler: JoinHandle<()>,
-}
-
-// ### handle_camaras_will_message
-//
-// Maneja el mensaje de voluntad de las cámaras
-//
-fn handle_camaras_will_message(message_received: Vec<u8>) {
-    let message = deserialize_will_message_payload(message_received);
-    println!("Will message received: {:?} disconnected", message);
 }
 
 /// ### process_messages
@@ -107,11 +100,7 @@ impl MonitoringApp {
     ) -> Self {
         let cam_icons_path = config.icons_paths.cam_icon_paths.clone();
 
-        let mut cam_list = CamList::init(&config.db_paths.cam_db_path);
-        cam_list.disconnect_all();
-
-        let cam_interface =
-            CamInterface::new(cam_list, cam_icons_path, &config.db_paths.cam_db_path);
+        let cam_interface = CamInterface::new(cam_icons_path, &config.db_paths.cam_db_path);
 
         let drone_icons_path = config.icons_paths.drone_icon_paths.clone();
 
@@ -138,6 +127,7 @@ impl MonitoringApp {
             map_interface: MapInterface::new(egui_ctx.to_owned()),
             config,
             message_receiver,
+            disconnected: false,
         }
     }
 
@@ -163,14 +153,21 @@ impl MonitoringApp {
 
         let handler = process_messages(listener.receiver, sender)?;
 
-        client.subscribe(vec!["camaras"], &logger)?;
-        client.subscribe(vec!["drone"], &logger)?;
+        client.subscribe(
+            vec![
+                &AppTopics::CamTopic.get_topic(),
+                &AppTopics::DroneTopic.get_topic(),
+            ],
+            &logger,
+        )?;
+
         match run_interface(client.clone(), logger.clone(), config, receiver) {
             Ok(_) => {
-                println!("Saliendo del sistema...");
-                client
-                    .disconnect(ReasonCode::NormalDisconnection, &logger)
-                    .unwrap();
+                match client.disconnect(ReasonCode::NormalDisconnection, &logger) {
+                    Ok(_) => println!("Desconectado del broker"),
+                    Err(e) => eprintln!("Error al desconectarse del broker: {}", e),
+                }
+
                 Ok(MonitoringHandler {
                     broker_listener: listener.handler,
                     message_handler: handler,
@@ -181,18 +178,23 @@ impl MonitoringApp {
     }
 
     pub fn update_interface(&mut self, message_received: MqttClientMessage) {
-        match message_received.topic.as_str() {
-            "camaras" => {
-                if message_received.is_will_message {
-                    handle_camaras_will_message(message_received.data);
-                } else {
-                    let data = Cam::from_be_bytes(message_received.data);
-                    let system_lock = &mut self.global_interface.cam_interface.cam_list;
-                    system_lock.update_cam(data);
-                    system_lock.save(&self.config.db_paths.cam_db_path).unwrap();
+        if message_received.topic == AppTopics::CamTopic.get_topic() {
+            if message_received.is_will_message {
+                self.handle_camaras_will_message(message_received.data);
+            } else {
+                if !self.global_interface.cam_interface.connected {
+                    self.global_interface.cam_interface.connect();
                 }
+
+                let data = Cam::from_be_bytes(message_received.data);
+                let system_lock = &mut self.global_interface.cam_interface.cam_list;
+                system_lock.update_cam(data);
+                system_lock.save(&self.config.db_paths.cam_db_path).unwrap();
             }
-            "drone" => {
+        } else if message_received.topic == AppTopics::DroneTopic.get_topic() {
+            if message_received.is_will_message {
+                self.handle_drones_will_message(message_received.data);
+            } else {
                 let dron = Drone::from_be_bytes(&message_received.data);
 
                 if !dron.sending_for_drone {
@@ -211,7 +213,11 @@ impl MonitoringApp {
                             if incident.drones_covering == 2 {
                                 incident.resolve();
                                 self.client
-                                    .publish(incident.as_bytes(), "inc".to_string(), &self.logger)
+                                    .publish(
+                                        incident.as_bytes(),
+                                        AppTopics::IncTopic.get_topic(),
+                                        &self.logger,
+                                    )
                                     .unwrap();
                             }
                         };
@@ -228,7 +234,34 @@ impl MonitoringApp {
                         .unwrap();
                 }
             }
-            _ => {}
+        }
+    }
+
+    /// ### handle_camaras_will_message
+    ///
+    /// Maneja el mensaje de voluntad de las cámaras
+    ///
+    fn handle_camaras_will_message(&mut self, message_received: Vec<u8>) {
+        let message = deserialize_will_message_payload(message_received);
+        if message == "camssystem" {
+            self.global_interface.cam_interface.disconnect();
+        }
+    }
+
+    /// ### handle_drones_will_message
+    ///
+    /// Maneja el mensaje de voluntad de los drones
+    ///
+    fn handle_drones_will_message(&mut self, message_received: Vec<u8>) {
+        let message = deserialize_will_message_payload(message_received);
+        let drone = self
+            .global_interface
+            .drone_interface
+            .drone_list
+            .drones
+            .get_mut(&message);
+        if let Some(drone) = drone {
+            drone.disconnect();
         }
     }
 }

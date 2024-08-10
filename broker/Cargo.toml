@@ -12,7 +12,3 @@ logger = {path = "../logger"}
 [[bin]]
 name = "broker"
 path = "src/broker.rs"
-
-[[bin]]
-name = "client_test"
-path = "src/test/client.rs"

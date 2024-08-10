@@ -43,5 +43,6 @@ pub mod controllers {
     pub mod incident;
 }
 
+pub mod app_topics;
 pub mod utils;
 pub mod will_message;

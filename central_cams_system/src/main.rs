@@ -11,7 +11,8 @@ use cams_system::CamsSystem;
 use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
-    models::inc_model::incident::Incident, will_message::deserialize_will_message_payload,
+    app_topics::AppTopics, models::inc_model::incident::Incident,
+    will_message::deserialize_will_message_payload,
 };
 use system_interface::interface::{process_standard_input, show_start};
 
@@ -31,7 +32,7 @@ pub fn process_messages(
     let mut client = client.clone();
     let handler = thread::spawn(move || {
         for message_received in receiver.iter() {
-            if message_received.topic.as_str() == "inc" {
+            if message_received.topic == AppTopics::IncTopic.get_topic() {
                 if message_received.is_will_message {
                     handle_inc_will_message(message_received.data);
                 } else {
@@ -94,7 +95,12 @@ fn main() -> Result<(), Error> {
     system_handler.logger_handler.close();
 
     handle.join().unwrap();
-    listener.handler.join().unwrap()?;
+    match listener.handler.join().unwrap() {
+        Ok(_) => (),
+        Err(e) => {
+            println!("Error al ejecutar el listener del broker: {}", e);
+        }
+    }
     process_message_handler.join().unwrap();
     Ok(())
 }

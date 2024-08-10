@@ -10,7 +10,7 @@ use crate::{
     common::{flags::flags_handler, reason_codes::ReasonCode, topic_filter::TopicFilter},
     config::server_config::ServerConfig,
     logging::{actions::MqttActions, server_actions::MqttServerActions},
-    mqtt_packets::packets::{connect::Connect, disconnect::Disconnect, publish::Publish},
+    mqtt_packets::packets::{connect::Connect, publish::Publish},
 };
 
 use super::{
@@ -144,7 +144,16 @@ impl SessionRegister {
         mut topics: Vec<TopicFilter>,
     ) -> Result<(), Error> {
         if let Some(session) = self.sessions.get_mut(client_id) {
-            session.subscriptions.append(&mut topics);
+            for topic in topics.iter_mut() {
+                if !session
+                    .subscriptions
+                    .iter()
+                    .any(|t| t.topic_filter == topic.topic_filter)
+                {
+                    session.subscriptions.push(topic.clone());
+                }
+            }
+
             self.save();
             return Ok(());
         }
@@ -201,19 +210,17 @@ impl SessionRegister {
     pub fn disconnect_session(
         &mut self,
         network: &mut ServerNetwork,
-        packet: &Disconnect,
+        client_id: String,
         server_id: &String,
         log_in_term: &bool,
         logger: &Logger,
     ) -> Result<MqttServerActions, Error> {
-        let client_id = packet.properties.id.clone();
-
         let sessions = self.sessions.clone();
 
         let action = if let Some(session) = self.sessions.get_mut(&client_id) {
             session.disconnect();
 
-            MqttServerActions::DisconnectSession(packet.properties.id.clone()).log_action(
+            MqttServerActions::DisconnectSession(client_id.clone()).log_action(
                 server_id,
                 logger,
                 log_in_term,
@@ -225,7 +232,7 @@ impl SessionRegister {
 
                 sessions.into_iter().for_each(|(id, s)| {
                     if s.active
-                        && id != packet.properties.id
+                        && id != client_id
                         && s.subscriptions
                             .iter()
                             .any(|t| t.topic_filter == will_message.will_topic)

@@ -33,7 +33,12 @@ fn main() -> Result<(), Error> {
 
     logger.close();
     logger_handler.close();
-    handlers.broker_listener.join().unwrap()?;
+    match handlers.broker_listener.join().unwrap() {
+        Ok(_) => (),
+        Err(e) => {
+            println!("Error al ejecutar el listener del broker: {}", e);
+        }
+    }
     handlers.message_handler.join().unwrap();
     Ok(())
 }

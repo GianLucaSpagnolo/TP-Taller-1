@@ -6,6 +6,7 @@ pub mod interface {
 
     use logger::logger_handler::Logger;
     use mqtt::{client::mqtt_client::MqttClient, common::reason_codes::ReasonCode};
+    use shared::models::cam_model::cam::{Cam, CamState};
     use walkers::Position;
 
     use crate::cams_system::CamsSystem;
@@ -20,15 +21,36 @@ pub mod interface {
         }
     }
 
-    fn check_add_args(args: Vec<&str>) -> Result<(&str, &str), Error> {
-        if let (Some(lat), Some(long)) = (args.get(1), args.get(2)) {
-            if lat.is_empty() || long.is_empty() {
+    fn validate_position_args(args: Vec<&str>, max_args: usize) -> Result<Position, Error> {
+        if let (Some(lat), Some(lon)) = (args.get(max_args - 1), args.get(max_args)) {
+            if lat.is_empty() || lon.is_empty() {
                 return Err(Error::new(
                     std::io::ErrorKind::Other,
                     "Error - Alguno de los argumentos está vacío",
                 ));
             }
-            return Ok((lat, long));
+
+            let lat = match lat.parse() {
+                Ok(l) => l,
+                Err(e) => {
+                    return Err(Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("Error al parsear latitud: {}", e),
+                    ));
+                }
+            };
+
+            let lon = match lon.parse() {
+                Ok(l) => l,
+                Err(e) => {
+                    return Err(Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("Error al parsear longitud: {}", e),
+                    ));
+                }
+            };
+
+            return Ok(Position::from_lat_lon(lat, lon));
         }
 
         Err(Error::new(
@@ -45,20 +67,26 @@ pub mod interface {
     ) -> Result<(), Error> {
         let mut cam_system = cam_system.lock().unwrap();
 
-        let (lat, lon) = check_add_args(args)?;
+        let location = validate_position_args(args, 2)?;
 
-        // Se utilizar unwrap() porque ya se validó que la cantidad de argumentos es correcta
-        let lat = lat.parse().unwrap();
-        let lon = lon.parse().unwrap();
+        let added_cam = Cam::new(cam_system.system.generate_id(), location);
 
-        let location = Position::from_lat_lon(lat, lon);
-        let added_cam = cam_system.add_new_camara(location)?;
-        println!("Camera added: {} ", added_cam);
-        client.publish(added_cam.as_bytes(), "camaras".to_string(), logger)?;
+        match client.publish(added_cam.as_bytes(), "camaras".to_string(), logger) {
+            Ok(_) => {
+                println!("Camera added: {} ", added_cam);
+                cam_system.add_new_camara(location)?;
+            }
+            Err(e) => {
+                return Err(Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Error al publicar cámara: {}", e),
+                ));
+            }
+        }
         Ok(())
     }
 
-    fn check_delete_args(args: Vec<&str>) -> Result<u8, Error> {
+    fn validate_id_arg(args: &[&str]) -> Result<u8, Error> {
         if let Some(id) = args.get(1) {
             if id.is_empty() {
                 return Err(Error::new(
@@ -80,7 +108,7 @@ pub mod interface {
         args: Vec<&str>,
         logger: &Logger,
     ) -> Result<(), Error> {
-        let id = check_delete_args(args)?;
+        let id = validate_id_arg(&args)?;
 
         let mut cam_system = match cam_system.lock() {
             Ok(cam_system) => cam_system,
@@ -92,34 +120,46 @@ pub mod interface {
             }
         };
 
-        let cam = cam_system.delete_camara(&id)?;
-        println!(
-            "Cámara eliminada: id: {} - modo: {:?} - latitud: {} - longitud: {}",
-            cam.id,
-            cam.state,
-            cam.location.lat(),
-            cam.location.lon()
-        );
-
-        client.publish(cam.as_bytes(), "camaras".to_string(), logger)?;
-
-        Ok(())
-    }
-
-    fn check_modify_args(args: Vec<&str>) -> Result<(&str, &str, &str), Error> {
-        if let (Some(id), Some(lat), Some(long)) = (args.get(1), args.get(2), args.get(3)) {
-            if id.is_empty() || lat.is_empty() || long.is_empty() {
+        let cam = match cam_system.system.cams.get(&id) {
+            Some(cam) => {
+                if cam.state == CamState::Alert {
+                    return Err(Error::new(
+                        std::io::ErrorKind::Other,
+                        "Error - No se puede eliminar una cámara en estado de alerta",
+                    ));
+                }
+                let mut cam_removed = cam.clone();
+                cam_removed.remove();
+                cam_removed
+            }
+            None => {
                 return Err(Error::new(
                     std::io::ErrorKind::Other,
-                    "Error - Alguno de los argumentos está vacío",
+                    format!("Error - No se encontró la cámara con id: {}", id),
                 ));
             }
-            return Ok((id, lat, long));
+        };
+
+        match client.publish(cam.as_bytes(), "camaras".to_string(), logger) {
+            Ok(_) => {
+                let cam = cam_system.delete_camara(&id)?;
+                println!(
+                    "Cámara eliminada: id: {} - modo: {:?} - latitud: {} - longitud: {}",
+                    cam.id,
+                    cam.state,
+                    cam.location.lat(),
+                    cam.location.lon()
+                );
+            }
+            Err(e) => {
+                return Err(Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Error al publicar cámara: {}", e),
+                ));
+            }
         }
-        Err(Error::new(
-            std::io::ErrorKind::Other,
-            "Error - Faltan argumentos",
-        ))
+
+        Ok(())
     }
 
     fn modify_action(
@@ -128,28 +168,38 @@ pub mod interface {
         parts: Vec<&str>,
         logger: &Logger,
     ) -> Result<(), Error> {
-        let (id, lat, lon) = check_modify_args(parts)?;
+        let id = validate_id_arg(&parts)?;
+        let new_location = validate_position_args(parts, 3)?;
 
-        // Se utilizar unwrap() porque ya se validó que la cantidad de argumentos es correcta
-        let id = parse_id(id)?;
+        let mut cam_system = cam_system.lock().unwrap();
 
-        let (lat, lon) = match (lat.parse(), lon.parse()) {
-            (Ok(lat), Ok(lon)) => (lat, lon),
-            _ => {
+        let modified_cam = match cam_system.system.cams.get(&id) {
+            Some(cam) => {
+                let mut cam_modified = cam.clone();
+                cam_modified.location = new_location;
+                cam_modified
+            }
+            None => {
                 return Err(Error::new(
                     std::io::ErrorKind::Other,
-                    "Error al parsear latitud o longitud",
+                    format!("Error - No se encontró la cámara con id: {}", id),
                 ));
             }
         };
 
-        let new_coordenate = Position::from_lat_lon(lat, lon);
+        match client.publish(modified_cam.as_bytes(), "camaras".to_string(), logger) {
+            Ok(_) => {
+                cam_system.modify_cam_position(&id, new_location)?;
+                println!("Cámara modificada correctamente");
+            }
+            Err(e) => {
+                return Err(Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Error al publicar cámara: {}", e),
+                ));
+            }
+        }
 
-        let mut cam_system = cam_system.lock().unwrap();
-
-        let modified_cam = cam_system.modify_cam_position(&id, new_coordenate)?;
-        println!("Cámara modificada correctamente");
-        client.publish(modified_cam.as_bytes(), "camaras".to_string(), logger)?;
         Ok(())
     }
 
@@ -201,9 +251,15 @@ pub mod interface {
 
                         "exit" => {
                             println!("Saliendo del sistema...");
-                            client
-                                .disconnect(ReasonCode::NormalDisconnection, logger)
-                                .unwrap();
+                            match client.disconnect(ReasonCode::NormalDisconnection, logger) {
+                                Ok(_) => {
+                                    println!("Desconectado del servidor MQTT");
+                                    break;
+                                }
+                                Err(e) => {
+                                    println!("Error al desconectarse del servidor MQTT: {}", e);
+                                }
+                            }
                             break;
                         }
 
