@@ -25,11 +25,20 @@ pub struct CamsSystem {
     pub config: CamSystemConfig,
 }
 
+fn create_cam_video_dir(video_path: &str, cam_id: u8) -> Result<(), Error> {
+    let path = format!("{}/cam{}", video_path, cam_id);
+    std::fs::create_dir_all(path)
+}
+
 impl CamsSystem {
     pub fn new(path: String) -> Result<Self, Error> {
         let config = CamSystemConfig::from_file(path)?;
 
         let system = CamList::init(&config.db_path);
+
+        for cam in system.cams.values() {
+            create_cam_video_dir(&config.video_path, cam.id)?;
+        }
 
         Ok(CamsSystem { system, config })
     }
@@ -78,6 +87,9 @@ impl CamsSystem {
 
     pub fn add_new_camara(&mut self, position: Position) -> Result<Cam, Error> {
         let cam = self.system.add_cam(position);
+        
+        create_cam_video_dir(&self.config.video_path, cam.id)?;
+
         self.system.save(&self.config.db_path)?;
         Ok(cam)
     }

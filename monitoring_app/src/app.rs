@@ -28,6 +28,12 @@ use shared::{
 
 use crate::{app_config::MonitoringAppConfig, app_interface::run_interface};
 
+pub struct MonitoringVideo {
+    pub picked_path: Option<String>,
+    pub new_cam_video_id: Option<u8>,
+    pub historial: Vec<String>,
+}
+
 /// ## MonitoringApp
 ///
 /// Estructura que representa la aplicación de monitoreo
@@ -46,6 +52,7 @@ pub struct MonitoringApp {
     pub map_interface: MapInterface,
     pub message_receiver: Receiver<MqttClientMessage>,
     pub disconnected: bool,
+    pub video: MonitoringVideo,
 }
 
 /// ## MonitoringHandler
@@ -128,6 +135,11 @@ impl MonitoringApp {
             config,
             message_receiver,
             disconnected: false,
+            video: MonitoringVideo {
+                picked_path: None,
+                new_cam_video_id: None,
+                historial: Vec::new(),
+            },
         }
     }
 

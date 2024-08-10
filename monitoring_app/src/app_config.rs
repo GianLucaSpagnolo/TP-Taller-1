@@ -30,6 +30,7 @@ pub struct MonitoringAppConfig {
     pub initial_position: Position,
     pub icons_paths: IconsPaths,
     pub db_paths: DBPaths,
+    pub video_path: String,
     pub mqtt_config: ClientConfig,
 }
 
@@ -55,6 +56,7 @@ impl MonitoringAppConfig {
         let mut cam_db_path = String::new();
         let mut drone_db_path = String::new();
         let mut mqtt_config_path = String::new();
+        let mut video_path = String::new();
 
         for line in contents.lines() {
             let parts: Vec<&str> = line.split(':').collect();
@@ -132,6 +134,9 @@ impl MonitoringAppConfig {
                 "mqtt_config" => {
                     mqtt_config_path = parts[1].trim().to_string();
                 }
+                "root_cameras_path" => {
+                    video_path = parts[1].trim().to_string();
+                }
                 _ => (),
             }
         }
@@ -190,6 +195,7 @@ impl MonitoringAppConfig {
                     cam_db_path,
                     drone_db_path,
                 },
+                video_path,
                 mqtt_config,
             });
         }
