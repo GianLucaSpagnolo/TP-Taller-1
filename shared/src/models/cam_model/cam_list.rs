@@ -125,6 +125,12 @@ impl CamList {
         modified_cams
     }
 
+    pub fn connect_all(&mut self) {
+        for cam in self.cams.values_mut() {
+            cam.connect();
+        }
+    }
+
     pub fn disconnect_all(&mut self) {
         for cam in self.cams.values_mut() {
             cam.disconnect();
@@ -158,7 +164,7 @@ impl CamList {
         self.cams.get(id)
     }
 
-    fn generate_id(&self) -> u8 {
+    pub fn generate_id(&self) -> u8 {
         let id = self.cams.keys().max().map(|id| id + 1);
         id.unwrap_or(0)
     }

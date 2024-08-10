@@ -29,6 +29,8 @@ use super::mqtt_config::{Config, MqttConfig};
 pub struct ClientConfig {
     pub general: MqttConfig,
     pub connect_properties: ConnectProperties,
+    pub keep_alive: u16,
+
     pub pub_dup_flag: u8,
     pub pub_qos: u8,
     pub pub_retain: u8,
@@ -47,6 +49,7 @@ impl Clone for ClientConfig {
         ClientConfig {
             general: self.general.clone(),
             connect_properties: self.connect_properties.clone(),
+            keep_alive: self.keep_alive,
             pub_dup_flag: self.pub_dup_flag,
             pub_qos: self.pub_qos,
             pub_retain: self.pub_retain,
@@ -71,6 +74,7 @@ impl Config for ClientConfig {
 
         // Corroborar que le pasen los campos obligatorios
         let mut connect_properties = ConnectProperties::default();
+        let mut keep_alive = 0;
         let mut pub_dup_flag = 0;
         let mut pub_qos = 0;
         let mut pub_retain = 0;
@@ -148,7 +152,7 @@ impl Config for ClientConfig {
                     }
                 }
                 "keep_alive" => {
-                    connect_properties.keep_alive = match param.1.parse::<u16>() {
+                    keep_alive = match param.1.parse::<u16>() {
                         Ok(p) => p,
                         Err(_) => {
                             return Err(Error::new(
@@ -156,6 +160,10 @@ impl Config for ClientConfig {
                                 "Invalid parameter: Keep Alive",
                             ))
                         }
+                    };
+
+                    if keep_alive > 0 {
+                        connect_properties.keep_alive = keep_alive;
                     }
                 }
                 "session_expiry_interval" => {
@@ -329,6 +337,7 @@ impl Config for ClientConfig {
         Ok(ClientConfig {
             general,
             connect_properties,
+            keep_alive,
             pub_dup_flag,
             pub_qos,
             pub_retain,

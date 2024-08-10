@@ -27,8 +27,6 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
                 );
             } else if let DroneState::ResolvingIncident = drone.state {
                 ui.label(egui::RichText::new("Resolviendo incidente").color(egui::Color32::YELLOW));
-            } else if let DroneState::Disconnected = drone.state {
-                ui.label(egui::RichText::new("Desconectado").color(egui::Color32::DARK_GRAY));
             } else {
                 ui.label(egui::RichText::new("Volviendo a central").color(egui::Color32::GRAY));
             }
@@ -50,6 +48,15 @@ fn drone_row(mut row: egui_extras::TableRow, drone: &Drone) {
                 drone.current_pos.lon(),
                 COORDENATE_PRECISION
             ));
+        });
+    });
+    row.col(|ui| {
+        ui.centered_and_justified(|ui| {
+            if drone.connected {
+                ui.label(egui::RichText::new("Conectado").color(egui::Color32::GREEN));
+            } else {
+                ui.label(egui::RichText::new("Desconectado").color(egui::Color32::DARK_GRAY));
+            }
         });
     });
     row.col(|ui| {
@@ -77,6 +84,7 @@ fn drones_list(ui: &mut Ui, interface: &mut DroneInterface) {
             .column(Column::exact(150.0))
             .column(Column::exact(150.0))
             .column(Column::exact(150.0))
+            .column(Column::exact(150.0))
             .header(30.0, |mut header| {
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
@@ -96,6 +104,11 @@ fn drones_list(ui: &mut Ui, interface: &mut DroneInterface) {
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Longitud");
+                    });
+                });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Conexión");
                     });
                 });
                 header.col(|ui| {

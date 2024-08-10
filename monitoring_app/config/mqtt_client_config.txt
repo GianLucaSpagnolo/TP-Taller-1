@@ -6,9 +6,10 @@ log_path: data/logs/monitoring_log.csv
 log_in_terminal: true
 protocol_name: MQTT
 protocol_version: 5
-keep_alive: 60
+keep_alive: 5
 flag_clean_start: false
 flag_will_qos: 2
+flag_will_flag: false
 publish_dup: false
 publish_qos: 1
 publish_retain: false 

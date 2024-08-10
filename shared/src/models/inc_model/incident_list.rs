@@ -17,7 +17,7 @@ pub struct IncidentList {
 }
 
 impl IncidentList {
-    fn generate_id(&self) -> u8 {
+    pub fn generate_id(&self) -> u8 {
         let id = self.incidents.keys().max().map(|id| id + 1);
         id.unwrap_or(0)
     }

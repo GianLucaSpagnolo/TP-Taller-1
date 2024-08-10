@@ -14,7 +14,6 @@ use walkers::Position;
 pub enum CamState {
     SavingEnergy,
     Alert,
-    Disconnected,
     Removed,
 }
 
@@ -23,7 +22,6 @@ impl Display for CamState {
         let str = match self {
             CamState::SavingEnergy => "\x1B[32mSavingEnergy\x1B[0m".to_string(),
             CamState::Alert => "\x1B[31mAlert\x1B[0m".to_string(),
-            CamState::Disconnected => "\x1B[33mDisconnected\x1B[0m".to_string(),
             CamState::Removed => "\x1B[33mRemoved\x1B[0m".to_string(),
         };
         write!(f, "{}", str)
@@ -47,6 +45,7 @@ pub struct Cam {
     pub location: Position,
     pub state: CamState,
     pub incidents_covering: u8,
+    pub connected: bool,
 }
 
 impl Display for Cam {
@@ -69,6 +68,7 @@ impl Cam {
             location,
             state: CamState::SavingEnergy,
             incidents_covering: 0,
+            connected: true,
         }
     }
 
@@ -105,8 +105,12 @@ impl Cam {
         }
     }
 
+    pub fn connect(&mut self) {
+        self.connected = true;
+    }
+
     pub fn disconnect(&mut self) {
-        self.state = CamState::Disconnected;
+        self.connected = false;
     }
 
     pub fn is_near(&self, position: Position, range: &f64) -> bool {
@@ -126,8 +130,7 @@ impl Cam {
         let state = match self.state {
             CamState::SavingEnergy => 0,
             CamState::Alert => 1,
-            CamState::Disconnected => 2,
-            CamState::Removed => 3,
+            CamState::Removed => 2,
         };
         bytes.push(state);
         bytes.push(self.incidents_covering);
@@ -147,8 +150,7 @@ impl Cam {
         let state = match bytes[index] {
             0 => CamState::SavingEnergy,
             1 => CamState::Alert,
-            2 => CamState::Disconnected,
-            3 => CamState::Removed,
+            2 => CamState::Removed,
             _ => panic!("Invalid state {}", bytes[index]),
         };
         index += 1;
@@ -158,6 +160,7 @@ impl Cam {
             location: Position::from_lat_lon(latitude, longitude),
             state,
             incidents_covering,
+            connected: true,
         }
     }
 }

@@ -148,7 +148,7 @@ pub mod publish_handler {
 
         let subscribers = server.register.get_subscribers(&topic);
 
-        subscribers.into_iter().for_each(|(id, mut s)| {
+        subscribers.into_iter().for_each(|(id, s)| {
             if s.active {
                 let stream = server.network.connections.get_mut(&id).unwrap();
                 match pub_packet.send(stream) {
@@ -156,7 +156,13 @@ pub mod publish_handler {
                         receivers.push(id.clone());
                     }
                     Err(_) => {
-                        s.disconnect();
+                        let _ = server.register.disconnect_session(
+                            &mut server.network,
+                            id.clone(),
+                            &server.config.general.id,
+                            &server.config.general.log_in_term,
+                            logger,
+                        );
                         send_to_queue_session(id.clone(), server, pub_packet.clone(), logger);
                     }
                 }
@@ -423,7 +429,7 @@ pub mod disconnect_handler {
         );
         server.register.disconnect_session(
             &mut server.network,
-            &packet,
+            packet.properties.id.clone(),
             &server.config.general.id,
             &server.config.general.log_in_term,
             logger,

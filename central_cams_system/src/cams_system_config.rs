@@ -4,7 +4,7 @@ use std::{
 };
 
 use mqtt::config::{client_config::ClientConfig, mqtt_config::Config};
-use shared::will_message::serialize_will_message_payload;
+use shared::{app_topics::AppTopics, will_message::serialize_will_message_payload};
 
 pub struct CamSystemConfig {
     pub range_alert: f64,
@@ -49,7 +49,7 @@ impl CamSystemConfig {
 
         let mut mqtt_config = ClientConfig::from_file(mqtt_config_path)?;
         mqtt_config.set_will_message(
-            "camaras".to_string(),
+            AppTopics::CamTopic.get_topic(),
             serialize_will_message_payload(mqtt_config.general.id.clone()),
         );
 
