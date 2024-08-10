@@ -56,15 +56,15 @@ pub fn process_messages(
 /// Dado el path de una camara, devuelve su id<u8>
 /// Los paths de las camaras, por convencion, son de la forma
 /// .../cam<id>
-fn get_incident_cam_id(cam_path: &String) -> Result<u8, std::io::Error> {
-    let path_cpy = cam_path.clone();
-
-    // Dividir la cadena en partes usando el separador '/'
-    let parts: Vec<&str> = path_cpy.split("/cam").collect();
+fn get_incident_cam_id(cam_path: &str) -> Result<u8, std::io::Error> {
+    let parts: Vec<&str> = cam_path.split("/cam").collect();
+    // id/..
     let cam_part = parts.last().unwrap().to_string();
+
+    // id/
     let cam_part_id: Vec<&str> = cam_part.split('/').collect();
-    
-    let cam_id= cam_part_id.first().unwrap();
+    let cam_id = cam_part_id.first().unwrap();
+
     let cam_id_parsed = cam_id.parse::<u8>().unwrap();
 
     Ok(cam_id_parsed)
@@ -74,10 +74,10 @@ fn get_incident_cam_id(cam_path: &String) -> Result<u8, std::io::Error> {
 /// Devuelve una posicion valida para el incidente
 fn get_incident_pos(inc_pos: Position, cam_range: f64) -> Position {
     let range_limit = cam_range;
-    
+
     // generador de números aleatorios:
     let mut rng = rand::thread_rng();
-    
+
     // lat y long aleatorios
     let lat = rng.gen_range(-range_limit..range_limit);
     let long = rng.gen_range(-range_limit..range_limit);
@@ -88,7 +88,7 @@ fn get_incident_pos(inc_pos: Position, cam_range: f64) -> Position {
 /// Dado el path de video del sistema de camaras, y una referencia
 /// al sistema de camaras, devuelve la posicion del incidente,
 /// en el radio de la camara que lo detecto.
-fn get_incident_position(cam_path: &String, cam_cpy: Arc<Mutex<CamsSystem>>) -> Position {
+fn get_incident_position(cam_path: &str, cam_cpy: Arc<Mutex<CamsSystem>>) -> Position {
     // Dado el cam_path devuelto por el listener, se detecta la camara y su ubicacion
     let cam_inc_id = get_incident_cam_id(cam_path).unwrap();
 
@@ -104,10 +104,9 @@ fn get_incident_position(cam_path: &String, cam_cpy: Arc<Mutex<CamsSystem>>) -> 
     get_incident_pos(inc_pos, cam_range)
 }
 
-
 fn main() -> Result<(), Error> {
     let cam_system = CamsSystem::new(SYSTEM_CONFIG_PATH.to_string())?;
-    
+
     let video_path = cam_system.config.video_path.clone();
 
     show_start(&cam_system);
@@ -115,14 +114,13 @@ fn main() -> Result<(), Error> {
     let (inc_tx, inc_rx) = std::sync::mpsc::channel::<String>();
 
     let mut system_handler = cam_system.init()?;
-    
+
     let cams_system_ref = Arc::new(Mutex::new(cam_system));
     let cam_system_clone = cams_system_ref.clone();
-    
+
     let mut client_clone = system_handler.client.clone();
     let logger_cpy = system_handler.logger.clone();
-    
-    
+
     let detector_t = thread::spawn(move || {
         detect_incidents(&video_path, inc_tx);
     });
@@ -133,21 +131,22 @@ fn main() -> Result<(), Error> {
 
             // se carga el incidente
             let inc = Incident::new(0, incident_pos);
-                match client_clone.publish(inc.as_bytes(), AppTopics::IncTopic.get_topic(), &logger_cpy){
-                    Ok(_) => {
-                        println!("Incidente publicado");
-                    },
-                    Err(e) => {
-                        println!("Error al publicar incidente: {}", e);
-                        break;
-                    }
+            match client_clone.publish(inc.as_bytes(), AppTopics::IncTopic.get_topic(), &logger_cpy)
+            {
+                Ok(_) => {
+                    println!("Incidente publicado");
+                }
+                Err(e) => {
+                    println!("Error al publicar incidente: {}", e);
+                    break;
                 }
             }
+        }
     });
-    
+
     let mut client_clone = system_handler.client.clone();
     let logger_cpy = system_handler.logger.clone();
-    
+
     let handle = thread::spawn(move || {
         process_standard_input(&mut client_clone, cam_system_clone, &logger_cpy);
         logger_cpy.close();

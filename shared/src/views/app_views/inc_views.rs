@@ -42,12 +42,7 @@ pub fn add_incident_button(
             inc_interface.show_data_alert = true;
         } else {
             let field = Position::from_lat_lon(latitude.unwrap(), longitude.unwrap());
-            add_incident(
-                client,
-                &mut inc_interface.inc_historial,
-                field,
-                logger,
-            )?;
+            add_incident(client, &mut inc_interface.inc_historial, field, logger)?;
         }
     }
 

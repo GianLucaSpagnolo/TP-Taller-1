@@ -87,7 +87,7 @@ impl CamsSystem {
 
     pub fn add_new_camara(&mut self, position: Position) -> Result<Cam, Error> {
         let cam = self.system.add_cam(position);
-        
+
         create_cam_video_dir(&self.config.video_path, cam.id)?;
 
         self.system.save(&self.config.db_path)?;

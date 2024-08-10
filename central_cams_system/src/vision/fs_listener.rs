@@ -25,7 +25,7 @@ pub fn detect_incidents(cam_path: &str, cam_system_sender: Sender<String>) {
     });
 
     let t = std::thread::spawn(move || {
-    while let Ok(image_path) = rx.recv() {
+        while let Ok(image_path) = rx.recv() {
             cam_system_sender.send(image_path.to_string()).unwrap();
         }
     });
@@ -42,7 +42,7 @@ pub fn detect_incidents(cam_path: &str, cam_system_sender: Sender<String>) {
 /// Devuelve un Error encapsulado en un Box si:
 /// * falla la creacion del monitor de la carpeta
 /// * falla la configuracion del watcher
-/// 
+///
 /// Devuelve OK cuando la comunicacion se cierra, desde el lado del sender
 fn initiate_dir_listener(
     str_path: &str,
@@ -66,10 +66,10 @@ fn initiate_dir_listener(
     // Nonrecursive = no subdirectorios.
     // Recursive = tambien subdirectorios.
     watcher.watch(path, RecursiveMode::Recursive)?;
-    
+
     // let pool = ThreadPool::new(4);
 
-    while let Ok(res) = rx.recv(){
+    while let Ok(res) = rx.recv() {
         // Espera recibir un evento, es bloqueante.
         match res {
             Ok(event) => {
@@ -121,6 +121,6 @@ fn initiate_dir_listener(
                 return Err(Box::new(e));
             }
         }
-    };
+    }
     Ok(())
 }

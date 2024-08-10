@@ -33,6 +33,6 @@ pub mod incident_controller {
     ) -> Result<(), Error> {
         let mut inc = historial.get_inc(id).unwrap().clone();
         inc.resolve();
-        send_incident(client, &inc, logger) 
+        send_incident(client, &inc, logger)
     }
 }

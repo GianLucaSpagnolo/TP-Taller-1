@@ -18,7 +18,12 @@ static COORDENATE_PRECISION: usize = 4;
 /// - `row`: Fila de la tabla
 /// - `cam`: Cámara
 ///
-fn cam_row(mut row: TableRow, cam: &Cam, picked_path: &mut Option<String>, new_cam_video_id: &mut Option<u8>) {
+fn cam_row(
+    mut row: TableRow,
+    cam: &Cam,
+    picked_path: &mut Option<String>,
+    new_cam_video_id: &mut Option<u8>,
+) {
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
             ui.label(cam.id.to_string());
@@ -54,7 +59,9 @@ fn cam_row(mut row: TableRow, cam: &Cam, picked_path: &mut Option<String>, new_c
     });
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
-            let button_clicked = ui.add_enabled(cam.connected, Button::new("Agregar…")).clicked();
+            let button_clicked = ui
+                .add_enabled(cam.connected, Button::new("Agregar…"))
+                .clicked();
             if button_clicked {
                 if let Some(path) = rfd::FileDialog::new().pick_file() {
                     *new_cam_video_id = Some(cam.id);
@@ -73,7 +80,12 @@ fn cam_row(mut row: TableRow, cam: &Cam, picked_path: &mut Option<String>, new_c
 /// - `ui`: Interfaz de usuario
 /// - `cam_list`: Lista de cámaras
 ///
-fn cams_list(ui: &mut Ui, cam_interface: &mut CamInterface, picked_path: &mut Option<String>, new_cam_video_id: &mut Option<u8>) {
+fn cams_list(
+    ui: &mut Ui,
+    cam_interface: &mut CamInterface,
+    picked_path: &mut Option<String>,
+    new_cam_video_id: &mut Option<u8>,
+) {
     let cam_list = &mut cam_interface.cam_list;
 
     if cam_list.cams.is_empty() {
@@ -136,7 +148,12 @@ fn cams_list(ui: &mut Ui, cam_interface: &mut CamInterface, picked_path: &mut Op
 /// - `ui`: Interfaz de usuario
 /// - `cam_list`: Lista de cámaras
 ///
-pub fn show_cams(ui: &mut Ui, cam_interface: &mut CamInterface, picked_path: &mut Option<String>, new_cam_video_id: &mut Option<u8>) {
+pub fn show_cams(
+    ui: &mut Ui,
+    cam_interface: &mut CamInterface,
+    picked_path: &mut Option<String>,
+    new_cam_video_id: &mut Option<u8>,
+) {
     ui.heading("Sistema de cámaras");
     ui.separator();
     ui.add_space(10.0);

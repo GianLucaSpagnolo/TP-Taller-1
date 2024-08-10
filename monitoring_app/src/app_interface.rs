@@ -59,7 +59,12 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
                     );
                 });
                 egui::CollapsingHeader::new("Camaras").show(ui, |ui| {
-                    show_cams(ui, &mut app.global_interface.cam_interface, &mut app.video.picked_path, &mut app.video.new_cam_video_id);
+                    show_cams(
+                        ui,
+                        &mut app.global_interface.cam_interface,
+                        &mut app.video.picked_path,
+                        &mut app.video.new_cam_video_id,
+                    );
                 });
                 egui::CollapsingHeader::new("Drones").show(ui, |ui| {
                     show_drones(ui, &mut app.global_interface.drone_interface);
@@ -93,8 +98,12 @@ fn updater(app: &mut MonitoringApp, ctx: &egui::Context) {
     });
 }
 
-fn get_cam_video_path (cam_id: &u8, video_path: &String, picked_path: &str) -> String {
-    let file_name = std::path::Path::new(picked_path).file_name().unwrap().to_str().unwrap();
+fn get_cam_video_path(cam_id: &u8, video_path: &String, picked_path: &str) -> String {
+    let file_name = std::path::Path::new(picked_path)
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap();
     format!("{}/cam{}/{}", video_path, cam_id, file_name)
 }
 
@@ -106,8 +115,11 @@ impl eframe::App for MonitoringApp {
             "Se ha perdido la conexión con el servidor",
         );
 
-        if let (Some(picked_path), Some(new_id)) = (&self.video.picked_path, &self.video.new_cam_video_id) {
-            let new_cam_video_path = get_cam_video_path(new_id, &self.config.video_path, picked_path);
+        if let (Some(picked_path), Some(new_id)) =
+            (&self.video.picked_path, &self.video.new_cam_video_id)
+        {
+            let new_cam_video_path =
+                get_cam_video_path(new_id, &self.config.video_path, picked_path);
             if !self.video.historial.contains(&new_cam_video_path) {
                 std::fs::copy(picked_path, new_cam_video_path.clone()).unwrap();
                 self.video.historial.push(new_cam_video_path);
