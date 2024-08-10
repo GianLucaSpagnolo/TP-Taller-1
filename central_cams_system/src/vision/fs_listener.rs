@@ -11,7 +11,7 @@ use super::vision_ai::is_incident;
 /// Inicia el listener para detectar las nuevas imagenes,
 /// si una imagen corresponde a un incidente lo publica,
 /// si la imagen no corresponde a un incidente, no hace nada.
-pub fn detect_incidents(cam_path: &str) {
+pub fn detect_incidents(cam_path: &str, cam_system_sender: Sender<bool>) {
     // crea los canales de comunicacion:
     let (tx, rx) = channel::<bool>();
 
@@ -25,18 +25,12 @@ pub fn detect_incidents(cam_path: &str) {
         };
     });
 
-    let t = std::thread::spawn(move || loop {
-        match rx.recv() {
-            Ok(r) => {
-                if r {
-                    println!("Cargando incidente con sistema de camaras ... ");
-                    
-                }
-            }
-            Err(_) => {
-                eprintln!("Error al procesar imagen");
-                break;
-            }
+    let t = std::thread::spawn(move || {
+    while let Ok(res) = rx.recv() {
+        if res {
+            println!("Cargando incidente con sistema de camaras ... ");
+            cam_system_sender.send(res).unwrap();
+        }
         }
     });
 

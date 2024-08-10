@@ -8,7 +8,7 @@ use std::{
 };
 
 use cams_system::CamsSystem;
-use central_cams_system::vision::fs_listener::initiate_dir_listener;
+use central_cams_system::vision::fs_listener::detect_incidents;
 use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use shared::{
@@ -69,13 +69,17 @@ fn main() -> Result<(), Error> {
     let mut client_clone = system_handler.client.clone();
     let logger_cpy = system_handler.logger.clone();
     
-    let _ = thread::spawn(move || {
-        initiate_dir_listener(&video_path, inc_tx).unwrap();
+    
+    let detector_t = thread::spawn(move || {
+        detect_incidents(&video_path, inc_tx);
     });
 
-    let _ = thread::spawn(move || loop {
-        if inc_rx.try_recv().unwrap() {
-            println!("Mandando incidente al sistema de camaras ... ");
+    let inc_t = thread::spawn(move || {
+        while let Ok(res) = inc_rx.recv() {
+            if !res {
+                continue;
+            };
+            println!("Publicando incidente ...");
             // Receive: cam_id, bool
             
             // let location = cam_system_ref.lock().unwrap().get_cam_location(cam_id);
@@ -88,7 +92,9 @@ fn main() -> Result<(), Error> {
                 }
 
             */
-                
+            // se obtiene posicion de la camara para determinar posicion del incidente
+            // y se determina laposicion del incidente en el rango de la camara...
+
             let inc = Incident::new(0, Position::from_lat_lon(0.0, 0.0));
                 match client_clone.publish(inc.as_bytes(), AppTopics::IncTopic.get_topic(), &logger_cpy){
                     Ok(_) => {
@@ -145,5 +151,7 @@ fn main() -> Result<(), Error> {
         }
     }
     process_message_handler.join().unwrap();
+    detector_t.join().unwrap();
+    inc_t.join().unwrap();
     Ok(())
 }
