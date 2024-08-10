@@ -75,7 +75,7 @@ fn initiate_dir_listener(
     // Monitoreo la carpeta
     // Nonrecursive = no subdirectorios.
     // Recursive = tambien subdirectorios.
-    watcher.watch(path, RecursiveMode::NonRecursive)?;
+    watcher.watch(path, RecursiveMode::Recursive)?;
     
     while let Ok(res) = rx.recv(){
         // Espera recibir un evento, es bloqueante.
