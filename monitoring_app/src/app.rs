@@ -208,10 +208,15 @@ impl MonitoringApp {
                 system_lock.save(&self.config.db_paths.cam_db_path).unwrap();
             }
         } else if message_received.topic == AppTopics::IncTopic.get_topic() {
-            let incident = Incident::from_be_bytes(&message_received.data);
+            let mut incident = Incident::from_be_bytes(&message_received.data);
             let incidents_historial = &mut self.global_interface.inc_interface.inc_historial;
 
             if incident.state == IncidentState::InProgess {
+                // incidente proveniente de sistema de camaras,
+                // se debe actualizar su id:
+                let id_inc = incidents_historial.incidents.len() as u8;
+                incident.id = id_inc;
+                
                 incidents_historial.add_inc(incident.location);
             } else {
                 incidents_historial.resolve_inc(&incident.id);

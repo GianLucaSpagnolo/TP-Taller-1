@@ -130,7 +130,7 @@ fn main() -> Result<(), Error> {
             let incident_pos = get_incident_position(&cam_path, cam_cpy.clone());
 
             // se carga el incidente
-            let inc = Incident::new(0, incident_pos);
+            let inc = Incident::new(21, incident_pos);
             match client_clone.publish(inc.as_bytes(), AppTopics::IncTopic.get_topic(), &logger_cpy)
             {
                 Ok(_) => {
