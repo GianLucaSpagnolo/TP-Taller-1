@@ -11,6 +11,7 @@ pub struct CamSystemConfig {
     pub range_alert_between_cameras: f64,
     pub db_path: String,
     pub mqtt_config: ClientConfig,
+    pub video_path: String,
 }
 
 impl CamSystemConfig {
@@ -20,6 +21,7 @@ impl CamSystemConfig {
         let mut range_alert_between_cameras = 0.0;
         let mut db_path = String::new();
         let mut mqtt_config_path = String::new();
+        let mut video_path = String::new();
 
         for line in contents.lines() {
             let parts: Vec<&str> = line.split(':').collect();
@@ -43,6 +45,9 @@ impl CamSystemConfig {
                 "mqtt_config" => {
                     mqtt_config_path = parts[1].trim().to_string();
                 }
+                "root_cameras_path" => {
+                    video_path = parts[1].trim().to_string();
+                }
                 _ => (),
             }
         }
@@ -58,6 +63,7 @@ impl CamSystemConfig {
             range_alert_between_cameras,
             db_path,
             mqtt_config,
+            video_path,
         })
     }
 }
