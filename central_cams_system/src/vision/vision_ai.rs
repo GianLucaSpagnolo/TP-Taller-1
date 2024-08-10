@@ -112,16 +112,16 @@ mod test {
     #[test]
     fn false_positives() {
         println!("FALSOS POSITIVOS - CALLE:");
-        assert_eq!(is_incident("images/transito/calle1.jpg"), false);
-        assert_eq!(is_incident("images/transito/calle2.jpg"), false);
+        assert!(!is_incident("images/transito/calle1.jpg"));
+        assert!(!is_incident("images/transito/calle2.jpg"));
         println!("TRANSITO:");
-        assert_eq!(is_incident("images/transito/transito1.jpg"), false);
-        assert_eq!(is_incident("images/transito/transito3.jpg"), false);
-        assert_eq!(is_incident("images/transito/transito4.jpg"), false);
-        assert_eq!(is_incident("images/transito/transito7.jpg"), false);
-        assert_eq!(is_incident("images/transito/transito8.jpg"), false);
-        assert_eq!(is_incident("images/transito/transito9.jpg"), false);
-        assert_eq!(is_incident("images/transito/transito10.jpg"), false);
+        assert!(!is_incident("images/transito/transito1.jpg"));
+        assert!(!is_incident("images/transito/transito3.jpg"));
+        assert!(!is_incident("images/transito/transito4.jpg"));
+        assert!(!is_incident("images/transito/transito7.jpg"));
+        assert!(!is_incident("images/transito/transito8.jpg"));
+        assert!(!is_incident("images/transito/transito9.jpg"));
+        assert!(!is_incident("images/transito/transito10.jpg"));
 
         print!("Wait by limit ...");
         std::thread::sleep(time::Duration::from_millis(60000));
@@ -130,24 +130,24 @@ mod test {
     #[test]
     fn true_incidents() {
         println!("INCIDENTES VERDADEROS - CHOQUES:");
-        assert_eq!(is_incident("images/choque/choque1.jpg"), true);
-        assert_eq!(is_incident("images/choque/choque2.jpg"), true);
-        assert_eq!(is_incident("images/choque/choque3.jpg"), true);
-        assert_eq!(is_incident("images/choque/choque6.jpg"), true);
-        assert_eq!(is_incident("images/choque/choque7.jpg"), true);
-        assert_eq!(is_incident("images/choque/choque8.jpg"), true);
-        assert_eq!(is_incident("images/choque/choque9.jpg"), true);
-        assert_eq!(is_incident("images/choque/choque10.jpg"), true);
-        assert_eq!(is_incident("images/choque/choque11.jpg"), true);
-        assert_eq!(is_incident("images/choque/choque12.jpg"), true);
+        assert!(is_incident("images/choque/choque1.jpg"));
+        assert!(is_incident("images/choque/choque2.jpg"));
+        assert!(is_incident("images/choque/choque3.jpg"));
+        assert!(is_incident("images/choque/choque6.jpg"));
+        assert!(is_incident("images/choque/choque7.jpg"));
+        assert!(is_incident("images/choque/choque8.jpg"));
+        assert!(is_incident("images/choque/choque9.jpg"));
+        assert!(is_incident("images/choque/choque10.jpg"));
+        assert!(is_incident("images/choque/choque11.jpg"));
+        assert!(is_incident("images/choque/choque12.jpg"));
         println!("VUELCOS:");
-        assert_eq!(is_incident("images/choque/vuelco1.jpg"), true);
-        assert_eq!(is_incident("images/choque/vuelco2.jpg"), true);
-        assert_eq!(is_incident("images/choque/vuelco3.jpg"), true);
+        assert!(is_incident("images/choque/vuelco1.jpg"));
+        assert!(is_incident("images/choque/vuelco2.jpg"));
+        assert!(is_incident("images/choque/vuelco3.jpg"));
         println!("INCENDIOS: ");
-        assert_eq!(is_incident("images/otros/incendio1.jpg"), true);
-        assert_eq!(is_incident("images/otros/incendio3.jpg"), true);
+        assert!(is_incident("images/otros/incendio1.jpg"));
+        assert!(is_incident("images/otros/incendio3.jpg"));
         println!("MANIFESTACION: ");
-        assert_eq!(is_incident("images/otros/manifestacion2.jpg"), true);
+        assert!(is_incident("images/otros/manifestacion2.jpg"));
     }
 }
