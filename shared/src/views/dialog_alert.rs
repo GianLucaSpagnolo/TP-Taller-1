@@ -1,4 +1,4 @@
-use egui::Context;
+use egui::{Context, Vec2};
 
 /// ## dialog_alert
 ///
@@ -11,12 +11,18 @@ use egui::Context;
 ///
 pub fn dialog_alert(ctx: &Context, show_alert: &mut bool, description: &str) {
     if *show_alert {
-        egui::Window::new(egui::RichText::new(description))
+        egui::Window::new("Alerta")
             .collapsible(false)
             .resizable(false)
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    if ui.button("Ok").clicked() {
+                    ui.add(
+                        egui::Image::new(egui::include_image!("../../img/disconnect.png"))
+                            .rounding(5.0)
+                            .max_size(Vec2::new(40.0, 40.0 )),
+                    );
+                    ui.label(description);
+                    if ui.button("Salir").clicked() {
                         ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                         *show_alert = false;
                     }
