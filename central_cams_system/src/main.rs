@@ -11,6 +11,7 @@ use cams_system::CamsSystem;
 use central_cams_system::vision::fs_listener::detect_incidents;
 use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
+use rand::Rng;
 use shared::{
     app_topics::AppTopics, models::inc_model::incident::Incident,
     will_message::deserialize_will_message_payload,
@@ -52,6 +53,58 @@ pub fn process_messages(
     Ok(handler)
 }
 
+/// Dado el path de una camara, devuelve su id<u8>
+/// Los paths de las camaras, por convencion, son de la forma
+/// .../cam<id>
+fn get_incident_cam_id(cam_path: &String) -> Result<u8, std::io::Error> {
+    let path_cpy = cam_path.clone();
+
+    // Dividir la cadena en partes usando el separador '/'
+    let parts: Vec<&str> = path_cpy.split("/cam").collect();
+    let cam_part = parts.last().unwrap().to_string();
+    let cam_part_id: Vec<&str> = cam_part.split('/').collect();
+    
+    let cam_id= cam_part_id.first().unwrap();
+    let cam_id_parsed = cam_id.parse::<u8>().unwrap();
+
+    Ok(cam_id_parsed)
+}
+
+/// Dada la <Position> de la camara ue detecto el incidente y su rango
+/// Devuelve una posicion valida para el incidente
+fn get_incident_pos(inc_pos: Position, cam_range: f64) -> Position {
+    let range_limit = cam_range;
+    
+    // generador de números aleatorios:
+    let mut rng = rand::thread_rng();
+    
+    // lat y long aleatorios
+    let lat = rng.gen_range(-range_limit..range_limit);
+    let long = rng.gen_range(-range_limit..range_limit);
+
+    Position::from_lat_lon(inc_pos.lat() + lat, inc_pos.lat() + long)
+}
+
+/// Dado el path de video del sistema de camaras, y una referencia
+/// al sistema de camaras, devuelve la posicion del incidente,
+/// en el radio de la camara que lo detecto.
+fn get_incident_position(cam_path: &String, cam_cpy: Arc<Mutex<CamsSystem>>) -> Position {
+    // Dado el cam_path devuelto por el listener, se detecta la camara y su ubicacion
+    let cam_inc_id = get_incident_cam_id(cam_path).unwrap();
+
+    // dado el id de una camara se obtiene la posicion de la camara:
+    let cam_system_bind = cam_cpy.lock().unwrap();
+    let cam_inc_ref = cam_system_bind.system.get_cam(&cam_inc_id).unwrap();
+
+    // se determina la posicion del incidente en el rango de la camara
+    let inc_pos = cam_inc_ref.location;
+    let cam_range = cam_system_bind.config.range_alert;
+
+    // se descubre la posicion del incidente detectado:
+    get_incident_pos(inc_pos, cam_range)
+}
+
+
 fn main() -> Result<(), Error> {
     let cam_system = CamsSystem::new(SYSTEM_CONFIG_PATH.to_string())?;
     
@@ -59,7 +112,7 @@ fn main() -> Result<(), Error> {
 
     show_start(&cam_system);
 
-    let (inc_tx, inc_rx) = std::sync::mpsc::channel::<bool>();
+    let (inc_tx, inc_rx) = std::sync::mpsc::channel::<String>();
 
     let mut system_handler = cam_system.init()?;
     
@@ -73,29 +126,13 @@ fn main() -> Result<(), Error> {
     let detector_t = thread::spawn(move || {
         detect_incidents(&video_path, inc_tx);
     });
-
+    let cam_cpy: Arc<Mutex<CamsSystem>> = cams_system_ref.clone();
     let inc_t = thread::spawn(move || {
-        while let Ok(res) = inc_rx.recv() {
-            if !res {
-                continue;
-            };
-            println!("Publicando incidente ...");
-            // Receive: cam_id, bool
-            
-            // let location = cam_system_ref.lock().unwrap().get_cam_location(cam_id);
-            
-            // let inc_id = cam_system_ref.lock().unwrap().get_new_inc_id();
-            /* 
-                cam_system.get_new_inc_id(){
-                    let list = IncidentList::init(self.inc_db_path);
-                    list.genereate_new_inc_id();
-                }
+        while let Ok(cam_path) = inc_rx.recv() {
+            let incident_pos = get_incident_position(&cam_path, cam_cpy.clone());
 
-            */
-            // se obtiene posicion de la camara para determinar posicion del incidente
-            // y se determina laposicion del incidente en el rango de la camara...
-
-            let inc = Incident::new(0, Position::from_lat_lon(0.0, 0.0));
+            // se carga el incidente
+            let inc = Incident::new(0, incident_pos);
                 match client_clone.publish(inc.as_bytes(), AppTopics::IncTopic.get_topic(), &logger_cpy){
                     Ok(_) => {
                         println!("Incidente publicado");

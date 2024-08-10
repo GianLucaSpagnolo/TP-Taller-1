@@ -4,16 +4,15 @@ use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 
-//use vision_ai::{fs_listener::initiate_dir_listener, vision::is_incident};
 use super::vision_ai::is_incident;
 
-/// Dado el path de la carpeta con las imagenes de una camara
-/// Inicia el listener para detectar las nuevas imagenes,
-/// si una imagen corresponde a un incidente lo publica,
-/// si la imagen no corresponde a un incidente, no hace nada.
-pub fn detect_incidents(cam_path: &str, cam_system_sender: Sender<bool>) {
+/// Dado el path de la carpeta con las imagenes de una camara y,
+/// un sender de un String, inicia el listener para detectar las nuevas imagenes,
+/// si una imagen corresponde a un incidente envia el path de la imagen
+/// a traves del sender, si la imagen no corresponde a un incidente, no hace nada.
+pub fn detect_incidents(cam_path: &str, cam_system_sender: Sender<String>) {
     // crea los canales de comunicacion:
-    let (tx, rx) = channel::<bool>();
+    let (tx, rx) = channel::<String>();
 
     let dyn_path = cam_path.to_string();
     let t1 = std::thread::spawn(move || {
@@ -26,11 +25,8 @@ pub fn detect_incidents(cam_path: &str, cam_system_sender: Sender<bool>) {
     });
 
     let t = std::thread::spawn(move || {
-    while let Ok(res) = rx.recv() {
-        if res {
-            println!("Cargando incidente con sistema de camaras ... ");
-            cam_system_sender.send(res).unwrap();
-        }
+    while let Ok(image_path) = rx.recv() {
+            cam_system_sender.send(image_path.to_string()).unwrap();
         }
     });
 
@@ -42,15 +38,15 @@ pub fn detect_incidents(cam_path: &str, cam_system_sender: Sender<bool>) {
 /// con un intervalo de *2 segundos*, abre el archivo, esperando una
 /// imagen, e indica si la imagen se trata de un incidente o no
 /// a traves de un sender que se recibe por parametro.
-/// 
+/// Si la imagen es de un incidente, devuelve el path de la imagen
 /// Devuelve un Error encapsulado en un Box si:
 /// * falla la creacion del monitor de la carpeta
 /// * falla la configuracion del watcher
 /// 
 /// Devuelve OK cuando la comunicacion se cierra, desde el lado del sender
-pub fn initiate_dir_listener(
+fn initiate_dir_listener(
     str_path: &str,
-    inc_sender: Sender<bool>,
+    inc_sender: Sender<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let interval_scan_secs = 2;
 
@@ -110,7 +106,7 @@ pub fn initiate_dir_listener(
                          */
                         if is_incident(image_path) {
                             // Indica que se proceso la imagen de un incidente:
-                            match inc_sender.send(true) {
+                            match inc_sender.send(image_path.to_string()) {
                                 Ok(_) => continue,
                                 Err(e) => {
                                     eprintln!("Error de comunicacion con camara: {}", e);
