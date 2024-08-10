@@ -91,7 +91,7 @@ pub fn drone_images(egui_ctx: Context, drones: &mut DroneList, icons: DroneIcons
                 } else {
                     Texture::from_color_image(icons.default.clone(), &egui_ctx)
                 };
-                
+
                 let mut image = Image::new(texture.clone(), pos);
                 image.scale(x_scale, y_scale);
                 image.angle(angle);

@@ -29,9 +29,9 @@ pub mod interface {
                     "Error - Alguno de los argumentos está vacío",
                 ));
             }
-            
+
             let lat = match lat.parse() {
-                Ok(l) => { l }
+                Ok(l) => l,
                 Err(e) => {
                     return Err(Error::new(
                         std::io::ErrorKind::Other,
@@ -39,9 +39,9 @@ pub mod interface {
                     ));
                 }
             };
-    
+
             let lon = match lon.parse() {
-                Ok(l) => { l }
+                Ok(l) => l,
                 Err(e) => {
                     return Err(Error::new(
                         std::io::ErrorKind::Other,
@@ -49,8 +49,8 @@ pub mod interface {
                     ));
                 }
             };
-    
-            return Ok(Position::from_lat_lon(lat, lon))
+
+            return Ok(Position::from_lat_lon(lat, lon));
         }
 
         Err(Error::new(
@@ -86,7 +86,7 @@ pub mod interface {
         Ok(())
     }
 
-    fn validate_id_arg(args: &Vec<&str>) -> Result<u8, Error> {
+    fn validate_id_arg(args: &[&str]) -> Result<u8, Error> {
         if let Some(id) = args.get(1) {
             if id.is_empty() {
                 return Err(Error::new(
@@ -131,7 +131,7 @@ pub mod interface {
                 let mut cam_removed = cam.clone();
                 cam_removed.remove();
                 cam_removed
-            },
+            }
             None => {
                 return Err(Error::new(
                     std::io::ErrorKind::Other,
@@ -174,11 +174,11 @@ pub mod interface {
         let mut cam_system = cam_system.lock().unwrap();
 
         let modified_cam = match cam_system.system.cams.get(&id) {
-            Some(cam) => { 
+            Some(cam) => {
                 let mut cam_modified = cam.clone();
                 cam_modified.location = new_location;
                 cam_modified
-            },
+            }
             None => {
                 return Err(Error::new(
                     std::io::ErrorKind::Other,

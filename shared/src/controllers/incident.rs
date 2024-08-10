@@ -39,7 +39,7 @@ pub mod incident_controller {
         logger: &Logger,
         db_path: &str,
     ) -> Result<(), Error> {
-        let mut inc = historial.get_inc(&id).unwrap().clone();
+        let mut inc = historial.get_inc(id).unwrap().clone();
         inc.resolve();
 
         match send_incident(client, &inc, logger) {

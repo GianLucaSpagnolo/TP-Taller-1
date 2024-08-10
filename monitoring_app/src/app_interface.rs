@@ -39,7 +39,6 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
                 &mut app.client,
                 &mut app.global_interface.inc_interface,
                 &app.logger,
-                &app.config.db_paths.inc_db_path,
                 &mut app.disconnected,
             );
             ui.add_space(5.0);
@@ -56,7 +55,6 @@ pub fn side_menu(app: &mut MonitoringApp, ctx: &egui::Context, frame: egui::Fram
                         &mut app.client,
                         &mut app.global_interface.inc_interface,
                         &app.logger,
-                        &app.config.db_paths.inc_db_path,
                         &mut app.disconnected,
                     );
                 });
