@@ -3,3 +3,4 @@ range_alert_between_cameras: 0.035
 db_path: data/db/cams_system.db
 mqtt_config: central_cams_system/config/mqtt_client_config.txt
 root_cameras_path: data/camera_videos
+inc_db: data/db/app_inc_historial.db

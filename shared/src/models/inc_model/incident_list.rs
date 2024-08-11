@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use walkers::Position;
-
 use super::incident::Incident;
 
 /// ## IncidentList
@@ -22,8 +20,7 @@ impl IncidentList {
         id.unwrap_or(0)
     }
 
-    pub fn add_inc(&mut self, location: Position) -> u8 {
-        let incident = Incident::new(self.generate_id(), location);
+    pub fn add_inc(&mut self, incident: Incident) -> u8 {
         self.incidents.insert(incident.id, incident.clone());
         incident.id
     }
@@ -89,6 +86,8 @@ impl IncidentList {
 
 #[cfg(test)]
 mod test {
+    use walkers::Position;
+
     use super::*;
 
     #[test]

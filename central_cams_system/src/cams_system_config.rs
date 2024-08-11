@@ -12,6 +12,7 @@ pub struct CamSystemConfig {
     pub db_path: String,
     pub mqtt_config: ClientConfig,
     pub video_path: String,
+    pub inc_db_path: String,
 }
 
 impl CamSystemConfig {
@@ -22,6 +23,7 @@ impl CamSystemConfig {
         let mut db_path = String::new();
         let mut mqtt_config_path = String::new();
         let mut video_path = String::new();
+        let mut inc_db_path = String::new();
 
         for line in contents.lines() {
             let parts: Vec<&str> = line.split(':').collect();
@@ -48,6 +50,9 @@ impl CamSystemConfig {
                 "root_cameras_path" => {
                     video_path = parts[1].trim().to_string();
                 }
+                "inc_db" => {
+                    inc_db_path = parts[1].trim().to_string();
+                }
                 _ => (),
             }
         }
@@ -64,6 +69,7 @@ impl CamSystemConfig {
             db_path,
             mqtt_config,
             video_path,
+            inc_db_path,
         })
     }
 }

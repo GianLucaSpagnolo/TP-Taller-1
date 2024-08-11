@@ -11,12 +11,10 @@ use super::vision_ai::is_incident;
 /// si una imagen corresponde a un incidente envia el path de la imagen
 /// a traves del sender, si la imagen no corresponde a un incidente, no hace nada.
 pub fn detect_incidents(cam_path: &str, cam_system_sender: Sender<String>) {
-    // crea los canales de comunicacion:
-    let (tx, rx) = channel::<String>();
 
     let dyn_path = cam_path.to_string();
-    let t1 = std::thread::spawn(move || {
-        match initiate_dir_listener(&dyn_path, tx) {
+    let t = std::thread::spawn(move || {
+        match initiate_dir_listener(&dyn_path, cam_system_sender) {
             Ok(_) => {}
             Err(e) => {
                 eprintln!("{}", e);
@@ -24,13 +22,6 @@ pub fn detect_incidents(cam_path: &str, cam_system_sender: Sender<String>) {
         };
     });
 
-    let t = std::thread::spawn(move || {
-        while let Ok(image_path) = rx.recv() {
-            cam_system_sender.send(image_path.to_string()).unwrap();
-        }
-    });
-
-    let _ = t1.join();
     let _ = t.join();
 }
 
@@ -112,6 +103,8 @@ fn initiate_dir_listener(
                                     eprintln!("Error de comunicacion con camara: {}", e);
                                 }
                             }
+                        }else{
+                            println!("\x1b[32m Se detectó comportamiento normal \x1b[0m");
                         }
                     }
                 }

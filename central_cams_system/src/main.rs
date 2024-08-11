@@ -13,7 +13,7 @@ use logger::logger_handler::Logger;
 use mqtt::client::{client_message::MqttClientMessage, mqtt_client::MqttClient};
 use rand::Rng;
 use shared::{
-    app_topics::AppTopics, models::inc_model::incident::Incident,
+    app_topics::AppTopics, models::inc_model::{incident::Incident, incident_list::IncidentList},
     will_message::deserialize_will_message_payload,
 };
 use system_interface::interface::{process_standard_input, show_start};
@@ -40,7 +40,7 @@ pub fn process_messages(
                     handle_inc_will_message(message_received.data);
                 } else {
                     let incident = Incident::from_be_bytes(&message_received.data);
-                    println!("Mensaje recibido: {:?}", incident);
+                    println!("\x1b[33m Inciente recibido: {:?} \x1b[0m", incident);
                     cams_system
                         .lock()
                         .unwrap()
@@ -82,25 +82,24 @@ fn get_incident_pos(inc_pos: Position, cam_range: f64) -> Position {
     let lat = rng.gen_range(-range_limit..range_limit);
     let long = rng.gen_range(-range_limit..range_limit);
 
-    Position::from_lat_lon(inc_pos.lat() + lat, inc_pos.lat() + long)
+    Position::from_lat_lon(inc_pos.lat() + lat, inc_pos.lon() + long)
 }
 
 /// Dado el path de video del sistema de camaras, y una referencia
 /// al sistema de camaras, devuelve la posicion del incidente,
 /// en el radio de la camara que lo detecto.
-fn get_incident_position(cam_path: &str, cam_cpy: Arc<Mutex<CamsSystem>>) -> Position {
-    // Dado el cam_path devuelto por el listener, se detecta la camara y su ubicacion
-    let cam_inc_id = get_incident_cam_id(cam_path).unwrap();
+fn get_incident_position(cam_inc_id: &u8, cam_cpy: Arc<Mutex<CamsSystem>>) -> Position {
 
     // dado el id de una camara se obtiene la posicion de la camara:
     let cam_system_bind = cam_cpy.lock().unwrap();
-    let cam_inc_ref = cam_system_bind.system.get_cam(&cam_inc_id).unwrap();
+    let cam_inc_ref = cam_system_bind.system.get_cam(cam_inc_id).unwrap();
 
     // se determina la posicion del incidente en el rango de la camara
+    
+    // se descubre la posicion del incidente detectado:
     let inc_pos = cam_inc_ref.location;
     let cam_range = cam_system_bind.config.range_alert;
 
-    // se descubre la posicion del incidente detectado:
     get_incident_pos(inc_pos, cam_range)
 }
 
@@ -108,6 +107,7 @@ fn main() -> Result<(), Error> {
     let cam_system = CamsSystem::new(SYSTEM_CONFIG_PATH.to_string())?;
 
     let video_path = cam_system.config.video_path.clone();
+    let inc_db = cam_system.config.inc_db_path.clone();
 
     show_start(&cam_system);
 
@@ -127,14 +127,20 @@ fn main() -> Result<(), Error> {
     let cam_cpy: Arc<Mutex<CamsSystem>> = cams_system_ref.clone();
     let inc_t = thread::spawn(move || {
         while let Ok(cam_path) = inc_rx.recv() {
-            let incident_pos = get_incident_position(&cam_path, cam_cpy.clone());
+            // Dado el cam_path devuelto por el listener, se detecta la camara y su ubicacion
+            
+            let cam_inc_id: u8 = get_incident_cam_id(&cam_path).unwrap();
+            let incident_pos = get_incident_position(&cam_inc_id, cam_cpy.clone());
 
             // se carga el incidente
-            let inc = Incident::new(21, incident_pos);
+            let inc_id = IncidentList::init(&inc_db).unwrap().generate_id();
+
+            let inc = Incident::new(inc_id, incident_pos);
+            
             match client_clone.publish(inc.as_bytes(), AppTopics::IncTopic.get_topic(), &logger_cpy)
             {
                 Ok(_) => {
-                    println!("Incidente publicado");
+                    println!("\x1b[31m Cámara {} detecto incidente \x1b[0m", cam_inc_id);
                 }
                 Err(e) => {
                     println!("Error al publicar incidente: {}", e);
