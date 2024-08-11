@@ -40,7 +40,7 @@ pub fn process_messages(
                     handle_inc_will_message(message_received.data);
                 } else {
                     let incident = Incident::from_be_bytes(&message_received.data);
-                    println!("\x1b[33m Inciente recibido: {:?} \x1b[0m", incident);
+                    println!("\x1b[33m  Inciente recibido: {} \x1b[0m", incident);
                     cams_system
                         .lock()
                         .unwrap()
@@ -140,7 +140,7 @@ fn main() -> Result<(), Error> {
             match client_clone.publish(inc.as_bytes(), AppTopics::IncTopic.get_topic(), &logger_cpy)
             {
                 Ok(_) => {
-                    println!("\x1b[31m Cámara {} detecto incidente \x1b[0m", cam_inc_id);
+                    println!("\x1b[31m  Cámara {} detecto incidente \x1b[0m", cam_inc_id);
                 }
                 Err(e) => {
                     println!("Error al publicar incidente: {}", e);
