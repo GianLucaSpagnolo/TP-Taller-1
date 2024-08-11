@@ -151,7 +151,7 @@ fn incident_row(
     if inc_interface.editable {
         row.col(|ui| {
             let inc_is_resolved = incident.state == IncidentState::Resolved;
-            
+
             let button_clicked = ui
                 .add_enabled(!inc_is_resolved, Button::new("Resolver"))
                 .clicked();

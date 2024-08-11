@@ -12,7 +12,6 @@ use super::vision_ai::is_incident;
 /// si una imagen corresponde a un incidente envia el path de la imagen
 /// a traves del sender, si la imagen no corresponde a un incidente, no hace nada.
 pub fn detect_incidents(cam_path: &str, cam_system_sender: Sender<String>) {
-
     let dyn_path = cam_path.to_string();
     let t = std::thread::spawn(move || {
         match initiate_dir_listener(&dyn_path, cam_system_sender) {
@@ -82,19 +81,19 @@ fn initiate_dir_listener(
                                 Some(r) => r,
                                 None => continue,
                             };
-                                if is_incident(image_path) {
-                                    // Indica que se proceso la imagen de un incidente:
-                                    match sender_clone.send(image_path.to_string()) {
-                                        Ok(_) => {},
-                                        Err(e) => {
-                                            eprintln!("Error de comunicacion con camara: {}", e);
-                                        }
+                            if is_incident(image_path) {
+                                // Indica que se proceso la imagen de un incidente:
+                                match sender_clone.send(image_path.to_string()) {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        eprintln!("Error de comunicacion con camara: {}", e);
                                     }
-                                }else{
-                                    println!("\x1b[32m Se detectó comportamiento normal \x1b[0m");
                                 }
+                            } else {
+                                println!("\x1b[32m Se detectó comportamiento normal \x1b[0m");
                             }
                         }
+                    }
                 });
             }
             Err(e) => {
