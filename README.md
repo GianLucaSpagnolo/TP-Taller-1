@@ -15,35 +15,39 @@
 
 Todos estos comandos se deben realizar en el directorio root del proyecto.
 
-Antes que nada se debe cambiar a modo ejecución los archivos **.sh**:
+Para instalar las dependencias necesarias *step* y *libssl-dev* se debe ejecutar como así tambien cambiar a modo ejecución los archivos **.sh**:
 
-    make chmod
-
-### Instalación de dependencias
-
-Para instalar las dependencias necesarias *step* y *libssl-dev* se debe ejecutar:
-
-    make reqs
+    make install
 
 ### Certificados
 
-#### Actualizacion de certificados
+#### Server
 
-Para **actualizar/crear** los certificados, se deben borrar los certificados de la carpeta *data/certificates* y ejecutar:
+##### Instalación de certificados
 
-    make load
+Para **crear** los certificados del servidor, se deben ejecutar:
 
-#### Instalacion de certificado raiz
+    make init_server
 
-Cuando los certificados ya existen (en data/certificates), **solo** se debe instalar el certificado raiz en el S.O. corriendo el comando:
+##### Actualizacion de certificados
 
-    make install
+Para **actualizar** los certificados del servidor, se deben ejecutar:
+
+    make update_server
+
+#### Client
+
+Para **instalar** los certificados en la instancia del cliente, se deben ejecutar:
+
+    make init_client
+
+Cabe aclarar que dichos certificados deben compartirse con el servidor.
 
 ### Eliminación de certificados
 
 Asimismo, se cuenta con el siguiente comando, el cual elimina automaticamente todos los certificados cargados previamente (en caso de querer iniciarlos denuevo), para una mayor conveniencia:
 
-    make clean
+    make clean_certs
 
 ---
 
@@ -142,22 +146,26 @@ Como se menciona anteriormente, las aplicaciones tienen en su configuración de 
 
 La configuración del cliente tiene como configuraciones más importantes:
 
-* *id*: id del cliente  (ej. camssystem)
-* *ip*: ip del conexión  (ej. 127.0.0.1)
-* *port*: puerto de conexión    (ej. 5000)
-* *log_path*: archivo para loggear el protocolo (ej. data/logs/cams_log.csv)
-* *log_in_terminal*: true/false si desea o no que el logger se muestre por terminal
+| campo | descripción |
+| --------- | --------- |
+| *id* | id del cliente  (ej. camssystem)  |
+| *ip* | ip del conexión  (ej. 127.0.0.1)  |
+| *port* | puerto de conexión    (ej. 5000) |
+| *log_path* | archivo para loggear el protocolo (ej. data/logs/cams_log.csv) |
+| *log_in_terminal* | true/false si desea o no que el logger se muestre por terminal |
 
 ##### Server
 
 La configuración del broker tiene como configuraciones más importantes:
 
-* *id*: id del cliente  (ej. broker)
-* *ip*: ip del conexión  (ej. 127.0.0.1)
-* *port*: puerto de conexión    (ej. 5000)
-* *log_path*: archivo para loggear el protocolo (ej. data/logs/broker_log.csv)
-* *log_in_terminal*: true/false si desea o no que el logger se muestre por terminal.
-* *db_path*: archivo dónde se quiere serializar la información de las sesiones (ej. data/db/broker_sessions.db)
+| campo | descripción |
+| --------- | --------- |
+| *id* | id del cliente  (ej. broker) |
+| *ip* | ip del conexión  (ej. 127.0.0.1) |
+| *port* | puerto de conexión    (ej. 5000) |
+| *log_path* | archivo para loggear el protocolo (ej. data/logs/broker_log.csv) |
+| *log_in_terminal* | true/false si desea o no que el logger se muestre por terminal. |
+| *db_path* | archivo dónde se quiere serializar la información de las sesiones (ej. data/db/broker_sessions.db) |
 
 Ademas, el broker dispone de un archivo *broker_auth_data.txt* el cual posee un registro de aquellas aplicaciones (identificadas por ID) que tienen permitido conectarse al servidor.
 
