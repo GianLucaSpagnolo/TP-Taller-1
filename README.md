@@ -1,13 +1,17 @@
-# Taller de Programación
+# Proyecto: Agentes Autónomos de Prevención
 
-## Grupo "La Krupoviesa"
+---
+
+<img src="data/readme_assets/rust.png" alt="La Krupoviesa" width="300" height="245" align="right">
+
+## Taller de Programación 1C 2024
+
+### Grupo "La Krupoviesa"
 
 * Rafael Ortegano - **108313**
 * Martin Gonzalez Prieto - **105738**
 * Gian Luca Spagnolo - **108072**
 * Alexis Martin Ramos - **98891**
-
----
 
 ## Instalaciones
 
