@@ -67,7 +67,7 @@ Primero se debe levantar el message broker ejecutando:
 
     cargo broker
 
-### Monitoring App
+### App de Monitoreo
 
 Luego se debe instanciar las sesiones de cada cliente por lo que se recomienda que primeramente inicie la aplicación de monitoreo:
 
@@ -158,6 +158,24 @@ La configuración del broker tiene como configuraciones más importantes:
 * *db_path*: archivo dónde se quiere serializar la información de las sesiones (ej. data/db/broker_sessions.db)
 
 Ademas, el broker dispone de un archivo *broker_auth_data.txt* el cual posee un registro de aquellas aplicaciones (identificadas por ID) que tienen permitido conectarse al servidor.
+
+---
+
+## Implementación Final: Reconocimiento de Imágenes
+
+A continuación se detallará aquellas caracteristicas principales propias del agregado final de este proyecto.
+
+### Funcionamiento
+
+Cada camara, dentro del Sistema de Camaras, tiene un directorio que le corresponde dentro del directorio ´/data/camera_videos´ el cual actua escuchando constantemente si ha habido un nuevo *reconocimiento de camara* (una imagen la cual puede corresponder o no a un incidente).
+
+En caso de que haya aparecido un potencial incidente en un directorio de una camara, el Sistema de Camaras detecta aquella imagen cargada y mediante un modelo de reconocimiento de imagenes, de proveedor de infraestructura en la nube **Microsoft Azure AI Vision**, detecta si la imagen cargada corresponde o no a un incidente. En caso de que corresponda, se envia el mensaje correspondiente del nuevo incidente cargado para poder notificarle a la interfaz de la Aplicación de Monitoreo, como tambien a la patrulla autonoma, del nuevo incidente que ha aparecido y debe ser solucionado. Por otro lado, en caso de que no se haya considerado aquella imagen como un incidente, simplemente ignora el nuevo potencial incidente y mantiene el estado de la camara anterior.
+
+### Como utilizar
+
+Se dispone de un botón en la interfaz de la Aplicación de Monitoreo, el cual provee un facil envio de un *reconocimiento de camara* a alguno de los directorios creados para cada camara. Sin embargo, el usuario tambien puede pegar su imagen de preferencia directamente en el directorio de la camara a elección, y la aplicación funcionará correctamente detectando si aquella imagen corresponde a un incidente o no.
+
+---
 
 ## Cámaras recomendadas
 
