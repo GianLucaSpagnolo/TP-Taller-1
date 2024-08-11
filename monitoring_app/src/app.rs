@@ -212,17 +212,8 @@ impl MonitoringApp {
             let incidents_historial = &mut self.global_interface.inc_interface.inc_historial;
 
             if incident.state == IncidentState::InProgess {
-                // incidente proveniente de sistema de camaras,
-                // se debe actualizar su id:
-                
-                println!("new Incident received: {:?}", incident);
-                
                 incidents_historial.add_inc(incident);
-
             } else {
-                
-                println!("resolved Incident received: {:?}", incident);
-                
                 incidents_historial.resolve_inc(&incident.id);
             }
 
