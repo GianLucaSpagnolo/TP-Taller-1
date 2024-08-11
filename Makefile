@@ -13,3 +13,9 @@ install:
 
 clean:
 	rm data/certificates/*.crt data/certificates/*.key data/certificates/*.der data/certificates/*.pfx 
+
+reset:
+	rm -f data/db/*.db
+	rm -rfv data/camera_videos/*
+	touch data/camera_videos/temp
+	rmdir -v data/camera_videos/*
