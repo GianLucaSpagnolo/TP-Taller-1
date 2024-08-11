@@ -60,7 +60,7 @@ fn cam_row(
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
             let button_clicked = ui
-                .add_enabled(cam.connected, Button::new("Agregar…"))
+                .add_enabled(cam.connected, Button::new("Agregar"))
                 .clicked();
             if button_clicked {
                 if let Some(path) = rfd::FileDialog::new().pick_file() {
