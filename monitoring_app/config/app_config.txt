@@ -17,3 +17,4 @@ drone_low_battery_icon: monitoring_app/assets/drone_low_battery.png
 drone_charging_icon: monitoring_app/assets/drone_charging.png
 drone_central_icon: monitoring_app/assets/drone_central.png
 drone_disconnected_icon: monitoring_app/assets/drone_offline.png
+root_cameras_path: data/camera_videos

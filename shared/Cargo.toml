@@ -16,6 +16,7 @@ eframe = "0.27.2"
 walkers = "0.22.0"
 egui_extras = "0.27.2"
 egui = "0.27.2"
+rfd = "0.13"
 
 [lib]
 name = "shared"

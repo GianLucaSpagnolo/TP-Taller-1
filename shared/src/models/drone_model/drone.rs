@@ -127,7 +127,7 @@ impl Drone {
             {
                 self.state = DroneState::GoingToIncident;
                 self.id_incident_covering = Some(incident.id);
-                println!("\x1b[33m  Incidente en progreso, en camino a la posición del incidente \x1b[0m");
+                println!("\x1b[33m  Incidente {} en progreso, en camino a la posición del incidente \x1b[0m", incident.id);
 
                 client
                     .publish(self.as_bytes(false), "drone".to_string(), logger)

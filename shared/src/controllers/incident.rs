@@ -20,16 +20,9 @@ pub mod incident_controller {
         historial: &mut IncidentList,
         location: Position,
         logger: &Logger,
-        db_path: &str,
     ) -> Result<(), Error> {
         let inc = Incident::new(historial.generate_id(), location);
-        match send_incident(client, &inc, logger) {
-            Ok(_) => {
-                historial.add_inc(location);
-                historial.save(db_path)
-            }
-            Err(e) => Err(e),
-        }
+        send_incident(client, &inc, logger)
     }
 
     pub fn resolve_incident(
@@ -37,17 +30,9 @@ pub mod incident_controller {
         historial: &mut IncidentList,
         id: &u8,
         logger: &Logger,
-        db_path: &str,
     ) -> Result<(), Error> {
         let mut inc = historial.get_inc(id).unwrap().clone();
         inc.resolve();
-
-        match send_incident(client, &inc, logger) {
-            Ok(_) => {
-                historial.resolve_inc(id);
-                historial.save(db_path)
-            }
-            Err(e) => Err(e),
-        }
+        send_incident(client, &inc, logger)
     }
 }

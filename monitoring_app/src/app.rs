@@ -21,12 +21,21 @@ use shared::{
             drone::{Drone, DroneState},
             drone_list::DroneList,
         },
-        inc_model::incident_list::IncidentList,
+        inc_model::{
+            incident::{Incident, IncidentState},
+            incident_list::IncidentList,
+        },
     },
     will_message::deserialize_will_message_payload,
 };
 
 use crate::{app_config::MonitoringAppConfig, app_interface::run_interface};
+
+pub struct MonitoringVideo {
+    pub picked_path: Option<String>,
+    pub new_cam_video_id: Option<u8>,
+    pub historial: Vec<String>,
+}
 
 /// ## MonitoringApp
 ///
@@ -46,6 +55,7 @@ pub struct MonitoringApp {
     pub map_interface: MapInterface,
     pub message_receiver: Receiver<MqttClientMessage>,
     pub disconnected: bool,
+    pub video: MonitoringVideo,
 }
 
 /// ## MonitoringHandler
@@ -128,6 +138,11 @@ impl MonitoringApp {
             config,
             message_receiver,
             disconnected: false,
+            video: MonitoringVideo {
+                picked_path: None,
+                new_cam_video_id: None,
+                historial: Vec::new(),
+            },
         }
     }
 
@@ -157,6 +172,7 @@ impl MonitoringApp {
             vec![
                 &AppTopics::CamTopic.get_topic(),
                 &AppTopics::DroneTopic.get_topic(),
+                &AppTopics::IncTopic.get_topic(),
             ],
             &logger,
         )?;
@@ -191,6 +207,19 @@ impl MonitoringApp {
                 system_lock.update_cam(data);
                 system_lock.save(&self.config.db_paths.cam_db_path).unwrap();
             }
+        } else if message_received.topic == AppTopics::IncTopic.get_topic() {
+            let incident = Incident::from_be_bytes(&message_received.data);
+            let incidents_historial = &mut self.global_interface.inc_interface.inc_historial;
+
+            if incident.state == IncidentState::InProgess {
+                incidents_historial.add_inc(incident);
+            } else {
+                incidents_historial.resolve_inc(&incident.id);
+            }
+
+            incidents_historial
+                .save(&self.config.db_paths.inc_db_path)
+                .unwrap();
         } else if message_received.topic == AppTopics::DroneTopic.get_topic() {
             if message_received.is_will_message {
                 self.handle_drones_will_message(message_received.data);

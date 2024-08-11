@@ -1,6 +1,6 @@
 use std::io::Error;
 
-use egui::{RichText, Ui};
+use egui::{Button, RichText, Ui};
 use logger::logger_handler::Logger;
 use mqtt::client::mqtt_client::MqttClient;
 
@@ -42,13 +42,7 @@ pub fn add_incident_button(
             inc_interface.show_data_alert = true;
         } else {
             let field = Position::from_lat_lon(latitude.unwrap(), longitude.unwrap());
-            add_incident(
-                client,
-                &mut inc_interface.inc_historial,
-                field,
-                logger,
-                &inc_interface.db_path,
-            )?;
+            add_incident(client, &mut inc_interface.inc_historial, field, logger)?;
         }
     }
 
@@ -156,13 +150,18 @@ fn incident_row(
     });
     if inc_interface.editable {
         row.col(|ui| {
-            if ui.button("Resolver").clicked() {
+            let inc_is_resolved = incident.state == IncidentState::Resolved;
+
+            let button_clicked = ui
+                .add_enabled(!inc_is_resolved, Button::new("Resolver"))
+                .clicked();
+
+            if button_clicked {
                 match resolve_incident(
                     client,
                     &mut inc_interface.inc_historial,
                     &incident.id,
                     logger,
-                    &inc_interface.db_path,
                 ) {
                     Ok(_) => {}
                     Err(_) => {

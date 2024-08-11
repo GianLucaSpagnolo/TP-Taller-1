@@ -1,5 +1,6 @@
 use eframe::egui::Ui;
 
+use egui::Button;
 use egui_extras::{Column, TableBuilder, TableRow};
 
 use crate::{
@@ -17,7 +18,12 @@ static COORDENATE_PRECISION: usize = 4;
 /// - `row`: Fila de la tabla
 /// - `cam`: Cámara
 ///
-fn cam_row(mut row: TableRow, cam: &Cam) {
+fn cam_row(
+    mut row: TableRow,
+    cam: &Cam,
+    picked_path: &mut Option<String>,
+    new_cam_video_id: &mut Option<u8>,
+) {
     row.col(|ui| {
         ui.centered_and_justified(|ui| {
             ui.label(cam.id.to_string());
@@ -51,6 +57,19 @@ fn cam_row(mut row: TableRow, cam: &Cam) {
             }
         });
     });
+    row.col(|ui| {
+        ui.centered_and_justified(|ui| {
+            let button_clicked = ui
+                .add_enabled(cam.connected, Button::new("Agregar"))
+                .clicked();
+            if button_clicked {
+                if let Some(path) = rfd::FileDialog::new().pick_file() {
+                    *new_cam_video_id = Some(cam.id);
+                    *picked_path = Some(path.display().to_string());
+                }
+            }
+        });
+    });
 }
 
 /// ## cams_list
@@ -61,7 +80,12 @@ fn cam_row(mut row: TableRow, cam: &Cam) {
 /// - `ui`: Interfaz de usuario
 /// - `cam_list`: Lista de cámaras
 ///
-fn cams_list(ui: &mut Ui, cam_interface: &mut CamInterface) {
+fn cams_list(
+    ui: &mut Ui,
+    cam_interface: &mut CamInterface,
+    picked_path: &mut Option<String>,
+    new_cam_video_id: &mut Option<u8>,
+) {
     let cam_list = &mut cam_interface.cam_list;
 
     if cam_list.cams.is_empty() {
@@ -73,6 +97,7 @@ fn cams_list(ui: &mut Ui, cam_interface: &mut CamInterface) {
             .column(Column::exact(150.0))
             .column(Column::exact(150.0))
             .column(Column::exact(150.0))
+            .column(Column::exact(100.0))
             .header(30.0, |mut header| {
                 header.col(|ui| {
                     ui.centered_and_justified(|ui| {
@@ -99,11 +124,16 @@ fn cams_list(ui: &mut Ui, cam_interface: &mut CamInterface) {
                         ui.heading("Conexión");
                     });
                 });
+                header.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Video");
+                    });
+                });
             })
             .body(|mut body| {
                 for cam in cam_list.cams.values() {
                     body.row(20.0, |row| {
-                        cam_row(row, cam);
+                        cam_row(row, cam, picked_path, new_cam_video_id);
                     });
                 }
             });
@@ -118,10 +148,15 @@ fn cams_list(ui: &mut Ui, cam_interface: &mut CamInterface) {
 /// - `ui`: Interfaz de usuario
 /// - `cam_list`: Lista de cámaras
 ///
-pub fn show_cams(ui: &mut Ui, cam_interface: &mut CamInterface) {
+pub fn show_cams(
+    ui: &mut Ui,
+    cam_interface: &mut CamInterface,
+    picked_path: &mut Option<String>,
+    new_cam_video_id: &mut Option<u8>,
+) {
     ui.heading("Sistema de cámaras");
     ui.separator();
     ui.add_space(10.0);
-    cams_list(ui, cam_interface);
+    cams_list(ui, cam_interface, picked_path, new_cam_video_id);
     ui.add_space(10.0);
 }
