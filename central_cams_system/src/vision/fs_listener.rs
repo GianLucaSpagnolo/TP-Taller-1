@@ -4,6 +4,7 @@ use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
 use std::time::Duration;
 
+use super::threadpool::ThreadPool;
 use super::vision_ai::is_incident;
 
 /// Dado el path de la carpeta con las imagenes de una camara y,
@@ -58,56 +59,43 @@ fn initiate_dir_listener(
     // Recursive = tambien subdirectorios.
     watcher.watch(path, RecursiveMode::Recursive)?;
 
-    // let pool = ThreadPool::new(4);
+    let pool = match ThreadPool::build(5) {
+        Ok(p) => p,
+        Err(e) => {
+            return Err(Box::new(e));
+        }
+    };
 
     while let Ok(res) = rx.recv() {
         // Espera recibir un evento, es bloqueante.
         match res {
             Ok(event) => {
                 // Procesamiento de eventos
-                let ev = event.clone();
-                let event_kind = ev.kind;
-                for path in &ev.paths {
-                    if let EventKind::Create(_) = &event_kind {
-                        // chequea si es un incidente:
-                        let image_path = match path.to_str() {
-                            Some(r) => r,
-                            None => continue,
-                        };
-
-                        // path: .../camid/imagen.jpg
-                        // id: parse ".../camid/imagen.jpg" -> id
-                        // Send: id, bool
-
-                        // Llamar threadpool con el if dentro
-                        /*
-                        let sender_clone = inc_sender.clone();
-
-                        pool.execute(|| {
-                            if is_incident(image_path) {
-                                // Indica que se proceso la imagen de un incidente:
-                                match sender_clone.send(true) {
-                                    Ok(_) => continue,
-                                    Err(e) => {
-                                        eprintln!("Error de comunicacion con camara: {}", e);
+                let sender_clone = inc_sender.clone();
+                let _ = pool.execute(move || {
+                    let ev = event.clone();
+                    let event_kind = ev.kind;
+                    for path in &ev.paths {
+                        if let EventKind::Create(_) = &event_kind {
+                            // chequea si es un incidente:
+                            let image_path = match path.to_str() {
+                                Some(r) => r,
+                                None => continue,
+                            };
+                                if is_incident(image_path) {
+                                    // Indica que se proceso la imagen de un incidente:
+                                    match sender_clone.send(image_path.to_string()) {
+                                        Ok(_) => {},
+                                        Err(e) => {
+                                            eprintln!("Error de comunicacion con camara: {}", e);
+                                        }
                                     }
+                                }else{
+                                    println!("\x1b[32m Se detectó comportamiento normal \x1b[0m");
                                 }
                             }
-                        );
-                         */
-                        if is_incident(image_path) {
-                            // Indica que se proceso la imagen de un incidente:
-                            match inc_sender.send(image_path.to_string()) {
-                                Ok(_) => continue,
-                                Err(e) => {
-                                    eprintln!("Error de comunicacion con camara: {}", e);
-                                }
-                            }
-                        }else{
-                            println!("\x1b[32m Se detectó comportamiento normal \x1b[0m");
                         }
-                    }
-                }
+                });
             }
             Err(e) => {
                 eprintln!("Error al recibir el evento: {:?}", e);
