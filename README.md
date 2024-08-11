@@ -1,7 +1,5 @@
 # Proyecto: Agentes Autónomos de Prevención
 
----
-
 <img src="data/readme_assets/rust.png" alt="La Krupoviesa" width="300" height="245" align="right">
 
 ## Taller de Programación 1C 2024
