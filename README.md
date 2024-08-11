@@ -35,7 +35,13 @@ Para **actualizar/crear** los certificados, se deben borrar los certificados de 
 
 Cuando los certificados ya existen (en data/certificates), **solo** se debe instalar el certificado raiz en el S.O. corriendo el comando:
 
-    make install  
+    make install
+
+### Eliminación de certificados
+
+Asimismo, se cuenta con el siguiente comando, el cual elimina automaticamente todos los certificados cargados previamente (en caso de querer iniciarlos denuevo), para una mayor conveniencia:
+
+    make clean
 
 ---
 
@@ -86,6 +92,12 @@ Siendo N el número de una instancia de drone correspondiente. Por ejemplo:
     cargo drone1
 
 Cabe destacar que, en este ejemplo, se esta ejecutando la instancia del **drone1**, pero existen 7 diferentes instancias de drones hasta **drone7**, las cuales se pueden correr en paralelo.
+
+### Limpieza de los archivos de base de datos
+
+En caso que se haya ejecutado completamente el proyecto, y se desee eliminar tanto los archivos de persistencia correspondientes a las aplicaciones y al broker (en caso de que se quiera iniciar el proyecto de cero), o se busque borrar aquellas carpetas temporales que corresponden a cada camara, donde se colocan los incidentes potenciales que recibe en el directorio *camera_videos* (en caso de querer iniciar nuevamente de cero el sistema de camaras) se cuenta con el siguiente comando:
+
+    make reset
 
 ---
 

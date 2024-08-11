@@ -14,6 +14,7 @@ install:
 clean:
 	rm data/certificates/*.crt data/certificates/*.key data/certificates/*.der data/certificates/*.pfx 
 
+# Base de datos
 reset:
 	rm -f data/db/*.db
 	rm -rfv data/camera_videos/*
